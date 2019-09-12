@@ -1,0 +1,168 @@
+swagger: "2.0"
+info:
+  version: 1.0.0
+  title: IO API for administration purpose
+  contact:
+    name: Digital Transformation Team
+    url: https://forum.italia.it/c/progetto-io
+  x-logo:
+    url: https://io.italia.it/assets/img/io-logo-blue.svg
+  description: >
+    # Warning
+
+    **This is an experimental API that is (most probably) going to change as we evolve the IO platform.**
+
+    # Introduction
+
+    This is the documentation of the IO API for administration purpose of the platform.
+
+host: api.cd.italia.it
+basePath: "/adm"
+schemes:
+  - https
+security:
+  - SubscriptionKey: []
+paths:
+  "/services/{service_id}":
+    parameters:
+      - name: service_id
+        in: path
+        type: string
+        required: true
+        description: The ID of an existing Service.
+    get:
+      operationId: getService
+      summary: Get Service
+      description: A previously created service with the provided service ID is returned.
+      responses:
+        "200":
+          description: Service found.
+          schema:
+            "$ref": "#/definitions/Service"
+          examples:
+            application/json:
+              id: 2b3e728c1a5d1efa035c-0000000000000001
+              authorized_recipients:
+                - XXXYYY79A95Y000X
+              department_name: dept
+              organization_name: org
+              service_id: 2b3e728c1a5d1efa035c
+              service_name: service
+              version: 1
+              authorized_cidrs: []
+        "401":
+          description: Unauthorized
+        "404":
+          description: No service found for the provided ID.
+      parameters: []
+    put:
+      responses:
+        "200":
+          description: Service updated.
+          schema:
+            "$ref": "#/definitions/Service"
+          examples:
+            application/json:
+              id: 2b3e728c1a5d1efa035c-0000000000000001
+              authorized_recipients:
+                - XXXYYY79A95Y000X
+              department_name: dept
+              organization_name: org
+              service_id: 2b3e728c1a5d1efa035c
+              service_name: service
+              version: 1
+              authorized_cidrs: []
+        "401":
+          description: Unauthorized
+        "404":
+          description: No service found for the provided ID.
+      summary: Update Service
+      operationId: updateService
+      description: |-
+        Update an existing service with the attributes provided in the
+        request payload.
+      parameters:
+        - in: body
+          name: body
+          schema:
+            "$ref": "#/definitions/Service"
+          description: The Service payload.
+          x-examples:
+            application/json:
+              authorized_recipients:
+                - XXXYYY79A95Y000X
+              department_name: dept
+              organization_name: org
+              service_id: 2b3e728c1a5d1efa035c
+              service_name: service
+              authorized_cidrs: []
+  "/services":
+    post:
+      responses:
+        "200":
+          description: Service created.
+          schema:
+            "$ref": "#/definitions/Service"
+          examples:
+            application/json:
+              id: 2b3e728c1a5d1efa035c-0000000000000001
+              authorized_recipients:
+                - XXXYYY79A95Y000X
+              department_name: dept
+              organization_name: org
+              service_id: 2b3e728c1a5d1efa035c
+              service_name: service
+              version: 1
+              authorized_cidrs: []
+        "401":
+          description: Unauthorized
+      summary: Create Service
+      description: |-
+        Create a new Service with the attributes provided in the requst
+        payload.
+      operationId: createService
+      parameters:
+        - in: body
+          name: body
+          schema:
+            "$ref": "#/definitions/Service"
+          description: The Service payload.
+          x-examples:
+            application/json:
+              authorized_recipients:
+                - XXXYYY79A95Y000X
+              department_name: dept
+              organization_name: org
+              service_id: 2b3e728c1a5d1efa035c
+              service_name: service
+              authorized_cidrs: []
+definitions:
+  Service:
+    "$ref": "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/Service"
+  ServiceId:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceId"
+  ServiceName:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceName"
+  OrganizationName:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/OrganizationName"
+  DepartmentName:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/DepartmentName"
+  CIDR:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/CIDR"
+  MaxAllowedPaymentAmount:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/MaxAllowedPaymentAmount"
+  OrganizationFiscalCode:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/OrganizationFiscalCode"
+
+responses: {}
+parameters: {}
+consumes:
+  - application/json
+produces:
+  - application/json
+securityDefinitions:
+  SubscriptionKey:
+    type: apiKey
+    name: Ocp-Apim-Subscription-Key
+    in: header
+    description: The API key obtained through the developer portal.
