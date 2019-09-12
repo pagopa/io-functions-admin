@@ -54,7 +54,7 @@ import {
 import { ServicePayloadMiddleware } from "../utils/middlewares/service";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 
-type IGetServiceHandler = (
+type IUpdateServiceHandler = (
   context: Context,
   auth: IAzureApiAuthorization,
   clientIp: ClientIp,
@@ -73,7 +73,7 @@ type IGetServiceHandler = (
 export function UpdateServiceHandler(
   _GCTC: CustomTelemetryClientFactory,
   serviceModel: ServiceModel
-): IGetServiceHandler {
+): IUpdateServiceHandler {
   return async (_, __, ___, ____, serviceId, servicePayload) => {
     if (servicePayload.service_id !== serviceId) {
       return ResponseErrorValidation(
@@ -134,7 +134,7 @@ export function UpdateServiceHandler(
 }
 
 /**
- * Wraps a GetService handler inside an Express request handler.
+ * Wraps a UpdateService handler inside an Express request handler.
  */
 export function UpdateService(
   getCustomTelemetryClient: CustomTelemetryClientFactory,
