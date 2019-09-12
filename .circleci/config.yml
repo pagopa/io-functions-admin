@@ -41,7 +41,7 @@ jobs:
       - *restore_node_cache
       - *install_node_modules
       - run: yarn test:coverage
-      - run: 'bash <(curl -s https://codecov.io/bash)'
+      - run: "bash <(curl -s https://codecov.io/bash)"
 
   lint:
     <<: *defaults_js
@@ -50,6 +50,13 @@ jobs:
       - *restore_node_cache
       - *install_node_modules
       - run: yarn lint
+
+  lint-api:
+    <<: *defaults_js
+    steps:
+      - checkout
+      - run: npm install oval
+      - run: npx oval validate -p openapi/index.yaml
 
   danger:
     <<: *defaults_js
@@ -66,6 +73,7 @@ workflows:
       - compile
       - tests
       - lint
+      - lint-api
       - danger:
           filters:
             branches:
