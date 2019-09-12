@@ -11,7 +11,7 @@ import {
   aRetrievedService,
   aSeralizedService,
   aServicePayload
-} from "../../utils/mocks";
+} from "../../__mocks__/mocks";
 import { UpdateServiceHandler } from "../handler";
 
 describe("UpdateServiceHandler", () => {

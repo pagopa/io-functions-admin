@@ -9,7 +9,7 @@ import {
   aSeralizedService,
   aService,
   aServicePayload
-} from "../../utils/mocks";
+} from "../../__mocks__/mocks";
 import { CreateServiceHandler } from "../handler";
 
 describe("CreateServiceHandler", () => {

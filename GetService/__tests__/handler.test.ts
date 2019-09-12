@@ -6,7 +6,7 @@ import { none, some } from "fp-ts/lib/Option";
 
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
-import { aRetrievedService, aSeralizedService } from "../../utils/mocks";
+import { aRetrievedService, aSeralizedService } from "../../__mocks__/mocks";
 import { GetServiceHandler } from "../handler";
 
 describe("GetServiceHandler", () => {

@@ -2,7 +2,7 @@ import * as express from "express";
 
 import { isLeft, isRight } from "fp-ts/lib/Either";
 
-import { aServicePayload } from "../../mocks";
+import { aServicePayload } from "../../../__mocks__/mocks";
 import { ServicePayloadMiddleware } from "../service";
 
 describe("ServicePayloadMiddleware", () => {
