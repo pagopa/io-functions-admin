@@ -2,6 +2,10 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
+import * as df from "durable-functions";
+
+import { isLeft } from "fp-ts/lib/Either";
+
 import {
   IResponseSuccessJson,
   ResponseSuccessJson
@@ -42,6 +46,7 @@ import {
   retrievedServiceToApiService
 } from "../utils/conversions";
 import { ServicePayloadMiddleware } from "../utils/middlewares/service";
+import { UpsertServiceEvent } from "../utils/UpsertServiceEvent";
 
 type ICreateServiceHandler = (
   context: Context,
@@ -55,19 +60,31 @@ export function CreateServiceHandler(
   _GCTC: CustomTelemetryClientFactory,
   serviceModel: ServiceModel
 ): ICreateServiceHandler {
-  return async (_, __, ___, ____, servicePayload) => {
+  return async (context, __, ___, ____, servicePayload) => {
     const service = apiServiceToService(servicePayload);
     const errorOrCreatedService = await serviceModel.create(
       service,
       service.serviceId
     );
-    return errorOrCreatedService.fold<
-      IResponseErrorQuery | IResponseSuccessJson<ApiService>
-    >(
-      error => ResponseErrorQuery("CreateServiceHandler error", error),
-      createdService =>
-        ResponseSuccessJson(retrievedServiceToApiService(createdService))
-    );
+
+    if (isLeft(errorOrCreatedService)) {
+      return ResponseErrorQuery(
+        "CreateServiceHandler error",
+        errorOrCreatedService.value
+      );
+    }
+
+    const createdService = errorOrCreatedService.value;
+
+    // Start orchestrator
+    const event: UpsertServiceEvent = {
+      newService: createdService,
+      updatedAt: new Date().getTime()
+    };
+    const dfClient = df.getClient(context);
+    await dfClient.startNew("UpsertServiceOrchestrator", undefined, event);
+
+    return ResponseSuccessJson(retrievedServiceToApiService(createdService));
   };
 }
 

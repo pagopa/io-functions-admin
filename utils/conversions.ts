@@ -5,6 +5,7 @@ import {
   toAuthorizedCIDRs,
   toAuthorizedRecipients
 } from "io-functions-commons/dist/src/models/service";
+import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
 import { CIDR, FiscalCode } from "italia-ts-commons/lib/strings";
 
 /**
@@ -45,6 +46,20 @@ export function retrievedServiceToApiService(
     organization_name: retrievedService.organizationName,
     service_id: retrievedService.serviceId,
     service_name: retrievedService.serviceName,
+    version: retrievedService.version
+  };
+}
+
+export function retrievedServiceToVisibleService(
+  retrievedService: RetrievedService
+): VisibleService {
+  return {
+    departmentName: retrievedService.departmentName,
+    id: retrievedService.id,
+    organizationFiscalCode: retrievedService.organizationFiscalCode,
+    organizationName: retrievedService.organizationName,
+    serviceId: retrievedService.serviceId,
+    serviceName: retrievedService.serviceName,
     version: retrievedService.version
   };
 }

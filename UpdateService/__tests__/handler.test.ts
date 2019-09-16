@@ -1,6 +1,8 @@
 /* tslint:disable: no-any */
 /* tslint:disable: no-big-function */
 
+import * as df from "durable-functions";
+
 import { left, right } from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
 
@@ -12,7 +14,13 @@ import {
   aSeralizedService,
   aServicePayload
 } from "../../__mocks__/mocks";
+import { UpsertServiceEvent } from "../../utils/UpsertServiceEvent";
 import { UpdateServiceHandler } from "../handler";
+
+beforeEach(() => {
+  (df.getClient as any).mockClear();
+  (df as any).mockStartNew.mockClear();
+});
 
 describe("UpdateServiceHandler", () => {
   it("should return a validation error and not update the service if the serviceid in the payload is not equal to the serviceid in the path", async () => {
@@ -222,5 +230,55 @@ describe("UpdateServiceHandler", () => {
         department_name: aDepartmentName
       });
     }
+  });
+
+  it("should start the orchestrator with an appropriate event after the service is updated", async () => {
+    const aDepartmentName = "UpdateDept" as NonEmptyString;
+    const serviceModelMock = {
+      findOneByServiceId: jest.fn(() => {
+        return Promise.resolve(right(some(aRetrievedService)));
+      }),
+      update: jest.fn((_, __, f) => {
+        const updatedService = f(aRetrievedService);
+        return Promise.resolve(right(some(updatedService)));
+      })
+    };
+
+    const contextMock = {
+      log: jest.fn()
+    };
+
+    const updateServiceHandler = UpdateServiceHandler(
+      undefined as any,
+      serviceModelMock as any
+    );
+
+    await updateServiceHandler(
+      contextMock as any, // Not used
+      undefined as any, // Not used
+      undefined as any, // Not used
+      undefined as any, // Not used
+      aServicePayload.service_id,
+      {
+        ...aServicePayload,
+        department_name: aDepartmentName
+      }
+    );
+
+    const event: UpsertServiceEvent = {
+      newService: { ...aRetrievedService, departmentName: aDepartmentName },
+      oldService: aRetrievedService,
+      updatedAt: new Date().getTime()
+    };
+
+    expect(df.getClient).toHaveBeenCalledTimes(1);
+
+    const dfClient = df.getClient(contextMock);
+    expect(dfClient.startNew).toHaveBeenCalledTimes(1);
+    expect(dfClient.startNew).toHaveBeenCalledWith(
+      "UpsertServiceOrchestrator",
+      undefined,
+      event
+    );
   });
 });
