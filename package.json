@@ -34,10 +34,12 @@
     "typescript": "^3.6.2"
   },
   "dependencies": {
+    "azure-storage": "^2.10.3",
     "documentdb": "^1.12.2",
+    "durable-functions": "^1.2.4",
     "express": "^4.15.3",
     "fp-ts": "1.12.0",
-    "io-functions-commons": "^0.5.0",
+    "io-functions-commons": "^0.6.5",
     "io-functions-express": "^0.1.0",
     "io-ts": "1.8.5",
     "italia-ts-commons": "^5.1.5",

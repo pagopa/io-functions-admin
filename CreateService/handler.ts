@@ -2,7 +2,12 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
+import * as df from "durable-functions";
+
+import { isLeft } from "fp-ts/lib/Either";
+
 import {
+  IResponseErrorValidation,
   IResponseSuccessJson,
   ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
@@ -42,6 +47,7 @@ import {
   retrievedServiceToApiService
 } from "../utils/conversions";
 import { ServicePayloadMiddleware } from "../utils/middlewares/service";
+import { UpsertServiceEvent } from "../utils/UpsertServiceEvent";
 
 type ICreateServiceHandler = (
   context: Context,
@@ -49,25 +55,46 @@ type ICreateServiceHandler = (
   clientIp: ClientIp,
   userAttributes: IAzureUserAttributes,
   servicePayload: ApiService
-) => Promise<IResponseSuccessJson<ApiService> | IResponseErrorQuery>;
+) => Promise<
+  | IResponseSuccessJson<ApiService>
+  | IResponseErrorQuery
+  | IResponseErrorValidation
+>;
 
 export function CreateServiceHandler(
   _GCTC: CustomTelemetryClientFactory,
   serviceModel: ServiceModel
 ): ICreateServiceHandler {
-  return async (_, __, ___, ____, servicePayload) => {
+  return async (context, __, ___, ____, servicePayload) => {
     const service = apiServiceToService(servicePayload);
     const errorOrCreatedService = await serviceModel.create(
       service,
       service.serviceId
     );
-    return errorOrCreatedService.fold<
-      IResponseErrorQuery | IResponseSuccessJson<ApiService>
-    >(
-      error => ResponseErrorQuery("CreateServiceHandler error", error),
-      createdService =>
-        ResponseSuccessJson(retrievedServiceToApiService(createdService))
+
+    if (isLeft(errorOrCreatedService)) {
+      return ResponseErrorQuery(
+        "CreateServiceHandler error",
+        errorOrCreatedService.value
+      );
+    }
+
+    const createdService = errorOrCreatedService.value;
+
+    const upsertServiceEvent = UpsertServiceEvent.encode({
+      newService: createdService,
+      updatedAt: new Date()
+    });
+
+    // Start orchestrator
+    const dfClient = df.getClient(context);
+    await dfClient.startNew(
+      "UpsertServiceOrchestrator",
+      undefined,
+      upsertServiceEvent
     );
+
+    return ResponseSuccessJson(retrievedServiceToApiService(createdService));
   };
 }
 
