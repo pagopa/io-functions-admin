@@ -83,7 +83,7 @@ export function CreateServiceHandler(
 
     const upsertServiceEvent = UpsertServiceEvent.encode({
       newService: createdService,
-      updatedAt: new Date().getTime()
+      updatedAt: new Date()
     });
 
     // Start orchestrator

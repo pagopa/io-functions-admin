@@ -108,10 +108,10 @@ describe("CreateServiceHandler", () => {
       aServicePayload
     );
 
-    const event: UpsertServiceEvent = {
+    const event = UpsertServiceEvent.encode({
       newService: aRetrievedService,
-      updatedAt: new Date().getTime()
-    };
+      updatedAt: new Date()
+    });
 
     expect(df.getClient).toHaveBeenCalledTimes(1);
 
