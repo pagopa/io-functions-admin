@@ -108,7 +108,7 @@ describe("CreateServiceHandler", () => {
       aServicePayload
     );
 
-    const event = UpsertServiceEvent.encode({
+    const upsertServiceEvent = UpsertServiceEvent.encode({
       newService: aRetrievedService,
       updatedAt: new Date()
     });
@@ -120,7 +120,7 @@ describe("CreateServiceHandler", () => {
     expect(dfClient.startNew).toHaveBeenCalledWith(
       "UpsertServiceOrchestrator",
       undefined,
-      event
+      upsertServiceEvent
     );
   });
 });

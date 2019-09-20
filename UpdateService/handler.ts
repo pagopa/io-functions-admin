@@ -132,7 +132,7 @@ export function UpdateServiceHandler(
 
     const updatedService = maybeUpdatedService.value;
 
-    const errorOrUpsertServiceEvent = UpsertServiceEvent.encode({
+    const upsertServiceEvent = UpsertServiceEvent.encode({
       newService: updatedService,
       oldService: existingService,
       updatedAt: new Date()
@@ -143,7 +143,7 @@ export function UpdateServiceHandler(
     await dfClient.startNew(
       "UpsertServiceOrchestrator",
       undefined,
-      errorOrUpsertServiceEvent
+      upsertServiceEvent
     );
 
     return ResponseSuccessJson(retrievedServiceToApiService(updatedService));

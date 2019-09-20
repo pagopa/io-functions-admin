@@ -265,7 +265,7 @@ describe("UpdateServiceHandler", () => {
       }
     );
 
-    const event = UpsertServiceEvent.encode({
+    const upsertServiceEvent = UpsertServiceEvent.encode({
       newService: { ...aRetrievedService, departmentName: aDepartmentName },
       oldService: aRetrievedService,
       updatedAt: new Date()
@@ -278,7 +278,7 @@ describe("UpdateServiceHandler", () => {
     expect(dfClient.startNew).toHaveBeenCalledWith(
       "UpsertServiceOrchestrator",
       undefined,
-      event
+      upsertServiceEvent
     );
   });
 });
