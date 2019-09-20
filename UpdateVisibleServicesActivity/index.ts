@@ -4,7 +4,7 @@ import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 
 import { getUpdateVisibleServicesActivityHandler } from "./handler";
 
-const storageConnectionString = getRequiredStringEnv("BlobStorageConnection");
+const storageConnectionString = getRequiredStringEnv("StorageConnection");
 const blobService = createBlobService(storageConnectionString);
 
 const activityFunctionHandler = getUpdateVisibleServicesActivityHandler(
