@@ -9,7 +9,10 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 
 import { RetrievedService } from "io-functions-commons/dist/src/models/service";
 
-import { Input as UpdateVisibleServicesActivityInput } from "../UpdateVisibleServicesActivity";
+import {
+  Input as UpdateVisibleServicesActivityInput,
+  Result as UpdateVisibleServicesActivityResult
+} from "../UpdateVisibleServicesActivity/handler";
 import { retrievedServiceToVisibleService } from "../utils/conversions";
 import { UpsertServiceEvent } from "../utils/UpsertServiceEvent";
 
@@ -44,9 +47,9 @@ export const handler = function*(
 ): IterableIterator<unknown> {
   const input = context.df.getInput();
 
-  const retryOptions = new df.RetryOptions(1000, 10);
+  const retryOptions = new df.RetryOptions(5000, 10);
   // tslint:disable-next-line: no-object-mutation
-  retryOptions.backoffCoefficient = 2;
+  retryOptions.backoffCoefficient = 1.5;
 
   // Check if input is valid
   const errorOrUpsertServiceEvent = UpsertServiceEvent.decode(input);
@@ -68,14 +71,50 @@ export const handler = function*(
   const maybeAction = computeMaybeAction(newService, oldService);
   if (isSome(maybeAction)) {
     const visibleService = retrievedServiceToVisibleService(newService);
-    yield context.df.callActivityWithRetry(
-      "UpdateVisibleServicesActivity",
-      retryOptions,
-      {
-        action: maybeAction.value,
-        visibleService
-      } as UpdateVisibleServicesActivityInput
-    );
+
+    try {
+      const updateVisibleServicesActivityResultJson = yield context.df.callActivityWithRetry(
+        "UpdateVisibleServicesActivity",
+        retryOptions,
+        {
+          action: maybeAction.value,
+          visibleService
+        } as UpdateVisibleServicesActivityInput
+      );
+
+      const errorOrUpdateVisibleServicesActivityResult = UpdateVisibleServicesActivityResult.decode(
+        updateVisibleServicesActivityResultJson
+      );
+
+      if (isLeft(errorOrUpdateVisibleServicesActivityResult)) {
+        context.log.error(
+          `UpdateVisibleServicesActivity|Can't decode result|SERVICE_ID=${
+            visibleService.serviceId
+          }|ERROR=${readableReport(
+            errorOrUpdateVisibleServicesActivityResult.value
+          )}`
+        );
+
+        return [];
+      }
+
+      const updateVisibleServicesActivityResult =
+        errorOrUpdateVisibleServicesActivityResult.value;
+
+      if (updateVisibleServicesActivityResult.kind === "SUCCESS") {
+        context.log.verbose(
+          `UpdateVisibleServicesActivity|Update success|SERVICE_ID=${visibleService.serviceId}`
+        );
+      } else {
+        context.log.error(
+          `UpdateVisibleServicesActivity|Activity failure|SERVICE_ID=${visibleService.serviceId}|ERROR=${updateVisibleServicesActivityResult.reason}`
+        );
+      }
+    } catch (e) {
+      context.log.error(
+        `UpdateVisibleServicesActivity|Max retry exceeded|SERVICE_ID=${visibleService.serviceId}|ERROR=${e}`
+      );
+    }
   }
 
   return [];

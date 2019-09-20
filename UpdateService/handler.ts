@@ -7,6 +7,7 @@ import * as df from "durable-functions";
 import { isLeft } from "fp-ts/lib/Either";
 import { isNone } from "fp-ts/lib/Option";
 
+import { readableReport } from "italia-ts-commons/lib/reporters";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -132,18 +133,28 @@ export function UpdateServiceHandler(
 
     const updatedService = maybeUpdatedService.value;
 
-    // Start orchestrator
-    const event: UpsertServiceEvent = {
+    const errorOrUpsertServiceEvent = UpsertServiceEvent.decode({
       newService: updatedService,
       oldService: existingService,
       updatedAt: new Date().getTime()
-    };
-    const dfClient = df.getClient(context);
-    await dfClient.startNew("UpsertServiceOrchestrator", undefined, event);
+    });
 
-    return ResponseSuccessJson(
-      retrievedServiceToApiService(maybeUpdatedService.value)
+    if (isLeft(errorOrUpsertServiceEvent)) {
+      return ResponseErrorValidation(
+        "Unable to decode UpsertServiceEvent",
+        readableReport(errorOrUpsertServiceEvent.value)
+      );
+    }
+
+    // Start orchestrator
+    const dfClient = df.getClient(context);
+    await dfClient.startNew(
+      "UpsertServiceOrchestrator",
+      undefined,
+      errorOrUpsertServiceEvent.value
     );
+
+    return ResponseSuccessJson(retrievedServiceToApiService(updatedService));
   };
 }
 

@@ -6,8 +6,11 @@ import * as df from "durable-functions";
 
 import { isLeft } from "fp-ts/lib/Either";
 
+import { readableReport } from "italia-ts-commons/lib/reporters";
 import {
+  IResponseErrorValidation,
   IResponseSuccessJson,
+  ResponseErrorValidation,
   ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
 
@@ -54,7 +57,11 @@ type ICreateServiceHandler = (
   clientIp: ClientIp,
   userAttributes: IAzureUserAttributes,
   servicePayload: ApiService
-) => Promise<IResponseSuccessJson<ApiService> | IResponseErrorQuery>;
+) => Promise<
+  | IResponseSuccessJson<ApiService>
+  | IResponseErrorQuery
+  | IResponseErrorValidation
+>;
 
 export function CreateServiceHandler(
   _GCTC: CustomTelemetryClientFactory,
@@ -76,13 +83,25 @@ export function CreateServiceHandler(
 
     const createdService = errorOrCreatedService.value;
 
-    // Start orchestrator
-    const event: UpsertServiceEvent = {
+    const errorOrUpsertServiceEvent = UpsertServiceEvent.decode({
       newService: createdService,
       updatedAt: new Date().getTime()
-    };
+    });
+
+    if (isLeft(errorOrUpsertServiceEvent)) {
+      return ResponseErrorValidation(
+        "Unable to decode UpsertServiceEvent",
+        readableReport(errorOrUpsertServiceEvent.value)
+      );
+    }
+
+    // Start orchestrator
     const dfClient = df.getClient(context);
-    await dfClient.startNew("UpsertServiceOrchestrator", undefined, event);
+    await dfClient.startNew(
+      "UpsertServiceOrchestrator",
+      undefined,
+      errorOrUpsertServiceEvent.value
+    );
 
     return ResponseSuccessJson(retrievedServiceToApiService(createdService));
   };
