@@ -6,11 +6,9 @@ import * as df from "durable-functions";
 
 import { isLeft } from "fp-ts/lib/Either";
 
-import { readableReport } from "italia-ts-commons/lib/reporters";
 import {
   IResponseErrorValidation,
   IResponseSuccessJson,
-  ResponseErrorValidation,
   ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
 
