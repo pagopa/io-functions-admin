@@ -36,7 +36,7 @@ const RemoveVisibleServiceInput = t.interface({
   visibleService: VisibleService
 });
 
-const Input = t.taggedUnion("action", [
+export const Input = t.taggedUnion("action", [
   AddVisibleServiceInput,
   RemoveVisibleServiceInput
 ]);

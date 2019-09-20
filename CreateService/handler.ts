@@ -83,24 +83,17 @@ export function CreateServiceHandler(
 
     const createdService = errorOrCreatedService.value;
 
-    const errorOrUpsertServiceEvent = UpsertServiceEvent.decode({
+    const upsertServiceEvent = UpsertServiceEvent.encode({
       newService: createdService,
       updatedAt: new Date().getTime()
     });
-
-    if (isLeft(errorOrUpsertServiceEvent)) {
-      return ResponseErrorValidation(
-        "Unable to decode UpsertServiceEvent",
-        readableReport(errorOrUpsertServiceEvent.value)
-      );
-    }
 
     // Start orchestrator
     const dfClient = df.getClient(context);
     await dfClient.startNew(
       "UpsertServiceOrchestrator",
       undefined,
-      errorOrUpsertServiceEvent.value
+      upsertServiceEvent
     );
 
     return ResponseSuccessJson(retrievedServiceToApiService(createdService));

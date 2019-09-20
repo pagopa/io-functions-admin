@@ -72,14 +72,18 @@ export const handler = function*(
   if (isSome(maybeAction)) {
     const visibleService = retrievedServiceToVisibleService(newService);
 
+    const updateVisibleServicesActivityInput = UpdateVisibleServicesActivityInput.encode(
+      {
+        action: maybeAction.value,
+        visibleService
+      }
+    );
+
     try {
       const updateVisibleServicesActivityResultJson = yield context.df.callActivityWithRetry(
         "UpdateVisibleServicesActivity",
         retryOptions,
-        {
-          action: maybeAction.value,
-          visibleService
-        } as UpdateVisibleServicesActivityInput
+        updateVisibleServicesActivityInput
       );
 
       const errorOrUpdateVisibleServicesActivityResult = UpdateVisibleServicesActivityResult.decode(
