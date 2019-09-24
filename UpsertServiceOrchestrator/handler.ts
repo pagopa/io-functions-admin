@@ -69,12 +69,15 @@ export const handler = function*(
 
   // Update visible services if needed
   const maybeAction = computeMaybeAction(newService, oldService);
+  const visibleService = retrievedServiceToVisibleService(newService);
   if (isSome(maybeAction)) {
-    const visibleService = retrievedServiceToVisibleService(newService);
-
+    const action = maybeAction.value;
+    context.log.verbose(
+      `UpdateVisibleServicesActivity|Visible services must be updated|SERVICE_ID=${visibleService.serviceId}|ACTION=${action}`
+    );
     const updateVisibleServicesActivityInput = UpdateVisibleServicesActivityInput.encode(
       {
-        action: maybeAction.value,
+        action,
         visibleService
       }
     );
@@ -107,7 +110,7 @@ export const handler = function*(
 
       if (updateVisibleServicesActivityResult.kind === "SUCCESS") {
         context.log.verbose(
-          `UpdateVisibleServicesActivity|Update success|SERVICE_ID=${visibleService.serviceId}`
+          `UpdateVisibleServicesActivity|Update success|SERVICE_ID=${visibleService.serviceId}|ACTION=${action}`
         );
       } else {
         context.log.error(
@@ -119,6 +122,10 @@ export const handler = function*(
         `UpdateVisibleServicesActivity|Max retry exceeded|SERVICE_ID=${visibleService.serviceId}|ERROR=${e}`
       );
     }
+  } else {
+    context.log.verbose(
+      `UpdateVisibleServicesActivity|No need to update visible services|SERVICE_ID=${visibleService.serviceId}`
+    );
   }
 
   return [];
