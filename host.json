@@ -8,6 +8,9 @@
   "extensions": {
     "http": {
       "routePrefix": ""
+    },
+    "durableTask": {
+      "hubName": "FunctionsAdminHub"
     }
   },
   "extensionBundle": {
