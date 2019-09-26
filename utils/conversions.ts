@@ -20,6 +20,7 @@ export function apiServiceToService(service: ApiService): Service {
     maxAllowedPaymentAmount: service.max_allowed_payment_amount,
     organizationFiscalCode: service.organization_fiscal_code,
     organizationName: service.organization_name,
+    requireSecureChannels: service.require_secure_channels,
     serviceId: service.service_id,
     serviceName: service.service_name
   };
@@ -44,6 +45,7 @@ export function retrievedServiceToApiService(
     max_allowed_payment_amount: retrievedService.maxAllowedPaymentAmount,
     organization_fiscal_code: retrievedService.organizationFiscalCode,
     organization_name: retrievedService.organizationName,
+    require_secure_channels: retrievedService.requireSecureChannels,
     service_id: retrievedService.serviceId,
     service_name: retrievedService.serviceName,
     version: retrievedService.version

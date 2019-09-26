@@ -23,6 +23,7 @@ export const aServicePayload: ApiService = {
   max_allowed_payment_amount: 1 as MaxAllowedPaymentAmount,
   organization_fiscal_code: anOrganizationFiscalCode,
   organization_name: "MyOrgName" as NonEmptyString,
+  require_secure_channels: false,
   service_id: "MySubscriptionId" as NonEmptyString,
   service_name: "MyServiceName" as NonEmptyString
 };
@@ -35,6 +36,7 @@ export const aService: Service = {
   maxAllowedPaymentAmount: 1 as MaxAllowedPaymentAmount,
   organizationFiscalCode: anOrganizationFiscalCode,
   organizationName: "MyOrgName" as NonEmptyString,
+  requireSecureChannels: false,
   serviceId: "MySubscriptionId" as NonEmptyString,
   serviceName: "MyServiceName" as NonEmptyString
 };
