@@ -136,7 +136,44 @@ paths:
               service_id: 2b3e728c1a5d1efa035c
               service_name: service
               authorized_cidrs: []
+  "/profiles/{fiscal_code}":
+    post:
+      tags:
+        - restricted
+      description: |-
+        Create a profile for the user identified by the
+        provided fiscal code.
+      operationId: createProfile
+      summary: create a User Profile
+      parameters:
+        - $ref: "#/parameters/FiscalCode"
+        - in: body
+          name: body
+          schema:
+            $ref: "#/definitions/ExtendedProfile"
+          x-examples:
+            application/json:
+              email: foobar@example.com
+      responses:
+        "200":
+          description: Profile updated.
+          schema:
+            $ref: "#/definitions/ExtendedProfile"
+          examples:
+            application/json:
+              email: foobar@example.com
+              version: 0
+        "400":
+          description: Invalid payload.
+          schema:
+            $ref: "#/definitions/ProblemJson"
+        "401":
+          description: Unauthorized
+        "429":
+          description: Too many requests
 definitions:
+  ProblemJson:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ProblemJson"
   Service:
     "$ref": "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/Service"
   ServiceId:
@@ -153,9 +190,21 @@ definitions:
     $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/MaxAllowedPaymentAmount"
   OrganizationFiscalCode:
     $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/OrganizationFiscalCode"
+  ExtendedProfile:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ExtendedProfile"
 
 responses: {}
-parameters: {}
+parameters:
+  FiscalCode:
+    name: fiscal_code
+    in: path
+    type: string
+    maxLength: 16
+    minLength: 16
+    required: true
+    description: The fiscal code of the user, all upper case.
+    pattern: "[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]"
+    x-example: SPNDNL80R13C555X
 consumes:
   - application/json
 produces:
