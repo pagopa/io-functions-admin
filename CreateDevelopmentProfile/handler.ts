@@ -4,12 +4,14 @@ import { Context } from "@azure/functions";
 
 import { isLeft } from "fp-ts/lib/Either";
 
+import { readableReport } from "italia-ts-commons/lib/reporters";
 import {
+  IResponseErrorValidation,
   IResponseSuccessJson,
   ResponseErrorFromValidationErrors,
   ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { FiscalCode, SandboxFiscalCode } from "italia-ts-commons/lib/strings";
 
 import { ExtendedProfile } from "io-functions-commons/dist/generated/definitions/ExtendedProfile";
 import {
@@ -23,7 +25,7 @@ import {
   UserGroup
 } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import { FiscalCodeMiddleware } from "io-functions-commons/dist/src/utils/middlewares/fiscalcode";
+import { SandboxFiscalCodeMiddleware } from "io-functions-commons/dist/src/utils/middlewares/sandboxfiscalcode";
 import {
   IRequestMiddleware,
   withRequestMiddlewares,
@@ -33,6 +35,8 @@ import {
   IResponseErrorQuery,
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
+
+import { DevelopmentProfile } from "../generated/definitions/DevelopmentProfile";
 
 export function toExtendedProfile(profile: RetrievedProfile): ExtendedProfile {
   return {
@@ -47,14 +51,14 @@ export function toExtendedProfile(profile: RetrievedProfile): ExtendedProfile {
 }
 
 /**
- * A middleware that extracts a Profile payload from a request.
+ * A middleware that extracts a DevelopmentProfile payload from a request.
  */
-export const ProfilePayloadMiddleware: IRequestMiddleware<
+export const DeveloperProfilePayloadMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
-  ExtendedProfile
+  DevelopmentProfile
 > = request =>
   new Promise(resolve => {
-    const validation = ExtendedProfile.decode(request.body);
+    const validation = DevelopmentProfile.decode(request.body);
     const result = validation.mapLeft(
       ResponseErrorFromValidationErrors(ExtendedProfile)
     );
@@ -62,28 +66,43 @@ export const ProfilePayloadMiddleware: IRequestMiddleware<
   });
 
 /**
- * Type of an CreateProfile handler.
+ * Type of an CreateDevelopmentProfile handler.
  */
-type ICreateProfileHandler = (
+type ICreateDevelopmentProfileHandler = (
   context: Context,
   auth: IAzureApiAuthorization,
-  fiscalCode: FiscalCode,
-  profile: ExtendedProfile
-) => Promise<IResponseSuccessJson<ExtendedProfile> | IResponseErrorQuery>;
+  sandboxFiscalCode: SandboxFiscalCode,
+  developmentProfile: DevelopmentProfile
+) => Promise<
+  | IResponseSuccessJson<ExtendedProfile>
+  | IResponseErrorValidation
+  | IResponseErrorQuery
+>;
 
-export function CreateProfileHandler(
+export function CreateDevelopmentProfileHandler(
   profileModel: ProfileModel
-): ICreateProfileHandler {
-  return async (context, _, fiscalCode, profilePayload) => {
-    const logPrefix = `CreateProfileHandler|ENTITY_ID=${fiscalCode})`;
+): ICreateDevelopmentProfileHandler {
+  return async (context, _, sandboxFiscalCode, developmentProfilePayload) => {
+    const logPrefix = `CreateDevelopmentProfileHandler|ENTITY_ID=${sandboxFiscalCode})`;
+
+    const errorOrFiscalCode = FiscalCode.decode(sandboxFiscalCode);
+
+    if (isLeft(errorOrFiscalCode)) {
+      context.log.error(
+        `${logPrefix}|ERROR=${readableReport(errorOrFiscalCode.value)}`
+      );
+      return ResponseErrorFromValidationErrors(FiscalCode)(
+        errorOrFiscalCode.value
+      );
+    }
+
+    const fiscalCode = errorOrFiscalCode.value;
+
     const profile: Profile = {
-      acceptedTosVersion: profilePayload.accepted_tos_version,
-      blockedInboxOrChannels: profilePayload.blocked_inbox_or_channels,
-      email: profilePayload.email,
+      email: developmentProfilePayload.email,
       fiscalCode,
-      isInboxEnabled: profilePayload.is_inbox_enabled,
-      isWebhookEnabled: profilePayload.is_webhook_enabled,
-      preferredLanguages: profilePayload.preferred_languages
+      isInboxEnabled: true,
+      isWebhookEnabled: true
     };
 
     const errorOrCreatedProfile = await profileModel.create(
@@ -96,7 +115,7 @@ export function CreateProfileHandler(
         `${logPrefix}|ERROR=${errorOrCreatedProfile.value.body}`
       );
       return ResponseErrorQuery(
-        "Error while creating a new profile",
+        "Error while creating a new development profile",
         errorOrCreatedProfile.value
       );
     }
@@ -110,18 +129,18 @@ export function CreateProfileHandler(
 }
 
 /**
- * Wraps an CreateProfile handler inside an Express request handler.
+ * Wraps an CreateDevelopmentProfile handler inside an Express request handler.
  */
-export function CreateProfile(
+export function CreateDevelopmentProfile(
   profileModel: ProfileModel
 ): express.RequestHandler {
-  const handler = CreateProfileHandler(profileModel);
+  const handler = CreateDevelopmentProfileHandler(profileModel);
 
   const middlewaresWrap = withRequestMiddlewares(
     ContextMiddleware(),
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiProfileWrite])),
-    FiscalCodeMiddleware,
-    ProfilePayloadMiddleware
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiDevelopmentProfileWrite])),
+    SandboxFiscalCodeMiddleware,
+    DeveloperProfilePayloadMiddleware
   );
   return wrapRequestHandler(middlewaresWrap(handler));
 }

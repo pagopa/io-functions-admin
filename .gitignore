@@ -45,3 +45,5 @@ __pycache__/
 coverage
 
 yarn-error.log
+
+generated

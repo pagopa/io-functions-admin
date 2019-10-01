@@ -18,7 +18,7 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { CreateProfile } from "./handler";
+import { CreateDevelopmentProfile } from "./handler";
 
 // Setup Express
 const app = express();
@@ -40,7 +40,7 @@ const documentClient = new DocumentDBClient(cosmosDbUri, {
 
 const profileModel = new ProfileModel(documentClient, profilesCollectionUrl);
 
-app.post("/adm/profiles/:fiscalcode", CreateProfile(profileModel));
+app.post("/adm/profiles/:fiscalcode", CreateDevelopmentProfile(profileModel));
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
 

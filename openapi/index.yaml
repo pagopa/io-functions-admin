@@ -1,6 +1,6 @@
 swagger: "2.0"
 info:
-  version: 1.0.0
+  version: 1.1.0
   title: IO API for administration purpose
   contact:
     name: Digital Transformation Team
@@ -146,11 +146,11 @@ paths:
       operationId: createProfile
       summary: create a User Profile
       parameters:
-        - $ref: "#/parameters/FiscalCode"
+        - $ref: "#/parameters/SandboxFiscalCode"
         - in: body
           name: body
           schema:
-            $ref: "#/definitions/ExtendedProfile"
+            $ref: "#/definitions/DevelopmentProfile"
           x-examples:
             application/json:
               email: foobar@example.com
@@ -172,6 +172,15 @@ paths:
         "429":
           description: Too many requests
 definitions:
+  DevelopmentProfile:
+    type: object
+    properties:
+      email:
+        $ref: "#/definitions/EmailAddress"
+    required:
+      - email
+  EmailAddress:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/EmailAddress"
   ProblemJson:
     $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ProblemJson"
   Service:
@@ -195,16 +204,16 @@ definitions:
 
 responses: {}
 parameters:
-  FiscalCode:
+  SandboxFiscalCode:
     name: fiscal_code
     in: path
     type: string
     maxLength: 16
     minLength: 16
     required: true
-    description: The fiscal code of the user, all upper case.
-    pattern: "[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]"
-    x-example: SPNDNL80R13C555X
+    description: The sandbox fiscal code of the user, all upper case.
+    pattern: "[A-Z]{6}[0-9]{2}A[0-9]{2}Y[0-9]{3}X"
+    x-example: SPNDNL80A13Y555X
 consumes:
   - application/json
 produces:
