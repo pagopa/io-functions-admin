@@ -40,7 +40,10 @@ const documentClient = new DocumentDBClient(cosmosDbUri, {
 
 const profileModel = new ProfileModel(documentClient, profilesCollectionUrl);
 
-app.post("/adm/profiles/:fiscalcode", CreateDevelopmentProfile(profileModel));
+app.post(
+  "/adm/development-profiles/:fiscalcode",
+  CreateDevelopmentProfile(profileModel)
+);
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
