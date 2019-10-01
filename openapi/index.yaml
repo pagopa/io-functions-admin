@@ -136,15 +136,15 @@ paths:
               service_id: 2b3e728c1a5d1efa035c
               service_name: service
               authorized_cidrs: []
-  "/profiles/{fiscal_code}":
+  "/development-profiles/{fiscal_code}":
     post:
       tags:
         - restricted
       description: |-
-        Create a profile for the user identified by the
+        Create a development profile for the user identified by the
         provided fiscal code.
-      operationId: createProfile
-      summary: create a User Profile
+      operationId: createDevelopmentProfile
+      summary: Create DevelopmentProfile
       parameters:
         - $ref: "#/parameters/SandboxFiscalCode"
         - in: body
