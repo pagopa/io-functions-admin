@@ -169,6 +169,10 @@ paths:
             $ref: "#/definitions/ProblemJson"
         "401":
           description: Unauthorized
+        "409":
+          description: Conflict.
+          schema:
+            $ref: "#/definitions/ProblemJson"
         "429":
           description: Too many requests
 definitions:
