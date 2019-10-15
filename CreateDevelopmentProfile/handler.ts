@@ -6,8 +6,10 @@ import { isLeft } from "fp-ts/lib/Either";
 
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import {
+  IResponseErrorConflict,
   IResponseErrorValidation,
   IResponseSuccessJson,
+  ResponseErrorConflict,
   ResponseErrorFromValidationErrors,
   ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
@@ -74,9 +76,11 @@ type ICreateDevelopmentProfileHandler = (
   sandboxFiscalCode: SandboxFiscalCode,
   developmentProfile: DevelopmentProfile
 ) => Promise<
+  // tslint:disable-next-line: max-union-size
   | IResponseSuccessJson<ExtendedProfile>
   | IResponseErrorValidation
   | IResponseErrorQuery
+  | IResponseErrorConflict
 >;
 
 export function CreateDevelopmentProfileHandler(
@@ -111,9 +115,16 @@ export function CreateDevelopmentProfileHandler(
     );
 
     if (isLeft(errorOrCreatedProfile)) {
-      context.log.error(
-        `${logPrefix}|ERROR=${errorOrCreatedProfile.value.body}`
-      );
+      const { code, body } = errorOrCreatedProfile.value;
+
+      context.log.error(`${logPrefix}|ERROR=${body}`);
+
+      // Conflict, resource already exists
+      if (code === 409) {
+        return ResponseErrorConflict(
+          "A profile with the requested fiscal_code already exists"
+        );
+      }
       return ResponseErrorQuery(
         "Error while creating a new development profile",
         errorOrCreatedProfile.value
