@@ -38,7 +38,7 @@ export const SERVICE_MODEL_PK_FIELD = "serviceId";
 /**
  * Base interface for Service objects
  */
-export const Service = t.interface({
+export const ServiceBase = t.interface({
   // authorized source CIDRs
   authorizedCIDRs: readonlySetType(CIDR, "CIDRs"),
   // list of authorized fiscal codes
@@ -61,6 +61,53 @@ export const Service = t.interface({
   // the name of the service
   serviceName: NonEmptyString
 });
+
+import { enumType } from "italia-ts-commons/lib/types";
+
+export enum scopeEnum {
+  "NATIONAL" = "NATIONAL",
+
+  "LOCAL" = "LOCAL"
+}
+
+// required attributes
+const ServiceMetadataR = t.interface({});
+
+// optional attributes
+const ServiceMetadataO = t.partial({
+  description: t.string,
+
+  web_url: t.string,
+
+  app_ios: t.string,
+
+  app_android: t.string,
+
+  tos_url: t.string,
+
+  privacy_url: t.string,
+
+  address: t.string,
+
+  phone: t.string,
+
+  email: t.string,
+
+  pec: t.string,
+  // The attribute `scope` should be required, but it's currently optional for backward-compatibility reasons
+  scope: enumType<scopeEnum>(scopeEnum, "scope")
+});
+
+export const ServiceMetadata = t.exact(
+  t.intersection([ServiceMetadataR, ServiceMetadataO], "ServiceMetadata")
+);
+
+export type ServiceMetadata = t.TypeOf<typeof ServiceMetadata>;
+
+export const Service = t.intersection(
+  [ServiceBase, ServiceMetadata],
+  "Service"
+);
 
 export type Service = t.TypeOf<typeof Service>;
 
