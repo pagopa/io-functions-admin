@@ -7,8 +7,7 @@ import { isSome, none, Option, some } from "fp-ts/lib/Option";
 
 import { readableReport } from "italia-ts-commons/lib/reporters";
 
-import { RetrievedService } from "io-functions-commons/dist/src/models/service";
-
+import { RetrievedService } from "../models/service";
 import {
   Input as UpdateVisibleServicesActivityInput,
   Result as UpdateVisibleServicesActivityResult

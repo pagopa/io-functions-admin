@@ -14,7 +14,6 @@ import {
 
 import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
 import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
-import { ServiceModel } from "io-functions-commons/dist/src/models/service";
 import { CustomTelemetryClientFactory } from "io-functions-commons/dist/src/utils/application_insights";
 import {
   AzureApiAuthMiddleware,
@@ -43,6 +42,7 @@ import {
   clientIPAndCidrTuple as ipTuple
 } from "io-functions-commons/dist/src/utils/source_ip_check";
 
+import { ServiceModel } from "../models/service";
 import { retrievedServiceToApiService } from "../utils/conversions";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 

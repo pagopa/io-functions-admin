@@ -1,12 +1,12 @@
 import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
+import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
+import { CIDR, FiscalCode } from "italia-ts-commons/lib/strings";
 import {
   RetrievedService,
   Service,
   toAuthorizedCIDRs,
   toAuthorizedRecipients
-} from "io-functions-commons/dist/src/models/service";
-import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
-import { CIDR, FiscalCode } from "italia-ts-commons/lib/strings";
+} from "../models/service";
 
 /**
  * Converts an API Service to an internal Service model

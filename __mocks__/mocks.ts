@@ -1,17 +1,18 @@
 import { MaxAllowedPaymentAmount } from "io-functions-commons/dist/generated/definitions/MaxAllowedPaymentAmount";
 import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
+import { NonNegativeNumber } from "italia-ts-commons/lib/numbers";
+import {
+  NonEmptyString,
+  OrganizationFiscalCode
+} from "italia-ts-commons/lib/strings";
+
 import {
   NewService,
   RetrievedService,
   Service,
   toAuthorizedCIDRs,
   toAuthorizedRecipients
-} from "io-functions-commons/dist/src/models/service";
-import { NonNegativeNumber } from "italia-ts-commons/lib/numbers";
-import {
-  NonEmptyString,
-  OrganizationFiscalCode
-} from "italia-ts-commons/lib/strings";
+} from "../models/service";
 
 export const anOrganizationFiscalCode = "12345678901" as OrganizationFiscalCode;
 

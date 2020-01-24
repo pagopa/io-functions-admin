@@ -5,10 +5,7 @@ import * as winston from "winston";
 
 import { DocumentClient as DocumentDBClient } from "documentdb";
 
-import {
-  SERVICE_COLLECTION_NAME,
-  ServiceModel
-} from "io-functions-commons/dist/src/models/service";
+import { SERVICE_COLLECTION_NAME, ServiceModel } from "../models/service";
 
 import {
   TelemetryClient,
