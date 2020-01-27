@@ -8,7 +8,6 @@ import { isSome, none, Option, some } from "fp-ts/lib/Option";
 
 import { Second } from "italia-ts-commons/lib/units";
 
-import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
 import {
   VISIBLE_SERVICE_BLOB_ID,
   VISIBLE_SERVICE_CONTAINER,
@@ -20,6 +19,8 @@ import {
   releaseLease,
   upsertBlobFromObject
 } from "io-functions-commons/dist/src/utils/azure_storage";
+
+import { ServiceId } from "../generated/definitions/ServiceId";
 
 // The lease duration in seconds.
 // After the retrive/update activities the lease is released actively by the function.

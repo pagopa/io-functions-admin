@@ -6,7 +6,6 @@ import * as df from "durable-functions";
 import { left, right } from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
 
-import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
 import {
@@ -14,6 +13,7 @@ import {
   aSeralizedService,
   aServicePayload
 } from "../../__mocks__/mocks";
+import { ServiceId } from "../../generated/definitions/ServiceId";
 import { UpsertServiceEvent } from "../../utils/UpsertServiceEvent";
 import { UpdateServiceHandler } from "../handler";
 

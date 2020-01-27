@@ -1,6 +1,6 @@
-import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
 import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
 import { CIDR, FiscalCode } from "italia-ts-commons/lib/strings";
+import { Service as ApiService } from "../generated/definitions/Service";
 import {
   RetrievedService,
   Service,

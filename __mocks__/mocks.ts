@@ -1,11 +1,11 @@
-import { MaxAllowedPaymentAmount } from "io-functions-commons/dist/generated/definitions/MaxAllowedPaymentAmount";
-import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
 import { NonNegativeNumber } from "italia-ts-commons/lib/numbers";
 import {
   NonEmptyString,
   OrganizationFiscalCode
 } from "italia-ts-commons/lib/strings";
 
+import { MaxAllowedPaymentAmount } from "../generated/definitions/MaxAllowedPaymentAmount";
+import { Service as ApiService } from "../generated/definitions/Service";
 import {
   NewService,
   RetrievedService,
