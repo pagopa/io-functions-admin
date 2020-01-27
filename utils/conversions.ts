@@ -13,16 +13,27 @@ import {
  */
 export function apiServiceToService(service: ApiService): Service {
   return {
+    address: service.address,
+    appAndroid: service.app_android,
+    appIos: service.app_ios,
     authorizedCIDRs: toAuthorizedCIDRs(service.authorized_cidrs),
     authorizedRecipients: toAuthorizedRecipients(service.authorized_recipients),
     departmentName: service.department_name,
+    description: service.description,
+    email: service.email,
     isVisible: service.is_visible,
     maxAllowedPaymentAmount: service.max_allowed_payment_amount,
     organizationFiscalCode: service.organization_fiscal_code,
     organizationName: service.organization_name,
+    pec: service.pec,
+    phone: service.phone,
+    privacyUrl: service.privacy_url,
     requireSecureChannels: service.require_secure_channels,
+    scope: service.scope,
     serviceId: service.service_id,
-    serviceName: service.service_name
+    serviceName: service.service_name,
+    tosUrl: service.tos_url,
+    webUrl: service.web_url
   };
 }
 
