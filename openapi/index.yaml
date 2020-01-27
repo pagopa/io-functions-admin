@@ -226,6 +226,32 @@ definitions:
       require_secure_channels:
         type: boolean
         default: false
+      description:
+        type: string
+      web_url:
+        type: string
+      app_ios:
+        type: string
+      app_android:
+        type: string
+      tos_url:
+        type: string
+      privacy_url:
+        type: string
+      address:
+        type: string
+      phone:
+        type: string
+      email:
+        type: string
+      pec:
+        type: string
+      scope:
+        # This property should be required, but it's currently optional for backward-compatibility reasons
+        type: string
+        x-extensible-enum:
+          - NATIONAL
+          - LOCAL
     required:
       - service_id
       - service_name
