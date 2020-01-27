@@ -77,15 +77,15 @@ const ServiceMetadataR = t.interface({});
 const ServiceMetadataO = t.partial({
   description: t.string,
 
-  web_url: t.string,
+  webUrl: t.string,
 
-  app_ios: t.string,
+  appIos: t.string,
 
-  app_android: t.string,
+  appAndroid: t.string,
 
-  tos_url: t.string,
+  tosUrl: t.string,
 
-  privacy_url: t.string,
+  privacyUrl: t.string,
 
   address: t.string,
 
@@ -211,11 +211,11 @@ function toBaseType(o: RetrievedService): Service {
       "serviceName",
       // properties from ServiceMetadata
       "description",
-      "web_url",
-      "app_ios",
-      "app_android",
-      "tos_url",
-      "privacy_url",
+      "webUrl",
+      "appIos",
+      "appAndroid",
+      "tosUrl",
+      "privacyUrl",
       "address",
       "phone",
       "email",
