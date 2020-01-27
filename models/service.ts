@@ -64,7 +64,7 @@ export const ServiceBase = t.interface({
 
 import { enumType } from "italia-ts-commons/lib/types";
 
-export enum scopeEnum {
+export enum ScopeEnum {
   "NATIONAL" = "NATIONAL",
 
   "LOCAL" = "LOCAL"
@@ -95,7 +95,7 @@ const ServiceMetadataO = t.partial({
 
   pec: t.string,
   // The attribute `scope` should be required, but it's currently optional for backward-compatibility reasons
-  scope: enumType<scopeEnum>(scopeEnum, "scope")
+  scope: enumType<ScopeEnum>(ScopeEnum, "scope")
 });
 
 export const ServiceMetadata = t.intersection(
