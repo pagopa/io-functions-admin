@@ -208,7 +208,19 @@ function toBaseType(o: RetrievedService): Service {
       "organizationName",
       "requireSecureChannels",
       "serviceId",
-      "serviceName"
+      "serviceName",
+      // properties from ServiceMetadata
+      "description",
+      "web_url",
+      "app_ios",
+      "app_android",
+      "tos_url",
+      "privacy_url",
+      "address",
+      "phone",
+      "email",
+      "pec",
+      "scope"
     ],
     o
   );
