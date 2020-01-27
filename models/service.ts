@@ -98,8 +98,9 @@ const ServiceMetadataO = t.partial({
   scope: enumType<scopeEnum>(scopeEnum, "scope")
 });
 
-export const ServiceMetadata = t.exact(
-  t.intersection([ServiceMetadataR, ServiceMetadataO], "ServiceMetadata")
+export const ServiceMetadata = t.intersection(
+  [ServiceMetadataR, ServiceMetadataO],
+  "ServiceMetadata"
 );
 
 export type ServiceMetadata = t.TypeOf<typeof ServiceMetadata>;
