@@ -44,6 +44,9 @@ export function retrievedServiceToApiService(
   retrievedService: RetrievedService
 ): ApiService {
   return {
+    address: retrievedService.address,
+    app_android: retrievedService.appAndroid,
+    app_ios: retrievedService.appIos,
     authorized_cidrs: Array.from(retrievedService.authorizedCIDRs).filter(
       CIDR.is
     ),
@@ -51,15 +54,23 @@ export function retrievedServiceToApiService(
       retrievedService.authorizedRecipients
     ).filter(FiscalCode.is),
     department_name: retrievedService.departmentName,
+    description: retrievedService.description,
+    email: retrievedService.email,
     id: retrievedService.id,
     is_visible: retrievedService.isVisible,
     max_allowed_payment_amount: retrievedService.maxAllowedPaymentAmount,
     organization_fiscal_code: retrievedService.organizationFiscalCode,
     organization_name: retrievedService.organizationName,
+    pec: retrievedService.pec,
+    phone: retrievedService.phone,
+    privacy_url: retrievedService.privacyUrl,
     require_secure_channels: retrievedService.requireSecureChannels,
+    scope: retrievedService.scope,
     service_id: retrievedService.serviceId,
     service_name: retrievedService.serviceName,
-    version: retrievedService.version
+    tos_url: retrievedService.tosUrl,
+    version: retrievedService.version,
+    web_url: retrievedService.webUrl
   };
 }
 
