@@ -116,8 +116,7 @@ paths:
           headers:
             Location:
               description: Link to the uploaded logo
-              schema:
-                type: string
+              type: string
         "400":
           description: Invalid payload.
           schema:
