@@ -3,7 +3,6 @@
 import { left, right } from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
 
-import { IResponseSuccessRedirectToResource } from "italia-ts-commons/lib/responses";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
 import { Logo } from "../../generated/definitions/Logo";

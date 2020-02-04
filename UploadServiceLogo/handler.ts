@@ -88,6 +88,7 @@ export function UpdateServiceLogoHandler(
       );
     }
 
+    // tslint:disable-next-line:no-object-mutation
     context.bindings.logo = Buffer.from(logoPayload.logo, "base64");
 
     return ResponseSuccessRedirectToResource(
