@@ -18,7 +18,6 @@ describe("UpdateServiceLogoHandler", () => {
     };
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
-      undefined as any,
       mockServiceModel as any,
       undefined as any
     );
@@ -46,7 +45,6 @@ describe("UpdateServiceLogoHandler", () => {
     };
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
-      undefined as any,
       mockServiceModel as any,
       undefined as any
     );
@@ -84,7 +82,6 @@ describe("UpdateServiceLogoHandler", () => {
     };
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
-      undefined as any,
       mockServiceModel as any,
       logosHost
     );

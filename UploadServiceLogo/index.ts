@@ -9,10 +9,6 @@ import {
   SERVICE_COLLECTION_NAME,
   ServiceModel
 } from "io-functions-commons/dist/src/models/service";
-import {
-  TelemetryClient,
-  wrapCustomTelemetryClient
-} from "io-functions-commons/dist/src/utils/application_insights";
 import * as documentDbUtils from "io-functions-commons/dist/src/utils/documentdb";
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { secureExpressApp } from "io-functions-commons/dist/src/utils/express";
@@ -25,11 +21,6 @@ import { UploadServiceLogo } from "./handler";
 
 // Whether we're in a production environment
 const isProduction = process.env.NODE_ENV === "production";
-
-const getCustomTelemetryClient = wrapCustomTelemetryClient(
-  isProduction,
-  new TelemetryClient()
-);
 
 const cosmosDbUri = getRequiredStringEnv("CUSTOMCONNSTR_COSMOSDB_URI");
 const cosmosDbKey = getRequiredStringEnv("CUSTOMCONNSTR_COSMOSDB_KEY");
@@ -62,7 +53,7 @@ secureExpressApp(app);
 // Add express route
 app.put(
   "/adm/services/:serviceid/logo",
-  UploadServiceLogo(getCustomTelemetryClient, serviceModel, logosHost)
+  UploadServiceLogo(serviceModel, logosHost)
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);

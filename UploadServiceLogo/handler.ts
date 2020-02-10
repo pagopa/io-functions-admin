@@ -15,7 +15,6 @@ import {
 } from "italia-ts-commons/lib/responses";
 
 import { ServiceModel } from "io-functions-commons/dist/src/models/service";
-import { CustomTelemetryClientFactory } from "io-functions-commons/dist/src/utils/application_insights";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -65,7 +64,6 @@ type IUpdateServiceHandler = (
 >;
 
 export function UpdateServiceLogoHandler(
-  _GCTC: CustomTelemetryClientFactory,
   serviceModel: ServiceModel,
   logosHost: string
 ): IUpdateServiceHandler {
@@ -103,15 +101,10 @@ export function UpdateServiceLogoHandler(
  * Wraps a UpdateService handler inside an Express request handler.
  */
 export function UploadServiceLogo(
-  getCustomTelemetryClient: CustomTelemetryClientFactory,
   serviceModel: ServiceModel,
   logosHost: string
 ): express.RequestHandler {
-  const handler = UpdateServiceLogoHandler(
-    getCustomTelemetryClient,
-    serviceModel,
-    logosHost
-  );
+  const handler = UpdateServiceLogoHandler(serviceModel, logosHost);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings
