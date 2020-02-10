@@ -8,7 +8,7 @@ The implementation is based on the Azure Functions v2 runtime.
 The table lists some of the environment variables needed by the application;
 they may be customized as needed.
 
-| Variable name                          | Description                                                                       | type    |
-| -------------------------------------- | --------------------------------------------------------------------------------- | ------- |
-| SERVICE_LOGOS_HOST                     | The host name of the service logos storage                                        | string  |
-| StorageConnection                      | The connectiong string used to connect to Azure Storage services                  | string  |
+| Variable name                          | Description                                                                              | type    |
+| -------------------------------------- | ---------------------------------------------------------------------------------------- | ------- |
+| SERVICE_LOGOS_HOST                     | The host name of the service logos storage                                               | string  |
+| LogosStorageConnection                 | The connection string used to connect to Azure Blob Storage containing the service logos | string  |
