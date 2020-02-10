@@ -14,6 +14,7 @@ import {
   ResponseSuccessRedirectToResource
 } from "italia-ts-commons/lib/responses";
 
+import { ServiceModel } from "io-functions-commons/dist/src/models/service";
 import { CustomTelemetryClientFactory } from "io-functions-commons/dist/src/utils/application_insights";
 import {
   AzureApiAuthMiddleware,
@@ -44,7 +45,6 @@ import {
 
 import { Logo as ApiLogo } from "../generated/definitions/Logo";
 import { ServiceId } from "../generated/definitions/ServiceId";
-import { ServiceModel } from "../models/service";
 import { LogoPayloadMiddleware } from "../utils/middlewares/service";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 

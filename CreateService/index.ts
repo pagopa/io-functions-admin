@@ -6,6 +6,11 @@ import * as winston from "winston";
 import { DocumentClient as DocumentDBClient } from "documentdb";
 
 import {
+  SERVICE_COLLECTION_NAME,
+  ServiceModel
+} from "io-functions-commons/dist/src/models/service";
+
+import {
   TelemetryClient,
   wrapCustomTelemetryClient
 } from "io-functions-commons/dist/src/utils/application_insights";
@@ -18,8 +23,6 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
 import { CreateService } from "./handler";
-
-import { SERVICE_COLLECTION_NAME, ServiceModel } from "../models/service";
 
 // Whether we're in a production environment
 const isProduction = process.env.NODE_ENV === "production";

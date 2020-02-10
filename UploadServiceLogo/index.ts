@@ -6,6 +6,10 @@ import * as winston from "winston";
 import { DocumentClient as DocumentDBClient } from "documentdb";
 
 import {
+  SERVICE_COLLECTION_NAME,
+  ServiceModel
+} from "io-functions-commons/dist/src/models/service";
+import {
   TelemetryClient,
   wrapCustomTelemetryClient
 } from "io-functions-commons/dist/src/utils/application_insights";
@@ -16,8 +20,6 @@ import { AzureContextTransport } from "io-functions-commons/dist/src/utils/loggi
 import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
-
-import { SERVICE_COLLECTION_NAME, ServiceModel } from "../models/service";
 
 import { UploadServiceLogo } from "./handler";
 
