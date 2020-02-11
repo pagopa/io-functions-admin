@@ -1,0 +1,27 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "route": "adm/services/{serviceId}/logo",
+      "methods": [
+        "put"
+      ]
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    },
+    {
+      "type": "blob",
+      "name": "logo",
+      "path": "services/{serviceId}.png",
+      "connection": "LogosStorageConnection",
+      "direction": "out"
+    }
+  ],
+  "scriptFile": "../dist/UploadServiceLogo/index.js"
+}

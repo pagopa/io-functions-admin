@@ -9,11 +9,6 @@ import {
   SERVICE_COLLECTION_NAME,
   ServiceModel
 } from "io-functions-commons/dist/src/models/service";
-
-import {
-  TelemetryClient,
-  wrapCustomTelemetryClient
-} from "io-functions-commons/dist/src/utils/application_insights";
 import * as documentDbUtils from "io-functions-commons/dist/src/utils/documentdb";
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { secureExpressApp } from "io-functions-commons/dist/src/utils/express";
@@ -22,19 +17,12 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { UpdateService } from "./handler";
-
-// Whether we're in a production environment
-const isProduction = process.env.NODE_ENV === "production";
-
-const getCustomTelemetryClient = wrapCustomTelemetryClient(
-  isProduction,
-  new TelemetryClient()
-);
+import { UploadServiceLogo } from "./handler";
 
 const cosmosDbUri = getRequiredStringEnv("CUSTOMCONNSTR_COSMOSDB_URI");
 const cosmosDbKey = getRequiredStringEnv("CUSTOMCONNSTR_COSMOSDB_KEY");
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
+const logosUrl = getRequiredStringEnv("LOGOS_URL");
 
 const documentDbDatabaseUrl = documentDbUtils.getDatabaseUri(cosmosDbName);
 const servicesCollectionUrl = documentDbUtils.getCollectionUri(
@@ -61,8 +49,8 @@ secureExpressApp(app);
 
 // Add express route
 app.put(
-  "/adm/services/:serviceid",
-  UpdateService(getCustomTelemetryClient, serviceModel)
+  "/adm/services/:serviceid/logo",
+  UploadServiceLogo(serviceModel, logosUrl)
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);

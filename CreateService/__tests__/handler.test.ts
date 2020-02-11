@@ -2,6 +2,7 @@
 /* tslint:disable: no-big-function */
 
 import * as df from "durable-functions";
+import * as lolex from "lolex";
 
 import { left, right } from "fp-ts/lib/Either";
 import { none } from "fp-ts/lib/Option";
@@ -15,9 +16,16 @@ import {
 import { UpsertServiceEvent } from "../../utils/UpsertServiceEvent";
 import { CreateServiceHandler } from "../handler";
 
+// tslint:disable-next-line: no-let
+let clock: lolex.InstalledClock;
+
 beforeEach(() => {
   (df.getClient as any).mockClear();
   (df as any).mockStartNew.mockClear();
+  clock = lolex.install({ now: Date.now() });
+});
+afterEach(() => {
+  clock.uninstall();
 });
 
 describe("CreateServiceHandler", () => {
