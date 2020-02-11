@@ -3,7 +3,6 @@ import { Context } from "@azure/functions";
 import * as express from "express";
 
 import { ServiceModel } from "io-functions-commons/dist/src/models/service";
-import { CustomTelemetryClientFactory } from "io-functions-commons/dist/src/utils/application_insights";
 import { mapResultIterator } from "io-functions-commons/dist/src/utils/documentdb";
 import {
   AzureApiAuthMiddleware,
@@ -29,7 +28,6 @@ type IGetServicesHandler = (
 ) => Promise<IResponseSuccessJsonIterator<ApiService>>;
 
 export function GetServicesHandler(
-  _GCTC: CustomTelemetryClientFactory,
   serviceModel: ServiceModel
 ): IGetServicesHandler {
   return async (_, __) => {
@@ -46,10 +44,9 @@ export function GetServicesHandler(
  * Wraps a GetServices handler inside an Express request handler.
  */
 export function GetServices(
-  getCustomTelemetryClient: CustomTelemetryClientFactory,
   serviceModel: ServiceModel
 ): express.RequestHandler {
-  const handler = GetServicesHandler(getCustomTelemetryClient, serviceModel);
+  const handler = GetServicesHandler(serviceModel);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings
