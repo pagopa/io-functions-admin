@@ -132,6 +132,14 @@ paths:
       summary: Upload service logo.
       operationId: uploadServiceLogo
   "/services":
+    get:
+      responses:
+        "200":
+          description: The list of server.
+          schema:
+            "$ref": "#/definitions/ServiceCollection"
+        "500":
+          description: Internal server error.
     post:
       responses:
         "200":
@@ -220,6 +228,18 @@ definitions:
       - email
   EmailAddress:
     $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/EmailAddress"
+  ServiceCollection:
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: "#/definitions/Service"
+      page_size:
+        type: number
+    required:
+      - items
+      - page_size
   ProblemJson:
     $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ProblemJson"
   Service:
