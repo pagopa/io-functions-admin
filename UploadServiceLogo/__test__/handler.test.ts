@@ -74,7 +74,7 @@ describe("UpdateServiceLogoHandler", () => {
       }
     };
     const aServiceId = "1" as NonEmptyString;
-    const logosHost = "LOGOS_HOST";
+    const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
       findOneByServiceId: jest.fn(() => {
         return Promise.resolve(right(some({})));
@@ -83,7 +83,7 @@ describe("UpdateServiceLogoHandler", () => {
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
-      logosHost
+      logosUrl
     );
     const response = await updateServiceLogoHandler(
       mockedContext as any,

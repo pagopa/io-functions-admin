@@ -10,5 +10,5 @@ they may be customized as needed.
 
 | Variable name                          | Description                                                                              | type    |
 | -------------------------------------- | ---------------------------------------------------------------------------------------- | ------- |
-| SERVICE_LOGOS_HOST                     | The host name of the service logos storage                                               | string  |
+| LOGOS_URL                              | The url of the service logos storage                                                     | string  |
 | LogosStorageConnection                 | The connection string used to connect to Azure Blob Storage containing the service logos | string  |

@@ -65,7 +65,7 @@ type IUpdateServiceHandler = (
 
 export function UpdateServiceLogoHandler(
   serviceModel: ServiceModel,
-  logosHost: string
+  logosUrl: string
 ): IUpdateServiceHandler {
   return async (context, __, ___, ____, serviceId, logoPayload) => {
     const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
@@ -91,7 +91,7 @@ export function UpdateServiceLogoHandler(
 
     return ResponseSuccessRedirectToResource(
       {},
-      `${logosHost}/services/${serviceId}.png`,
+      `${logosUrl}/services/${serviceId}.png`,
       {}
     );
   };
@@ -102,9 +102,9 @@ export function UpdateServiceLogoHandler(
  */
 export function UploadServiceLogo(
   serviceModel: ServiceModel,
-  logosHost: string
+  logosUrl: string
 ): express.RequestHandler {
-  const handler = UpdateServiceLogoHandler(serviceModel, logosHost);
+  const handler = UpdateServiceLogoHandler(serviceModel, logosUrl);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings

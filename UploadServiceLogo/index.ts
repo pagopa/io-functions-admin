@@ -22,7 +22,7 @@ import { UploadServiceLogo } from "./handler";
 const cosmosDbUri = getRequiredStringEnv("CUSTOMCONNSTR_COSMOSDB_URI");
 const cosmosDbKey = getRequiredStringEnv("CUSTOMCONNSTR_COSMOSDB_KEY");
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
-const logosHost = getRequiredStringEnv("LOGOS_HOST");
+const logosUrl = getRequiredStringEnv("LOGOS_URL");
 
 const documentDbDatabaseUrl = documentDbUtils.getDatabaseUri(cosmosDbName);
 const servicesCollectionUrl = documentDbUtils.getCollectionUri(
@@ -50,7 +50,7 @@ secureExpressApp(app);
 // Add express route
 app.put(
   "/adm/services/:serviceid/logo",
-  UploadServiceLogo(serviceModel, logosHost)
+  UploadServiceLogo(serviceModel, logosUrl)
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
