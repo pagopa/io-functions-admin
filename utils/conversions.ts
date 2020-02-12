@@ -44,21 +44,21 @@ export function apiServiceToService(service: ApiService): Service {
 function toApiServiceMetadata(
   retrievedService: RetrievedService
 ): ApiServiceMetadata {
-  return (
-    retrievedService.serviceMetadata && {
-      address: retrievedService.serviceMetadata.address,
-      app_android: retrievedService.serviceMetadata.appAndroid,
-      app_ios: retrievedService.serviceMetadata.appIos,
-      description: retrievedService.serviceMetadata.description,
-      email: retrievedService.serviceMetadata.email,
-      pec: retrievedService.serviceMetadata.pec,
-      phone: retrievedService.serviceMetadata.phone,
-      privacy_url: retrievedService.serviceMetadata.privacyUrl,
-      scope: retrievedService.serviceMetadata.scope,
-      tos_url: retrievedService.serviceMetadata.tosUrl,
-      web_url: retrievedService.serviceMetadata.webUrl
-    }
-  );
+  return retrievedService.serviceMetadata
+    ? {
+        address: retrievedService.serviceMetadata.address,
+        app_android: retrievedService.serviceMetadata.appAndroid,
+        app_ios: retrievedService.serviceMetadata.appIos,
+        description: retrievedService.serviceMetadata.description,
+        email: retrievedService.serviceMetadata.email,
+        pec: retrievedService.serviceMetadata.pec,
+        phone: retrievedService.serviceMetadata.phone,
+        privacy_url: retrievedService.serviceMetadata.privacyUrl,
+        scope: retrievedService.serviceMetadata.scope,
+        tos_url: retrievedService.serviceMetadata.tosUrl,
+        web_url: retrievedService.serviceMetadata.webUrl
+      }
+    : undefined;
 }
 
 /**
