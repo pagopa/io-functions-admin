@@ -41,7 +41,7 @@ export function apiServiceToService(service: ApiService): Service {
 }
 
 // Returns an API Service Metadata from an internal Service model
-function getApiServiceMetadataFromRetrievedService(
+function toApiServiceMetadata(
   retrievedService: RetrievedService
 ): ApiServiceMetadata {
   return (
@@ -82,9 +82,7 @@ export function retrievedServiceToApiService(
     organization_name: retrievedService.organizationName,
     require_secure_channels: retrievedService.requireSecureChannels,
     service_id: retrievedService.serviceId,
-    service_metadata: getApiServiceMetadataFromRetrievedService(
-      retrievedService
-    ),
+    service_metadata: toApiServiceMetadata(retrievedService),
     service_name: retrievedService.serviceName,
     version: retrievedService.version
   };
@@ -99,9 +97,7 @@ export function retrievedServiceToVisibleService(
     organizationFiscalCode: retrievedService.organizationFiscalCode,
     organizationName: retrievedService.organizationName,
     serviceId: retrievedService.serviceId,
-    serviceMetadata: getApiServiceMetadataFromRetrievedService(
-      retrievedService
-    ),
+    serviceMetadata: toApiServiceMetadata(retrievedService),
     serviceName: retrievedService.serviceName,
     version: retrievedService.version
   };
