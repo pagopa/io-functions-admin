@@ -1,4 +1,4 @@
-# Azure DevOps pipeline to build, run tests, and more.
+# Azure DevOps pipeline to build, check source codes, run tests, and more.
 
 variables:
     YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
@@ -36,8 +36,8 @@ variables:
             displayName: 'Build'
   
   
-      # B) Checker and validator tools for static code analysis
-    - stage: Source_code_check
+    # B) Checker and validator tools for static code analysis
+    - stage: Source_check
       dependsOn: []
       jobs:
         # B1) Analyze source code to find errors
@@ -83,11 +83,12 @@ variables:
               [ -z "$DANGER_GITHUB_API_TOKEN" ] || yarn danger ci
             displayName: 'Danger CI'
   
-      # C) Run unit tests
-    - stage: Unit_tests_exec
+  
+    # C) Run unit tests
+    - stage: Tests_check
       dependsOn: []
       jobs:
-        - job: tests
+        - job: unit_tests
           steps:
           - task: Cache@2
             inputs:
@@ -104,9 +105,10 @@ variables:
   
           - script: |
               yarn test:coverage
-            displayName: 'Unit tests'
+            displayName: 'Unit tests exec'
   
           - bash: |
               bash <(curl -s https://codecov.io/bash)
             displayName: 'Code coverage'
+      
   
