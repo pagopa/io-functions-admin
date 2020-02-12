@@ -224,6 +224,8 @@ definitions:
     $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ProblemJson"
   Service:
     "$ref": "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/Service"
+  ServiceMetadata:
+    "$ref": "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceMetadata"
   ServiceId:
     $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceId"
   ServiceName:
