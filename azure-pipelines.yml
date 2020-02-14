@@ -1,114 +1,122 @@
 # Azure DevOps pipeline to build, check source codes, run tests, and more.
+#
+# This pipeline has been implemented to be run on hosted agent pools based both
+# on 'windows' and 'ubuntu' virtual machine images and using the scripts defined
+# in the package.json file. Since we are deploying on Azure functions on Windows
+# runtime, the pipeline is currently configured to use a Windows hosted image.
 
 variables:
-    YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
-  
-  pool:
-    vmImage: 'ubuntu-latest'
-  
-  stages:
-    # A) Install modules and build
-    - stage: Build_check
-      dependsOn: []
-      jobs:
-        - job: compile
-          steps:
-          - task: NodeTool@0
-            inputs:
-              versionSpec: '10.14.1'
-            displayName: 'Install Node.js'
-          
-          - task: Cache@2
-            inputs:
-              key: 'yarn | "$(Agent.OS)" | yarn.lock'
-              restoreKeys: |
-                yarn | "$(Agent.OS)"
-                yarn
-              path: $(YARN_CACHE_FOLDER)
-            displayName: Cache Yarn packages
-  
-          - script: |
-              yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
-            displayName: 'Install node modules'
-  
-          - script: |
-              yarn build
-            displayName: 'Build'
-  
-  
-    # B) Checker and validator tools for static code analysis
-    - stage: Source_check
-      dependsOn: []
-      jobs:
-        # B1) Analyze source code to find errors
-        - job: lint
-          steps:
-          - task: Cache@2
-            inputs:
-              key: 'yarn | "$(Agent.OS)" | yarn.lock'
-              restoreKeys: |
-                yarn | "$(Agent.OS)"
-                yarn
-              path: $(YARN_CACHE_FOLDER)
-            displayName: Cache Yarn packages
-  
-          - script: |
-              yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
-            displayName: 'Install node modules'
-  
-          - script: |
-              yarn lint
-            displayName: 'Lint'
-  
-        # B2) Validate API definition 
-        - job: lint_api
-          steps:
-          - script: |
-              npx oval validate -p openapi/index.yaml
-            displayName: 'Validate OpenAPI'
-  
-        # B3) Check source code with danger 
-        - job: danger
-          steps:
-          - task: Cache@2
-            inputs:
-              key: 'yarn | "$(Agent.OS)" | yarn.lock'
-              restoreKeys: |
-                yarn | "$(Agent.OS)"
-                yarn
-              path: $(YARN_CACHE_FOLDER)
-            displayName: Cache Yarn packages
-  
-          - script: |
-              [ -z "$DANGER_GITHUB_API_TOKEN" ] || yarn danger ci
-            displayName: 'Danger CI'
-  
-  
-    # C) Run unit tests
-    - stage: Tests_check
-      dependsOn: []
-      jobs:
-        - job: unit_tests
-          steps:
-          - task: Cache@2
-            inputs:
-              key: 'yarn | "$(Agent.OS)" | yarn.lock'
-              restoreKeys: |
-                yarn | "$(Agent.OS)"
-                yarn
-              path: $(YARN_CACHE_FOLDER)
-            displayName: Cache Yarn packages
-  
-          - script: |
-              yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
-            displayName: 'Install node modules'
-  
-          - script: |
-              yarn test:coverage
-            displayName: 'Unit tests exec'
-  
-          - bash: |
-              bash <(curl -s https://codecov.io/bash)
-            displayName: 'Code coverage'
-      
-  
+  YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
+
+pool:
+  vmImage: 'windows-2019'
+
+stages:
+  # A) Install modules and build
+  - stage: Build_check
+    dependsOn: []
+    jobs:
+      - job: compile
+        steps:
+        - task: NodeTool@0
+          inputs:
+            versionSpec: '10.14.1'
+          displayName: 'Install Node.js'
+        
+        - task: Cache@2
+          inputs:
+            key: 'yarn | "$(Agent.OS)" | yarn.lock'
+            restoreKeys: |
+              yarn | "$(Agent.OS)"
+              yarn
+            path: $(YARN_CACHE_FOLDER)
+          displayName: Cache Yarn packages
+
+        - script: |
+            yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
+          displayName: 'Install node modules'
+
+        - bash: |
+            yarn build
+          displayName: 'Build'
+
+
+  # B) Checker and validator tools for static code analysis
+  - stage: Source_check
+    dependsOn: []
+    jobs:
+      # B1) Analyze source code to find errors
+      - job: lint
+        steps:
+        - task: Cache@2
+          inputs:
+            key: 'yarn | "$(Agent.OS)" | yarn.lock'
+            restoreKeys: |
+              yarn | "$(Agent.OS)"
+              yarn
+            path: $(YARN_CACHE_FOLDER)
+          displayName: Cache Yarn packages
+
+        - script: |
+            yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
+          displayName: 'Install node modules'
+
+        - script: |
+            yarn lint
+          displayName: 'Lint'
+
+      # B2) Validate API definition 
+      - job: lint_api
+        steps:
+        - script: |
+            npx oval validate -p openapi/index.yaml
+          displayName: 'Validate OpenAPI'
+
+      # B3) Check source code with danger (only when there is a PR)
+      - job: danger
+        condition: variables['DANGER_GITHUB_API_TOKEN']
+        steps:
+        - task: Cache@2
+          inputs:
+            key: 'yarn | "$(Agent.OS)" | yarn.lock'
+            restoreKeys: |
+              yarn | "$(Agent.OS)"
+              yarn
+            path: $(YARN_CACHE_FOLDER)
+          displayName: Cache Yarn packages
+
+        - script: |
+            yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
+          displayName: 'Install node modules'
+
+        - bash: |
+            yarn danger ci
+          displayName: 'Danger CI'
+
+
+  # C) Run unit tests
+  - stage: Tests_check
+    dependsOn: []
+    jobs:
+      - job: unit_tests
+        steps:
+        - task: Cache@2
+          inputs:
+            key: 'yarn | "$(Agent.OS)" | yarn.lock'
+            restoreKeys: |
+              yarn | "$(Agent.OS)"
+              yarn
+            path: $(YARN_CACHE_FOLDER)
+          displayName: Cache Yarn packages
+
+        - script: |
+            yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
+          displayName: 'Install node modules'
+
+        - script: |
+            yarn test:coverage
+          displayName: 'Unit tests exec'
+
+        - bash: |
+            bash <(curl -s https://codecov.io/bash)
+          displayName: 'Code coverage'
