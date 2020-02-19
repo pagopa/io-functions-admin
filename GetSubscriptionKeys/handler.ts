@@ -15,7 +15,6 @@ import {
 } from "io-functions-commons/dist/src/utils/request_middleware";
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
-import { RestError } from "@azure/ms-rest-js";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { ApplicationTokenCredentials } from "@azure/ms-rest-nodeauth";
 import { TokenResponse } from "@azure/ms-rest-nodeauth/dist/lib/credentials/tokenClientCredentials";
@@ -145,7 +144,9 @@ export function GetSubscriptionKeysHandler(
       )
       .mapLeft(error => {
         context.log.error(error);
-        if (error instanceof RestError && error.statusCode === 404) {
+        // tslint:disable-next-line:no-any
+        const anyError = error as any;
+        if ("statusCode" in anyError && anyError.statusCode === 404) {
           return ResponseErrorNotFound(
             "Not found",
             "The required resource does not exist"
