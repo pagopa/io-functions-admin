@@ -22,7 +22,7 @@ const mockGetToken = jest.fn();
 
 const mockedSubscription = {
   primaryKey: "primary-key",
-  secondaryKey: "seconday-key"
+  secondaryKey: "secondary-key"
 };
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
