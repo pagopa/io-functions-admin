@@ -1,10 +1,10 @@
 // tslint:disable:no-any
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
-import { SubscriptionGetResponse } from "@azure/arm-apimanagement/esm/models";
 import { RestError } from "@azure/ms-rest-js";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 
+import { IResponseSuccessJson } from "italia-ts-commons/lib/responses";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { GetSubscriptionKeysHandler } from "../handler";
 
@@ -24,7 +24,7 @@ const mockGetToken = jest.fn();
 const mockedSubscription = {
   primaryKey: "primary-key",
   secondaryKey: "seconday-key"
-} as SubscriptionGetResponse;
+};
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
     get: (_, __, subscriptionId) => {
@@ -73,5 +73,22 @@ describe("GetSubscriptionKeysHandler", () => {
       aBreakingApimSubscriptionId
     );
     expect(response.kind).toEqual("IResponseErrorInternal");
+  });
+
+  it("should return the api keys for an existing subscription", async () => {
+    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler();
+    const response = await getSubscriptionKeysHandler(
+      mockedContext as any,
+      undefined as any,
+      aValidSubscriptionId
+    );
+    expect(response).toEqual({
+      apply: expect.any(Function),
+      kind: "IResponseSuccessJson",
+      value: {
+        primary_key: mockedSubscription.primaryKey,
+        secondary_key: mockedSubscription.secondaryKey
+      }
+    });
   });
 });
