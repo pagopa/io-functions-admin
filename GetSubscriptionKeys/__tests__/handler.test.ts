@@ -48,22 +48,6 @@ mockGetToken.mockImplementation(() => {
   return Promise.resolve(undefined);
 });
 
-const mockedValidToken = {
-  expiresOn: Date.now() + 86400000, // tomorrow
-  loginCreds: {} as any,
-  token: {
-    accessToken: "access-token",
-    tokenType: "token-type"
-  }
-};
-const mockedExpiredToken = {
-  expiresOn: Date.now() - 86400000, // yesterday
-  loginCreds: {} as any,
-  token: {
-    accessToken: "access-token",
-    tokenType: "token-type"
-  }
-};
 const mockedContext = { log: { error: mockLog } };
 
 describe("GetSubscriptionKeysHandler", () => {
@@ -71,45 +55,8 @@ describe("GetSubscriptionKeysHandler", () => {
     mockLoginWithServicePrincipalSecret.mockClear();
   });
 
-  it("should get new credentials with service principal secret where the token is missing or expired", async () => {
-    // missing token
-    const getSubscriptionKeysHandlerWithoutToken = GetSubscriptionKeysHandler(
-      undefined
-    );
-    await getSubscriptionKeysHandlerWithoutToken(
-      mockedContext as any,
-      undefined as any,
-      aValidSubscriptionId
-    );
-    expect(mockLoginWithServicePrincipalSecret).toHaveBeenCalledTimes(1);
-    mockLoginWithServicePrincipalSecret.mockClear();
-
-    // expired token
-    const getSubscriptionKeysHandlerWithExpiredToken = GetSubscriptionKeysHandler(
-      mockedExpiredToken
-    );
-    await getSubscriptionKeysHandlerWithExpiredToken(
-      mockedContext as any,
-      undefined as any,
-      aValidSubscriptionId
-    );
-    expect(mockLoginWithServicePrincipalSecret).toHaveBeenCalledTimes(1);
-  });
-
-  it("should reuse the same credentials where the token is valid", async () => {
-    const getSubscriptionKeysHandlerWithExpiredToken = GetSubscriptionKeysHandler(
-      mockedValidToken
-    );
-    await getSubscriptionKeysHandlerWithExpiredToken(
-      mockedContext as any,
-      undefined as any,
-      aValidSubscriptionId
-    );
-    expect(mockLoginWithServicePrincipalSecret).toHaveBeenCalledTimes(0);
-  });
-
   it("should return a not found error response if the subscription is not found", async () => {
-    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(undefined);
+    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler();
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,
@@ -119,7 +66,7 @@ describe("GetSubscriptionKeysHandler", () => {
   });
 
   it("should return a not found error response if the API management client returns an error", async () => {
-    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(undefined);
+    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler();
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,

@@ -16,10 +16,8 @@ import {
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
-import { ApplicationTokenCredentials } from "@azure/ms-rest-nodeauth";
-import { TokenResponse } from "@azure/ms-rest-nodeauth/dist/lib/credentials/tokenClientCredentials";
-import { right, toError } from "fp-ts/lib/Either";
-import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { toError } from "fp-ts/lib/Either";
+import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -44,67 +42,18 @@ const azureApimResourceGroup = getRequiredStringEnv(
 );
 const azureApim = getRequiredStringEnv("AZURE_APIM");
 
-export interface ITokenAndCredentials {
-  readonly token: TokenResponse;
-  readonly loginCreds: ApplicationTokenCredentials;
-  readonly expiresOn: number;
-}
-
-export interface IServicePrincipalCreds {
-  readonly servicePrincipalClientId: string;
-  readonly servicePrincipalSecret: string;
-  readonly servicePrincipalTenantId: string;
-}
-
-function loginToApim(
-  servicePrincipalCreds: IServicePrincipalCreds,
-  tokenAndCredentials?: ITokenAndCredentials
-): TaskEither<Error, ITokenAndCredentials> {
-  const isTokenExpired = tokenAndCredentials
-    ? tokenAndCredentials.expiresOn <= Date.now()
-    : false;
-
-  // return old credentials in case the token is not expired
-  if (tokenAndCredentials && !isTokenExpired) {
-    return fromEither(right(tokenAndCredentials));
-  }
-
+function getApiClient(): TaskEither<Error, ApiManagementClient> {
   return tryCatch(
     () =>
       msRestNodeAuth.loginWithServicePrincipalSecret(
-        servicePrincipalCreds.servicePrincipalClientId,
-        servicePrincipalCreds.servicePrincipalSecret,
-        servicePrincipalCreds.servicePrincipalTenantId
+        servicePrincipalClientId,
+        servicePrincipalSecret,
+        servicePrincipalTenantId
       ),
     toError
-  ).chain(loginCreds =>
-    tryCatch(() => loginCreds.getToken(), toError).map(token => ({
-      // cache token for 1 hour
-      // we cannot use tokenCreds.token.expiresOn
-      // because of a bug in ms-rest-library
-      // see https://github.com/Azure/azure-sdk-for-node/pull/3679
-      expiresOn: Date.now() + 3600 * 1000,
-      loginCreds,
-      token
-    }))
+  ).map(
+    credentials => new ApiManagementClient(credentials, azureSubscriptionId)
   );
-}
-
-function getApiClient(
-  tokenCreds: ITokenAndCredentials
-): TaskEither<Error, ApiManagementClient> {
-  return loginToApim(
-    {
-      servicePrincipalClientId,
-      servicePrincipalSecret,
-      servicePrincipalTenantId
-    },
-    tokenCreds
-  ).map(tokenAndCredentials => {
-    // tslint:disable-next-line:no-parameter-reassignment
-    tokenCreds = tokenAndCredentials;
-    return new ApiManagementClient(tokenCreds.loginCreds, azureSubscriptionId);
-  });
 }
 
 type IGetSubscriptionKeysHandler = (
@@ -120,11 +69,9 @@ type IGetSubscriptionKeysHandler = (
   | IResponseErrorInternal
 >;
 
-export function GetSubscriptionKeysHandler(
-  tokenCreds: ITokenAndCredentials
-): IGetSubscriptionKeysHandler {
+export function GetSubscriptionKeysHandler(): IGetSubscriptionKeysHandler {
   return async (context, __, serviceId) => {
-    const response = await getApiClient(tokenCreds)
+    const response = await getApiClient()
       .chain(apiClient =>
         tryCatch(
           () =>
@@ -162,10 +109,8 @@ export function GetSubscriptionKeysHandler(
 /**
  * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
  */
-export function GetSubscriptionKeys(
-  tokenCreds: ITokenAndCredentials
-): express.RequestHandler {
-  const handler = GetSubscriptionKeysHandler(tokenCreds);
+export function GetSubscriptionKeys(): express.RequestHandler {
+  const handler = GetSubscriptionKeysHandler();
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings

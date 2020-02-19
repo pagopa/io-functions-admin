@@ -9,7 +9,7 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { GetSubscriptionKeys, ITokenAndCredentials } from "./handler";
+import { GetSubscriptionKeys } from "./handler";
 
 // tslint:disable-next-line: no-let
 let logger: Context["log"] | undefined;
@@ -22,13 +22,8 @@ winston.add(contextTransport);
 const app = express();
 secureExpressApp(app);
 
-// Global var needed to cache the
-// API management access token between calls
-// tslint:disable-next-line: no-let prefer-const
-let tokenCreds: ITokenAndCredentials;
-
 // Add express route
-app.get("/adm/services/:serviceid/keys", GetSubscriptionKeys(tokenCreds));
+app.get("/adm/services/:serviceid/keys", GetSubscriptionKeys());
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
