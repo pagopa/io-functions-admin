@@ -4,7 +4,6 @@ import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 
-import { IResponseSuccessJson } from "italia-ts-commons/lib/responses";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { GetSubscriptionKeysHandler } from "../handler";
 
