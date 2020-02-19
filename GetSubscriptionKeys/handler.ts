@@ -2,7 +2,6 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -29,31 +28,31 @@ import {
 import { ServiceId } from "../generated/definitions/ServiceId";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 
-const azureSubscriptionId = getRequiredStringEnv("AZURE_SUBSCRIPTION_ID");
-const servicePrincipalClientId = getRequiredStringEnv(
-  "SERVICE_PRINCIPAL_CLIENT_ID"
-);
-const servicePrincipalSecret = getRequiredStringEnv("SERVICE_PRINCIPAL_SECRET");
-const servicePrincipalTenantId = getRequiredStringEnv(
-  "SERVICE_PRINCIPAL_TENANT_ID"
-);
-const azureApimResourceGroup = getRequiredStringEnv(
-  "AZURE_APIM_RESOURCE_GROUP"
-);
-const azureApim = getRequiredStringEnv("AZURE_APIM");
+export interface IServicePrincipalCreds {
+  readonly clientId: string;
+  readonly secret: string;
+  readonly tenantId: string;
+}
 
-function getApiClient(): TaskEither<Error, ApiManagementClient> {
+export interface IAzureApimConfig {
+  readonly subscriptionId: string;
+  readonly apimResourceGroup: string;
+  readonly apim: string;
+}
+
+function getApiClient(
+  servicePrincipalCreds: IServicePrincipalCreds,
+  subscriptionId: string
+): TaskEither<Error, ApiManagementClient> {
   return tryCatch(
     () =>
       msRestNodeAuth.loginWithServicePrincipalSecret(
-        servicePrincipalClientId,
-        servicePrincipalSecret,
-        servicePrincipalTenantId
+        servicePrincipalCreds.clientId,
+        servicePrincipalCreds.secret,
+        servicePrincipalCreds.tenantId
       ),
     toError
-  ).map(
-    credentials => new ApiManagementClient(credentials, azureSubscriptionId)
-  );
+  ).map(credentials => new ApiManagementClient(credentials, subscriptionId));
 }
 
 type IGetSubscriptionKeysHandler = (
@@ -69,15 +68,21 @@ type IGetSubscriptionKeysHandler = (
   | IResponseErrorInternal
 >;
 
-export function GetSubscriptionKeysHandler(): IGetSubscriptionKeysHandler {
+export function GetSubscriptionKeysHandler(
+  servicePrincipalCreds: IServicePrincipalCreds,
+  azureApimConfig: IAzureApimConfig
+): IGetSubscriptionKeysHandler {
   return async (context, __, serviceId) => {
-    const response = await getApiClient()
+    const response = await getApiClient(
+      servicePrincipalCreds,
+      azureApimConfig.subscriptionId
+    )
       .chain(apiClient =>
         tryCatch(
           () =>
             apiClient.subscription.get(
-              azureApimResourceGroup,
-              azureApim,
+              azureApimConfig.apimResourceGroup,
+              azureApimConfig.apim,
               serviceId
             ),
           toError
@@ -109,8 +114,14 @@ export function GetSubscriptionKeysHandler(): IGetSubscriptionKeysHandler {
 /**
  * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
  */
-export function GetSubscriptionKeys(): express.RequestHandler {
-  const handler = GetSubscriptionKeysHandler();
+export function GetSubscriptionKeys(
+  servicePrincipalCreds: IServicePrincipalCreds,
+  azureApimConfig: IAzureApimConfig
+): express.RequestHandler {
+  const handler = GetSubscriptionKeysHandler(
+    servicePrincipalCreds,
+    azureApimConfig
+  );
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings

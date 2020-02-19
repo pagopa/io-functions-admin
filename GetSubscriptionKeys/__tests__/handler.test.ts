@@ -5,7 +5,11 @@ import { RestError } from "@azure/ms-rest-js";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
-import { GetSubscriptionKeysHandler } from "../handler";
+import {
+  GetSubscriptionKeysHandler,
+  IAzureApimConfig,
+  IServicePrincipalCreds
+} from "../handler";
 
 const mockLoginWithServicePrincipalSecret = jest.spyOn(
   msRestNodeAuth,
@@ -49,13 +53,28 @@ mockGetToken.mockImplementation(() => {
 
 const mockedContext = { log: { error: mockLog } };
 
+const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
+  clientId: "client-id",
+  secret: "secret",
+  tenantId: "tenant-id"
+};
+
+const fakeApimConfig: IAzureApimConfig = {
+  apim: "apim",
+  apimResourceGroup: "resource group",
+  subscriptionId: "subscription id"
+};
+
 describe("GetSubscriptionKeysHandler", () => {
   afterEach(() => {
     mockLoginWithServicePrincipalSecret.mockClear();
   });
 
   it("should return a not found error response if the subscription is not found", async () => {
-    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler();
+    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(
+      fakeServicePrincipalCredentials,
+      fakeApimConfig
+    );
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,
@@ -65,7 +84,10 @@ describe("GetSubscriptionKeysHandler", () => {
   });
 
   it("should return a not found error response if the API management client returns an error", async () => {
-    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler();
+    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(
+      fakeServicePrincipalCredentials,
+      fakeApimConfig
+    );
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,
@@ -75,7 +97,10 @@ describe("GetSubscriptionKeysHandler", () => {
   });
 
   it("should return the api keys for an existing subscription", async () => {
-    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler();
+    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(
+      fakeServicePrincipalCredentials,
+      fakeApimConfig
+    );
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,
