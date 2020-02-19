@@ -212,7 +212,7 @@ paths:
           description: Too many requests
   "/services/{service_id}/keys":
     get:
-      summary: Gets the subscription keys for a certain service
+      summary: Gets the subscription keys for the Service identified by the provided service_id
       operationId:  getSubscriptionKeys
       parameters:
         - name: service_id
