@@ -51,8 +51,8 @@ export function GetServices(
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings
     ContextMiddleware(),
-    // Allow only users in the ApiServiceWrite group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceRead]))
+    // Allow only users in the ApiServiceList group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceList]))
   );
 
   return wrapRequestHandler(middlewaresWrap(handler));
