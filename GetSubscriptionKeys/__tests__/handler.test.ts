@@ -78,6 +78,8 @@ describe("GetSubscriptionKeysHandler", () => {
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,
+      undefined as any,
+      undefined as any,
       aNotExistingSubscriptionId
     );
     expect(response.kind).toEqual("IResponseErrorNotFound");
@@ -91,6 +93,8 @@ describe("GetSubscriptionKeysHandler", () => {
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,
+      undefined as any,
+      undefined as any,
       aBreakingApimSubscriptionId
     );
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -103,6 +107,8 @@ describe("GetSubscriptionKeysHandler", () => {
     );
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
+      undefined as any,
+      undefined as any,
       undefined as any,
       aValidSubscriptionId
     );
