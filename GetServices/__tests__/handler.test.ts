@@ -5,7 +5,7 @@ import { left, right } from "fp-ts/lib/Either";
 import { aRetrievedService } from "../../__mocks__/mocks";
 import { GetServicesHandler } from "../handler";
 
-describe("GetService", () => {
+describe("GetServices", () => {
   it("Should return a query error when a database error occurs", async () => {
     const mockServiceModel = {
       getCollectionIterator: jest.fn(() => {
