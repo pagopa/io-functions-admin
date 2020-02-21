@@ -139,8 +139,8 @@ export function GetSubscriptionKeys(
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings
     ContextMiddleware(),
-    // Allow only users in the ApiServiceWrite group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceRead])),
+    // Allow only users in the ApiServiceKeyRead group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceKeyRead])),
     // Extracts the client IP from the request
     ClientIpMiddleware,
     // Extracts custom user attributes from the request
