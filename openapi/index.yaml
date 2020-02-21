@@ -218,6 +218,27 @@ paths:
             $ref: "#/definitions/ProblemJson"
         "429":
           description: Too many requests
+  "/services/{service_id}/keys":
+    get:
+      summary: Gets the subscription keys for the Service identified by the provided service_id
+      operationId:  getSubscriptionKeys
+      parameters:
+        - name: service_id
+          in: path
+          type: string
+          required: true
+          description: The ID of an existing Service.
+      responses:
+        "200":
+          description: The subscription keys for the service
+          schema:
+            $ref: "#/definitions/SubscriptionKeys"
+        "400":
+          description: Subscription not found
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal server error
 definitions:
   DevelopmentProfile:
     type: object
@@ -271,6 +292,16 @@ definitions:
         minLength: 1
     required:
       - logo
+  SubscriptionKeys:
+    type: object
+    properties:
+      primary_key:
+        type: string
+      secondary_key:
+        type: string
+    required:
+      - primary_key
+      - secondary_key
 responses: {}
 parameters:
   SandboxFiscalCode:

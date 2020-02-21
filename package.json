@@ -10,9 +10,9 @@
     "start:host": "func start",
     "start": "npm-run-all --parallel start:host watch",
     "pretest": "yarn generate:definitions",
-    "test": "jest",
+    "test": "dotenv -e env.example -- jest",
     "pretest:coverage": "yarn generate:definitions",
-    "test:coverage": "jest --coverage",
+    "test:coverage": "dotenv -e env.example -- jest --coverage",
     "lint": "tslint -p .",
     "deploy": "npm run build && func azure functionapp publish agid-functions-admin-test",
     "generate:definitions": "rimraf ./generated/definitions && shx mkdir -p ./generated/definitions && gen-api-models --api-spec ./openapi/index.yaml --out-dir ./generated/definitions"
@@ -27,6 +27,7 @@
     "azurite": "^3.1.2-preview",
     "danger": "^4.0.2",
     "danger-plugin-digitalcitizenship": "^0.3.1",
+    "dotenv-cli": "^3.1.0",
     "fast-check": "^1.16.0",
     "italia-tslint-rules": "^1.1.3",
     "italia-utils": "^4.1.0",
@@ -41,6 +42,8 @@
     "typescript": "^3.6.2"
   },
   "dependencies": {
+    "@azure/arm-apimanagement": "^5.1.1",
+    "@azure/ms-rest-nodeauth": "^2.0.5",
     "azure-storage": "^2.10.3",
     "documentdb": "^1.12.2",
     "durable-functions": "^1.2.4",
@@ -51,5 +54,8 @@
     "io-ts": "1.8.5",
     "italia-ts-commons": "^5.1.11",
     "winston": "^3.2.1"
+  },
+  "resolutions": {
+    "handlebars": "~4.5.3"
   }
 }
