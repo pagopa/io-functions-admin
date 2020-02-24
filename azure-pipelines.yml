@@ -25,6 +25,10 @@ variables:
 # - a tag named 'latest' is pushed
 # Note. In the last case, the tag can be (re-)created using the Git CLI, e.g.:
 #    git push -f origin <abfb967>:refs/tags/latest
+# To force the deployment regardless the above conditions you must configure the
+# following additional variables:
+# - STAGING_FORCE_DEPLOY: True
+# - PRODUCTION_FORCE_DEPLOY: True
 trigger:
   branches:
     include:
@@ -72,7 +76,8 @@ stages:
                 eq(variables['DO_DEPLOY'], True),
                 or(
                   eq(variables['Build.SourceBranch'], 'refs/heads/master'),
-                  eq(variables['Build.SourceBranch'], 'refs/tags/latest')
+                  eq(variables['Build.SourceBranch'], 'refs/tags/latest'),
+                  eq(variables['STAGING_FORCE_DEPLOY'], True)
                 )
               )
             )
@@ -175,10 +180,14 @@ stages:
   #   - c1) $DEPLOY_TO_SLOT != True (or undefined): deploy to STAGING environment
   #   - c2) $DEPLOY_TO_SLOT == True: deploy to staging slot in PROD environment
   - stage: Deploy_staging
-    condition: and(succeeded(),
-        and(
-          eq(variables['DO_DEPLOY'], True), 
-          eq(variables['Build.SourceBranch'], 'refs/heads/master')
+    condition: and(
+        succeeded(),
+        and (
+          eq(variables['DO_DEPLOY'], True),
+          or(
+            eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+            eq(variables['STAGING_FORCE_DEPLOY'], True)
+          )
         )
       )
     dependsOn:
@@ -241,10 +250,14 @@ stages:
   #   - d2) $DEPLOY_TO_SLOT == True: deploy to 'staging' slot in PROD environment
   #         and then swap 'staging' slot with 'production' slot
   - stage: Deploy_production
-    condition: and(succeeded(),
-        and(
-          eq(variables['DO_DEPLOY'], true), 
-          eq(variables['Build.SourceBranch'], 'refs/tags/latest')
+    condition: and(
+        succeeded(),
+        and (
+          eq(variables['DO_DEPLOY'], True),
+          or(
+            eq(variables['Build.SourceBranch'], 'refs/tags/latest'),
+            eq(variables['PRODUCTION_FORCE_DEPLOY'], True)
+          )
         )
       )
     dependsOn:
