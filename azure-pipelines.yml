@@ -1,28 +1,51 @@
-# Azure DevOps pipeline to build, check source codes, run tests, and more.
+# Azure DevOps pipeline to build, check source codes, run tests, and deploy.
 #
+# The following variables needs to be defined before running the deployment jobs 
+# defined in this pipeline:
+# - STAGING_AZURE_SUBSCRIPTION
+# - STAGING_RESOURCE_GROUP_NAME
+# - STAGING_FUNCTION_APP_NAME
+# - PRODUCTION_AZURE_SUBSCRIPTION
+# - PRODUCTION_RESOURCE_GROUP_NAME
+# - PRODUCTION_FUNCTION_APP_NAME
+#
+# To enable the deployment and define if using deployment slots you also need to 
+# configure these variables:
+# - DO_DEPLOY: if False or undefined all deployments are skipped
+# - DEPLOY_TO_SLOT: if True the deployment to slot is performed
+
+variables:
+  NODE_VERSION: '10.14.1'
+  YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
+
+# This pipeline can be manually run or is automatically triggered whenever one 
+# of the following condition is true:
+# - a push is made to any branch in the repository (not only 'master')
+# - a pull request is created
+# - a tag named 'latest' is pushed
+# Note. In the last case, the tag can be (re-)created using the Git CLI, e.g.:
+#    git push -f origin <abfb967>:refs/tags/latest
+trigger:
+  branches:
+    include:
+      - '*'
+      - refs/tags/latest
+
 # This pipeline has been implemented to be run on hosted agent pools based both
 # on 'windows' and 'ubuntu' virtual machine images and using the scripts defined
 # in the package.json file. Since we are deploying on Azure functions on Windows
 # runtime, the pipeline is currently configured to use a Windows hosted image.
-
-variables:
-  YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
-
 pool:
   vmImage: 'windows-2019'
 
 stages:
-  # A) Install modules and build
-  - stage: Build_check
+  # A) Build and code validation
+  - stage: Build
     dependsOn: []
     jobs:
-      - job: compile
+      # A1) Checkout, install module and build distribution artifacts
+      - job: make_build
         steps:
-        - task: NodeTool@0
-          inputs:
-            versionSpec: '10.14.1'
-          displayName: 'Install Node.js'
-        
         - task: Cache@2
           inputs:
             key: 'yarn | "$(Agent.OS)" | yarn.lock'
@@ -30,24 +53,38 @@ stages:
               yarn | "$(Agent.OS)"
               yarn
             path: $(YARN_CACHE_FOLDER)
-          displayName: Cache Yarn packages
+          displayName: Cache yarn packages
 
         - script: |
             yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
           displayName: 'Install node modules'
 
         - bash: |
-            yarn build
-          displayName: 'Build'
+            yarn predeploy
+          displayName: 'Build distribution'
 
+        # Publish the build artifacts only if deployment is not skipped.
+        # The '.artifactignore' file is used to control what files are uploaded
+        - task: PublishPipelineArtifact@1
+          condition: and(
+              succeeded(),
+              and (
+                eq(variables['DO_DEPLOY'], True),
+                or(
+                  eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+                  eq(variables['Build.SourceBranch'], 'refs/tags/latest')
+                )
+              )
+            )
+          inputs:
+            targetPath: $(System.DefaultWorkingDirectory)/
+            artifact: 'dist'
+            publishLocation: 'pipeline'
+          displayName: Publish build artifacts
 
-  # B) Checker and validator tools for static code analysis
-  - stage: Source_check
-    dependsOn: []
-    jobs:
-      # B1) Analyze source code to find errors
+      # A2) Analyze source code to find errors with lint
       - job: lint
-        steps:
+        steps:        
         - task: Cache@2
           inputs:
             key: 'yarn | "$(Agent.OS)" | yarn.lock'
@@ -55,7 +92,7 @@ stages:
               yarn | "$(Agent.OS)"
               yarn
             path: $(YARN_CACHE_FOLDER)
-          displayName: Cache Yarn packages
+          displayName: Cache yarn packages
 
         - script: |
             yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
@@ -65,16 +102,21 @@ stages:
             yarn lint
           displayName: 'Lint'
 
-      # B2) Validate API definition 
+      # A3) Validate API definition
       - job: lint_api
         steps:
         - script: |
             npx oval validate -p openapi/index.yaml
-          displayName: 'Validate OpenAPI'
+          displayName: 'Validate openAPI'
 
-      # B3) Check source code with danger (only when there is a PR)
+      # A4) Check source code with danger (ignore when master)
       - job: danger
-        condition: variables['DANGER_GITHUB_API_TOKEN']
+        condition: and(succeeded(),
+            and(
+              variables['DANGER_GITHUB_API_TOKEN'], 
+              ne(variables['Build.SourceBranch'], 'refs/heads/master')
+            )
+          )
         steps:
         - task: Cache@2
           inputs:
@@ -83,7 +125,7 @@ stages:
               yarn | "$(Agent.OS)"
               yarn
             path: $(YARN_CACHE_FOLDER)
-          displayName: Cache Yarn packages
+          displayName: Cache yarn packages
 
         - script: |
             yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
@@ -94,12 +136,17 @@ stages:
           displayName: 'Danger CI'
 
 
-  # C) Run unit tests
-  - stage: Tests_check
+  # B) Run unit tests if there is a push or pull request on any branch.
+  - stage: Test
     dependsOn: []
     jobs:
       - job: unit_tests
         steps:
+        - task: UseNode@1
+          inputs:
+            version: $(NODE_VERSION)
+          displayName: 'Set up Node.js'
+
         - task: Cache@2
           inputs:
             key: 'yarn | "$(Agent.OS)" | yarn.lock'
@@ -107,7 +154,7 @@ stages:
               yarn | "$(Agent.OS)"
               yarn
             path: $(YARN_CACHE_FOLDER)
-          displayName: Cache Yarn packages
+          displayName: Cache yarn packages
 
         - script: |
             yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
@@ -120,3 +167,146 @@ stages:
         - bash: |
             bash <(curl -s https://codecov.io/bash)
           displayName: 'Code coverage'
+
+
+  # C) Deploy to STAGING only if there is a push on 'master' branch.
+  # Other conditions based on variables settings:
+  # - if $DO_DEPLOY != True (or undefined) skip deployment, otherwise:
+  #   - c1) $DEPLOY_TO_SLOT != True (or undefined): deploy to STAGING environment
+  #   - c2) $DEPLOY_TO_SLOT == True: deploy to staging slot in PROD environment
+  - stage: Deploy_staging
+    condition: and(succeeded(),
+        and(
+          eq(variables['DO_DEPLOY'], True), 
+          eq(variables['Build.SourceBranch'], 'refs/heads/master')
+        )
+      )
+    dependsOn:
+    - Build
+    - Test
+    jobs:
+      - job: deploy_to_staging
+        steps:
+        - checkout: none
+
+        - task: DownloadPipelineArtifact@2
+          inputs:
+            buildType: 'current'
+            artifactName: 'dist'
+            targetPath: '$(System.DefaultWorkingDirectory)'
+          displayName: 'Download build artifacts'
+
+        - task: ArchiveFiles@2
+          inputs:
+            rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+            includeRootFolder: false
+            archiveType: 'zip'
+            archiveFile: 'dist.zip'
+          displayName: 'Make deployment zip'
+
+        # c1) First option: standard deployment in STAGING env (without slots)
+        - task: AzureFunctionApp@1
+          condition: and(succeeded(), ne(variables['DEPLOY_TO_SLOT'], True))
+          inputs:
+            azureSubscription: '$(STAGING_AZURE_SUBSCRIPTION)'
+            resourceGroupName: '$(STAGING_RESOURCE_GROUP_NAME)'
+            appType: 'functionApp'
+            appName: '$(STAGING_FUNCTION_APP_NAME)'
+            package: '$(System.DefaultWorkingDirectory)/dist.zip'
+            deploymentMethod: 'auto'
+          displayName: Deploy to staging env
+
+        # c2) Alternative option: deployment to 'staging' slot in PROD env.
+        # Note. Deployment slots let you deploy different versions of your function
+        # app to different URLs. You can test a certain version and then swap content
+        # and configuration between slots.
+        - task: AzureFunctionApp@1
+          condition: and(succeeded(), eq(variables['DEPLOY_TO_SLOT'], True))
+          inputs:
+            azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
+            resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
+            appType: 'functionApp'
+            appName: '$(PRODUCTION_FUNCTION_APP_NAME)'
+            package: '$(System.DefaultWorkingDirectory)/dist.zip'
+            deploymentMethod: 'auto'
+            deployToSlotOrASE: true
+            slotName: 'staging'
+          displayName: Deploy to staging slot in prod env
+
+
+  # D) Deploy to PRODUCTION only if the 'latest' tag is pushed.
+  # Other conditions based on variables settings:
+  # - if $DO_DEPLOY != True (or undefined) skip deployment, otherwise:
+  #   - d1) $DEPLOY_TO_SLOT != True (or undefined): deploy to PROD environment
+  #   - d2) $DEPLOY_TO_SLOT == True: deploy to 'staging' slot in PROD environment
+  #         and then swap 'staging' slot with 'production' slot
+  - stage: Deploy_production
+    condition: and(succeeded(),
+        and(
+          eq(variables['DO_DEPLOY'], true), 
+          eq(variables['Build.SourceBranch'], 'refs/tags/latest')
+        )
+      )
+    dependsOn:
+    - Build
+    - Test
+    jobs:
+      - job: deploy_to_production
+        steps:
+        - checkout: none
+
+        - task: DownloadPipelineArtifact@2
+          inputs:
+            buildType: 'current'
+            artifactName: 'dist'
+            targetPath: '$(System.DefaultWorkingDirectory)'
+          displayName: 'Download build artifacts'
+
+        - task: ArchiveFiles@2
+          inputs:
+            rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+            includeRootFolder: false
+            archiveType: 'zip'
+            archiveFile: 'dist.zip'
+          displayName: 'Make deployment zip'
+
+        # d1) First option: standard deployment in PROD (without swapping slots)
+        - task: AzureFunctionApp@1
+          condition: and(succeeded(), ne(variables['DEPLOY_TO_SLOT'], True))
+          inputs:
+            azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
+            resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
+            appType: 'functionApp'
+            appName: '$(PRODUCTION_FUNCTION_APP_NAME)'
+            package: '$(System.DefaultWorkingDirectory)/dist.zip'
+            deploymentMethod: 'auto'
+          displayName: Deploy to production env
+
+        # d2) Alternative option: deployment in PROD using slots.
+
+        # d2-I) Deployment to 'staging' slot in PROD environment.
+        # Note. The deployment to 'staging' slot is done to be sure that the code
+        # tagged 'latest' is the ones that will be swapped to be deployed in Prod...
+        - task: AzureFunctionApp@1
+          condition: and(succeeded(), eq(variables['DEPLOY_TO_SLOT'], True))
+          inputs:
+            azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
+            resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
+            appType: 'functionApp'
+            appName: '$(PRODUCTION_FUNCTION_APP_NAME)'
+            package: '$(System.DefaultWorkingDirectory)/dist.zip'
+            deploymentMethod: 'auto'
+            deployToSlotOrASE: true
+            slotName: 'staging'
+          displayName: Deploy to staging slot
+
+        # d2-II) Swap 'staging' with 'production' slot in PROD env.
+        - task: AzureAppServiceManage@0
+          condition: and(succeeded(), eq(variables['DEPLOY_TO_SLOT'], True))
+          inputs:
+            azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
+            WebAppName: '$(PRODUCTION_FUNCTION_APP_NAME)'
+            ResourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
+            SourceSlot: staging
+            SwapWithProduction: true
+          displayName: Swap with production slot
