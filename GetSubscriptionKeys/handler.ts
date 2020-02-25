@@ -17,7 +17,10 @@ import {
   ClientIpMiddleware
 } from "io-functions-commons/dist/src/utils/middlewares/client_ip_middleware";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import { withRequestMiddlewares } from "io-functions-commons/dist/src/utils/request_middleware";
+import {
+  withRequestMiddlewares,
+  wrapRequestHandler
+} from "io-functions-commons/dist/src/utils/request_middleware";
 import {
   checkSourceIpForHandler,
   clientIPAndCidrTuple as ipTuple
@@ -149,7 +152,9 @@ export function GetSubscriptionKeys(
     ServiceIdMiddleware
   );
 
-  return middlewaresWrap(
-    checkSourceIpForHandler(handler, (_, __, c, u, ___) => ipTuple(c, u))
+  return wrapRequestHandler(
+    middlewaresWrap(
+      checkSourceIpForHandler(handler, (_, __, c, u, ___) => ipTuple(c, u))
+    )
   );
 }
