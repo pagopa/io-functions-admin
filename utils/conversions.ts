@@ -1,3 +1,5 @@
+import { UserContract } from "@azure/arm-apimanagement/esm/models";
+import { Either } from "fp-ts/lib/Either";
 import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
 import { ServiceMetadata as ApiServiceMetadata } from "io-functions-commons/dist/generated/definitions/ServiceMetadata";
 import {
@@ -7,7 +9,10 @@ import {
   toAuthorizedRecipients
 } from "io-functions-commons/dist/src/models/service";
 import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
-import { CIDR, FiscalCode } from "italia-ts-commons/lib/strings";
+import { errorsToReadableMessages } from "italia-ts-commons/lib/reporters";
+import { CIDR, EmailString, FiscalCode } from "italia-ts-commons/lib/strings";
+import { User, User as ApiUser } from "../generated/definitions/User";
+import { UserStateEnum } from "../generated/definitions/UserState";
 
 /**
  * Converts an API Service to an internal Service model
@@ -101,4 +106,21 @@ export function retrievedServiceToVisibleService(
     serviceName: retrievedService.serviceName,
     version: retrievedService.version
   };
+}
+
+export function userContractToApiUser(
+  user: UserContract
+): Either<Error, ApiUser> {
+  return User.decode({
+    email: user.email as EmailString,
+    first_name: user.firstName,
+    id: user.id,
+    identities: user.identities,
+    last_name: user.lastName,
+    name: user.name,
+    note: user.note || undefined, // the value from Apim can be null, but the property note must be string or undefined
+    registration_date: user.registrationDate,
+    state: user.state as UserStateEnum,
+    type: user.type
+  }).mapLeft(errors => new Error(errorsToReadableMessages(errors).join(" / ")));
 }
