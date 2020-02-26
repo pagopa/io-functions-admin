@@ -131,7 +131,7 @@ describe("GetUsers", () => {
       mockedUserContract2,
       mockedInvalidUserContract
     ];
-    // tslint:disable-next-line:no-string-literal
+    // tslint:disable-next-line:no-string-literal no-object-mutation
     mockedApimUsersList["nextLink"] = "next-link";
     mockApiManagementClient.mockImplementation(() => ({
       user: {
@@ -166,7 +166,7 @@ describe("GetUsers", () => {
     mockApiManagementClient.mockImplementation(() => ({
       user: {
         listByService: (_, __, ___) => {
-          // tslint:disable-next-line:no-string-literal
+          // tslint:disable-next-line:no-string-literal no-object-mutation
           mockedApimUsersList["nextLink"] = mockedNextLinkValue;
           return Promise.resolve(mockedApimUsersList);
         }
