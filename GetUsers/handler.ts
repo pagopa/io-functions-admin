@@ -104,7 +104,7 @@ export function GetUsersHandler(
           IResponseErrorInternal | IResponseSuccessJson<UserCollection>
         >(
           error => {
-            context.log.error("GetUsers function | ", error);
+            context.log.error("GetUsers | ", error);
             return ResponseErrorInternal("Validation error");
           },
           users =>
@@ -117,7 +117,7 @@ export function GetUsersHandler(
         );
       })
       .mapLeft(error => {
-        context.log.error("GetUsers function | ", error);
+        context.log.error("GetUsers | ", error);
         return ResponseErrorInternal("Internal server error");
       })
       .run();
