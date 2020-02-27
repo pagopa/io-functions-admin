@@ -10,6 +10,7 @@ they may be customized as needed.
 
 | Variable name                          | Description                                                                                        | type    |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------- | ------- |
+| FUNCTIONS_URL                          | The url of the API functions service                                                               | string  |
 | LOGOS_URL                              | The url of the service logos storage                                                               | string  |
 | LogosStorageConnection                 | The connection string used to connect to Azure Blob Storage containing the service logos           | string  |
 | SERVICE_PRINCIPAL_CLIENT_ID            | The service principal name used to get the token credentials to connect to the APIM                | string  |

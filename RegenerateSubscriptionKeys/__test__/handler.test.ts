@@ -6,11 +6,8 @@ import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { SubscriptionKeyTypeEnum } from "../../generated/definitions/SubscriptionKeyType";
-import {
-  IAzureApimConfig,
-  IServicePrincipalCreds,
-  RegenerateSubscriptionKeysHandler
-} from "../handler";
+import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { RegenerateSubscriptionKeysHandler } from "../handler";
 
 const mockLoginWithServicePrincipalSecret = jest.spyOn(
   msRestNodeAuth,

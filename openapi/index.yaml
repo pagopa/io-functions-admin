@@ -265,6 +265,21 @@ paths:
           description: Forbidden
         "500":
           description: Internal server error
+  /users:
+    get:
+      summary: Gets the list of users
+      operationId: getUsers
+      parameters:
+        - name: cursor
+          description: the number of items to skip.
+          in: query
+          type: integer
+          minimum: 1
+      responses:
+        200:
+          description: List of users
+          schema:
+            $ref: "#/definitions/UserCollection"
 definitions:
   DevelopmentProfile:
     type: object
@@ -340,6 +355,59 @@ definitions:
     required:
       - primary_key
       - secondary_key
+  User:
+    type: object
+    properties:
+      email:
+        $ref: "#/definitions/EmailAddress"
+      id:
+        type: string
+      identities:
+        type: array
+        items:
+          $ref: "#/definitions/UserIdentityContract"
+      first_name:
+        type: string
+      last_name:
+         type: string
+      name:
+        type: string
+      note:
+        type: string
+      registration_date:
+        type: string
+        format: "date-time"
+      state:
+        $ref: "#/definitions/UserState"
+      type:
+        type: string
+  UserCollection:
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: "#/definitions/User"
+      next:
+        description: The link to the next page of results
+        type: string
+        format: url
+    required:
+      - items
+  UserIdentityContract:
+    type: object
+    properties:
+      id:
+        type: string
+      provider:
+        type: string
+  UserState:
+    type: string
+    x-extensible-enum:
+      - active
+      - blocked
+      - pending
+      - deleted
 responses: {}
 parameters:
   SandboxFiscalCode:
