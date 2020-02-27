@@ -2,8 +2,7 @@
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
-import { User } from "../../generated/definitions/User";
-import { IAzureApimConfig, IServicePrincipalCreds } from "../handler";
+import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
 import { GetUsersHandler } from "../handler";
 
 const fakeFunctionsHost = "localhost";

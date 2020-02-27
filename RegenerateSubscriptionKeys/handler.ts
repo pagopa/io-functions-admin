@@ -26,10 +26,8 @@ import {
   clientIPAndCidrTuple as ipTuple
 } from "io-functions-commons/dist/src/utils/source_ip_check";
 
-import { ApiManagementClient } from "@azure/arm-apimanagement";
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { toError } from "fp-ts/lib/Either";
-import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { tryCatch } from "fp-ts/lib/TaskEither";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -42,35 +40,13 @@ import { ServiceId } from "../generated/definitions/ServiceId";
 import { SubscriptionKeys } from "../generated/definitions/SubscriptionKeys";
 import { SubscriptionKeyTypeEnum } from "../generated/definitions/SubscriptionKeyType";
 import { SubscriptionKeyTypePayload } from "../generated/definitions/SubscriptionKeyTypePayload";
+import {
+  getApiClient,
+  IAzureApimConfig,
+  IServicePrincipalCreds
+} from "../utils/apim";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 import { SubscriptionKeyTypeMiddleware } from "../utils/middlewares/subscriptionKeyType";
-
-export interface IServicePrincipalCreds {
-  readonly clientId: string;
-  readonly secret: string;
-  readonly tenantId: string;
-}
-
-export interface IAzureApimConfig {
-  readonly subscriptionId: string;
-  readonly apimResourceGroup: string;
-  readonly apim: string;
-}
-
-function getApiClient(
-  servicePrincipalCreds: IServicePrincipalCreds,
-  subscriptionId: string
-): TaskEither<Error, ApiManagementClient> {
-  return tryCatch(
-    () =>
-      msRestNodeAuth.loginWithServicePrincipalSecret(
-        servicePrincipalCreds.clientId,
-        servicePrincipalCreds.secret,
-        servicePrincipalCreds.tenantId
-      ),
-    toError
-  ).map(credentials => new ApiManagementClient(credentials, subscriptionId));
-}
 
 type IGetSubscriptionKeysHandler = (
   context: Context,

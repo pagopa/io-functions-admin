@@ -1,10 +1,8 @@
-import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { Context } from "@azure/functions";
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import * as express from "express";
 import { array } from "fp-ts/lib/Array";
 import { either, toError } from "fp-ts/lib/Either";
-import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { tryCatch } from "fp-ts/lib/TaskEither";
 import { ServiceModel } from "io-functions-commons/dist/src/models/service";
 import {
   AzureApiAuthMiddleware,
@@ -34,35 +32,13 @@ import {
 } from "italia-ts-commons/lib/responses";
 
 import { UserCollection } from "../generated/definitions/UserCollection";
+import {
+  getApiClient,
+  IAzureApimConfig,
+  IServicePrincipalCreds
+} from "../utils/apim";
 import { userContractToApiUser } from "../utils/conversions";
 import { CursorMiddleware } from "../utils/middlewares/cursorMiddleware";
-
-export interface IServicePrincipalCreds {
-  readonly clientId: string;
-  readonly secret: string;
-  readonly tenantId: string;
-}
-
-export interface IAzureApimConfig {
-  readonly subscriptionId: string;
-  readonly apimResourceGroup: string;
-  readonly apim: string;
-}
-
-function getApiClient(
-  servicePrincipalCreds: IServicePrincipalCreds,
-  subscriptionId: string
-): TaskEither<Error, ApiManagementClient> {
-  return tryCatch(
-    () =>
-      msRestNodeAuth.loginWithServicePrincipalSecret(
-        servicePrincipalCreds.clientId,
-        servicePrincipalCreds.secret,
-        servicePrincipalCreds.tenantId
-      ),
-    toError
-  ).map(credentials => new ApiManagementClient(credentials, subscriptionId));
-}
 
 type IGetSubscriptionKeysHandler = (
   context: Context,
