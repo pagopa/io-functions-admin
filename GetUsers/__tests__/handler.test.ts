@@ -194,11 +194,12 @@ describe("GetUsers", () => {
     mockApiManagementClient.mockImplementation(() => ({
       user: {
         listByService: (_, __, options: { skip: number }) => {
-          const list: any = mockedApimUsersList.slice(
+          const list: ReadonlyArray<any> = mockedApimUsersList.slice(
             options.skip,
             options.skip + resultsPerPage
           );
-          list.nextLink =
+          // tslint:disable-next-line:no-string-literal no-object-mutation
+          list["nextLink"] =
             mockedApimUsersList.length > options.skip + list.length
               ? "next-link"
               : undefined;
@@ -226,7 +227,7 @@ describe("GetUsers", () => {
       kind: "IResponseSuccessJson",
       value: {
         items: expectedItems.slice(0, resultsPerPage),
-        next: fakeFunctionsHost + "/adm/users?cursor=" + resultsPerPage
+        next: `${fakeFunctionsHost}/adm/users?cursor=${resultsPerPage}`
       }
     });
 
