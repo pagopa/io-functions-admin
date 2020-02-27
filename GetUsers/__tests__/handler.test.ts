@@ -6,6 +6,8 @@ import { User } from "../../generated/definitions/User";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../handler";
 import { GetUsersHandler } from "../handler";
 
+const fakeFunctionsHost = "localhost";
+
 const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
   clientId: "client-id",
   secret: "secret",
@@ -111,7 +113,8 @@ describe("GetUsers", () => {
     }));
     const getUsersHandler = GetUsersHandler(
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeFunctionsHost
     );
 
     const response = await getUsersHandler(
@@ -140,7 +143,8 @@ describe("GetUsers", () => {
     }));
     const getUsersHandler = GetUsersHandler(
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeFunctionsHost
     );
 
     const response = await getUsersHandler(
@@ -153,27 +157,13 @@ describe("GetUsers", () => {
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
-  it("should return the user collection with the registered users and the proper has_next value", async () => {
-    // tslint:disable-next-line:readonly-array
-    const mockedApimUsersList: any[] = [
+  it("should return the user collection with the registered users and the proper next value", async () => {
+    const mockedApimUsersList: ReadonlyArray<any> = [
       mockedUserContract1,
       mockedUserContract2
     ];
 
-    // tslint:disable-next-line:no-let
-    let mockedNextLinkValue: string | undefined;
-
-    mockApiManagementClient.mockImplementation(() => ({
-      user: {
-        listByService: (_, __, ___) => {
-          // tslint:disable-next-line:no-string-literal no-object-mutation
-          mockedApimUsersList["nextLink"] = mockedNextLinkValue;
-          return Promise.resolve(mockedApimUsersList);
-        }
-      }
-    }));
-
-    const expectedItems: ReadonlyArray<User> = [
+    const expectedItems: ReadonlyArray<any> = [
       {
         email: mockedUserContract1.email,
         first_name: mockedUserContract1.firstName,
@@ -200,15 +190,31 @@ describe("GetUsers", () => {
       } as any
     ];
 
+    const resultsPerPage = 1;
+
+    mockApiManagementClient.mockImplementation(() => ({
+      user: {
+        listByService: (_, __, options: { skip: number }) => {
+          const list: any = mockedApimUsersList.slice(
+            options.skip,
+            options.skip + resultsPerPage
+          );
+          list.nextLink =
+            mockedApimUsersList.length > options.skip + list.length
+              ? "next-link"
+              : undefined;
+          return Promise.resolve(list);
+        }
+      }
+    }));
+
     const getUsersHandler = GetUsersHandler(
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeFunctionsHost
     );
 
-    // has_next should be true
-    mockedNextLinkValue = "next-link";
-
-    const responseWithNext = await getUsersHandler(
+    const responseWithNext: any = await getUsersHandler(
       mockedContext as any,
       undefined as any,
       undefined as any,
@@ -220,28 +226,27 @@ describe("GetUsers", () => {
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",
       value: {
-        has_next: true,
-        items: expectedItems
+        items: expectedItems.slice(0, resultsPerPage),
+        next: fakeFunctionsHost + "/adm/users?cursor=" + resultsPerPage
       }
     });
 
-    // has_next should be false
-    mockedNextLinkValue = undefined;
-
+    // next should be undefined
+    const lastCursor = mockedApimUsersList.length - resultsPerPage;
     const responseWithoutNext = await getUsersHandler(
       mockedContext as any,
       undefined as any,
       undefined as any,
       undefined as any,
-      undefined
+      lastCursor
     );
 
     expect(responseWithoutNext).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",
       value: {
-        has_next: false,
-        items: expectedItems
+        items: expectedItems.slice(lastCursor, lastCursor + resultsPerPage),
+        next: undefined
       }
     });
   });

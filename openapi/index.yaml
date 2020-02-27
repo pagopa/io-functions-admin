@@ -270,7 +270,8 @@ paths:
       summary: Gets the list of users
       operationId: getUsers
       parameters:
-        - name: skip
+        - name: cursor
+          description: the number of items to skip.
           in: query
           type: integer
           minimum: 1
@@ -387,11 +388,12 @@ definitions:
         type: array
         items:
           $ref: "#/definitions/User"
-      has_next:
-        type: boolean
+      next:
+        description: The link to the next page of results
+        type: string
+        format: url
     required:
       - items
-      - has_next
   UserIdentityContract:
     type: object
     properties:

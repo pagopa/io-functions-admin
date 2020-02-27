@@ -46,6 +46,8 @@ const azureApimConfig = {
   subscriptionId: getRequiredStringEnv("AZURE_SUBSCRIPTION_ID")
 };
 
+const functionsUrl = getRequiredStringEnv("FUNCTIONS_URL");
+
 // tslint:disable-next-line: no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
@@ -60,7 +62,7 @@ secureExpressApp(app);
 // Add express route
 app.get(
   "/adm/users",
-  GetUsers(serviceModel, servicePrincipalCreds, azureApimConfig)
+  GetUsers(serviceModel, servicePrincipalCreds, azureApimConfig, functionsUrl)
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);

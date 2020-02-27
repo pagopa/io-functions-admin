@@ -35,7 +35,7 @@ import {
 
 import { UserCollection } from "../generated/definitions/UserCollection";
 import { userContractToApiUser } from "../utils/conversions";
-import { SkipMiddleware } from "../utils/middlewares/skipMiddleware";
+import { CursorMiddleware } from "../utils/middlewares/cursorMiddleware";
 
 export interface IServicePrincipalCreds {
   readonly clientId: string;
@@ -69,14 +69,15 @@ type IGetSubscriptionKeysHandler = (
   auth: IAzureApiAuthorization,
   clientIp: ClientIp,
   userAttributes: IAzureUserAttributes,
-  skip?: number
+  cursor?: number
 ) => Promise<IResponseSuccessJson<UserCollection> | IResponseErrorInternal>;
 
 export function GetUsersHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
-  azureApimConfig: IAzureApimConfig
+  azureApimConfig: IAzureApimConfig,
+  functionsUrl: string
 ): IGetSubscriptionKeysHandler {
-  return async (context, _, __, ___, skip) => {
+  return async (context, _, __, ___, cursor = 0) => {
     const response = await getApiClient(
       servicePrincipalCreds,
       azureApimConfig.subscriptionId
@@ -88,7 +89,7 @@ export function GetUsersHandler(
               azureApimConfig.apimResourceGroup,
               azureApimConfig.apim,
               {
-                skip
+                skip: cursor
               }
             ),
           toError
@@ -108,8 +109,10 @@ export function GetUsersHandler(
           },
           users =>
             ResponseSuccessJson({
-              has_next: !!userSubscriptionList.nextLink,
-              items: users
+              items: users,
+              next: userSubscriptionList.nextLink
+                ? `${functionsUrl}/adm/users?cursor=${cursor + users.length}`
+                : undefined
             })
         );
       })
@@ -128,9 +131,14 @@ export function GetUsersHandler(
 export function GetUsers(
   serviceModel: ServiceModel,
   servicePrincipalCreds: IServicePrincipalCreds,
-  azureApimConfig: IAzureApimConfig
+  azureApimConfig: IAzureApimConfig,
+  functionsUrl: string
 ): express.RequestHandler {
-  const handler = GetUsersHandler(servicePrincipalCreds, azureApimConfig);
+  const handler = GetUsersHandler(
+    servicePrincipalCreds,
+    azureApimConfig,
+    functionsUrl
+  );
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings
@@ -142,7 +150,7 @@ export function GetUsers(
     // Extracts custom user attributes from the request
     AzureUserAttributesMiddleware(serviceModel),
     // Extract the skip value from the request
-    SkipMiddleware
+    CursorMiddleware
   );
 
   return wrapRequestHandler(
