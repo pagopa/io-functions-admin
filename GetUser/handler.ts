@@ -35,6 +35,7 @@ import {
   checkSourceIpForHandler,
   clientIPAndCidrTuple as ipTuple
 } from "io-functions-commons/dist/src/utils/source_ip_check";
+import { Errors } from "io-ts";
 import { wrapRequestHandler } from "italia-ts-commons/lib/request_middleware";
 import {
   IResponseErrorInternal,
@@ -133,18 +134,29 @@ export function GetUserHandler(
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
   return async (context, _, __, ___, email) => {
-    const genericErrorMessage = "An error occurred while getting the user info";
+    const internalErrorHandler = (errorMessage: string, error: Error) =>
+      genericInternalErrorHandler(
+        context,
+        "GetUsers | " + errorMessage,
+        error,
+        errorMessage
+      );
+    const internalValidationErrorHandler = (
+      errorMessage: string,
+      errors: Errors
+    ) =>
+      genericInternalValidationErrorHandler(
+        context,
+        "GetUsers | " + errorMessage,
+        errors,
+        errorMessage
+      );
     const response = await getApiClient(
       servicePrincipalCreds,
       azureApimConfig.subscriptionId
     )
       .mapLeft<IResponseErrorInternal | IResponseErrorNotFound>(error =>
-        genericInternalErrorHandler(
-          context,
-          "GetUsers | Could not get the APIM client.",
-          error,
-          genericErrorMessage
-        )
+        internalErrorHandler("Could not get the APIM client.", error)
       )
       .chain(apiClient =>
         tryCatch(
@@ -162,11 +174,9 @@ export function GetUserHandler(
                 userList
               })),
           error =>
-            genericInternalErrorHandler(
-              context,
-              "GetUsers | Could not list the user by email.",
-              error as Error,
-              genericErrorMessage
+            internalErrorHandler(
+              "Could not list the user by email.",
+              error as Error
             )
         )
       )
@@ -183,11 +193,9 @@ export function GetUserHandler(
       .chain(taskResults =>
         fromEither(NonEmptyString.decode(taskResults.userList[0].name))
           .mapLeft(errors =>
-            genericInternalValidationErrorHandler(
-              context,
-              "GetUser | Could not get user name from user contract.",
-              errors,
-              genericErrorMessage
+            internalValidationErrorHandler(
+              "Could not get user name from user contract.",
+              errors
             )
           )
           .map(userName => ({
@@ -210,11 +218,9 @@ export function GetUserHandler(
             taskResults.userName
           )
         ).mapLeft<IResponseErrorInternal | IResponseErrorNotFound>(error =>
-          genericInternalErrorHandler(
-            context,
-            "GetUsers | Could not get user groups and subscriptions from APIM.",
-            error,
-            genericErrorMessage
+          internalErrorHandler(
+            "Could not get user groups and subscriptions from APIM.",
+            error
           )
         )
       )
@@ -234,11 +240,9 @@ export function GetUserHandler(
         fromPredicate(
           userInfo => isRight(userInfo.errorOrGroups),
           userInfoWithError =>
-            genericInternalErrorHandler(
-              context,
-              "GetUser | Invalid group contract from APIM.",
-              userInfoWithError.errorOrGroups.value as Error,
-              genericErrorMessage
+            internalErrorHandler(
+              "Invalid group contract from APIM.",
+              userInfoWithError.errorOrGroups.value as Error
             )
         )
       )
@@ -246,11 +250,9 @@ export function GetUserHandler(
         fromPredicate(
           userInfo => isRight(userInfo.errorOrSubscriptions),
           userInfoWithError =>
-            genericInternalErrorHandler(
-              context,
-              "GetUser | Invalid subscription contract from APIM.",
-              userInfoWithError.errorOrSubscriptions.value as Error,
-              genericErrorMessage
+            internalErrorHandler(
+              "Invalid subscription contract from APIM.",
+              userInfoWithError.errorOrSubscriptions.value as Error
             )
         )
       )
@@ -261,11 +263,9 @@ export function GetUserHandler(
             subscriptions: userInfo.errorOrSubscriptions.value
           })
             .mapLeft(errors =>
-              genericInternalValidationErrorHandler(
-                context,
-                "GetUsers | Invalid response payload",
-                errors,
-                genericErrorMessage
+              internalValidationErrorHandler(
+                "Invalid response payload.",
+                errors
               )
             )
             .map(ResponseSuccessJson)
