@@ -138,6 +138,14 @@ export function GetUserHandler(
       servicePrincipalCreds,
       azureApimConfig.subscriptionId
     )
+      .mapLeft<IResponseErrorInternal | IResponseErrorNotFound>(error =>
+        genericInternalErrorHandler(
+          context,
+          "GetUsers | Could not get the APIM client.",
+          error,
+          genericErrorMessage
+        )
+      )
       .chain(apiClient =>
         tryCatch(
           () =>
@@ -153,15 +161,13 @@ export function GetUserHandler(
                 apiClient,
                 userList
               })),
-          toError
-        )
-      )
-      .mapLeft<IResponseErrorInternal | IResponseErrorNotFound>(error =>
-        genericInternalErrorHandler(
-          context,
-          "GetUsers | Could not list the user by email.",
-          error,
-          genericErrorMessage
+          error =>
+            genericInternalErrorHandler(
+              context,
+              "GetUsers | Could not list the user by email.",
+              error as Error,
+              genericErrorMessage
+            )
         )
       )
       .chain(
