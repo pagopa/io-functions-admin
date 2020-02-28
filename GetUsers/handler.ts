@@ -87,7 +87,8 @@ export function GetUsersHandler(
             ResponseSuccessJson({
               items: users,
               next: userSubscriptionList.nextLink
-                ? `${azureApimHost}/adm/users?cursor=${cursor + users.length}`
+                ? `https://${azureApimHost}/adm/users?cursor=${cursor +
+                    users.length}`
                 : undefined
             })
         );
