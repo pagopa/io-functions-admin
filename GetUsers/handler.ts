@@ -51,7 +51,7 @@ type IGetSubscriptionKeysHandler = (
 export function GetUsersHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
-  functionsUrl: string
+  azureApimHost: string
 ): IGetSubscriptionKeysHandler {
   return async (context, _, __, ___, cursor = 0) => {
     const response = await getApiClient(
@@ -87,7 +87,7 @@ export function GetUsersHandler(
             ResponseSuccessJson({
               items: users,
               next: userSubscriptionList.nextLink
-                ? `${functionsUrl}/adm/users?cursor=${cursor + users.length}`
+                ? `${azureApimHost}/adm/users?cursor=${cursor + users.length}`
                 : undefined
             })
         );
