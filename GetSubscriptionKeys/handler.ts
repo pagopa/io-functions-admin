@@ -119,7 +119,7 @@ export function GetSubscriptionKeys(
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiServiceKeyRead group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceKeyRead])),
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
     // Extracts the client IP from the request
     ClientIpMiddleware,
     // Extracts custom user attributes from the request

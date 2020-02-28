@@ -141,7 +141,7 @@ export function RegenerateSubscriptionKeys(
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiServiceKeyWrite group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceKeyWrite])),
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
     // Extracts the client IP from the request
     ClientIpMiddleware,
     // Extracts custom user attributes from the request
