@@ -227,7 +227,7 @@ describe("GetUsers", () => {
       kind: "IResponseSuccessJson",
       value: {
         items: expectedItems.slice(0, resultsPerPage),
-        next: `${fakeFunctionsHost}/adm/users?cursor=${resultsPerPage}`
+        next: `https://${fakeFunctionsHost}/adm/users?cursor=${resultsPerPage}`
       }
     });
 
