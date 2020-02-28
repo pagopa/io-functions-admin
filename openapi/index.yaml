@@ -280,6 +280,31 @@ paths:
           description: List of users
           schema:
             $ref: "#/definitions/UserCollection"
+  /users/{email}:
+    get:
+      summary: Get user
+      description: Gets the user information, that is the complete list of subscription and the complete list of groups for the User identified by the provided email
+      operationId: getUser
+      parameters:
+        - name: email
+          in: path
+          type: string
+          format: email
+          required: true
+          description: The email of the User
+      responses:
+        "200":
+          description: User subscriptions and groups
+          schema:
+            $ref: "#/definitions/UserInfo"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "404":
+          description: User not found
+        "500":
+          description: Internal server error
 definitions:
   DevelopmentProfile:
     type: object
@@ -394,6 +419,96 @@ definitions:
         format: url
     required:
       - items
+  Group:
+    type: object
+    properties:
+      built_in:
+        type: boolean
+      description:
+        type: string
+      display_name:
+        type: string
+      external_id:
+        type: string
+      group_contract_type:
+        $ref: "#/definitions/GroupType"
+      id:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    required:
+      - display_name
+  GroupType:
+    type: string
+    x-extensible-enum:
+      - custom
+      - system
+      - external
+  Subscription:
+    type: object
+    properties:
+      allow_tracing:
+        type: boolean
+      created_date:
+        type: string
+        format: "date-time"
+      display_name:
+        type: string
+      end_date:
+        type: string
+        format: "date-time"
+      expiration_date:
+        type: string
+        format: "date-time"
+      id:
+        type: string
+      name:
+        type: string
+      notification_date:
+        type: string
+      owner_id:
+        type: string
+      primary_key:
+        type: string
+      scope:
+        type: string
+      secondary_key:
+        type: string
+      start_date:
+        type: string
+        format: "date-time"
+      state:
+        $ref: "#/definitions/SubscriptionState"
+      state_comment:
+        type: string
+      type:
+        type: string
+    required:
+      - primary_key
+      - scope
+      - secondary_key
+  SubscriptionState:
+    type: string
+    x-extensible-enum:
+      - active
+      - cancelled
+      - expired
+      - rejected
+      - submitted
+      - suspended
+  UserInfo:
+    type: object
+    properties:
+      groups:
+        type: array
+        items:
+          $ref: "#/definitions/Group"
+      subscriptions:
+        type: array
+        items:
+          $ref: "#/definitions/Subscription"
   UserIdentityContract:
     type: object
     properties:
