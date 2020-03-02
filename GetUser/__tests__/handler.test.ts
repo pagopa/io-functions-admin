@@ -61,6 +61,7 @@ spyOnGetApiClient.mockImplementation(() =>
 const mockLog = jest.fn();
 const mockedContext = { log: { error: mockLog } };
 
+// tslint:disable-next-line:no-big-function
 describe("GetUser", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
@@ -236,9 +237,7 @@ describe("GetUser", () => {
 
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
-});
 
-describe("GetUser", () => {
   it("should return all the user subscriptions and groups", async () => {
     const anApimGroupContract: GroupContract = {
       builtIn: true,
