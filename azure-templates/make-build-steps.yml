@@ -19,7 +19,7 @@ steps:
     restoreKeys: |
       yarn | "$(Agent.OS)"
       yarn
-    path: $(Pipeline.Workspace)/.yarn
+    path: $(YARN_CACHE_FOLDER)
   displayName: Cache yarn packages
 
 - script: |
