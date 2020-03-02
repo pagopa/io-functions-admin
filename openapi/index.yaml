@@ -468,7 +468,6 @@ definitions:
     required:
       - primary_key
       - scope
-      - secondary_key
   SubscriptionState:
     type: string
     x-extensible-enum:
