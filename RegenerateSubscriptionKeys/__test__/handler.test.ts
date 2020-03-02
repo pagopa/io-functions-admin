@@ -85,7 +85,7 @@ const fakeApimConfig: IAzureApimConfig = {
   subscriptionId: "subscription id"
 };
 
-describe("GetSubscriptionKeysHandler", () => {
+describe("RegenerateSubscriptionKeysHandler", () => {
   afterEach(() => {
     mockLoginWithServicePrincipalSecret.mockClear();
     mockRegeneratePrimaryKey.mockClear();

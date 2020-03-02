@@ -1,4 +1,8 @@
-import { UserContract } from "@azure/arm-apimanagement/esm/models";
+import {
+  GroupContract,
+  SubscriptionContract,
+  UserContract
+} from "@azure/arm-apimanagement/esm/models";
 import { Either } from "fp-ts/lib/Either";
 import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
 import { ServiceMetadata as ApiServiceMetadata } from "io-functions-commons/dist/generated/definitions/ServiceMetadata";
@@ -11,6 +15,11 @@ import {
 import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
 import { errorsToReadableMessages } from "italia-ts-commons/lib/reporters";
 import { CIDR, EmailString, FiscalCode } from "italia-ts-commons/lib/strings";
+import { Group, Group as ApiGroup } from "../generated/definitions/Group";
+import {
+  Subscription,
+  Subscription as ApiSubscription
+} from "../generated/definitions/Subscription";
 import { User, User as ApiUser } from "../generated/definitions/User";
 import { UserStateEnum } from "../generated/definitions/UserState";
 
@@ -123,4 +132,50 @@ export function userContractToApiUser(
     state: user.state as UserStateEnum,
     type: user.type
   }).mapLeft(errors => new Error(errorsToReadableMessages(errors).join(" / ")));
+}
+
+export function groupContractToApiGroup(
+  group: GroupContract
+): Either<Error, ApiGroup> {
+  return Group.decode(
+    removeNullProperties({
+      display_name: group.displayName,
+      id: group.id,
+      name: group.name
+    })
+  ).mapLeft(errors => new Error(errorsToReadableMessages(errors).join(" / ")));
+}
+
+export function subscriptionContractToApiSubscription(
+  subscription: SubscriptionContract
+): Either<Error, ApiSubscription> {
+  return Subscription.decode(
+    removeNullProperties({
+      allow_tracing: subscription.allowTracing,
+      created_date: subscription.createdDate,
+      display_name: subscription.displayName,
+      end_date: subscription.endDate,
+      expiration_date: subscription.expirationDate,
+      id: subscription.id,
+      name: subscription.name,
+      notification_date: subscription.notificationDate,
+      owner_id: subscription.ownerId,
+      scope: subscription.scope,
+      start_date: subscription.startDate,
+      state: subscription.state,
+      state_comment: subscription.stateComment,
+      type: subscription.type
+    })
+  ).mapLeft(errors => new Error(errorsToReadableMessages(errors).join(" / ")));
+}
+
+function removeNullProperties<T>(obj: T): unknown {
+  if (typeof obj !== "object" || obj === null) {
+    return obj;
+  }
+  return Object.keys(obj).reduce<unknown>(
+    (filteredObj, key) =>
+      obj[key] === null ? filteredObj : { ...filteredObj, [key]: obj[key] },
+    {}
+  );
 }
