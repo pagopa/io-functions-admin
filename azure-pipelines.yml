@@ -1,34 +1,40 @@
 # Azure DevOps pipeline to build, check source codes, run tests, and deploy.
 #
-# The following variables needs to be defined before running the deployment jobs 
-# defined in this pipeline:
+# To enable the check of source code with Danger JS you need to configure a valid
+# GitHub token by setting the following variable: 
+# - DANGER_GITHUB_API_TOKEN
+#
+# To enable the deployment in any environment you need to configure the following 
+# variable otherwise all the deployment jobs will be always skipped:
+# - DO_DEPLOY = true
+# in case of a manual run, you also need to configure the following additional 
+# variables based on the environment to update:
+# - STAGING_ENABLE_MANUAL_DEPLOY = true
+# - PRODUCTION_ENABLE_MANUAL_DEPLOY = true
+#
+# The following variables are also used when running the deployment jobs:
+# - STAGING_DEPLOY_MODE: 'deploy_standard' || 'deploy_to_slots'
 # - STAGING_AZURE_SUBSCRIPTION
 # - STAGING_RESOURCE_GROUP_NAME
 # - STAGING_FUNCTION_APP_NAME
+# 
+# - PRODUCTION_DEPLOY_MODE: 'deploy_standard' || 'deploy_to_slots'
 # - PRODUCTION_AZURE_SUBSCRIPTION
 # - PRODUCTION_RESOURCE_GROUP_NAME
 # - PRODUCTION_FUNCTION_APP_NAME
 #
-# To enable the deployment and define if using deployment slots you also need to 
-# configure these variables:
-# - DO_DEPLOY: if False or undefined all deployments are skipped
-# - DEPLOY_TO_SLOT: if True the deployment to slot is performed
 
 variables:
   NODE_VERSION: '10.14.1'
   YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
 
 # This pipeline can be manually run or is automatically triggered whenever one 
-# of the following condition is true:
+# of the following conditions is true:
 # - a push is made to any branch in the repository (not only 'master')
 # - a pull request is created
 # - a tag named 'latest' is pushed
 # Note. In the last case, the tag can be (re-)created using the Git CLI, e.g.:
 #    git push -f origin <abfb967>:refs/tags/latest
-# To force the deployment regardless the above conditions you must configure the
-# following additional variables:
-# - STAGING_FORCE_DEPLOY: True
-# - PRODUCTION_FORCE_DEPLOY: True
 trigger:
   branches:
     include:
@@ -47,61 +53,19 @@ stages:
   - stage: Build
     dependsOn: []
     jobs:
-      # A1) Checkout, install module and build distribution artifacts
-      - job: make_build
+      # A1) Checkout, install module and build code
+      - job: make_build      
         steps:
-        - task: Cache@2
-          inputs:
-            key: 'yarn | "$(Agent.OS)" | yarn.lock'
-            restoreKeys: |
-              yarn | "$(Agent.OS)"
-              yarn
-            path: $(YARN_CACHE_FOLDER)
-          displayName: Cache yarn packages
-
-        - script: |
-            yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
-          displayName: 'Install node modules'
-
-        - bash: |
-            yarn predeploy
-          displayName: 'Build distribution'
-
-        # Publish the build artifacts only if deployment is not skipped.
-        # The '.artifactignore' file is used to control what files are uploaded
-        - task: PublishPipelineArtifact@1
-          condition: and(
-              succeeded(),
-              and (
-                eq(variables['DO_DEPLOY'], True),
-                or(
-                  eq(variables['Build.SourceBranch'], 'refs/heads/master'),
-                  eq(variables['Build.SourceBranch'], 'refs/tags/latest'),
-                  eq(variables['STAGING_FORCE_DEPLOY'], True)
-                )
-              )
-            )
-          inputs:
-            targetPath: $(System.DefaultWorkingDirectory)/
-            artifact: 'dist'
-            publishLocation: 'pipeline'
-          displayName: Publish build artifacts
-
+        - template: azure-templates/make-build-steps.yml
+          parameters:
+            make: build
+            
       # A2) Analyze source code to find errors with lint
       - job: lint
-        steps:        
-        - task: Cache@2
-          inputs:
-            key: 'yarn | "$(Agent.OS)" | yarn.lock'
-            restoreKeys: |
-              yarn | "$(Agent.OS)"
-              yarn
-            path: $(YARN_CACHE_FOLDER)
-          displayName: Cache yarn packages
-
-        - script: |
-            yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
-          displayName: 'Install node modules'
+        steps:
+        - template: azure-templates/make-build-steps.yml
+          parameters:
+            make: install_dependencies
 
         - script: |
             yarn lint
@@ -123,18 +87,9 @@ stages:
             )
           )
         steps:
-        - task: Cache@2
-          inputs:
-            key: 'yarn | "$(Agent.OS)" | yarn.lock'
-            restoreKeys: |
-              yarn | "$(Agent.OS)"
-              yarn
-            path: $(YARN_CACHE_FOLDER)
-          displayName: Cache yarn packages
-
-        - script: |
-            yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
-          displayName: 'Install node modules'
+        - template: azure-templates/make-build-steps.yml
+          parameters:
+            make: install_dependencies
 
         - bash: |
             yarn danger ci
@@ -152,18 +107,9 @@ stages:
             version: $(NODE_VERSION)
           displayName: 'Set up Node.js'
 
-        - task: Cache@2
-          inputs:
-            key: 'yarn | "$(Agent.OS)" | yarn.lock'
-            restoreKeys: |
-              yarn | "$(Agent.OS)"
-              yarn
-            path: $(YARN_CACHE_FOLDER)
-          displayName: Cache yarn packages
-
-        - script: |
-            yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
-          displayName: 'Install node modules'
+        - template: azure-templates/make-build-steps.yml
+          parameters:
+            make: install_dependencies
 
         - script: |
             yarn test:coverage
@@ -174,19 +120,32 @@ stages:
           displayName: 'Code coverage'
 
 
-  # C) Deploy to STAGING only if there is a push on 'master' branch.
-  # Other conditions based on variables settings:
-  # - if $DO_DEPLOY != True (or undefined) skip deployment, otherwise:
-  #   - c1) $DEPLOY_TO_SLOT != True (or undefined): deploy to STAGING environment
-  #   - c2) $DEPLOY_TO_SLOT == True: deploy to staging slot in PROD environment
+  # C) Deploy to STAGE environment if the following conditions apply:
+  #    - continuos deployment (automatic):
+  #       - $DO_DEPLOY == true and
+  #       - there is a push on 'master' branch 
+  #    - manual deployment:
+  #       - $DO_DEPLOY == true and
+  #       - $STAGING_ENABLE_MANUAL_DEPLOY == true
+  # The following alternative deployment modes are supported:
+  #   a) $STAGING_DEPLOY_MODE == 'deploy_standard': deploy to 'prodution' slot
+  #   b) $STAGING_DEPLOY_MODE == 'deploy_to_slots': deploy to 'staging' slot and
+  #      then swap 'staging' slot with 'production' slot
   - stage: Deploy_staging
-    condition: and(
+    condition: 
+      and(
         succeeded(),
         and (
-          eq(variables['DO_DEPLOY'], True),
+          eq(variables['DO_DEPLOY'], true),
           or(
-            eq(variables['Build.SourceBranch'], 'refs/heads/master'),
-            eq(variables['STAGING_FORCE_DEPLOY'], True)
+            and(
+              eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+              ne(variables['Build.Reason'], 'Manual')
+            ),
+            and(
+              eq(variables['STAGING_ENABLE_MANUAL_DEPLOY'], true),
+              eq(variables['Build.Reason'], 'Manual')
+            )
           )
         )
       )
@@ -194,69 +153,55 @@ stages:
     - Build
     - Test
     jobs:
-      - job: deploy_to_staging
+      # Option 1: deploy directly to 'production' slot
+      - job: deploy_standard
+        condition: and(succeeded(), eq(variables['STAGING_DEPLOY_MODE'], 'deploy_standard'))
         steps:
-        - checkout: none
-
-        - task: DownloadPipelineArtifact@2
-          inputs:
-            buildType: 'current'
-            artifactName: 'dist'
-            targetPath: '$(System.DefaultWorkingDirectory)'
-          displayName: 'Download build artifacts'
-
-        - task: ArchiveFiles@2
-          inputs:
-            rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
-            includeRootFolder: false
-            archiveType: 'zip'
-            archiveFile: 'dist.zip'
-          displayName: 'Make deployment zip'
-
-        # c1) First option: standard deployment in STAGING env (without slots)
-        - task: AzureFunctionApp@1
-          condition: and(succeeded(), ne(variables['DEPLOY_TO_SLOT'], True))
-          inputs:
+        - template: azure-templates/deploy-steps.yml
+          parameters:
+            deployType: 'deployToProductionSlot'
             azureSubscription: '$(STAGING_AZURE_SUBSCRIPTION)'
             resourceGroupName: '$(STAGING_RESOURCE_GROUP_NAME)'
-            appType: 'functionApp'
             appName: '$(STAGING_FUNCTION_APP_NAME)'
-            package: '$(System.DefaultWorkingDirectory)/dist.zip'
-            deploymentMethod: 'auto'
-          displayName: Deploy to staging env
 
-        # c2) Alternative option: deployment to 'staging' slot in PROD env.
-        # Note. Deployment slots let you deploy different versions of your function
-        # app to different URLs. You can test a certain version and then swap content
-        # and configuration between slots.
-        - task: AzureFunctionApp@1
-          condition: and(succeeded(), eq(variables['DEPLOY_TO_SLOT'], True))
-          inputs:
-            azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
-            resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
-            appType: 'functionApp'
-            appName: '$(PRODUCTION_FUNCTION_APP_NAME)'
-            package: '$(System.DefaultWorkingDirectory)/dist.zip'
-            deploymentMethod: 'auto'
-            deployToSlotOrASE: true
-            slotName: 'staging'
-          displayName: Deploy to staging slot in prod env
+      # Option 2: deploy to staging slot and then swap with 'production' slot
+      - job: deploy_to_slots
+        condition: and(succeeded(), eq(variables['STAGING_DEPLOY_MODE'], 'deploy_to_slots'))
+        steps:
+        - template: azure-templates/deploy-steps.yml
+          parameters:
+            deployType: 'deployToStagingSlotAndSwap'
+            azureSubscription: '$(STAGING_AZURE_SUBSCRIPTION)'
+            resourceGroupName: '$(STAGING_RESOURCE_GROUP_NAME)'
+            appName: '$(STAGING_FUNCTION_APP_NAME)'
 
 
-  # D) Deploy to PRODUCTION only if the 'latest' tag is pushed.
-  # Other conditions based on variables settings:
-  # - if $DO_DEPLOY != True (or undefined) skip deployment, otherwise:
-  #   - d1) $DEPLOY_TO_SLOT != True (or undefined): deploy to PROD environment
-  #   - d2) $DEPLOY_TO_SLOT == True: deploy to 'staging' slot in PROD environment
-  #         and then swap 'staging' slot with 'production' slot
+  # D) Deploy to PRODUCTION environment if one of the following conditions apply:
+  #    - continuos deployment (automatic):
+  #       - $DO_DEPLOY == true and
+  #       - the 'latest' tag is pushed 
+  #    - manual deployment:
+  #       - $DO_DEPLOY == true and
+  #       - $PRODUCTION_ENABLE_MANUAL_DEPLOY == true
+  # The following alternative deployment modes are supported:
+  #   a) $PRODUCTION_DEPLOY_MODE == 'deploy_standard': deploy to 'prodution' slot
+  #   b) $PRODUCTION_DEPLOY_MODE == 'deploy_to_slots': deploy to 'staging' slot and
+  #      then swap 'staging' slot with 'production' slot
   - stage: Deploy_production
-    condition: and(
+    condition: 
+      and(
         succeeded(),
         and (
-          eq(variables['DO_DEPLOY'], True),
+          eq(variables['DO_DEPLOY'], true),
           or(
-            eq(variables['Build.SourceBranch'], 'refs/tags/latest'),
-            eq(variables['PRODUCTION_FORCE_DEPLOY'], True)
+            and(
+              eq(variables['Build.SourceBranch'], 'refs/tags/latest'),
+              ne(variables['Build.Reason'], 'Manual')
+            ),
+            and(
+              eq(variables['PRODUCTION_ENABLE_MANUAL_DEPLOY'], true),
+              eq(variables['Build.Reason'], 'Manual')
+            )
           )
         )
       )
@@ -264,62 +209,24 @@ stages:
     - Build
     - Test
     jobs:
-      - job: deploy_to_production
+      # Option 1: deploy directly to 'production' slot
+      - job: deploy_standard
+        condition: and(succeeded(), eq(variables['PRODUCTION_DEPLOY_MODE'], 'deploy_standard'))
         steps:
-        - checkout: none
-
-        - task: DownloadPipelineArtifact@2
-          inputs:
-            buildType: 'current'
-            artifactName: 'dist'
-            targetPath: '$(System.DefaultWorkingDirectory)'
-          displayName: 'Download build artifacts'
-
-        - task: ArchiveFiles@2
-          inputs:
-            rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
-            includeRootFolder: false
-            archiveType: 'zip'
-            archiveFile: 'dist.zip'
-          displayName: 'Make deployment zip'
-
-        # d1) First option: standard deployment in PROD (without swapping slots)
-        - task: AzureFunctionApp@1
-          condition: and(succeeded(), ne(variables['DEPLOY_TO_SLOT'], True))
-          inputs:
+        - template: azure-templates/deploy-steps.yml
+          parameters:
+            deployType: 'deployToProductionSlot'
             azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
             resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
-            appType: 'functionApp'
             appName: '$(PRODUCTION_FUNCTION_APP_NAME)'
-            package: '$(System.DefaultWorkingDirectory)/dist.zip'
-            deploymentMethod: 'auto'
-          displayName: Deploy to production env
 
-        # d2) Alternative option: deployment in PROD using slots.
-
-        # d2-I) Deployment to 'staging' slot in PROD environment.
-        # Note. The deployment to 'staging' slot is done to be sure that the code
-        # tagged 'latest' is the ones that will be swapped to be deployed in Prod...
-        - task: AzureFunctionApp@1
-          condition: and(succeeded(), eq(variables['DEPLOY_TO_SLOT'], True))
-          inputs:
+      # Option 2: deploy to staging slot and then swap with 'production' slot
+      - job: deploy_to_slots
+        condition: and(succeeded(), eq(variables['PRODUCTION_DEPLOY_MODE'], 'deploy_to_slots'))
+        steps:
+        - template: azure-templates/deploy-steps.yml
+          parameters:
+            deployType: 'deployToStagingSlotAndSwap'
             azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
             resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
-            appType: 'functionApp'
             appName: '$(PRODUCTION_FUNCTION_APP_NAME)'
-            package: '$(System.DefaultWorkingDirectory)/dist.zip'
-            deploymentMethod: 'auto'
-            deployToSlotOrASE: true
-            slotName: 'staging'
-          displayName: Deploy to staging slot
-
-        # d2-II) Swap 'staging' with 'production' slot in PROD env.
-        - task: AzureAppServiceManage@0
-          condition: and(succeeded(), eq(variables['DEPLOY_TO_SLOT'], True))
-          inputs:
-            azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
-            WebAppName: '$(PRODUCTION_FUNCTION_APP_NAME)'
-            ResourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
-            SourceSlot: staging
-            SwapWithProduction: true
-          displayName: Swap with production slot
