@@ -30,6 +30,7 @@ import {
   ClientIpMiddleware
 } from "io-functions-commons/dist/src/utils/middlewares/client_ip_middleware";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
+import { RequiredParamMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_param";
 import { withRequestMiddlewares } from "io-functions-commons/dist/src/utils/request_middleware";
 import {
   checkSourceIpForHandler,
@@ -61,7 +62,6 @@ import {
   genericInternalErrorHandler,
   genericInternalValidationErrorHandler
 } from "../utils/errorHandler";
-import { EmailMiddleware } from "../utils/middlewares/email";
 
 type IGetSubscriptionKeysHandler = (
   context: Context,
@@ -296,7 +296,7 @@ export function GetUser(
     // Extracts custom user attributes from the request
     AzureUserAttributesMiddleware(serviceModel),
     // Extract the email value from the request
-    EmailMiddleware
+    RequiredParamMiddleware("email", EmailAddress)
   );
 
   return wrapRequestHandler(
