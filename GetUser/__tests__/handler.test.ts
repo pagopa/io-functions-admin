@@ -62,7 +62,7 @@ const mockLog = jest.fn();
 const mockedContext = { log: { error: mockLog } };
 
 describe("GetUser", () => {
-  it("should return an internal error response if the API management client can not be gotten", async () => {
+  it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
       fromEither(left(Error("Error from ApiManagementClient constructor")))
     );
