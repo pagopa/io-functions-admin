@@ -466,7 +466,6 @@ definitions:
       type:
         type: string
     required:
-      - primary_key
       - scope
   SubscriptionState:
     type: string
