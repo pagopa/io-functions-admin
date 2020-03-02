@@ -422,30 +422,14 @@ definitions:
   Group:
     type: object
     properties:
-      built_in:
-        type: boolean
-      description:
-        type: string
       display_name:
         type: string
-      external_id:
-        type: string
-      group_contract_type:
-        $ref: "#/definitions/GroupType"
       id:
         type: string
       name:
         type: string
-      type:
-        type: string
     required:
       - display_name
-  GroupType:
-    type: string
-    x-extensible-enum:
-      - custom
-      - system
-      - external
   Subscription:
     type: object
     properties:

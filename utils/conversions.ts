@@ -139,14 +139,9 @@ export function groupContractToApiGroup(
 ): Either<Error, ApiGroup> {
   return Group.decode(
     removeNullProperties({
-      built_in: group.builtIn,
-      description: group.description,
       display_name: group.displayName,
-      external_id: group.externalId,
-      group_contract_type: group.groupContractType,
       id: group.id,
-      name: group.name,
-      type: group.type
+      name: group.name
     })
   ).mapLeft(errors => new Error(errorsToReadableMessages(errors).join(" / ")));
 }
