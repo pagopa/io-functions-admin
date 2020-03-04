@@ -305,6 +305,40 @@ paths:
           description: User not found
         "500":
           description: Internal server error
+  /users/{email}/subscriptions/{subscription_id}:
+    put:
+      summary: Create subscription
+      description: Create a Subscription identified by the provided subscription id for the User identified by the provided email
+      operationId: createSubscription
+      parameters:
+        - name: email
+          in: path
+          type: string
+          format: email
+          required: true
+          description: The email of the User
+        - name: subscription_id
+          in: path
+          type: string
+          required: true
+          description: The id of the Subscription
+        - name: body
+          in: body
+          schema:
+            $ref: "#/definitions/ProductNamePayload"
+      responses:
+        "200":
+          description: The subscription created
+          schema:
+            $ref: "#/definitions/Subscription"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "404":
+          description: Resource (User or Product) not found
+        "500":
+          description: Internal server error
 definitions:
   DevelopmentProfile:
     type: object
@@ -358,6 +392,14 @@ definitions:
         minLength: 1
     required:
       - logo
+  ProductNamePayload:
+    type: object
+    properties:
+      product_name:
+        type: string
+        minLength: 1
+    required:
+      - product_name
   SubscriptionKeyTypePayload:
     type: object
     properties:
