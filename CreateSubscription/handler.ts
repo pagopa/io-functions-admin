@@ -16,6 +16,7 @@ import {
   ClientIpMiddleware
 } from "io-functions-commons/dist/src/utils/middlewares/client_ip_middleware";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
+import { RequiredBodyPayloadMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_body_payload";
 import {
   withRequestMiddlewares,
   wrapRequestHandler
@@ -48,7 +49,6 @@ import {
   genericInternalValidationErrorHandler
 } from "../utils/errorHandler";
 import { CreateSubscriptionParamsMiddleware } from "../utils/middlewares/createSubscriptionParamsMiddleware";
-import { ProductNameMiddleware } from "../utils/middlewares/productName";
 
 type ICreateSubscriptionHandler = (
   context: Context,
@@ -249,7 +249,7 @@ export function CreateSubscription(
     // Extract the params from the request
     CreateSubscriptionParamsMiddleware,
     // Extract the productName from the request body
-    ProductNameMiddleware
+    RequiredBodyPayloadMiddleware(ProductNamePayload)
   );
 
   return wrapRequestHandler(
