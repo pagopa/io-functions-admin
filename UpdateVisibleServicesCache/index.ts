@@ -36,7 +36,7 @@ async function UpdateVisibleServiceCache(context: Context): Promise<void> {
   const visibleServiceJson = errorOrVisibleServices.value;
   const visibleServices = new StrMap(visibleServiceJson);
 
-  const visibleServicesTuples = visibleServices.mapWithKey((k, v) => ({
+  const visibleServicesTuples = visibleServices.mapWithKey((_, v) => ({
     id: v.id,
     scope: v.serviceMetadata ? v.serviceMetadata.scope : undefined,
     version: v.version
