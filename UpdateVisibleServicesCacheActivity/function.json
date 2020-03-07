@@ -1,0 +1,18 @@
+{
+  "disabled": false,
+  "bindings": [
+    {
+      "name": "visibleServiceJson",
+      "type": "activityTrigger",
+      "direction": "in"
+    },
+    {
+      "name": "visibleServiceCacheBlob",
+      "type": "blob",
+      "path": "services/{serviceId}.json",
+      "connection": "AssetsStorageConnection",
+      "direction": "out"
+    }
+  ],
+  "scriptFile": "../dist/UpdateVisibleServicesCacheActivity/index.js"
+}
