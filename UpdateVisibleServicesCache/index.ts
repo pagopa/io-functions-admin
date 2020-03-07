@@ -37,14 +37,16 @@ async function UpdateVisibleServiceCache(context: Context): Promise<void> {
   const visibleServices = new StrMap(visibleServiceJson);
 
   const visibleServicesTuples = visibleServices.mapWithKey((_, v) => ({
-    id: v.id,
     scope: v.serviceMetadata ? v.serviceMetadata.scope : undefined,
+    service_id: v.serviceId,
     version: v.version
   }));
 
   // store visible services in the blob
   // tslint:disable-next-line: no-object-mutation
-  context.bindings.visibleServicesCacheBlob = visibleServicesTuples;
+  context.bindings.visibleServicesCacheBlob = {
+    items: visibleServicesTuples.reduce([], (p, c) => [...p, c])
+  };
 
   const { left: NATIONAL, right: LOCAL } = visibleServices.partition(
     s => s.serviceMetadata && s.serviceMetadata.scope === "LOCAL"
