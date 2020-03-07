@@ -55,22 +55,22 @@ export function apiServiceToService(service: ApiService): Service {
 }
 
 // Returns an API Service Metadata from an internal Service model
-function toApiServiceMetadata(
-  retrievedService: RetrievedService
+export function toApiServiceMetadata(
+  service: RetrievedService | VisibleService
 ): ApiServiceMetadata {
-  return retrievedService.serviceMetadata
+  return service.serviceMetadata
     ? {
-        address: retrievedService.serviceMetadata.address,
-        app_android: retrievedService.serviceMetadata.appAndroid,
-        app_ios: retrievedService.serviceMetadata.appIos,
-        description: retrievedService.serviceMetadata.description,
-        email: retrievedService.serviceMetadata.email,
-        pec: retrievedService.serviceMetadata.pec,
-        phone: retrievedService.serviceMetadata.phone,
-        privacy_url: retrievedService.serviceMetadata.privacyUrl,
-        scope: retrievedService.serviceMetadata.scope,
-        tos_url: retrievedService.serviceMetadata.tosUrl,
-        web_url: retrievedService.serviceMetadata.webUrl
+        address: service.serviceMetadata.address,
+        app_android: service.serviceMetadata.appAndroid,
+        app_ios: service.serviceMetadata.appIos,
+        description: service.serviceMetadata.description,
+        email: service.serviceMetadata.email,
+        pec: service.serviceMetadata.pec,
+        phone: service.serviceMetadata.phone,
+        privacy_url: service.serviceMetadata.privacyUrl,
+        scope: service.serviceMetadata.scope,
+        tos_url: service.serviceMetadata.tosUrl,
+        web_url: service.serviceMetadata.webUrl
       }
     : undefined;
 }
@@ -111,7 +111,7 @@ export function retrievedServiceToVisibleService(
     organizationFiscalCode: retrievedService.organizationFiscalCode,
     organizationName: retrievedService.organizationName,
     serviceId: retrievedService.serviceId,
-    serviceMetadata: toApiServiceMetadata(retrievedService),
+    serviceMetadata: retrievedService.serviceMetadata,
     serviceName: retrievedService.serviceName,
     version: retrievedService.version
   };

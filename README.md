@@ -10,6 +10,10 @@ they may be customized as needed.
 
 | Variable name                          | Description                                                                                        | type    |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------- | ------- |
+| StorageConnection                      | Storage connection string to store computed visible-service.json (retrieved by io-functions-app)   | string  |
+| CUSTOMCONNSTR_COSMOSDB_URI             | CosmosDB connection URI                                                                            | string  |
+| CUSTOMCONNSTR_COSMOSDB_KEY             | CosmoDB connection key                                                                             | string  |
+| COSMOSDB_NAME                          | CosmosDB database name                                                                             | string  |
 | LOGOS_URL                              | The url of the service logos storage                                                               | string  |
 | AssetsStorageConnection                | The connection string used to connect to Azure Blob Storage containing the service cache           | string  |
 | SERVICE_PRINCIPAL_CLIENT_ID            | The service principal name used to get the token credentials to connect to the APIM                | string  |
