@@ -11,7 +11,7 @@ they may be customized as needed.
 | Variable name                          | Description                                                                                        | type    |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------- | ------- |
 | LOGOS_URL                              | The url of the service logos storage                                                               | string  |
-| LogosStorageConnection                 | The connection string used to connect to Azure Blob Storage containing the service logos           | string  |
+| AssetsStorageConnection                | The connection string used to connect to Azure Blob Storage containing the service cache           | string  |
 | SERVICE_PRINCIPAL_CLIENT_ID            | The service principal name used to get the token credentials to connect to the APIM                | string  |
 | SERVICE_PRINCIPAL_SECRET               | The service principal secret used to get the token credentials to connect to the APIM              | string  |
 | SERVICE_PRINCIPAL_TENANT_ID            | The service principal tenant id used to get the token credentials to connect to the APIM           | string  |
