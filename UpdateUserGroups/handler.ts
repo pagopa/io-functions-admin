@@ -47,6 +47,7 @@ import {
   ResponseErrorNotFound,
   ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { GroupCollection } from "../generated/definitions/GroupCollection";
 import { UserGroupsPayload } from "../generated/definitions/UserGroupsPayload";
@@ -57,7 +58,10 @@ import {
   IServicePrincipalCreds
 } from "../utils/apim";
 import { groupContractToApiGroup } from "../utils/conversions";
-import { genericInternalErrorHandler } from "../utils/errorHandler";
+import {
+  genericInternalErrorHandler,
+  genericInternalValidationErrorHandler
+} from "../utils/errorHandler";
 
 type IGetSubscriptionKeysHandlerResponseError =
   | IResponseErrorNotFound
@@ -199,6 +203,22 @@ export function UpdateUserGroupHandler(
         userName: taskResults.userList[0].name
       }))
       .chain(taskResults =>
+        fromEither(NonEmptyString.decode(taskResults.userName))
+          .mapLeft(errors => {
+            const errorMessage = "Could not get user name from user contract.";
+            return genericInternalValidationErrorHandler(
+              context,
+              "UpdateUser | " + errorMessage,
+              errors,
+              errorMessage
+            );
+          })
+          .map(() => ({
+            apimClient: taskResults.apimClient,
+            userName: taskResults.userName
+          }))
+      )
+      .chain(taskResults =>
         getUserGroups(
           taskResults.apimClient,
           azureApimConfig.apimResourceGroup,
@@ -211,8 +231,8 @@ export function UpdateUserGroupHandler(
           .map(currentUserGroups => ({
             apimClient: taskResults.apimClient,
             currentUserGroups: currentUserGroups.map(
-              // we forward the displayName values with which the user is currently associated
-              // in order to match them with the values in the request payloads.
+              // The displayNames values with which the user is currently associated
+              // will be matched with the values in the request payload
               groupContract => groupContract.displayName
             ),
             userName: taskResults.userName
