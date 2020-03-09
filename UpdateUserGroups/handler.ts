@@ -45,6 +45,7 @@ import {
   IResponseErrorValidation,
   IResponseSuccessJson,
   ResponseErrorNotFound,
+  ResponseErrorValidation,
   ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
@@ -266,7 +267,9 @@ export function UpdateUserGroupHandler(
               groupName => Error(`Provided group not found: ${groupName}`)
             )
           )
-          .mapLeft(error => internalErrorHandler("Invalid groups", error))
+          .mapLeft(() =>
+            ResponseErrorValidation("Bad request", "Invalid groups")
+          )
           .map(() => taskResults)
       )
       .chain(taskResults => {
