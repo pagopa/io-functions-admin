@@ -56,7 +56,7 @@ export function apiServiceToService(service: ApiService): Service {
 
 // Returns an API Service Metadata from an internal Service model
 export function toApiServiceMetadata(
-  service: RetrievedService | VisibleService
+  service: RetrievedService
 ): ApiServiceMetadata {
   return service.serviceMetadata
     ? {
@@ -105,15 +105,27 @@ export function retrievedServiceToApiService(
 export function retrievedServiceToVisibleService(
   retrievedService: RetrievedService
 ): VisibleService {
+  const {
+    departmentName,
+    id,
+    organizationFiscalCode,
+    organizationName,
+    requireSecureChannels,
+    serviceId,
+    serviceMetadata,
+    serviceName,
+    version
+  } = retrievedService;
   return {
-    departmentName: retrievedService.departmentName,
-    id: retrievedService.id,
-    organizationFiscalCode: retrievedService.organizationFiscalCode,
-    organizationName: retrievedService.organizationName,
-    serviceId: retrievedService.serviceId,
-    serviceMetadata: retrievedService.serviceMetadata,
-    serviceName: retrievedService.serviceName,
-    version: retrievedService.version
+    departmentName,
+    id,
+    organizationFiscalCode,
+    organizationName,
+    requireSecureChannels,
+    serviceId,
+    serviceMetadata,
+    serviceName,
+    version
   };
 }
 
@@ -175,7 +187,10 @@ function removeNullProperties<T>(obj: T): unknown {
   }
   return Object.keys(obj).reduce<unknown>(
     (filteredObj, key) =>
-      obj[key] === null ? filteredObj : { ...filteredObj, [key]: obj[key] },
+      obj[key] === null
+        ? filteredObj
+        : // tslint:disable-next-line: no-any
+          { ...(filteredObj as any), [key]: obj[key] },
     {}
   );
 }
