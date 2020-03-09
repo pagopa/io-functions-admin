@@ -52,6 +52,7 @@ import { GroupCollection } from "../generated/definitions/GroupCollection";
 import { UserGroupsPayload } from "../generated/definitions/UserGroupsPayload";
 import {
   getApiClient,
+  getUserGroups,
   IAzureApimConfig,
   IServicePrincipalCreds
 } from "../utils/apim";
@@ -91,32 +92,6 @@ function getGroups(
     let nextLink = groupListResponse.nextLink;
     while (nextLink) {
       const nextGroupList = await apimClient.group.listByServiceNext(nextLink);
-      groupList.push(...nextGroupList);
-      nextLink = nextGroupList.nextLink;
-    }
-    return groupList;
-  }, toError);
-}
-
-function getUserGroups(
-  apimClient: ApiManagementClient,
-  apimResourceGroup: string,
-  apim: string,
-  userName: string
-): TaskEither<Error, ReadonlyArray<GroupContract>> {
-  return tryCatch(async () => {
-    // tslint:disable-next-line:readonly-array no-let
-    const groupList: GroupContract[] = [];
-    const groupListResponse = await apimClient.userGroup.list(
-      apimResourceGroup,
-      apim,
-      userName
-    );
-    groupList.push(...groupListResponse);
-    // tslint:disable-next-line:no-let
-    let nextLink = groupListResponse.nextLink;
-    while (nextLink) {
-      const nextGroupList = await apimClient.userGroup.listNext(nextLink);
       groupList.push(...nextGroupList);
       nextLink = nextGroupList.nextLink;
     }
