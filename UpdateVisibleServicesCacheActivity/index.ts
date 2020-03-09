@@ -8,7 +8,6 @@ import {
   toServicePublic,
   VisibleService
 } from "io-functions-commons/dist/src/models/visible_service";
-import { toApiServiceMetadata } from "../utils/conversions";
 
 async function UpdateVisibleServiceCacheActivity(
   context: Context
