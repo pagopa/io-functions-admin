@@ -104,6 +104,12 @@ interface IGroupsClusterization {
   toBeRemoved: ReadonlyArray<string>;
 }
 
+/**
+ * Returns a clusterization of the group names on which an operation from the APIM client must be performed.
+ * @param existingGroups The record of the existing group names on the APIM, indexed by their displayNames
+ * @param currentUserGroups The list of displayNames of the groups with which the user is currently associated
+ * @param groupsInPayload The list of displayNames of the groups with which the user must be associated
+ */
 function clusterizeGroups(
   existingGroups: Record<string, string>,
   currentUserGroups: ReadonlyArray<string>,
@@ -205,6 +211,8 @@ export function UpdateUserGroupHandler(
           .map(currentUserGroups => ({
             apimClient: taskResults.apimClient,
             currentUserGroups: currentUserGroups.map(
+              // we forward the displayName values with which the user is currently associated
+              // in order to match them with the values in the request payloads.
               groupContract => groupContract.displayName
             ),
             userName: taskResults.userName
