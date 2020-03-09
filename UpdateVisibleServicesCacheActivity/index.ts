@@ -4,7 +4,10 @@
  */
 import { Context } from "@azure/functions";
 import { isLeft } from "fp-ts/lib/Either";
-import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
+import {
+  toServicePublic,
+  VisibleService
+} from "io-functions-commons/dist/src/models/visible_service";
 import { toApiServiceMetadata } from "../utils/conversions";
 
 async function UpdateVisibleServiceCacheActivity(
@@ -30,9 +33,7 @@ async function UpdateVisibleServiceCacheActivity(
   // so we return void from this method and
   // use context bindings
   // tslint:disable-next-line: no-object-mutation
-  context.bindings.visibleServiceCacheBlob = toApiServiceMetadata(
-    visibleService
-  );
+  context.bindings.visibleServiceCacheBlob = toServicePublic(visibleService);
 }
 
 export default UpdateVisibleServiceCacheActivity;
