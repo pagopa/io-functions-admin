@@ -5,6 +5,7 @@ import * as express from "express";
 import { sequenceT } from "fp-ts/lib/Apply";
 import { array } from "fp-ts/lib/Array";
 import { either, toError } from "fp-ts/lib/Either";
+import { StrMap } from "fp-ts/lib/StrMap";
 import {
   fromEither,
   fromPredicate,
@@ -129,35 +130,35 @@ interface IGroupsClusterization {
 }
 
 function clusterizeGroups(
-  existingGroups: { [groupDisplayName: string]: string },
+  existingGroups: Record<string, string>,
   currentUserGroups: ReadonlyArray<string>,
   groupsInPayload: ReadonlyArray<string>
 ): IGroupsClusterization {
-  return Object.keys(existingGroups).reduce<IGroupsClusterization>(
-    (cluster, group) => {
+  return new StrMap(existingGroups).reduceWithKey(
+    { toBeAssociated: [], toBeRemoved: [] },
+    (displayName, cluster, name) => {
       if (
-        currentUserGroups.includes(group) &&
-        !groupsInPayload.includes(group)
+        currentUserGroups.includes(displayName) &&
+        !groupsInPayload.includes(displayName)
       ) {
         return {
           toBeAssociated: cluster.toBeAssociated,
-          toBeRemoved: cluster.toBeRemoved.concat([existingGroups[group]])
+          toBeRemoved: cluster.toBeRemoved.concat([name])
         };
       }
       if (
-        !currentUserGroups.includes(group) &&
-        groupsInPayload.includes(group)
+        !currentUserGroups.includes(displayName) &&
+        groupsInPayload.includes(displayName)
       ) {
         return {
           toBeAssociated: cluster.toBeAssociated.concat([
-            existingGroups[group]
+            existingGroups[displayName]
           ]),
           toBeRemoved: cluster.toBeRemoved
         };
       }
       return cluster;
-    },
-    { toBeAssociated: [], toBeRemoved: [] }
+    }
   );
 }
 
@@ -246,7 +247,7 @@ export function UpdateUserGroupHandler(
           .map(groupList => ({
             apimClient: taskResults.apimClient,
             currentUserGroups: taskResults.currentUserGroups,
-            existingGroups: groupList.reduce<{ [displayName: string]: string }>(
+            existingGroups: groupList.reduce<Record<string, string>>(
               (prev, curr) => ({ ...prev, [curr.displayName]: curr.name }),
               {}
             ),
