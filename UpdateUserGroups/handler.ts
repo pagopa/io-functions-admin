@@ -123,6 +123,44 @@ function getUserGroups(
   }, toError);
 }
 
+interface IGroupsClusterization {
+  toBeAssociated: ReadonlyArray<string>;
+  toBeRemoved: ReadonlyArray<string>;
+}
+
+function clusterizeGroups(
+  existingGroups: { [groupDisplayName: string]: string },
+  currentUserGroups: ReadonlyArray<string>,
+  groupsInPayload: ReadonlyArray<string>
+): IGroupsClusterization {
+  return Object.keys(existingGroups).reduce<IGroupsClusterization>(
+    (cluster, group) => {
+      if (
+        currentUserGroups.includes(group) &&
+        !groupsInPayload.includes(group)
+      ) {
+        return {
+          toBeAssociated: cluster.toBeAssociated,
+          toBeRemoved: cluster.toBeRemoved.concat([existingGroups[group]])
+        };
+      }
+      if (
+        !currentUserGroups.includes(group) &&
+        groupsInPayload.includes(group)
+      ) {
+        return {
+          toBeAssociated: cluster.toBeAssociated.concat([
+            existingGroups[group]
+          ]),
+          toBeRemoved: cluster.toBeRemoved
+        };
+      }
+      return cluster;
+    },
+    { toBeAssociated: [], toBeRemoved: [] }
+  );
+}
+
 export function UpdateUserGroupHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
@@ -208,7 +246,7 @@ export function UpdateUserGroupHandler(
           .map(groupList => ({
             apimClient: taskResults.apimClient,
             currentUserGroups: taskResults.currentUserGroups,
-            existingGroups: groupList.reduce(
+            existingGroups: groupList.reduce<{ [displayName: string]: string }>(
               (prev, curr) => ({ ...prev, [curr.displayName]: curr.name }),
               {}
             ),
@@ -228,39 +266,10 @@ export function UpdateUserGroupHandler(
           .map(() => taskResults)
       )
       .chain(taskResults => {
-        interface IGroupsClusterization {
-          toBeAssociated: ReadonlyArray<string>;
-          toBeRemoved: ReadonlyArray<string>;
-        }
-        const groupsClusterization = Object.keys(
-          taskResults.existingGroups
-        ).reduce<IGroupsClusterization>(
-          (cluster, group) => {
-            if (
-              taskResults.currentUserGroups.includes(group) &&
-              !userGroupsPayload.groups.includes(group)
-            ) {
-              return {
-                toBeAssociated: cluster.toBeAssociated,
-                toBeRemoved: cluster.toBeRemoved.concat([
-                  taskResults.existingGroups[group]
-                ])
-              };
-            }
-            if (
-              !taskResults.currentUserGroups.includes(group) &&
-              userGroupsPayload.groups.includes(group)
-            ) {
-              return {
-                toBeAssociated: cluster.toBeAssociated.concat([
-                  taskResults.existingGroups[group]
-                ]),
-                toBeRemoved: cluster.toBeRemoved
-              };
-            }
-            return cluster;
-          },
-          { toBeAssociated: [], toBeRemoved: [] }
+        const groupsClusterization = clusterizeGroups(
+          taskResults.existingGroups,
+          taskResults.currentUserGroups,
+          userGroupsPayload.groups
         );
         const errorOrUserContractsWithAssociatedGroups = array.traverse(
           taskEitherSeq
