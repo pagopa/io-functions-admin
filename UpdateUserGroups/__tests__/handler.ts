@@ -34,12 +34,12 @@ const fakeExistingGroups: ReadonlyArray<GroupContract> = [
     name: UserGroup.ApiPublicServiceList.toLowerCase()
   },
   {
-    displayName: UserGroup.ApiServiceKeyWrite,
-    name: UserGroup.ApiServiceKeyWrite.toLowerCase()
+    displayName: UserGroup.ApiSubscriptionsFeedRead,
+    name: UserGroup.ApiSubscriptionsFeedRead.toLowerCase()
   },
   {
-    displayName: UserGroup.ApiServiceKeyRead,
-    name: UserGroup.ApiServiceKeyRead.toLowerCase()
+    displayName: UserGroup.ApiDevelopmentProfileWrite,
+    name: UserGroup.ApiDevelopmentProfileWrite.toLowerCase()
   }
 ];
 
