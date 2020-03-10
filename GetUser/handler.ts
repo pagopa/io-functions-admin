@@ -1,8 +1,5 @@
 import { ApiManagementClient } from "@azure/arm-apimanagement";
-import {
-  GroupContract,
-  SubscriptionContract
-} from "@azure/arm-apimanagement/esm/models";
+import { SubscriptionContract } from "@azure/arm-apimanagement/esm/models";
 import { Context } from "@azure/functions";
 import * as express from "express";
 import { sequenceT } from "fp-ts/lib/Apply";
@@ -51,6 +48,7 @@ import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { UserInfo } from "../generated/definitions/UserInfo";
 import {
   getApiClient,
+  getUserGroups,
   IAzureApimConfig,
   IServicePrincipalCreds
 } from "../utils/apim";
@@ -100,32 +98,6 @@ function getUserSubscriptions(
       nextLink = nextSubscriptionList.nextLink;
     }
     return subscriptionList;
-  }, toError);
-}
-
-function getUserGroups(
-  apimClient: ApiManagementClient,
-  apimResourceGroup: string,
-  apim: string,
-  userName: string
-): TaskEither<Error, ReadonlyArray<GroupContract>> {
-  return tryCatch(async () => {
-    // tslint:disable-next-line:readonly-array no-let
-    const groupList: GroupContract[] = [];
-    const groupListResponse = await apimClient.userGroup.list(
-      apimResourceGroup,
-      apim,
-      userName
-    );
-    groupList.push(...groupListResponse);
-    // tslint:disable-next-line:no-let
-    let nextLink = groupListResponse.nextLink;
-    while (nextLink) {
-      const nextGroupList = await apimClient.userGroup.listNext(nextLink);
-      groupList.push(...nextGroupList);
-      nextLink = nextGroupList.nextLink;
-    }
-    return groupList;
   }, toError);
 }
 
