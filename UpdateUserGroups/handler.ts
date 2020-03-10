@@ -280,13 +280,13 @@ export function UpdateUserGroupHandler(
         );
         const errorOrUserContractsWithAssociatedGroups = array.traverse(
           taskEitherSeq
-        )([...groupsClusterization.toBeAssociated], groupId =>
+        )([...groupsClusterization.toBeAssociated], groupName =>
           tryCatch(
             () =>
               taskResults.apimClient.groupUser.create(
                 azureApimConfig.apimResourceGroup,
                 azureApimConfig.apim,
-                groupId,
+                groupName,
                 taskResults.userName
               ),
             toError
@@ -294,13 +294,13 @@ export function UpdateUserGroupHandler(
         );
         const errorOrUserContractsWithNotAssociatedGroups = array.traverse(
           taskEitherSeq
-        )([...groupsClusterization.toBeRemoved], groupId =>
+        )([...groupsClusterization.toBeRemoved], groupName =>
           tryCatch(
             () =>
               taskResults.apimClient.groupUser.deleteMethod(
                 azureApimConfig.apimResourceGroup,
                 azureApimConfig.apim,
-                groupId,
+                groupName,
                 taskResults.userName
               ),
             toError
