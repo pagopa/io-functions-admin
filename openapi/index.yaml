@@ -415,15 +415,24 @@ definitions:
   ExtendedProfile:
     $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ExtendedProfile"
   UserGroupsPayload:
+    description: |-
+      All the groups with which the user must be associated.
+      The already existing associations with groups which are not included in this object will be deleted.
     type: object
     properties:
       groups:
         type: array
         items:
+          description: The value of `displayName` property of the group on the APIM
           type: string
           minLength: 1
     required:
       - groups
+    example:
+      groups:
+        - ApiInfoRead
+        - ApiLimitedMessageWrite
+        - ApiMessageRead
   GroupCollection:
     type: object
     properties:
