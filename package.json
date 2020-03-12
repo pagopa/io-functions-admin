@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@azure/arm-apimanagement": "^5.1.1",
+    "@azure/graph": "^5.0.1",
     "@azure/ms-rest-nodeauth": "^2.0.5",
     "azure-storage": "^2.10.3",
     "documentdb": "^1.12.2",
@@ -56,6 +57,8 @@
     "io-functions-express": "^0.1.0",
     "io-ts": "1.8.5",
     "italia-ts-commons": "^5.1.11",
+    "randomstring": "^1.1.5",
+    "ulid": "^2.3.0",
     "winston": "^3.2.1"
   },
   "resolutions": {
