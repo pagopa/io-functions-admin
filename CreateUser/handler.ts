@@ -137,6 +137,12 @@ export function CreateUserHandler(
               {
                 email: userPayload.email,
                 firstName: userPayload.first_name,
+                identities: [
+                  {
+                    id: taskResults.objectId,
+                    provider: "AadB2C"
+                  }
+                ],
                 lastName: userPayload.last_name
               }
             ),
