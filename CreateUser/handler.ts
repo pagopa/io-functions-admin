@@ -117,7 +117,10 @@ export function CreateUserHandler(
       .chain(userCreateResponse =>
         getApiClient(apimCredentials, azureApimConfig.subscriptionId)
           .mapLeft(error =>
-            internalErrorHandler("Could not get the APIM client", error)
+            internalErrorHandler(
+              "Could not get the API management client",
+              error
+            )
           )
           .map(apimClient => ({
             apimClient,
@@ -139,7 +142,10 @@ export function CreateUserHandler(
             ),
           toError
         ).mapLeft(error =>
-          internalErrorHandler("Could not create the user on the APIM", error)
+          internalErrorHandler(
+            "Could not create the user on the API management",
+            error
+          )
         )
       )
       .chain(userContract =>
