@@ -65,11 +65,7 @@ function getGraphRbacManagementClient(
     toError
   ).map(
     credentials =>
-      // the below cast to `any` is needed to prevent build errors
-      // due to some type mismatches among the azure-sdk-for-js libraries
-      // @see: https://github.com/Azure/azure-sdk-for-js/issues/7258
-      // tslint:disable-next-line:no-any
-      new GraphRbacManagementClient(credentials as any, adb2cCreds.tenantId)
+      new GraphRbacManagementClient(credentials, adb2cCreds.tenantId)
   );
 }
 

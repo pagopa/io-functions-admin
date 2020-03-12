@@ -16,21 +16,21 @@
   resolved "https://registry.yarnpkg.com/@azure/functions/-/functions-1.0.3.tgz#1b51d58f188903f59f39bd093fe6f7b8d88deb11"
   integrity sha512-/D+sz6LgWT+A6RRW2zhwlwhKqqDSxL6HCF1Q1lN0iXolD2FfNFZpzrOxGyGYEEXp/5Dtjp12bcRTBhMH1cBi2Q==
 
-"@azure/graph@^5.0.1":
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/@azure/graph/-/graph-5.0.1.tgz#93b89872ad63d40956ddb664d9bcca46cf958179"
-  integrity sha512-MMge4Uzl0hK/72h4cGESjX3D5jSwV9Ylwp4HiXp0LdF//vFhYLzsnVRfD1cfkMl5nGlbaqOR3mej4QWAeppjig==
+"@azure/graph@^4.0.1":
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/@azure/graph/-/graph-4.3.0.tgz#1d7d475468aab3c62d46f9afead04ef8d99a9490"
+  integrity sha512-LPEAvQbIgNKlmAlZm8RQ9JjykGwNJwhvoYcFbnOnpK17Xo9rVgu81sIushxzKVSat6QLxVy/x3XusOL3VcucgQ==
   dependencies:
-    "@azure/ms-rest-azure-js" "^2.0.0"
-    "@azure/ms-rest-js" "^2.0.3"
-    tslib "^1.10.0"
+    "@azure/ms-rest-azure-js" "^1.1.0"
+    "@azure/ms-rest-js" "^1.1.0"
+    tslib "^1.9.3"
 
 "@azure/ms-rest-azure-env@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@azure/ms-rest-azure-env/-/ms-rest-azure-env-2.0.0.tgz#45809f89763a480924e21d3c620cd40866771625"
   integrity sha512-dG76W7ElfLi+fbTjnZVGj+M9e0BIEJmRxU6fHaUQ12bZBe8EJKYb2GV50YWNaP2uJiVQ5+7nXEVj1VN1UQtaEw==
 
-"@azure/ms-rest-azure-js@^1.3.2":
+"@azure/ms-rest-azure-js@^1.1.0", "@azure/ms-rest-azure-js@^1.3.2":
   version "1.3.8"
   resolved "https://registry.yarnpkg.com/@azure/ms-rest-azure-js/-/ms-rest-azure-js-1.3.8.tgz#96b518223d3baa2496b2981bc07288b3d887486e"
   integrity sha512-AHLfDTCyIH6wBK6+CpImI6sc9mLZ17ZgUrTx3Rhwv+3Mb3Z73BxormkarfR6Stb6scrBYitxJ27FXyndXlGAYg==
@@ -38,29 +38,7 @@
     "@azure/ms-rest-js" "^1.8.10"
     tslib "^1.9.3"
 
-"@azure/ms-rest-azure-js@^2.0.0":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@azure/ms-rest-azure-js/-/ms-rest-azure-js-2.0.1.tgz#fa1b38f039b3ee48a9e086a88c8a5b5b7776491c"
-  integrity sha512-5e+A710O7gRFISoV4KI/ZyLQbKmjXxQZ1L8Z/sx7jSUQqmswjTnN4yyIZxs5JzfLVkobU0rXxbi5/LVzaI8QXQ==
-  dependencies:
-    "@azure/ms-rest-js" "^2.0.4"
-    tslib "^1.10.0"
-
-"@azure/ms-rest-js@^1.5.0":
-  version "1.8.13"
-  resolved "https://registry.yarnpkg.com/@azure/ms-rest-js/-/ms-rest-js-1.8.13.tgz#ed0cd86469697378cd39d79d5589e877a3bc87a6"
-  integrity sha512-jAa6Y2XrvwbEqkaEXDHK+ReNo0WnCPS+LgQ1dRAJUUNxK4CghF5u+SXsVtPENritilVE7FVteqsLOtlhTk+haA==
-  dependencies:
-    "@types/tunnel" "0.0.0"
-    axios "^0.19.0"
-    form-data "^2.3.2"
-    tough-cookie "^2.4.3"
-    tslib "^1.9.2"
-    tunnel "0.0.6"
-    uuid "^3.2.1"
-    xml2js "^0.4.19"
-
-"@azure/ms-rest-js@^1.8.1", "@azure/ms-rest-js@^1.8.10", "@azure/ms-rest-js@^1.8.13":
+"@azure/ms-rest-js@^1.1.0", "@azure/ms-rest-js@^1.8.1", "@azure/ms-rest-js@^1.8.10", "@azure/ms-rest-js@^1.8.13":
   version "1.8.14"
   resolved "https://registry.yarnpkg.com/@azure/ms-rest-js/-/ms-rest-js-1.8.14.tgz#657fc145db20b6eb3d58d1a2055473aa72eb609d"
   integrity sha512-IrCPN22c8RbKWA06ZXuFwwEb15cSnr0zZ6J8Fspp9ns1SSNTERf7hv+gWvTIis1FlwHy42Mfk8hVu0/r3a0AWA==
@@ -74,20 +52,18 @@
     uuid "^3.2.1"
     xml2js "^0.4.19"
 
-"@azure/ms-rest-js@^2.0.3", "@azure/ms-rest-js@^2.0.4":
-  version "2.0.5"
-  resolved "https://registry.yarnpkg.com/@azure/ms-rest-js/-/ms-rest-js-2.0.5.tgz#7ac1043b7b8c99bb8c5b09ada96b858b02db8e75"
-  integrity sha512-zj9/JOSsbaJleZz9k9RXKJMBPA2NBUgsus5iZxGlhK+pDeb8M2ps+lkKhJSwLnlTUj5CvrcN3PZDF2b2nSYCQQ==
+"@azure/ms-rest-js@^1.5.0":
+  version "1.8.13"
+  resolved "https://registry.yarnpkg.com/@azure/ms-rest-js/-/ms-rest-js-1.8.13.tgz#ed0cd86469697378cd39d79d5589e877a3bc87a6"
+  integrity sha512-jAa6Y2XrvwbEqkaEXDHK+ReNo0WnCPS+LgQ1dRAJUUNxK4CghF5u+SXsVtPENritilVE7FVteqsLOtlhTk+haA==
   dependencies:
-    "@types/node-fetch" "^2.3.7"
-    "@types/tunnel" "0.0.1"
-    abort-controller "^3.0.0"
-    form-data "^2.5.0"
-    node-fetch "^2.6.0"
-    tough-cookie "^3.0.1"
-    tslib "^1.10.0"
+    "@types/tunnel" "0.0.0"
+    axios "^0.19.0"
+    form-data "^2.3.2"
+    tough-cookie "^2.4.3"
+    tslib "^1.9.2"
     tunnel "0.0.6"
-    uuid "^3.3.2"
+    uuid "^3.2.1"
     xml2js "^0.4.19"
 
 "@azure/ms-rest-nodeauth@^2.0.5":
@@ -538,14 +514,6 @@
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-2.0.1.tgz#dc488842312a7f075149312905b5e3c0b054c79d"
   integrity sha512-FwI9gX75FgVBJ7ywgnq/P7tw+/o1GUbtP0KzbtusLigAOgIgNISRK0ZPl4qertvXSIE8YbsVJueQ90cDt9YYyw==
 
-"@types/node-fetch@^2.3.7":
-  version "2.5.5"
-  resolved "https://registry.yarnpkg.com/@types/node-fetch/-/node-fetch-2.5.5.tgz#cd264e20a81f4600a6c52864d38e7fef72485e92"
-  integrity sha512-IWwjsyYjGw+em3xTvWVQi5MgYKbRs0du57klfTaZkv/B24AEQ/p/IopNeqIYNy3EsfHOpg8ieQSDomPcsYMHpA==
-  dependencies:
-    "@types/node" "*"
-    form-data "^3.0.0"
-
 "@types/node@*":
   version "12.0.8"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.0.8.tgz#551466be11b2adc3f3d47156758f610bd9f6b1d8"
@@ -578,13 +546,6 @@
   version "0.0.0"
   resolved "https://registry.yarnpkg.com/@types/tunnel/-/tunnel-0.0.0.tgz#c2a42943ee63c90652a5557b8c4e56cda77f944e"
   integrity sha512-FGDp0iBRiBdPjOgjJmn1NH0KDLN+Z8fRmo+9J7XGBhubq1DPrGrbmG4UTlGzrpbCpesMqD0sWkzi27EYkOMHyg==
-  dependencies:
-    "@types/node" "*"
-
-"@types/tunnel@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@types/tunnel/-/tunnel-0.0.1.tgz#0d72774768b73df26f25df9184273a42da72b19c"
-  integrity sha512-AOqu6bQu5MSWwYvehMXLukFHnupHrpZ8nvgae5Ggie9UwzDR1CCwoXgSSWNZJuyOlCdfdsWMA5F2LlmvyoTv8A==
   dependencies:
     "@types/node" "*"
 
@@ -645,13 +606,6 @@ abbrev@1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/abbrev/-/abbrev-1.1.1.tgz#f8f2c887ad10bf67f634f005b6987fed3179aac8"
   integrity sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==
-
-abort-controller@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/abort-controller/-/abort-controller-3.0.0.tgz#eaf54d53b62bae4138e809ca225c8439a6efb392"
-  integrity sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==
-  dependencies:
-    event-target-shim "^5.0.0"
 
 accepts@~1.3.7:
   version "1.3.7"
@@ -1709,7 +1663,7 @@ colorspace@1.1.x:
     color "3.0.x"
     text-hex "1.0.x"
 
-combined-stream@^1.0.6, combined-stream@^1.0.8, combined-stream@~1.0.6:
+combined-stream@^1.0.6, combined-stream@~1.0.6:
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/combined-stream/-/combined-stream-1.0.8.tgz#c3d45a8b34fd730631a110a8a2520682b31d5a7f"
   integrity sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==
@@ -2404,11 +2358,6 @@ etag@^1.8.1, etag@~1.8.1:
   resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.1.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0887"
   integrity sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc=
 
-event-target-shim@^5.0.0:
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/event-target-shim/-/event-target-shim-5.0.1.tgz#5d4d3ebdf9583d63a5333ce2deb7480ab2b05789"
-  integrity sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==
-
 exec-sh@^0.2.0:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/exec-sh/-/exec-sh-0.2.2.tgz#2a5e7ffcbd7d0ba2755bdecb16e5a427dfbdec36"
@@ -2735,7 +2684,7 @@ forever-agent@~0.6.1:
   resolved "https://registry.yarnpkg.com/forever-agent/-/forever-agent-0.6.1.tgz#fbc71f0c41adeb37f96c577ad1ed42d8fdacca91"
   integrity sha1-+8cfDEGt6zf5bFd60e1C2P2sypE=
 
-form-data@^2.3.1, form-data@^2.5.0:
+form-data@^2.3.1:
   version "2.5.1"
   resolved "https://registry.yarnpkg.com/form-data/-/form-data-2.5.1.tgz#f2cbec57b5e59e23716e128fe44d4e5dd23895f4"
   integrity sha512-m21N3WOmEEURgk6B9GLOE4RuWOFf28Lhh9qGYeNlGq4VDXUlJy2th2slBNU8Gp8EzloYZOibZJ7t5ecIrFSjVA==
@@ -2751,15 +2700,6 @@ form-data@^2.3.2:
   dependencies:
     asynckit "^0.4.0"
     combined-stream "^1.0.6"
-    mime-types "^2.1.12"
-
-form-data@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/form-data/-/form-data-3.0.0.tgz#31b7e39c85f1355b7139ee0c647cf0de7f83c682"
-  integrity sha512-CKMFDglpbMi6PyN+brwB9Q/GOw0eAnsrEZDgcsH5Krhz5Od/haKHAX0NmQfha2zPPz0JpWzA7GJHGSnvCRLWsg==
-  dependencies:
-    asynckit "^0.4.0"
-    combined-stream "^1.0.8"
     mime-types "^2.1.12"
 
 form-data@~2.3.2:
@@ -3357,11 +3297,6 @@ io-ts@1.8.5:
   integrity sha512-4HzDeg7mTygFjFIKh7ajBSanoVaFryYSFI0ocdwndSWl3eWQXhg3wVR0WI+Li5Vq11TIsoIngQszVbN4dy//9A==
   dependencies:
     fp-ts "^1.0.0"
-
-ip-regex@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/ip-regex/-/ip-regex-2.1.0.tgz#fa78bf5d2e6913c911ce9f819ee5146bb6d844e9"
-  integrity sha1-+ni/XS5pE8kRzp+BnuUUa7bYROk=
 
 ip6addr@^0.2.2:
   version "0.2.3"
@@ -5387,7 +5322,7 @@ node-fetch@^1.7.1:
     encoding "^0.1.11"
     is-stream "^1.0.1"
 
-node-fetch@^2.1.1, node-fetch@^2.2.0, node-fetch@^2.6.0:
+node-fetch@^2.1.1, node-fetch@^2.2.0:
   version "2.6.0"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.0.tgz#e633456386d4aa55863f676a7ab0daa8fdecb0fd"
   integrity sha512-8dG4H5ujfvFiqDmVu9fQ5bOHUC15JMjMY/Zumv26oOvvVJjM67KF8koCWIabKQ1GJIa9r2mMZscBq/TbdOcmNA==
@@ -7259,15 +7194,6 @@ tough-cookie@^2.3.2, tough-cookie@^2.3.3, tough-cookie@^2.3.4, tough-cookie@^2.4
     psl "^1.1.28"
     punycode "^2.1.1"
 
-tough-cookie@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-3.0.1.tgz#9df4f57e739c26930a018184887f4adb7dca73b2"
-  integrity sha512-yQyJ0u4pZsv9D4clxO69OEjLWYw+jbgspjTue4lTQZLfV0c5l1VmK2y1JK8E9ahdpltPOaAThPcp5nKPUgSnsg==
-  dependencies:
-    ip-regex "^2.1.0"
-    psl "^1.1.28"
-    punycode "^2.1.1"
-
 tough-cookie@~2.4.3:
   version "2.4.3"
   resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-2.4.3.tgz#53f36da3f47783b0925afa06ff9f3b165280f781"
@@ -7337,11 +7263,6 @@ tslib@1.9.0, tslib@^1.7.1, tslib@^1.8.0, tslib@^1.8.1:
   version "1.9.0"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.9.0.tgz#e37a86fda8cbbaf23a057f473c9f4dc64e5fc2e8"
   integrity sha512-f/qGG2tUkrISBlQZEjEqoZ3B2+npJjIf04H1wuAv9iA8i04Icp+61KRXxFdha22670NJopsZCIjhC3SnjPRKrQ==
-
-tslib@^1.10.0:
-  version "1.11.1"
-  resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.11.1.tgz#eb15d128827fbee2841549e171f45ed338ac7e35"
-  integrity sha512-aZW88SY8kQbU7gpV19lN24LtXh/yD4ZZg6qieAJDDg+YBsJcSmLGK9QpnUjAKVG/xefmvJGd1WUmfpT/g6AJGA==
 
 tslib@^1.9.2, tslib@^1.9.3:
   version "1.10.0"
