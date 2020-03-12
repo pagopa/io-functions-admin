@@ -124,7 +124,7 @@ export function CreateUserHandler(
           )
           .map(apimClient => ({
             apimClient,
-            userId: userCreateResponse.objectId
+            objectId: userCreateResponse.objectId
           }))
       )
       .chain(taskResults =>
@@ -133,7 +133,7 @@ export function CreateUserHandler(
             taskResults.apimClient.user.createOrUpdate(
               azureApimConfig.apimResourceGroup,
               azureApimConfig.apim,
-              taskResults.userId,
+              taskResults.objectId,
               {
                 email: userPayload.email,
                 firstName: userPayload.first_name,
