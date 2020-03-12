@@ -282,7 +282,7 @@ paths:
             $ref: "#/definitions/UserCollection"
     post:
       summary: Create user
-      description: Create a new User with a random password on the Active Directory Azure B2C and create the corresponding User on the APIM.
+      description: Create a new user with a random password in the Active Directory Azure B2C, then create a corresponding user on the API management resource.
       operationId: createUser
       parameters:
         - name: body
