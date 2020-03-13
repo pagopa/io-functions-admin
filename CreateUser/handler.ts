@@ -99,7 +99,7 @@ export function CreateUserHandler(
               mailNickname: userPayload.email.split("@")[0],
               passwordProfile: {
                 forceChangePasswordNextLogin: true,
-                password: randomString.generate({ length: 32 })
+                password: randomString.generate({ length: 24 })
               },
               signInNames: [
                 {
