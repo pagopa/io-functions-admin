@@ -133,6 +133,9 @@ paths:
       operationId: uploadServiceLogo
   "/services":
     get:
+      summary: Get Services
+      operationId: getServices
+      description: Gets the list of all existing services.
       responses:
         "200":
           description: The list of server.
