@@ -293,7 +293,7 @@ paths:
         "201":
           description: The new User
           schema:
-            $ref: "#/definitions/UserInfo"
+            $ref: "#/definitions/User"
         "400":
           description: Bad request
         "403":
