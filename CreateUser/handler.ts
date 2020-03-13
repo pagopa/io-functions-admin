@@ -65,7 +65,9 @@ function getGraphRbacManagementClient(
     toError
   ).map(
     credentials =>
-      new GraphRbacManagementClient(credentials, adb2cCreds.tenantId)
+      new GraphRbacManagementClient(credentials, adb2cCreds.tenantId, {
+        baseUri: "https://graph.windows.net"
+      })
   );
 }
 
