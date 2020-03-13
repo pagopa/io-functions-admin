@@ -133,6 +133,9 @@ paths:
       operationId: uploadServiceLogo
   "/services":
     get:
+      summary: Get Services
+      operationId: getServices
+      description: Gets the list of all existing services.
       responses:
         "200":
           description: The list of server.
@@ -293,7 +296,7 @@ paths:
         "201":
           description: The new User
           schema:
-            $ref: "#/definitions/User"
+            $ref: "#/definitions/UserCreated"
         "400":
           description: Bad request
         "403":
@@ -468,6 +471,15 @@ definitions:
       - email
       - first_name
       - last_name
+  UserCreated:
+    allOf:
+      - $ref: "#/definitions/UserPayload"
+      - type: object
+        properties:
+          id:
+            type: string
+        required:
+          - id
   GroupCollection:
     type: object
     properties:

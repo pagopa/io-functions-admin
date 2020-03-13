@@ -13,6 +13,7 @@ import {
   toAuthorizedRecipients
 } from "io-functions-commons/dist/src/models/service";
 import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
+import { Errors } from "io-ts";
 import { errorsToReadableMessages } from "italia-ts-commons/lib/reporters";
 import { CIDR, EmailString, FiscalCode } from "italia-ts-commons/lib/strings";
 import { Group, Group as ApiGroup } from "../generated/definitions/Group";
@@ -21,6 +22,7 @@ import {
   Subscription as ApiSubscription
 } from "../generated/definitions/Subscription";
 import { User, User as ApiUser } from "../generated/definitions/User";
+import { UserCreated as ApiUserCreated } from "../generated/definitions/UserCreated";
 import { UserStateEnum } from "../generated/definitions/UserState";
 
 /**
@@ -143,7 +145,18 @@ export function userContractToApiUser(
     registration_date: user.registrationDate,
     state: user.state as UserStateEnum,
     type: user.type
-  }).mapLeft(errors => new Error(errorsToReadableMessages(errors).join(" / ")));
+  }).mapLeft(errorsToError);
+}
+
+export function userContractToApiUserCreated(
+  user: UserContract
+): Either<Error, ApiUserCreated> {
+  return ApiUserCreated.decode({
+    email: user.email,
+    first_name: user.firstName,
+    id: user.name,
+    last_name: user.lastName
+  }).mapLeft(errorsToError);
 }
 
 export function groupContractToApiGroup(
@@ -155,7 +168,7 @@ export function groupContractToApiGroup(
       id: group.id,
       name: group.name
     })
-  ).mapLeft(errors => new Error(errorsToReadableMessages(errors).join(" / ")));
+  ).mapLeft(errorsToError);
 }
 
 export function subscriptionContractToApiSubscription(
@@ -178,7 +191,7 @@ export function subscriptionContractToApiSubscription(
       state_comment: subscription.stateComment,
       type: subscription.type
     })
-  ).mapLeft(errors => new Error(errorsToReadableMessages(errors).join(" / ")));
+  ).mapLeft(errorsToError);
 }
 
 function removeNullProperties<T>(obj: T): unknown {
@@ -193,4 +206,8 @@ function removeNullProperties<T>(obj: T): unknown {
           { ...(filteredObj as any), [key]: obj[key] },
     {}
   );
+}
+
+function errorsToError(errors: Errors): Error {
+  return new Error(errorsToReadableMessages(errors).join(" / "));
 }
