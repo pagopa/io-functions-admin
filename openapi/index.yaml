@@ -280,6 +280,26 @@ paths:
           description: List of users
           schema:
             $ref: "#/definitions/UserCollection"
+    post:
+      summary: Create user
+      description: Create a new user with a random password in the Active Directory Azure B2C, then create a corresponding user on the API management resource.
+      operationId: createUser
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: "#/definitions/UserPayload"
+      responses:
+        "201":
+          description: The new User
+          schema:
+            $ref: "#/definitions/User"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal server error
   /users/{email}:
     get:
       summary: Get user
@@ -433,6 +453,21 @@ definitions:
         - ApiInfoRead
         - ApiLimitedMessageWrite
         - ApiMessageRead
+  UserPayload:
+    type: object
+    properties:
+      email:
+        $ref: "#/definitions/EmailAddress"
+      first_name:
+        type: string
+        minLength: 1
+      last_name:
+        type: string
+        minLength: 1
+    required:
+      - email
+      - first_name
+      - last_name
   GroupCollection:
     type: object
     properties:
