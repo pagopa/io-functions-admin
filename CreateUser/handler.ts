@@ -33,14 +33,14 @@ import {
 } from "italia-ts-commons/lib/responses";
 import * as randomString from "randomstring";
 import { ulid } from "ulid";
-import { User } from "../generated/definitions/User";
+import { UserCreated } from "../generated/definitions/UserCreated";
 import { UserPayload } from "../generated/definitions/UserPayload";
 import {
   getApiClient,
   IAzureApimConfig,
   IServicePrincipalCreds
 } from "../utils/apim";
-import { userContractToApiUser } from "../utils/conversions";
+import { userContractToApiUserCreated } from "../utils/conversions";
 import { genericInternalErrorHandler } from "../utils/errorHandler";
 
 type ICreateUserHandler = (
@@ -49,7 +49,7 @@ type ICreateUserHandler = (
   clientIp: ClientIp,
   userAttributes: IAzureUserAttributes,
   userPayload: UserPayload
-) => Promise<IResponseSuccessJson<User> | IResponseErrorInternal>;
+) => Promise<IResponseSuccessJson<UserCreated> | IResponseErrorInternal>;
 
 function getGraphRbacManagementClient(
   adb2cCreds: IServicePrincipalCreds
@@ -157,7 +157,7 @@ export function CreateUserHandler(
         )
       )
       .chain(userContract =>
-        fromEither(userContractToApiUser(userContract))
+        fromEither(userContractToApiUserCreated(userContract))
           .mapLeft(error => internalErrorHandler("Validation error", error))
           .map(ResponseSuccessJson)
       )

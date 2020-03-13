@@ -293,7 +293,7 @@ paths:
         "201":
           description: The new User
           schema:
-            $ref: "#/definitions/User"
+            $ref: "#/definitions/UserCreated"
         "400":
           description: Bad request
         "403":
@@ -468,6 +468,15 @@ definitions:
       - email
       - first_name
       - last_name
+  UserCreated:
+    allOf:
+      - $ref: "#/definitions/UserPayload"
+      - type: object
+        properties:
+          id:
+            type: string
+        required:
+          - id
   GroupCollection:
     type: object
     properties:
@@ -548,7 +557,7 @@ definitions:
       items:
         type: array
         items:
-          $ref: "#/definitions/User"
+          $ref: "#/definitions/UserCreated"
       next:
         description: The link to the next page of results
         type: string

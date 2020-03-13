@@ -182,13 +182,8 @@ describe("CreateUser", () => {
     const expectedCreatedUser: User = {
       email: fakeApimUser.email,
       first_name: fakeApimUser.firstName,
-      id: fakeApimUser.id,
-      identities: fakeApimUser.identities,
-      last_name: fakeApimUser.lastName,
-      name: fakeObjectId,
-      registration_date: fakeApimUser.registrationDate,
-      state: fakeApimUser.state,
-      type: fakeApimUser.type
+      id: fakeApimUser.name,
+      last_name: fakeApimUser.lastName
     };
     mockUsersCreate.mockImplementationOnce(() =>
       Promise.resolve({ objectId: fakeObjectId })
