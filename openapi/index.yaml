@@ -560,7 +560,7 @@ definitions:
       items:
         type: array
         items:
-          $ref: "#/definitions/UserCreated"
+          $ref: "#/definitions/User"
       next:
         description: The link to the next page of results
         type: string
