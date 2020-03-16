@@ -103,13 +103,14 @@ paths:
         type: string
         required: true
         description: The ID of a existing Service.
-      - name: body
-        in: body
-        required: true
-        schema:
-          $ref: "#/definitions/Logo"
-        description: The logo payload
     put:
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/Logo"
+          description: The logo payload
       responses:
         "201":
           description: Logo uploaded.
