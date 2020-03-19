@@ -18,7 +18,7 @@
     {
       "type": "blob",
       "name": "logo",
-      "path": "services/{serviceId}.png",
+      "path": "$web/services/{serviceId}.png",
       "connection": "AssetsStorageConnection",
       "direction": "out"
     }
