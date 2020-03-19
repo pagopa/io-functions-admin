@@ -238,9 +238,11 @@ paths:
           schema:
             $ref: "#/definitions/SubscriptionKeys"
         "400":
-          description: Subscription not found
+          description: Bad request
         "403":
           description: Forbidden
+        "404":
+          description: Subscription not found
         "500":
           description: Internal server error
     put:
@@ -264,9 +266,11 @@ paths:
           schema:
             $ref: "#/definitions/SubscriptionKeys"
         "400":
-          description: Subscription not found
+          description: Bad request
         "403":
           description: Forbidden
+        "404":
+          description: Subscription not found
         "500":
           description: Internal server error
   /users:
@@ -291,10 +295,11 @@ paths:
       parameters:
         - name: body
           in: body
+          required: true
           schema:
             $ref: "#/definitions/UserPayload"
       responses:
-        "201":
+        "200":
           description: The new User
           schema:
             $ref: "#/definitions/UserCreated"
@@ -343,6 +348,7 @@ paths:
           description: The email of the User
         - name: body
           in: body
+          required: true
           schema:
             $ref: "#/definitions/UserGroupsPayload"
       responses:
@@ -377,6 +383,7 @@ paths:
           description: The id of the Subscription
         - name: body
           in: body
+          required: true
           schema:
             $ref: "#/definitions/ProductNamePayload"
       responses:
