@@ -266,9 +266,11 @@ paths:
           schema:
             $ref: "#/definitions/SubscriptionKeys"
         "400":
-          description: Subscription not found
+          description: Bad request
         "403":
           description: Forbidden
+        "404":
+          description: Subscription not found
         "500":
           description: Internal server error
   /users:
