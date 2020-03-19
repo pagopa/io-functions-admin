@@ -19,8 +19,8 @@ import createAzureFunctionHandler from "io-functions-express/dist/src/createAzur
 
 import { UploadServiceLogo } from "./handler";
 
-const cosmosDbUri = getRequiredStringEnv("CUSTOMCONNSTR_COSMOSDB_URI");
-const cosmosDbKey = getRequiredStringEnv("CUSTOMCONNSTR_COSMOSDB_KEY");
+const cosmosDbUri = getRequiredStringEnv("COSMOSDB_URI");
+const cosmosDbKey = getRequiredStringEnv("COSMOSDB_KEY");
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 const logosUrl = getRequiredStringEnv("LOGOS_URL");
 
