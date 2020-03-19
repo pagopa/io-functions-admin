@@ -295,6 +295,7 @@ paths:
       parameters:
         - name: body
           in: body
+          required: true
           schema:
             $ref: "#/definitions/UserPayload"
       responses:
@@ -347,6 +348,7 @@ paths:
           description: The email of the User
         - name: body
           in: body
+          required: true
           schema:
             $ref: "#/definitions/UserGroupsPayload"
       responses:
@@ -381,6 +383,7 @@ paths:
           description: The id of the Subscription
         - name: body
           in: body
+          required: true
           schema:
             $ref: "#/definitions/ProductNamePayload"
       responses:
