@@ -299,7 +299,7 @@ paths:
           schema:
             $ref: "#/definitions/UserPayload"
       responses:
-        "201":
+        "200":
           description: The new User
           schema:
             $ref: "#/definitions/UserCreated"
