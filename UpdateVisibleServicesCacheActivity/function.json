@@ -9,7 +9,7 @@
     {
       "name": "visibleServiceCacheBlob",
       "type": "blob",
-      "path": "$web/services/{serviceId}.json",
+      "path": "services/{serviceId}.json",
       "connection": "AssetsStorageConnection",
       "direction": "out"
     }
