@@ -100,8 +100,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
     const response = await regenerateSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       aNotExistingSubscriptionId,
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
@@ -115,8 +113,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
     );
     const response = await regenerateSubscriptionKeysHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       aBreakingApimSubscriptionId,
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
@@ -132,8 +128,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
     // Primary key regeneration
     const firstResponse = await regenerateSubscriptionKeysHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       aValidSubscriptionId,
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
@@ -155,8 +149,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
     // Secondary key regeneration
     const secondResponse = await regenerateSubscriptionKeysHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       aValidSubscriptionId,
       { key_type: SubscriptionKeyTypeEnum.SECONDARY_KEY }

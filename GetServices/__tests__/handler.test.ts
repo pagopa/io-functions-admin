@@ -20,8 +20,6 @@ describe("GetServices", () => {
 
     const response = await getServicesHandler(
       undefined as any, // Not used
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any // Not used
     );
 
@@ -60,8 +58,6 @@ describe("GetServices", () => {
     const getServicesHandler = GetServicesHandler(mockServiceModel as any);
 
     const response = await getServicesHandler(
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any, // Not used
       undefined as any // Not used
     );

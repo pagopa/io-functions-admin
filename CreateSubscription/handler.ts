@@ -7,24 +7,12 @@ import {
   IAzureApiAuthorization,
   UserGroup
 } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import {
-  AzureUserAttributesMiddleware,
-  IAzureUserAttributes
-} from "io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
-import {
-  ClientIp,
-  ClientIpMiddleware
-} from "io-functions-commons/dist/src/utils/middlewares/client_ip_middleware";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredBodyPayloadMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_body_payload";
 import {
   withRequestMiddlewares,
   wrapRequestHandler
 } from "io-functions-commons/dist/src/utils/request_middleware";
-import {
-  checkSourceIpForHandler,
-  clientIPAndCidrTuple as ipTuple
-} from "io-functions-commons/dist/src/utils/source_ip_check";
 import { Errors } from "io-ts";
 
 import {
@@ -53,8 +41,6 @@ import { CreateSubscriptionParamsMiddleware } from "../utils/middlewares/createS
 type ICreateSubscriptionHandler = (
   context: Context,
   auth: IAzureApiAuthorization,
-  clientIp: ClientIp,
-  userAttributes: IAzureUserAttributes,
   requestParams: readonly [EmailAddress, NonEmptyString],
   productNamePayload: ProductNamePayload
 ) => Promise<
@@ -67,7 +53,7 @@ export function CreateSubscriptionHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): ICreateSubscriptionHandler {
-  return async (context, _, __, ___, requestParams, productNamePayload) => {
+  return async (context, _, requestParams, productNamePayload) => {
     const [userEmail, subscriptionId] = requestParams;
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
@@ -239,10 +225,6 @@ export function CreateSubscription(
     ContextMiddleware(),
     // Allow only users in the ApiUserAdmin group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // Extracts the client IP from the request
-    ClientIpMiddleware,
-    // Extracts custom user attributes from the request
-    AzureUserAttributesMiddleware(serviceModel),
     // TODO:
     //  the following middleware must be replaced with RequiredParamMiddleware after the `withRequestMiddlewares` method will accept more than 6 params
     //  @see: https://www.pivotaltracker.com/story/show/171598976
@@ -252,11 +234,5 @@ export function CreateSubscription(
     RequiredBodyPayloadMiddleware(ProductNamePayload)
   );
 
-  return wrapRequestHandler(
-    middlewaresWrap(
-      checkSourceIpForHandler(handler, (_, __, c, u, ___, _____) =>
-        ipTuple(c, u)
-      )
-    )
-  );
+  return wrapRequestHandler(middlewaresWrap(handler));
 }

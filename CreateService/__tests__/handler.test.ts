@@ -44,8 +44,6 @@ describe("CreateServiceHandler", () => {
     const response = await createServiceHandler(
       undefined as any, // Not used
       undefined as any, // Not used
-      undefined as any, // Not used
-      undefined as any, // Not used
       aServicePayload
     );
 
@@ -72,8 +70,6 @@ describe("CreateServiceHandler", () => {
     );
 
     const response = await createServiceHandler(
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any, // Not used
       undefined as any, // Not used
       aServicePayload
@@ -110,8 +106,6 @@ describe("CreateServiceHandler", () => {
 
     await createServiceHandler(
       contextMock as any, // Not used
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any, // Not used
       aServicePayload
     );

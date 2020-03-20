@@ -108,8 +108,6 @@ describe("UpdateUserGroups", () => {
     const response = await updateUserGroupHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeUserEmail,
       { groups: fakeExistingGroups.map(_ => _.displayName) }
     );
@@ -129,8 +127,6 @@ describe("UpdateUserGroups", () => {
     const response = await updateUserGroupHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeUserEmail,
       { groups: fakeExistingGroups.map(_ => _.displayName) }
     );
@@ -147,8 +143,6 @@ describe("UpdateUserGroups", () => {
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeUserEmail,
       { groups: fakeExistingGroups.map(_ => _.displayName) }
@@ -168,8 +162,6 @@ describe("UpdateUserGroups", () => {
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeUserEmail,
       { groups: fakeExistingGroups.map(_ => _.displayName) }
@@ -192,8 +184,6 @@ describe("UpdateUserGroups", () => {
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeUserEmail,
       { groups: fakeExistingGroups.map(_ => _.displayName) }
@@ -220,8 +210,6 @@ describe("UpdateUserGroups", () => {
     const response = await updateUserGroupHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeUserEmail,
       { groups: fakeExistingGroups.map(_ => _.displayName) }
     );
@@ -246,8 +234,6 @@ describe("UpdateUserGroups", () => {
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeUserEmail,
       { groups: ["invalid group"] }
@@ -278,8 +264,6 @@ describe("UpdateUserGroups", () => {
     const response = await updateUserGroupHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeUserEmail,
       { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) }
     );
@@ -309,8 +293,6 @@ describe("UpdateUserGroups", () => {
     const response = await updateUserGroupHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeUserEmail,
       { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) }
     );
@@ -339,8 +321,6 @@ describe("UpdateUserGroups", () => {
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeUserEmail,
       { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) }
@@ -376,8 +356,6 @@ describe("UpdateUserGroups", () => {
     const response = await updateUserGroupHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeUserEmail,
       { groups: updatedGroups.map(_ => _.displayName) }
     );
@@ -408,8 +386,6 @@ describe("UpdateUserGroups", () => {
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeUserEmail,
       { groups: updatedGroups.map(_ => _.displayName) }

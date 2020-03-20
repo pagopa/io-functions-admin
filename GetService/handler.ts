@@ -21,14 +21,6 @@ import {
   IAzureApiAuthorization,
   UserGroup
 } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import {
-  AzureUserAttributesMiddleware,
-  IAzureUserAttributes
-} from "io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
-import {
-  ClientIp,
-  ClientIpMiddleware
-} from "io-functions-commons/dist/src/utils/middlewares/client_ip_middleware";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import {
   withRequestMiddlewares,
@@ -38,10 +30,6 @@ import {
   IResponseErrorQuery,
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
-import {
-  checkSourceIpForHandler,
-  clientIPAndCidrTuple as ipTuple
-} from "io-functions-commons/dist/src/utils/source_ip_check";
 
 import { retrievedServiceToApiService } from "../utils/conversions";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
@@ -49,8 +37,6 @@ import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 type IGetServiceHandler = (
   context: Context,
   auth: IAzureApiAuthorization,
-  clientIp: ClientIp,
-  userAttributes: IAzureUserAttributes,
   serviceId: ServiceId
 ) => Promise<
   | IResponseSuccessJson<ApiService>
@@ -62,7 +48,7 @@ export function GetServiceHandler(
   _GCTC: CustomTelemetryClientFactory,
   serviceModel: ServiceModel
 ): IGetServiceHandler {
-  return async (_, __, ___, _____, serviceId) => {
+  return async (_, __, serviceId) => {
     const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
       serviceId
     );
@@ -102,17 +88,9 @@ export function GetService(
     ContextMiddleware(),
     // Allow only users in the ApiServiceWrite group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceRead])),
-    // Extracts the client IP from the request
-    ClientIpMiddleware,
-    // Extracts custom user attributes from the request
-    AzureUserAttributesMiddleware(serviceModel),
     // Extracts the ServiceId from the URL path parameter
     ServiceIdMiddleware
   );
 
-  return wrapRequestHandler(
-    middlewaresWrap(
-      checkSourceIpForHandler(handler, (_, __, c, u, ___) => ipTuple(c, u))
-    )
-  );
+  return wrapRequestHandler(middlewaresWrap(handler));
 }

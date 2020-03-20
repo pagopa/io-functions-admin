@@ -51,8 +51,6 @@ describe("UpdateServiceHandler", () => {
     const response = await updateServiceHandler(
       undefined as any, // Not used
       undefined as any, // Not used
-      undefined as any, // Not used
-      undefined as any, // Not used
       aServiceId,
       {
         ...aServicePayload,
@@ -79,8 +77,6 @@ describe("UpdateServiceHandler", () => {
     );
 
     const response = await updateServiceHandler(
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any, // Not used
       undefined as any, // Not used
       aServicePayload.service_id,
@@ -110,8 +106,6 @@ describe("UpdateServiceHandler", () => {
     );
 
     const response = await updateServiceHandler(
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any, // Not used
       undefined as any, // Not used
       aServicePayload.service_id,
@@ -144,8 +138,6 @@ describe("UpdateServiceHandler", () => {
     );
 
     const response = await updateServiceHandler(
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any, // Not used
       undefined as any, // Not used
       aServicePayload.service_id,
@@ -181,8 +173,6 @@ describe("UpdateServiceHandler", () => {
     const response = await updateServiceHandler(
       undefined as any, // Not used
       undefined as any, // Not used
-      undefined as any, // Not used
-      undefined as any, // Not used
       aServicePayload.service_id,
       {
         ...aServicePayload,
@@ -215,8 +205,6 @@ describe("UpdateServiceHandler", () => {
     );
 
     const response = await updateServiceHandler(
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any, // Not used
       undefined as any, // Not used
       aServicePayload.service_id,
@@ -262,8 +250,6 @@ describe("UpdateServiceHandler", () => {
 
     await updateServiceHandler(
       contextMock as any, // Not used
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any, // Not used
       aServicePayload.service_id,
       {

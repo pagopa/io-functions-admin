@@ -20,14 +20,6 @@ import {
   IAzureApiAuthorization,
   UserGroup
 } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import {
-  AzureUserAttributesMiddleware,
-  IAzureUserAttributes
-} from "io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
-import {
-  ClientIp,
-  ClientIpMiddleware
-} from "io-functions-commons/dist/src/utils/middlewares/client_ip_middleware";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredBodyPayloadMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_body_payload";
 import { RequiredParamMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_param";
@@ -35,10 +27,6 @@ import {
   withRequestMiddlewares,
   wrapRequestHandler
 } from "io-functions-commons/dist/src/utils/request_middleware";
-import {
-  checkSourceIpForHandler,
-  clientIPAndCidrTuple as ipTuple
-} from "io-functions-commons/dist/src/utils/source_ip_check";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -71,8 +59,6 @@ type IGetSubscriptionKeysHandlerResponseError =
 type IGetSubscriptionKeysHandler = (
   context: Context,
   auth: IAzureApiAuthorization,
-  clientIp: ClientIp,
-  userAttributes: IAzureUserAttributes,
   email: EmailAddress,
   userGroupsPayload: UserGroupsPayload
 ) => Promise<
@@ -152,7 +138,7 @@ export function UpdateUserGroupHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
-  return async (context, _, __, ___, email, userGroupsPayload) => {
+  return async (context, _, email, userGroupsPayload) => {
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
@@ -367,21 +353,11 @@ export function UpdateUserGroup(
     ContextMiddleware(),
     // Allow only users in the ApiServiceKeyRead group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // Extracts the client IP from the request
-    ClientIpMiddleware,
-    // Extracts custom user attributes from the request
-    AzureUserAttributesMiddleware(serviceModel),
     // Extracts the user email from the URL path
     RequiredParamMiddleware("email", EmailAddress),
     // Extract the user groups payload from the request body
     RequiredBodyPayloadMiddleware(UserGroupsPayload)
   );
 
-  return wrapRequestHandler(
-    middlewaresWrap(
-      checkSourceIpForHandler(handler, (_, __, c, u, ___, ____) =>
-        ipTuple(c, u)
-      )
-    )
-  );
+  return wrapRequestHandler(middlewaresWrap(handler));
 }

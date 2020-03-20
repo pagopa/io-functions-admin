@@ -10,21 +10,9 @@ import {
   IAzureApiAuthorization,
   UserGroup
 } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import {
-  AzureUserAttributesMiddleware,
-  IAzureUserAttributes
-} from "io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
-import {
-  ClientIp,
-  ClientIpMiddleware
-} from "io-functions-commons/dist/src/utils/middlewares/client_ip_middleware";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredBodyPayloadMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_body_payload";
 import { withRequestMiddlewares } from "io-functions-commons/dist/src/utils/request_middleware";
-import {
-  checkSourceIpForHandler,
-  clientIPAndCidrTuple as ipTuple
-} from "io-functions-commons/dist/src/utils/source_ip_check";
 import { wrapRequestHandler } from "italia-ts-commons/lib/request_middleware";
 import {
   IResponseErrorInternal,
@@ -46,8 +34,6 @@ import { genericInternalErrorHandler } from "../utils/errorHandler";
 type ICreateUserHandler = (
   context: Context,
   auth: IAzureApiAuthorization,
-  clientIp: ClientIp,
-  userAttributes: IAzureUserAttributes,
   userPayload: UserPayload
 ) => Promise<IResponseSuccessJson<UserCreated> | IResponseErrorInternal>;
 
@@ -76,7 +62,7 @@ export function CreateUserHandler(
   apimCredentials: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): ICreateUserHandler {
-  return async (context, _, __, ___, userPayload) => {
+  return async (context, _, userPayload) => {
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
@@ -186,17 +172,9 @@ export function CreateUser(
     ContextMiddleware(),
     // Allow only users in the ApiUserAdmin group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // Extracts the client IP from the request
-    ClientIpMiddleware,
-    // Extracts custom user attributes from the request
-    AzureUserAttributesMiddleware(serviceModel),
     // Extract the body payload from the request
     RequiredBodyPayloadMiddleware(UserPayload)
   );
 
-  return wrapRequestHandler(
-    middlewaresWrap(
-      checkSourceIpForHandler(handler, (_, __, c, u, ___) => ipTuple(c, u))
-    )
-  );
+  return wrapRequestHandler(middlewaresWrap(handler));
 }

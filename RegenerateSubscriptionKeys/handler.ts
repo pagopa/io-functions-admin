@@ -8,23 +8,11 @@ import {
   IAzureApiAuthorization,
   UserGroup
 } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import {
-  AzureUserAttributesMiddleware,
-  IAzureUserAttributes
-} from "io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
-import {
-  ClientIp,
-  ClientIpMiddleware
-} from "io-functions-commons/dist/src/utils/middlewares/client_ip_middleware";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import {
   withRequestMiddlewares,
   wrapRequestHandler
 } from "io-functions-commons/dist/src/utils/request_middleware";
-import {
-  checkSourceIpForHandler,
-  clientIPAndCidrTuple as ipTuple
-} from "io-functions-commons/dist/src/utils/source_ip_check";
 
 import { toError } from "fp-ts/lib/Either";
 import { tryCatch } from "fp-ts/lib/TaskEither";
@@ -51,8 +39,6 @@ import { SubscriptionKeyTypeMiddleware } from "../utils/middlewares/subscription
 type IGetSubscriptionKeysHandler = (
   context: Context,
   auth: IAzureApiAuthorization,
-  clientIp: ClientIp,
-  userAttributes: IAzureUserAttributes,
   serviceId: ServiceId,
   keyTypePayload: SubscriptionKeyTypePayload
 ) => Promise<
@@ -65,7 +51,7 @@ export function RegenerateSubscriptionKeysHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
-  return async (context, __, ___, ____, serviceId, keyTypePayload) => {
+  return async (context, _, serviceId, keyTypePayload) => {
     const response = await getApiClient(
       servicePrincipalCreds,
       azureApimConfig.subscriptionId
@@ -142,20 +128,10 @@ export function RegenerateSubscriptionKeys(
     ContextMiddleware(),
     // Allow only users in the ApiServiceKeyWrite group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // Extracts the client IP from the request
-    ClientIpMiddleware,
-    // Extracts custom user attributes from the request
-    AzureUserAttributesMiddleware(serviceModel),
     // Extracts the ServiceId from the URL path parameter
     ServiceIdMiddleware,
     SubscriptionKeyTypeMiddleware
   );
 
-  return wrapRequestHandler(
-    middlewaresWrap(
-      checkSourceIpForHandler(handler, (_, __, c, u, ___, ____) =>
-        ipTuple(c, u)
-      )
-    )
-  );
+  return wrapRequestHandler(middlewaresWrap(handler));
 }

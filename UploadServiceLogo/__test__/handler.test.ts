@@ -24,8 +24,6 @@ describe("UpdateServiceLogoHandler", () => {
     const response = await updateServiceLogoHandler(
       undefined as any, // Not used
       undefined as any, // Not used
-      undefined as any, // Not used
-      undefined as any, // Not used
       aServiceId,
       undefined as any // Not used
     );
@@ -49,8 +47,6 @@ describe("UpdateServiceLogoHandler", () => {
       undefined as any
     );
     const response = await updateServiceLogoHandler(
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any, // Not used
       undefined as any, // Not used
       aServiceId,
@@ -87,8 +83,6 @@ describe("UpdateServiceLogoHandler", () => {
     );
     const response = await updateServiceLogoHandler(
       mockedContext as any,
-      undefined as any, // Not used
-      undefined as any, // Not used
       undefined as any, // Not used
       aServiceId,
       requestPayload

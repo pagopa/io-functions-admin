@@ -106,8 +106,6 @@ describe("CreateSubscription", () => {
     const response = await createSubscriptionHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeParams as any,
       fakePayload as any
     );
@@ -127,8 +125,6 @@ describe("CreateSubscription", () => {
     const response = await createSubscriptionHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeParams as any,
       fakePayload as any
     );
@@ -145,8 +141,6 @@ describe("CreateSubscription", () => {
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeParams as any,
       fakePayload as any
@@ -166,8 +160,6 @@ describe("CreateSubscription", () => {
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeParams as any,
       fakePayload as any
@@ -191,8 +183,6 @@ describe("CreateSubscription", () => {
     const response = await createSubscriptionHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeParams as any,
       fakePayload as any
     );
@@ -213,8 +203,6 @@ describe("CreateSubscription", () => {
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeParams as any,
       fakePayload as any
@@ -237,8 +225,6 @@ describe("CreateSubscription", () => {
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeParams as any,
       fakePayload as any
@@ -265,8 +251,6 @@ describe("CreateSubscription", () => {
     const response = await createSubscriptionHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeParams as any,
       fakePayload as any
     );
@@ -291,8 +275,6 @@ describe("CreateSubscription", () => {
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeParams as any,
       fakePayload as any
@@ -319,8 +301,6 @@ describe("CreateSubscription", () => {
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeParams as any,
       fakePayload as any
