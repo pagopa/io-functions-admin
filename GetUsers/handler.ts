@@ -3,7 +3,6 @@ import * as express from "express";
 import { array } from "fp-ts/lib/Array";
 import { either, toError } from "fp-ts/lib/Either";
 import { tryCatch } from "fp-ts/lib/TaskEither";
-import { ServiceModel } from "io-functions-commons/dist/src/models/service";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -92,7 +91,6 @@ export function GetUsersHandler(
  * Wraps a GetUsers handler inside an Express request handler.
  */
 export function GetUsers(
-  serviceModel: ServiceModel,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   functionsUrl: string

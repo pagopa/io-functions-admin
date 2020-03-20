@@ -4,7 +4,6 @@ import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import * as express from "express";
 import { toError } from "fp-ts/lib/Either";
 import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
-import { ServiceModel } from "io-functions-commons/dist/src/models/service";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -156,7 +155,6 @@ export function CreateUserHandler(
  * Wraps a CreateUser handler inside an Express request handler.
  */
 export function CreateUser(
-  serviceModel: ServiceModel,
   adb2cCreds: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig

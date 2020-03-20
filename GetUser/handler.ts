@@ -12,7 +12,6 @@ import {
   TaskEither,
   tryCatch
 } from "fp-ts/lib/TaskEither";
-import { ServiceModel } from "io-functions-commons/dist/src/models/service";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -238,7 +237,6 @@ export function GetUserHandler(
  * Wraps a GetUsers handler inside an Express request handler.
  */
 export function GetUser(
-  serviceModel: ServiceModel,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {

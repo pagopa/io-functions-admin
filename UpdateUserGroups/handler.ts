@@ -14,7 +14,6 @@ import {
   taskEitherSeq,
   tryCatch
 } from "fp-ts/lib/TaskEither";
-import { ServiceModel } from "io-functions-commons/dist/src/models/service";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -339,7 +338,6 @@ export function UpdateUserGroupHandler(
  * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
  */
 export function UpdateUserGroup(
-  serviceModel: ServiceModel,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {

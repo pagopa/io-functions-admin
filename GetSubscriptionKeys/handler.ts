@@ -2,7 +2,6 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import { ServiceModel } from "io-functions-commons/dist/src/models/service";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -92,7 +91,6 @@ export function GetSubscriptionKeysHandler(
  * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
  */
 export function GetSubscriptionKeys(
-  serviceModel: ServiceModel,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {

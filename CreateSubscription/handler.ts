@@ -1,7 +1,6 @@
 import { Context } from "@azure/functions";
 import * as express from "express";
 import { fromEither, fromPredicate, tryCatch } from "fp-ts/lib/TaskEither";
-import { ServiceModel } from "io-functions-commons/dist/src/models/service";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -211,7 +210,6 @@ export function CreateSubscriptionHandler(
  * Wraps a CreateSubscription handler inside an Express request handler.
  */
 export function CreateSubscription(
-  serviceModel: ServiceModel,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {
