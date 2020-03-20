@@ -76,8 +76,6 @@ describe("GetUser", () => {
     const response = await getUserHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       undefined as any
     );
 
@@ -96,8 +94,6 @@ describe("GetUser", () => {
     const response = await getUserHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       undefined as any
     );
 
@@ -113,8 +109,6 @@ describe("GetUser", () => {
 
     const response = await getUserHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       undefined as any
     );
@@ -133,8 +127,6 @@ describe("GetUser", () => {
 
     const response = await getUserHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       undefined as any
     );
@@ -158,8 +150,6 @@ describe("GetUser", () => {
     const response = await getUserHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       undefined as any
     );
 
@@ -181,8 +171,6 @@ describe("GetUser", () => {
 
     const response = await getUserHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       undefined as any
     );
@@ -206,8 +194,6 @@ describe("GetUser", () => {
     const response = await getUserHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       undefined as any
     );
 
@@ -229,8 +215,6 @@ describe("GetUser", () => {
 
     const response = await getUserHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       undefined as any
     );
@@ -330,8 +314,6 @@ describe("GetUser", () => {
 
     const response = await getUserHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       undefined as any
     );

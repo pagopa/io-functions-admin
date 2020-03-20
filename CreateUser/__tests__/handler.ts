@@ -80,8 +80,6 @@ describe("CreateUser", () => {
     const response = await createUserHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       undefined as any
     );
 
@@ -101,8 +99,6 @@ describe("CreateUser", () => {
 
     const response = await createUserHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeRequestPayload
     );
@@ -129,8 +125,6 @@ describe("CreateUser", () => {
     const response = await createUserHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       fakeRequestPayload
     );
 
@@ -153,8 +147,6 @@ describe("CreateUser", () => {
 
     const response = await createUserHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeRequestPayload
     );
@@ -200,8 +192,6 @@ describe("CreateUser", () => {
 
     const response = await createUserHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       fakeRequestPayload
     );

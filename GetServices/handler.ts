@@ -13,14 +13,6 @@ import {
   IAzureApiAuthorization,
   UserGroup
 } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import {
-  AzureUserAttributesMiddleware,
-  IAzureUserAttributes
-} from "io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
-import {
-  ClientIp,
-  ClientIpMiddleware
-} from "io-functions-commons/dist/src/utils/middlewares/client_ip_middleware";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import {
   withRequestMiddlewares,
@@ -30,10 +22,6 @@ import {
   IResponseErrorQuery,
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
-import {
-  checkSourceIpForHandler,
-  clientIPAndCidrTuple as ipTuple
-} from "io-functions-commons/dist/src/utils/source_ip_check";
 
 import { collect, StrMap } from "fp-ts/lib/StrMap";
 import {
@@ -49,15 +37,13 @@ type IGetServicesHandlerResult =
 
 type IGetServicesHandler = (
   context: Context,
-  auth: IAzureApiAuthorization,
-  clientIp: ClientIp,
-  userAttributes: IAzureUserAttributes
+  auth: IAzureApiAuthorization
 ) => Promise<IGetServicesHandlerResult>;
 
 export function GetServicesHandler(
   serviceModel: ServiceModel
 ): IGetServicesHandler {
-  return async (_, __, ___, ____) => {
+  return async (_, __) => {
     const allRetrievedServicesIterator = await serviceModel.getCollectionIterator();
     const allServicesIterator: IFoldableResultIterator<
       Record<string, ApiService>
@@ -99,16 +85,8 @@ export function GetServices(
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiServiceList group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceList])),
-    // Extracts the client IP from the request
-    ClientIpMiddleware,
-    // Extracts custom user attributes from the request
-    AzureUserAttributesMiddleware(serviceModel)
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceList]))
   );
 
-  return wrapRequestHandler(
-    middlewaresWrap(
-      checkSourceIpForHandler(handler, (_, __, c, u) => ipTuple(c, u))
-    )
-  );
+  return wrapRequestHandler(middlewaresWrap(handler));
 }

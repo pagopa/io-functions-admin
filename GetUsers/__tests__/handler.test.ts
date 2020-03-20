@@ -119,8 +119,6 @@ describe("GetUsers", () => {
     const response = await getUsersHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       undefined
     );
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -148,8 +146,6 @@ describe("GetUsers", () => {
 
     const response = await getUsersHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       undefined
     );
@@ -217,8 +213,6 @@ describe("GetUsers", () => {
     const responseWithNext: any = await getUsersHandler(
       mockedContext as any,
       undefined as any,
-      undefined as any,
-      undefined as any,
       undefined
     );
 
@@ -235,8 +229,6 @@ describe("GetUsers", () => {
     const lastCursor = mockedApimUsersList.length - resultsPerPage;
     const responseWithoutNext = await getUsersHandler(
       mockedContext as any,
-      undefined as any,
-      undefined as any,
       undefined as any,
       lastCursor
     );
