@@ -22,14 +22,14 @@
     {
       "name": "visibleServicesCacheBlob",
       "type": "blob",
-      "path": "$web/services/visible-services.json",
+      "path": "services/visible-services.json",
       "connection": "AssetsStorageConnection",
       "direction": "out"
     },
     {
       "name": "visibleServicesByScopeCacheBlob",
       "type": "blob",
-      "path": "$web/services/visible-services-by-scope.json",
+      "path": "services/visible-services-by-scope.json",
       "connection": "AssetsStorageConnection",
       "direction": "out"
     }
