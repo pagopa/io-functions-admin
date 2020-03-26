@@ -63,8 +63,6 @@ stages:
             
       # A2) Analyze source code to find errors with lint
       - job: lint
-        pool:
-          vmImage: 'ubuntu-latest'
         steps:
           - template: azure-templates/make-build-steps.yml
             parameters:
@@ -112,8 +110,6 @@ stages:
     dependsOn: []
     jobs:
       - job: unit_tests
-        pool:
-          vmImage: 'ubuntu-latest'
         steps:
           - template: azure-templates/make-build-steps.yml
             parameters:
