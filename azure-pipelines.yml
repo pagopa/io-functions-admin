@@ -1,7 +1,8 @@
 # Azure DevOps pipeline to build, check source codes, run tests, and deploy.
 #
-# To enable the check of source code with Danger JS you need to configure a valid
-# GitHub token by setting the following variable: 
+# To make Danger JS run on a pull request you need to add the following pipeline 
+# variable and set it with a GitHub access token (scope public_repo); otherwise 
+# set its value to 'skip' without marking it secret: 
 # - DANGER_GITHUB_API_TOKEN
 #
 # To enable the deployment in any environment you need to configure the following 
@@ -54,46 +55,56 @@ stages:
     dependsOn: []
     jobs:
       # A1) Checkout, install module and build code
-      - job: make_build      
+      - job: make_build
         steps:
-        - template: azure-templates/make-build-steps.yml
-          parameters:
-            make: build
+          - template: azure-templates/make-build-steps.yml
+            parameters:
+              make: build
             
       # A2) Analyze source code to find errors with lint
       - job: lint
+        pool:
+          vmImage: 'ubuntu-latest'
         steps:
-        - template: azure-templates/make-build-steps.yml
-          parameters:
-            make: install_dependencies
+          - template: azure-templates/make-build-steps.yml
+            parameters:
+              make: install_dependencies
 
-        - script: |
-            yarn lint
-          displayName: 'Lint'
+          - script: |
+              yarn lint
+            displayName: 'Lint'
 
       # A3) Validate API definition
       - job: lint_api
+        pool:
+          vmImage: 'ubuntu-latest'
         steps:
-        - script: |
-            npx oval validate -p openapi/index.yaml
-          displayName: 'Validate openAPI'
+          - script: |
+              npx oval validate -p openapi/index.yaml
+            displayName: 'Validate openAPI'
 
-      # A4) Check source code with danger (ignore when master)
+      # A4) Run Danger (skipping if not executing on a PR)
       - job: danger
-        condition: and(succeeded(),
+        pool:
+          vmImage: 'ubuntu-latest'
+        condition: 
+          and(
+            succeeded(), 
             and(
-              variables['DANGER_GITHUB_API_TOKEN'], 
-              ne(variables['Build.SourceBranch'], 'refs/heads/master')
+              eq(variables['Build.Reason'], 'PullRequest'),
+              ne(variables['DANGER_GITHUB_API_TOKEN'], 'skip')
             )
           )
         steps:
-        - template: azure-templates/make-build-steps.yml
-          parameters:
-            make: install_dependencies
+          - template: azure-templates/make-build-steps.yml
+            parameters:
+              make: install_dependencies
 
-        - bash: |
-            yarn danger ci
-          displayName: 'Danger CI'
+          - bash: |
+              yarn danger ci
+            env:
+              DANGER_GITHUB_API_TOKEN: '$(DANGER_GITHUB_API_TOKEN)'
+            displayName: 'Danger CI'
 
 
   # B) Run unit tests if there is a push or pull request on any branch.
@@ -101,23 +112,20 @@ stages:
     dependsOn: []
     jobs:
       - job: unit_tests
+        pool:
+          vmImage: 'ubuntu-latest'
         steps:
-        - task: UseNode@1
-          inputs:
-            version: $(NODE_VERSION)
-          displayName: 'Set up Node.js'
+          - template: azure-templates/make-build-steps.yml
+            parameters:
+              make: install_dependencies
 
-        - template: azure-templates/make-build-steps.yml
-          parameters:
-            make: install_dependencies
+          - script: |
+              yarn test:coverage
+            displayName: 'Unit tests exec'
 
-        - script: |
-            yarn test:coverage
-          displayName: 'Unit tests exec'
-
-        - bash: |
-            bash <(curl -s https://codecov.io/bash)
-          displayName: 'Code coverage'
+          - bash: |
+              bash <(curl -s https://codecov.io/bash)
+            displayName: 'Code coverage'
 
 
   # C) Deploy to STAGE environment if the following conditions apply:
@@ -157,23 +165,23 @@ stages:
       - job: deploy_standard
         condition: and(succeeded(), eq(variables['STAGING_DEPLOY_MODE'], 'deploy_standard'))
         steps:
-        - template: azure-templates/deploy-steps.yml
-          parameters:
-            deployType: 'deployToProductionSlot'
-            azureSubscription: '$(STAGING_AZURE_SUBSCRIPTION)'
-            resourceGroupName: '$(STAGING_RESOURCE_GROUP_NAME)'
-            appName: '$(STAGING_FUNCTION_APP_NAME)'
+          - template: azure-templates/deploy-steps.yml
+            parameters:
+              deployType: 'deployToProductionSlot'
+              azureSubscription: '$(STAGING_AZURE_SUBSCRIPTION)'
+              resourceGroupName: '$(STAGING_RESOURCE_GROUP_NAME)'
+              appName: '$(STAGING_FUNCTION_APP_NAME)'
 
       # Option 2: deploy to staging slot and then swap with 'production' slot
       - job: deploy_to_slots
         condition: and(succeeded(), eq(variables['STAGING_DEPLOY_MODE'], 'deploy_to_slots'))
         steps:
-        - template: azure-templates/deploy-steps.yml
-          parameters:
-            deployType: 'deployToStagingSlotAndSwap'
-            azureSubscription: '$(STAGING_AZURE_SUBSCRIPTION)'
-            resourceGroupName: '$(STAGING_RESOURCE_GROUP_NAME)'
-            appName: '$(STAGING_FUNCTION_APP_NAME)'
+          - template: azure-templates/deploy-steps.yml
+            parameters:
+              deployType: 'deployToStagingSlotAndSwap'
+              azureSubscription: '$(STAGING_AZURE_SUBSCRIPTION)'
+              resourceGroupName: '$(STAGING_RESOURCE_GROUP_NAME)'
+              appName: '$(STAGING_FUNCTION_APP_NAME)'
 
 
   # D) Deploy to PRODUCTION environment if one of the following conditions apply:
@@ -213,20 +221,20 @@ stages:
       - job: deploy_standard
         condition: and(succeeded(), eq(variables['PRODUCTION_DEPLOY_MODE'], 'deploy_standard'))
         steps:
-        - template: azure-templates/deploy-steps.yml
-          parameters:
-            deployType: 'deployToProductionSlot'
-            azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
-            resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
-            appName: '$(PRODUCTION_FUNCTION_APP_NAME)'
+          - template: azure-templates/deploy-steps.yml
+            parameters:
+              deployType: 'deployToProductionSlot'
+              azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
+              resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
+              appName: '$(PRODUCTION_FUNCTION_APP_NAME)'
 
       # Option 2: deploy to staging slot and then swap with 'production' slot
       - job: deploy_to_slots
         condition: and(succeeded(), eq(variables['PRODUCTION_DEPLOY_MODE'], 'deploy_to_slots'))
         steps:
-        - template: azure-templates/deploy-steps.yml
-          parameters:
-            deployType: 'deployToStagingSlotAndSwap'
-            azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
-            resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
-            appName: '$(PRODUCTION_FUNCTION_APP_NAME)'
+          - template: azure-templates/deploy-steps.yml
+            parameters:
+              deployType: 'deployToStagingSlotAndSwap'
+              azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
+              resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
+              appName: '$(PRODUCTION_FUNCTION_APP_NAME)'
