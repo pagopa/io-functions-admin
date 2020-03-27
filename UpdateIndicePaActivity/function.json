@@ -1,0 +1,10 @@
+{
+  "bindings": [
+    {
+      "name": "indicePaUrl",
+      "type": "activityTrigger",
+      "direction": "in"
+    }
+  ],
+  "scriptFile": "../dist/UpdateIndicePaActivity/index.js"
+}

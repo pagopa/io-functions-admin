@@ -1,0 +1,16 @@
+{
+  "bindings": [
+    {
+      "name": "updateIndicePaTimer",
+      "type": "timerTrigger",
+      "direction": "in",
+      "schedule": "*/20 * * * * *"
+    },
+    {
+      "name": "starter",
+      "type": "orchestrationClient",
+      "direction": "in"
+    }
+  ],
+  "scriptFile": "../dist/UpdateIndicePaTimerTrigger/index.js"
+}
