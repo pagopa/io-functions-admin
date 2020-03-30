@@ -6,10 +6,11 @@ import * as df from "durable-functions";
 
 // tslint:disable-next-line:typedef
 const orchestrator = df.orchestrator(function*(context) {
-  yield context.df.callActivity(
+  const result = yield context.df.callActivity(
     "UpdateIndicePaActivity",
     context.df.getInput()
   );
+  context.log("Result:", result);
 });
 
 export default orchestrator;

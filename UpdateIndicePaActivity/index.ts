@@ -3,9 +3,10 @@
 const activityFunction: AzureFunction = async (
   context: Context,
   indicePaUrl: string
-): Promise<void> => {
+): Promise<string> => {
   context.log("indicePaUrl: ", indicePaUrl);
   context.log("context.bindings.indicePaUrl: ", context.bindings.indicePaUrl);
+  return "FINISHED";
 };
 
 export default activityFunction;
