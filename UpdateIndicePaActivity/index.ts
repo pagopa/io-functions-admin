@@ -6,10 +6,11 @@ import { tryCatch } from "fp-ts/lib/TaskEither";
 import fetch from "node-fetch";
 import { Stream } from "stream";
 
-// tslint:disable-next-line:no-any readonly-array
-function parseAdministrations(responseBody: Stream): Promise<any[]> {
-  // tslint:disable-next-line:no-any readonly-array
-  const administrations: any[] = [];
+function parseAdministrations(
+  responseBody: Stream
+): Promise<ReadonlyArray<Record<string, string>>> {
+  // tslint:disable-next-line:readonly-array
+  const administrations: Array<Record<string, string>> = [];
   return new Promise((resolve, reject) =>
     responseBody
       .pipe(
@@ -18,8 +19,7 @@ function parseAdministrations(responseBody: Stream): Promise<any[]> {
         })
       )
       .pipe(
-        // tslint:disable-next-line:no-any
-        es.map((entry: any, cb: () => void) => {
+        es.map((entry: Record<string, string>, cb: () => void) => {
           // Check that the info from the current row is valid,
           // if it's not, then do nothing
           if (entry.cf_validato !== "S") {
@@ -43,7 +43,7 @@ function parseAdministrations(responseBody: Stream): Promise<any[]> {
 
 const activityFunction: AzureFunction = async (
   context: Context
-): Promise<Either<Error, any>> => {
+): Promise<Either<Error, ReadonlyArray<Record<string, string>>>> => {
   return await tryCatch(() => fetch(context.bindings.indicePaUrl), toError)
     .chain(response =>
       tryCatch(() => parseAdministrations(response.body), toError)
