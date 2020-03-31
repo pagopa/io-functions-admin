@@ -14,17 +14,19 @@ const timerTrigger: AzureFunction = async (
   const client = df.getClient(context);
 
   if (myTimer.IsPastDue) {
-    context.log("Environment not ready yet, wait...");
+    context.log.info("Environment not ready yet, wait...");
   }
 
   const orchestratorFunctionName = "UpdateIndicePaOrchestrator";
-  await client.startNew(
+  const instanceId = await client.startNew(
     orchestratorFunctionName,
     undefined,
     getRequiredStringEnv("INDICEPA_ADMINISTRATIONS_URL")
   );
 
-  context.log("UpdateIndicePaOrchestrator started.");
+  context.log.info(
+    `UpdateIndicePaOrchestrator started with instanceId ${instanceId}`
+  );
 };
 
 export default timerTrigger;
