@@ -4,7 +4,7 @@
       "name": "updateIndicePaTimer",
       "type": "timerTrigger",
       "direction": "in",
-      "schedule": "*/20 * * * * *"
+      "schedule": "* * 2 * * *"
     },
     {
       "name": "starter",
