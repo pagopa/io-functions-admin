@@ -1,0 +1,17 @@
+{
+  "bindings": [
+    {
+      "name": "input",
+      "type": "activityTrigger",
+      "direction": "in"
+    },
+    {
+      "type": "blob",
+      "name": "data",
+      "path": "amministrazioni/{subDir}/{fileName}",
+      "connection": "AdministrationsStorageConnection",
+      "direction": "out"
+    }
+  ],
+  "scriptFile": "../dist/UpdateAdministrationActivity/index.js"
+}
