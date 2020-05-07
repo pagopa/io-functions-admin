@@ -1,19 +1,37 @@
 import { MaxAllowedPaymentAmount } from "io-functions-commons/dist/generated/definitions/MaxAllowedPaymentAmount";
 import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
 import {
+  UserDataProcessingChoice,
+  UserDataProcessingChoiceEnum
+} from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import {
+  UserDataProcessingStatus,
+  UserDataProcessingStatusEnum
+} from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import {
   NewService,
   RetrievedService,
   Service,
   toAuthorizedCIDRs,
   toAuthorizedRecipients
 } from "io-functions-commons/dist/src/models/service";
+import {
+  makeUserDataProcessingId,
+  UserDataProcessing,
+  UserDataProcessingId
+} from "io-functions-commons/dist/src/models/user_data_processing";
 import { NonNegativeNumber } from "italia-ts-commons/lib/numbers";
 import {
+  FiscalCode,
   NonEmptyString,
   OrganizationFiscalCode
 } from "italia-ts-commons/lib/strings";
 
+export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
+
 export const anOrganizationFiscalCode = "12345678901" as OrganizationFiscalCode;
+
+export const aNewDate = new Date();
 
 export const aServicePayload: ApiService = {
   authorized_cidrs: [],
@@ -59,4 +77,27 @@ export const aSeralizedService: ApiService = {
   ...aServicePayload,
   id: "123" as NonEmptyString,
   version: 1 as NonNegativeNumber
+};
+
+export const aUserDataProcessingChoice: UserDataProcessingChoice =
+  UserDataProcessingChoiceEnum.DOWNLOAD;
+
+export const aUserDataProcessingId: UserDataProcessingId = makeUserDataProcessingId(
+  aUserDataProcessingChoice,
+  aFiscalCode
+);
+
+export const aUserDataProcessingStatus: UserDataProcessingStatus =
+  UserDataProcessingStatusEnum.PENDING;
+
+export const aWipUserDataProcessingStatus: UserDataProcessingStatus =
+  UserDataProcessingStatusEnum.WIP;
+
+export const aUserDataProcessing: UserDataProcessing = {
+  choice: aUserDataProcessingChoice,
+  createdAt: aNewDate,
+  fiscalCode: aFiscalCode,
+  status: aUserDataProcessingStatus,
+  updatedAt: aNewDate,
+  userDataProcessingId: aUserDataProcessingId
 };
