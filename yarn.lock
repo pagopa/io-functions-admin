@@ -878,9 +878,9 @@ agent-base@4, agent-base@^4.3.0:
   dependencies:
     es6-promisify "^5.0.0"
 
-"agentkeepalive@git+https://github.com/pagopa/agentkeepalive.git#v4.1.1":
+"agentkeepalive@https://github.com/pagopa/agentkeepalive#v4.1.1":
   version "4.1.0"
-  resolved "git+https://github.com/pagopa/agentkeepalive.git#91309bcab216dccbd08631e227a974afbfe807fb"
+  resolved "https://github.com/pagopa/agentkeepalive#91309bcab216dccbd08631e227a974afbfe807fb"
   dependencies:
     debug "^4.1.0"
     depd "^1.1.2"
@@ -3969,7 +3969,7 @@ invert-kv@^2.0.0:
   resolved "https://registry.yarnpkg.com/invert-kv/-/invert-kv-2.0.0.tgz#7393f5afa59ec9ff5f67a27620d11c226e3eec02"
   integrity sha512-wPVv/y/QQ/Uiirj/vh3oP+1Ww+AWehmi1g5fFWGPF6IpCBCDVrhgHRMvrLfdYcwDh3QJbGXDW4JAuzxElLSqKA==
 
-io-functions-commons@9.0.0:
+io-functions-commons@^9.0.0:
   version "9.0.0"
   resolved "https://registry.yarnpkg.com/io-functions-commons/-/io-functions-commons-9.0.0.tgz#34c8ca58a590fba87c972d6b738acd93c16f1cb6"
   integrity sha512-I+7qASSdt85PtyQVFH7vmlkvfGf7oZ9dVwo6Ty2evjBlFk3VPbfFUQWsT+8ClJF3RieMV1vnyCy850s8xYzYTw==
