@@ -18,10 +18,7 @@ describe("GetServiceHandler", () => {
       })
     };
 
-    const getServiceHandler = GetServiceHandler(
-      undefined as any,
-      mockServiceModel as any
-    );
+    const getServiceHandler = GetServiceHandler(mockServiceModel as any);
     const response = await getServiceHandler(
       undefined as any, // Not used
       undefined as any, // Not used
@@ -42,10 +39,7 @@ describe("GetServiceHandler", () => {
       })
     };
 
-    const getServiceHandler = GetServiceHandler(
-      undefined as any,
-      mockServiceModel as any
-    );
+    const getServiceHandler = GetServiceHandler(mockServiceModel as any);
     const response = await getServiceHandler(
       undefined as any, // Not used
       undefined as any, // Not used
@@ -66,10 +60,7 @@ describe("GetServiceHandler", () => {
       })
     };
 
-    const getServiceHandler = GetServiceHandler(
-      undefined as any,
-      mockServiceModel as any
-    );
+    const getServiceHandler = GetServiceHandler(mockServiceModel as any);
     const response = await getServiceHandler(
       undefined as any, // Not used
       undefined as any, // Not used

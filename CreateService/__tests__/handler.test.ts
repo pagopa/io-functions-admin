@@ -36,10 +36,7 @@ describe("CreateServiceHandler", () => {
       })
     };
 
-    const createServiceHandler = CreateServiceHandler(
-      undefined as any,
-      mockServiceModel as any
-    );
+    const createServiceHandler = CreateServiceHandler(mockServiceModel as any);
 
     const response = await createServiceHandler(
       undefined as any, // Not used
@@ -64,10 +61,7 @@ describe("CreateServiceHandler", () => {
       })
     };
 
-    const createServiceHandler = CreateServiceHandler(
-      undefined as any,
-      mockServiceModel as any
-    );
+    const createServiceHandler = CreateServiceHandler(mockServiceModel as any);
 
     const response = await createServiceHandler(
       undefined as any, // Not used
@@ -99,10 +93,7 @@ describe("CreateServiceHandler", () => {
       log: jest.fn()
     };
 
-    const createServiceHandler = CreateServiceHandler(
-      undefined as any,
-      mockServiceModel as any
-    );
+    const createServiceHandler = CreateServiceHandler(mockServiceModel as any);
 
     await createServiceHandler(
       contextMock as any, // Not used
