@@ -9,7 +9,7 @@
     "prestart": "npm run build && func extensions install",
     "start:host": "func start",
     "start": "npm-run-all --parallel start:host watch",
-    "_pretest": "yarn generate:definitions",
+    "pretest": "yarn generate:definitions",
     "test": "dotenv -e env.example -- jest",
     "pretest:coverage": "yarn generate:definitions",
     "test:coverage": "dotenv -e env.example -- jest --coverage",

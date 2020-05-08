@@ -20,9 +20,6 @@ import createAzureFunctionHandler from "io-functions-express/dist/src/createAzur
 
 import { GetService } from "./handler";
 
-// Whether we're in a production environment
-const isProduction = process.env.NODE_ENV === "production";
-
 const cosmosDbUri = getRequiredStringEnv("COSMOSDB_URI");
 const cosmosDbKey = getRequiredStringEnv("COSMOSDB_KEY");
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
