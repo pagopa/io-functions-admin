@@ -10,10 +10,6 @@ import {
   ServiceModel
 } from "io-functions-commons/dist/src/models/service";
 
-import {
-  TelemetryClient,
-  wrapCustomTelemetryClient
-} from "io-functions-commons/dist/src/utils/application_insights";
 import * as documentDbUtils from "io-functions-commons/dist/src/utils/documentdb";
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { secureExpressApp } from "io-functions-commons/dist/src/utils/express";
@@ -26,11 +22,6 @@ import { GetService } from "./handler";
 
 // Whether we're in a production environment
 const isProduction = process.env.NODE_ENV === "production";
-
-const getCustomTelemetryClient = wrapCustomTelemetryClient(
-  isProduction,
-  new TelemetryClient()
-);
 
 const cosmosDbUri = getRequiredStringEnv("COSMOSDB_URI");
 const cosmosDbKey = getRequiredStringEnv("COSMOSDB_KEY");
@@ -60,10 +51,7 @@ const app = express();
 secureExpressApp(app);
 
 // Add express route
-app.get(
-  "/adm/services/:serviceid",
-  GetService(getCustomTelemetryClient, serviceModel)
-);
+app.get("/adm/services/:serviceid", GetService(serviceModel));
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
 

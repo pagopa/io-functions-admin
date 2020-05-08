@@ -43,10 +43,7 @@ describe("UpdateServiceHandler", () => {
       })
     };
 
-    const updateServiceHandler = UpdateServiceHandler(
-      undefined as any, // Not used
-      serviceModelMock as any
-    );
+    const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
 
     const response = await updateServiceHandler(
       undefined as any, // Not used
@@ -71,10 +68,7 @@ describe("UpdateServiceHandler", () => {
       })
     };
 
-    const updateServiceHandler = UpdateServiceHandler(
-      undefined as any, // Not used
-      serviceModelMock as any
-    );
+    const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
 
     const response = await updateServiceHandler(
       undefined as any, // Not used
@@ -100,10 +94,7 @@ describe("UpdateServiceHandler", () => {
       })
     };
 
-    const updateServiceHandler = UpdateServiceHandler(
-      undefined as any, // Not used
-      serviceModelMock as any
-    );
+    const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
 
     const response = await updateServiceHandler(
       undefined as any, // Not used
@@ -132,10 +123,7 @@ describe("UpdateServiceHandler", () => {
       })
     };
 
-    const updateServiceHandler = UpdateServiceHandler(
-      undefined as any, // Not used
-      serviceModelMock as any
-    );
+    const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
 
     const response = await updateServiceHandler(
       undefined as any, // Not used
@@ -165,10 +153,7 @@ describe("UpdateServiceHandler", () => {
       })
     };
 
-    const updateServiceHandler = UpdateServiceHandler(
-      undefined as any, // Not used
-      serviceModelMock as any
-    );
+    const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
 
     const response = await updateServiceHandler(
       undefined as any, // Not used
@@ -199,10 +184,7 @@ describe("UpdateServiceHandler", () => {
       })
     };
 
-    const updateServiceHandler = UpdateServiceHandler(
-      undefined as any, // Not used
-      serviceModelMock as any
-    );
+    const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
 
     const response = await updateServiceHandler(
       undefined as any, // Not used
@@ -243,10 +225,7 @@ describe("UpdateServiceHandler", () => {
       log: jest.fn()
     };
 
-    const updateServiceHandler = UpdateServiceHandler(
-      undefined as any,
-      serviceModelMock as any
-    );
+    const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
 
     await updateServiceHandler(
       contextMock as any, // Not used

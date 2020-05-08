@@ -14,7 +14,6 @@ import {
 
 import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
 import { ServiceModel } from "io-functions-commons/dist/src/models/service";
-import { CustomTelemetryClientFactory } from "io-functions-commons/dist/src/utils/application_insights";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -48,7 +47,6 @@ type ICreateServiceHandler = (
 >;
 
 export function CreateServiceHandler(
-  _GCTC: CustomTelemetryClientFactory,
   serviceModel: ServiceModel
 ): ICreateServiceHandler {
   return async (context, _, servicePayload) => {
@@ -88,10 +86,9 @@ export function CreateServiceHandler(
  * Wraps a CreateService handler inside an Express request handler.
  */
 export function CreateService(
-  getCustomTelemetryClient: CustomTelemetryClientFactory,
   serviceModel: ServiceModel
 ): express.RequestHandler {
-  const handler = CreateServiceHandler(getCustomTelemetryClient, serviceModel);
+  const handler = CreateServiceHandler(serviceModel);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings
