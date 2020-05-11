@@ -9,6 +9,10 @@ import {
   UserDataProcessingStatusEnum
 } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
+  Profile,
+  RetrievedProfile
+} from "io-functions-commons/dist/src/models/profile";
+import {
   NewService,
   RetrievedService,
   Service,
@@ -20,12 +24,35 @@ import {
   UserDataProcessing,
   UserDataProcessingId
 } from "io-functions-commons/dist/src/models/user_data_processing";
+import {
+  RetrievedNotification,
+  NewNotification,
+  NotificationAddressSourceEnum
+} from "io-functions-commons/dist/src/models/notification";
 import { NonNegativeNumber } from "italia-ts-commons/lib/numbers";
 import {
+  EmailString,
   FiscalCode,
   NonEmptyString,
   OrganizationFiscalCode
 } from "italia-ts-commons/lib/strings";
+
+import { MessageBodyMarkdown } from "io-functions-commons/dist/generated/definitions/MessageBodyMarkdown";
+import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
+import { MessageSubject } from "io-functions-commons/dist/generated/definitions/MessageSubject";
+import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
+import { TimeToLiveSeconds } from "io-functions-commons/dist/generated/definitions/TimeToLiveSeconds";
+import {
+  Message,
+  NewMessageWithContent,
+  RetrievedMessageWithContent
+} from "io-functions-commons/dist/src/models/message";
+import {
+  RetrievedSenderService,
+  NewSenderService
+} from "io-functions-commons/dist/src/models/sender_service";
+import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
+import { EmailAddress } from "../generated/definitions/EmailAddress";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
 
@@ -100,4 +127,100 @@ export const aUserDataProcessing: UserDataProcessing = {
   status: aUserDataProcessingStatus,
   updatedAt: aNewDate,
   userDataProcessingId: aUserDataProcessingId
+};
+
+export const aEmail = "email@example.com" as EmailString;
+
+export const aProfile: Profile = {
+  email: aEmail,
+  fiscalCode: aFiscalCode,
+  isEmailEnabled: true,
+  isEmailValidated: true,
+  isInboxEnabled: false,
+  isWebhookEnabled: false
+};
+
+export const aRetrievedProfile: RetrievedProfile = {
+  _self: "123",
+  _ts: 123,
+  id: "123" as NonEmptyString,
+  kind: "IRetrievedProfile",
+  version: 0 as NonNegativeNumber,
+  ...aProfile
+};
+
+const aMessageBodyMarkdown = "test".repeat(80) as MessageBodyMarkdown;
+
+const aMessageContent: MessageContent = {
+  markdown: aMessageBodyMarkdown,
+  subject: "test".repeat(10) as MessageSubject
+};
+
+const aSerializedNewMessageWithContent = {
+  content: aMessageContent,
+  createdAt: new Date().toISOString(),
+  fiscalCode: aFiscalCode,
+  id: "A_MESSAGE_ID" as NonEmptyString,
+  indexedId: "A_MESSAGE_ID" as NonEmptyString,
+  senderServiceId: "agid" as ServiceId,
+  senderUserId: "u123" as NonEmptyString,
+  timeToLiveSeconds: 3600 as TimeToLiveSeconds
+};
+
+const aNewMessageWithContent: NewMessageWithContent = {
+  ...aSerializedNewMessageWithContent,
+  createdAt: new Date(),
+  kind: "INewMessageWithContent"
+};
+
+const aSerializedRetrievedMessageWithContent = {
+  ...aSerializedNewMessageWithContent,
+  _self: "xyz",
+  _ts: 123,
+  kind: "IRetrievedMessageWithContent"
+};
+
+export const aRetrievedMessageWithContent: RetrievedMessageWithContent = {
+  ...aNewMessageWithContent,
+  _self: "xyz",
+  _ts: 123,
+  kind: "IRetrievedMessageWithContent"
+};
+
+export const aServiceId = "s123" as ServiceId;
+
+export const aNewSenderService: NewSenderService = {
+  id: "A_SenderService_ID" as NonEmptyString,
+  kind: "INewSenderService",
+  lastNotificationAt: new Date(),
+  recipientFiscalCode: aFiscalCode,
+  serviceId: aServiceId,
+  version: 1 as NonNegativeNumber
+};
+
+export const aRetrievedSenderService: RetrievedSenderService = {
+  ...aNewSenderService,
+  _self: "xyz",
+  _ts: 123,
+  kind: "IRetrievedSenderService"
+};
+
+export const aNewEmailNotification: NewNotification = {
+  channels: {
+    [NotificationChannelEnum.EMAIL]: {
+      addressSource: NotificationAddressSourceEnum.DEFAULT_ADDRESS,
+      toAddress: "to@example.com" as EmailAddress
+    }
+  },
+  fiscalCode: aFiscalCode,
+  id: "A_NOTIFICATION_ID" as NonEmptyString,
+  kind: "INewNotification",
+  messageId: "A_MESSAGE_ID" as NonEmptyString
+};
+
+export const aRetrievedNotification: RetrievedNotification = {
+  ...aNewEmailNotification,
+  _self: "xyz",
+  _ts: 123,
+  kind: "IRetrievedNotification"
 };
