@@ -82,6 +82,36 @@ function assertNever(_: never): void {
 }
 
 /**
+ * Converts a Promise<Either> into a TaskEither
+ * This is needed because our models return unconvenient type. Both left and rejection cases are handled as a TaskEither left
+ * @param lazyPromise a lazy promise to convert
+ * @param queryName an optional name for the query, for logging purpose
+ *
+ * @returns either the query result or a query failure
+ */
+const fromQueryEither = <R>(
+  lazyPromise: () => Promise<Either<QueryError, R>>,
+  queryName: string = ""
+) =>
+  tryCatch(lazyPromise, (err: Error) =>
+    ActivityResultQueryFailure.encode({
+      kind: "QUERY_FAILURE",
+      query: queryName,
+      reason: err.message
+    })
+  ).chain((queryErrorOrRecord: Either<QueryError, R>) =>
+    fromEither(
+      queryErrorOrRecord.mapLeft(queryError =>
+        ActivityResultQueryFailure.encode({
+          kind: "QUERY_FAILURE",
+          query: queryName,
+          reason: JSON.stringify(queryError)
+        })
+      )
+    )
+  );
+
+/**
  * Logs depending on failure type
  * @param context the Azure functions context
  * @param failure the failure to log
@@ -122,29 +152,13 @@ export const createSetUserDataProcessingStatusActivityHandler = (
     currentRecord: UserDataProcessing;
     nextStatus: UserDataProcessingStatus;
   }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
-    tryCatch(
+    fromQueryEither(
       () =>
         userDataProcessingModel.createOrUpdateByNewOne({
           ...currentRecord,
           status: nextStatus
         }),
-      (err: Error) => {
-        return ActivityResultQueryFailure.encode({
-          kind: "QUERY_FAILURE",
-          query: "userDataProcessingModel.createOrUpdateByNewOne",
-          reason: err.message
-        });
-      }
-    ).chain((queryErrorOrRecord: Either<QueryError, UserDataProcessing>) =>
-      fromEither(
-        queryErrorOrRecord.mapLeft(queryError => {
-          return ActivityResultQueryFailure.encode({
-            kind: "QUERY_FAILURE",
-            query: "userDataProcessingModel.createOrUpdateByNewOne",
-            reason: JSON.stringify(queryError)
-          });
-        })
-      )
+      "userDataProcessingModel.createOrUpdateByNewOne"
     );
 
   // the actual handler
