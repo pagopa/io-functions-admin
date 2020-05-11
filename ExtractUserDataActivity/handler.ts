@@ -154,6 +154,8 @@ const logFailure = (context: Context) => (
       context.log.error(`${logPrefix}|Error user not found |ERROR=`);
       break;
     default:
+      // tslint:disable-next-line: no-dead-store
+      const assertNever: never = failure;
   }
 };
 
