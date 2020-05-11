@@ -1,4 +1,4 @@
-/* tslint:disable: no-any */
+/* tslint:disable: no-any no-identical-functions */
 
 import { left, right } from "fp-ts/lib/Either";
 
@@ -7,8 +7,8 @@ import { aUserDataProcessing } from "../../__mocks__/mocks";
 
 import {
   ActivityInput,
-  createSetUserDataProcessingStatusActivityHandler,
-  ActivityResultFailure
+  ActivityResultFailure,
+  createSetUserDataProcessingStatusActivityHandler
 } from "../handler";
 
 import { QueryError } from "documentdb";
@@ -73,7 +73,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
           }
         );
       },
-      response => fail(`Should not consider this a Right`)
+      _ => fail(`Should not consider this a Right`)
     );
   });
 
@@ -104,7 +104,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
           }
         );
       },
-      response => fail(`Should not consider this a Right`)
+      _ => fail(`Should not consider this a Right`)
     );
   });
 
@@ -128,7 +128,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
           }
         );
       },
-      response => fail(`Should not consider this a Right`)
+      _ => fail(`Should not consider this a Right`)
     );
   });
 });

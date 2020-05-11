@@ -116,20 +116,24 @@ const fromQueryEither = <R>(
   tryCatch(lazyPromise, (err: Error) =>
     ActivityResultQueryFailure.encode({
       kind: "QUERY_FAILURE",
-      reason: err.message,
-      query: queryName
+      query: queryName,
+      reason: err.message
     })
   ).chain((queryErrorOrRecord: Either<QueryError, R>) =>
     fromEither(
       queryErrorOrRecord.mapLeft(queryError =>
         ActivityResultQueryFailure.encode({
           kind: "QUERY_FAILURE",
-          reason: JSON.stringify(queryError),
-          query: queryName
+          query: queryName,
+          reason: JSON.stringify(queryError)
         })
       )
     )
   );
+
+function assertNever(_: never): void {
+  throw new Error("should not have executed this");
+}
 
 /**
  * Logs depending on failure type
@@ -154,8 +158,7 @@ const logFailure = (context: Context) => (
       context.log.error(`${logPrefix}|Error user not found |ERROR=`);
       break;
     default:
-      // tslint:disable-next-line: no-dead-store
-      const assertNever: never = failure;
+      assertNever(failure);
   }
 };
 

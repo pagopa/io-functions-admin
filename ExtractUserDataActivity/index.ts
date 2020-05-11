@@ -13,7 +13,6 @@ import {
 import {
   NOTIFICATION_COLLECTION_NAME // we use the extended, local-defined model
 } from /* NotificationModel */ "io-functions-commons/dist/src/models/notification";
-import { NotificationModel } from "./notification";
 import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
@@ -22,6 +21,7 @@ import {
   SENDER_SERVICE_COLLECTION_NAME,
   SenderServiceModel
 } from "io-functions-commons/dist/src/models/sender_service";
+import { NotificationModel } from "./notification";
 
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 

@@ -9,6 +9,11 @@ import {
   UserDataProcessingStatusEnum
 } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
+  NewNotification,
+  NotificationAddressSourceEnum,
+  RetrievedNotification
+} from "io-functions-commons/dist/src/models/notification";
+import {
   Profile,
   RetrievedProfile
 } from "io-functions-commons/dist/src/models/profile";
@@ -24,11 +29,6 @@ import {
   UserDataProcessing,
   UserDataProcessingId
 } from "io-functions-commons/dist/src/models/user_data_processing";
-import {
-  RetrievedNotification,
-  NewNotification,
-  NotificationAddressSourceEnum
-} from "io-functions-commons/dist/src/models/notification";
 import { NonNegativeNumber } from "italia-ts-commons/lib/numbers";
 import {
   EmailString,
@@ -40,18 +40,17 @@ import {
 import { MessageBodyMarkdown } from "io-functions-commons/dist/generated/definitions/MessageBodyMarkdown";
 import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
 import { MessageSubject } from "io-functions-commons/dist/generated/definitions/MessageSubject";
+import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
 import { TimeToLiveSeconds } from "io-functions-commons/dist/generated/definitions/TimeToLiveSeconds";
 import {
-  Message,
   NewMessageWithContent,
   RetrievedMessageWithContent
 } from "io-functions-commons/dist/src/models/message";
 import {
-  RetrievedSenderService,
-  NewSenderService
+  NewSenderService,
+  RetrievedSenderService
 } from "io-functions-commons/dist/src/models/sender_service";
-import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
@@ -171,13 +170,6 @@ const aNewMessageWithContent: NewMessageWithContent = {
   ...aSerializedNewMessageWithContent,
   createdAt: new Date(),
   kind: "INewMessageWithContent"
-};
-
-const aSerializedRetrievedMessageWithContent = {
-  ...aSerializedNewMessageWithContent,
-  _self: "xyz",
-  _ts: 123,
-  kind: "IRetrievedMessageWithContent"
 };
 
 export const aRetrievedMessageWithContent: RetrievedMessageWithContent = {

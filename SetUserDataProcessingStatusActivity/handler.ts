@@ -77,6 +77,10 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 const logPrefix = `SetUserDataProcessingStatusActivity`;
 
+function assertNever(_: never): void {
+  throw new Error("should not have executed this");
+}
+
 /**
  * Logs depending on failure type
  * @param context the Azure functions context
@@ -97,8 +101,7 @@ const logFailure = (context: Context) => (
       );
       break;
     default:
-      // tslint:disable-next-line: no-dead-store
-      const assertNever: never = failure;
+      assertNever(failure);
   }
 };
 
@@ -128,8 +131,8 @@ export const createSetUserDataProcessingStatusActivityHandler = (
       (err: Error) => {
         return ActivityResultQueryFailure.encode({
           kind: "QUERY_FAILURE",
-          reason: err.message,
-          query: "userDataProcessingModel.createOrUpdateByNewOne"
+          query: "userDataProcessingModel.createOrUpdateByNewOne",
+          reason: err.message
         });
       }
     ).chain((queryErrorOrRecord: Either<QueryError, UserDataProcessing>) =>
@@ -137,8 +140,8 @@ export const createSetUserDataProcessingStatusActivityHandler = (
         queryErrorOrRecord.mapLeft(queryError => {
           return ActivityResultQueryFailure.encode({
             kind: "QUERY_FAILURE",
-            reason: JSON.stringify(queryError),
-            query: "userDataProcessingModel.createOrUpdateByNewOne"
+            query: "userDataProcessingModel.createOrUpdateByNewOne",
+            reason: JSON.stringify(queryError)
           });
         })
       )
