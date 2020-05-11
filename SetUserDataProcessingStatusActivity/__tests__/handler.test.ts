@@ -7,7 +7,8 @@ import { aUserDataProcessing } from "../../__mocks__/mocks";
 
 import {
   ActivityInput,
-  createSetUserDataProcessingStatusActivityHandler
+  createSetUserDataProcessingStatusActivityHandler,
+  ActivityResultFailure
 } from "../handler";
 
 import { QueryError } from "documentdb";
@@ -64,12 +65,15 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
     result.fold(
       response => {
-        expect(response).toEqual({
-          kind: "FAILURE",
-          reason: expect.any(String)
-        });
+        ActivityResultFailure.decode(response).fold(
+          err =>
+            fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
+          failure => {
+            expect(failure.kind).toEqual(expect.any(String));
+          }
+        );
       },
-      _ => fail(`Should not consider this a Right`)
+      response => fail(`Should not consider this a Right`)
     );
   });
 
@@ -92,12 +96,15 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
     result.fold(
       response => {
-        expect(response).toEqual({
-          kind: "FAILURE",
-          reason: "my unhandled rejection"
-        });
+        ActivityResultFailure.decode(response).fold(
+          err =>
+            fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
+          failure => {
+            expect(failure.kind).toEqual(expect.any(String));
+          }
+        );
       },
-      _ => fail(`Should not consider this a Right`)
+      response => fail(`Should not consider this a Right`)
     );
   });
 
@@ -113,12 +120,15 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
     result.fold(
       response => {
-        expect(response).toEqual({
-          kind: "FAILURE",
-          reason: expect.any(String)
-        });
+        ActivityResultFailure.decode(response).fold(
+          err =>
+            fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
+          failure => {
+            expect(failure.kind).toEqual(expect.any(String));
+          }
+        );
       },
-      _ => fail(`Should not consider this a Right`)
+      response => fail(`Should not consider this a Right`)
     );
   });
 });

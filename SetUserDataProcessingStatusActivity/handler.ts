@@ -41,10 +41,31 @@ const ActivityResultSuccess = t.interface({
 });
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
-const ActivityResultFailure = t.interface({
-  kind: t.literal("FAILURE"),
+// Activity failed because of invalid input
+const ActivityResultInvalidInputFailure = t.interface({
+  kind: t.literal("INVALID_INPUT_FAILURE"),
   reason: t.string
 });
+export type ActivityResultInvalidInputFailure = t.TypeOf<
+  typeof ActivityResultInvalidInputFailure
+>;
+
+// Activity failed because of an error on a query
+const ActivityResultQueryFailure = t.intersection([
+  t.interface({
+    kind: t.literal("QUERY_FAILURE"),
+    reason: t.string
+  }),
+  t.partial({ query: t.string })
+]);
+export type ActivityResultQueryFailure = t.TypeOf<
+  typeof ActivityResultQueryFailure
+>;
+
+export const ActivityResultFailure = t.taggedUnion("kind", [
+  ActivityResultQueryFailure,
+  ActivityResultInvalidInputFailure
+]);
 export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
 export const ActivityResult = t.taggedUnion("kind", [
@@ -56,22 +77,34 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 const logPrefix = `SetUserDataProcessingStatusActivity`;
 
+/**
+ * Logs depending on failure type
+ * @param context the Azure functions context
+ * @param failure the failure to log
+ */
+const logFailure = (context: Context) => (
+  failure: ActivityResultFailure
+): void => {
+  switch (failure.kind) {
+    case "INVALID_INPUT_FAILURE":
+      context.log.error(
+        `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
+      );
+      break;
+    case "QUERY_FAILURE":
+      context.log.error(
+        `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
+      );
+      break;
+    default:
+      // tslint:disable-next-line: no-dead-store
+      const assertNever: never = failure;
+  }
+};
+
 export const createSetUserDataProcessingStatusActivityHandler = (
   userDataProcessingModel: UserDataProcessingModel
 ) => (context: Context, input: unknown) => {
-  /**
-   * Logs a decoding error and convert it to a native Error
-   * @param reason a description of the decoding error
-   *
-   * @returns an instance of Error with a custom message
-   */
-  const decodingErrorToSimpleError = (reason: t.Errors) => {
-    context.log.error(
-      `${logPrefix}|Error decoding input|ERROR=${readableReport(reason)}`
-    );
-    return new Error("Error decoding input");
-  };
-
   /**
    * Updates a UserDataProcessing record by creating a new version of it with a chenged status
    * @param param0.currentRecord the record to be modified
@@ -85,7 +118,7 @@ export const createSetUserDataProcessingStatusActivityHandler = (
   }: {
     currentRecord: UserDataProcessing;
     nextStatus: UserDataProcessingStatus;
-  }): TaskEither<Error, UserDataProcessing> =>
+  }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
     tryCatch(
       () =>
         userDataProcessingModel.createOrUpdateByNewOne({
@@ -93,27 +126,32 @@ export const createSetUserDataProcessingStatusActivityHandler = (
           status: nextStatus
         }),
       (err: Error) => {
-        context.log.error(
-          `${logPrefix}|Error saveNewStatusOnDb generic error |ERROR=${err.message}`
-        );
-        return err;
+        return ActivityResultQueryFailure.encode({
+          kind: "QUERY_FAILURE",
+          reason: err.message,
+          query: "userDataProcessingModel.createOrUpdateByNewOne"
+        });
       }
     ).chain((queryErrorOrRecord: Either<QueryError, UserDataProcessing>) =>
       fromEither(
         queryErrorOrRecord.mapLeft(queryError => {
-          context.log.error(
-            `${logPrefix}|Error saveNewStatusOnDb query error |ERROR=${JSON.stringify(
-              queryError
-            )}`
-          );
-          return new Error(queryError.body);
+          return ActivityResultQueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            reason: JSON.stringify(queryError),
+            query: "userDataProcessingModel.createOrUpdateByNewOne"
+          });
         })
       )
     );
 
   // the actual handler
   return fromEither(ActivityInput.decode(input))
-    .mapLeft(decodingErrorToSimpleError)
+    .mapLeft<ActivityResultFailure>((reason: t.Errors) =>
+      ActivityResultInvalidInputFailure.encode({
+        kind: "INVALID_INPUT_FAILURE",
+        reason: readableReport(reason)
+      })
+    )
     .chain(saveNewStatusOnDb)
     .map(newRecord =>
       ActivityResultSuccess.encode({
@@ -121,11 +159,9 @@ export const createSetUserDataProcessingStatusActivityHandler = (
         value: newRecord
       })
     )
-    .mapLeft(savingError =>
-      ActivityResultFailure.encode({
-        kind: "FAILURE",
-        reason: savingError.message
-      })
-    )
+    .mapLeft(failure => {
+      logFailure(context)(failure);
+      return failure;
+    })
     .run();
 };
