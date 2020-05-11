@@ -1,5 +1,5 @@
 /**
- * This activity creates a ValidationToken entity in a table storage.
+ * Updates the status of a UserDataProcessing record
  *
  * The validation process use a `id and validator` strategy.
  *
