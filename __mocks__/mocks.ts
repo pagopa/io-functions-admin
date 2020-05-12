@@ -150,7 +150,7 @@ export const aRetrievedProfile: RetrievedProfile = {
 
 const aMessageBodyMarkdown = "test".repeat(80) as MessageBodyMarkdown;
 
-const aMessageContent: MessageContent = {
+export const aMessageContent: MessageContent = {
   markdown: aMessageBodyMarkdown,
   subject: "test".repeat(10) as MessageSubject
 };

@@ -6,6 +6,7 @@ import { documentClient } from "../utils/cosmosdb";
 
 import { createExtractUserDataActivityHandler } from "./handler";
 
+import { createBlobService } from "azure-storage";
 import {
   MESSAGE_COLLECTION_NAME,
   MessageModel
@@ -60,11 +61,16 @@ const senderServiceModel = new SenderServiceModel(
   )
 );
 
+const blobService = createBlobService(
+  getRequiredStringEnv("StorageConnection")
+);
+
 const activityFunctionHandler = createExtractUserDataActivityHandler(
   messageModel,
   notificationModel,
   profileModel,
-  senderServiceModel
+  senderServiceModel,
+  blobService
 );
 
 export default activityFunctionHandler;

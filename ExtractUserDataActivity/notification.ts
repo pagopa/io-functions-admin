@@ -9,7 +9,6 @@ import {
   RetrievedNotification
 } from "io-functions-commons/dist/src/models/notification";
 import * as DocumentDbUtils from "io-functions-commons/dist/src/utils/documentdb";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
 
 export class NotificationModel extends NotificationModelCommons {
   /**
@@ -28,10 +27,10 @@ export class NotificationModel extends NotificationModelCommons {
   /**
    * Returns the messages for the provided fiscal code
    *
-   * @param fiscalCode The fiscal code of the recipient
+   * @param messageId The message the notifications refer to
    */
-  public findNotificationsForRecipient(
-    fiscalCode: FiscalCode
+  public findNotificationsForMessage(
+    messageId: string
   ): DocumentDbUtils.IResultIterator<RetrievedNotification> {
     return DocumentDbUtils.queryDocuments(
       this.dbClient,
@@ -39,13 +38,13 @@ export class NotificationModel extends NotificationModelCommons {
       {
         parameters: [
           {
-            name: "@fiscalCode",
-            value: fiscalCode
+            name: "@messageId",
+            value: messageId
           }
         ],
-        query: `SELECT * FROM m WHERE m.fiscal_code = @fiscalCode`
+        query: `SELECT * FROM m WHERE m.messageId = @messageId`
       },
-      fiscalCode
+      messageId
     );
   }
 }
