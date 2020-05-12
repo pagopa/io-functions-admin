@@ -27,10 +27,7 @@ import {
   RetrievedMessageWithContent,
   RetrievedMessageWithoutContent
 } from "io-functions-commons/dist/src/models/message";
-import {
-  Notification,
-  RetrievedNotification
-} from "io-functions-commons/dist/src/models/notification";
+import { RetrievedNotification } from "io-functions-commons/dist/src/models/notification";
 import {
   NotificationStatus,
   NotificationStatusModel
@@ -46,7 +43,7 @@ import {
 import { iteratorToArray } from "io-functions-commons/dist/src/utils/documentdb";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
-import { NotificationModel } from "./notification";
+import { NotificationModel, SafeNotification } from "./notification";
 
 const MessageContentWithId = t.interface({
   content: MessageContent,
@@ -65,7 +62,7 @@ export const AllUserData = t.interface({
     t.exact(NotificationStatus),
     "NotificationStatusList"
   ),
-  notifications: t.readonlyArray(t.exact(Notification), "NotificationList"),
+  notifications: t.readonlyArray(t.exact(SafeNotification), "NotificationList"),
   profile: Profile,
   senderServices: t.readonlyArray(t.exact(SenderService), "SenderServiceList")
 });

@@ -27,7 +27,8 @@ import {
   aMessageContent,
   aRetrievedMessageWithoutContent,
   aRetrievedNotification,
-  aRetrievedSenderService
+  aRetrievedSenderService,
+  aRetrievedWebhookNotification
 } from "../../__mocks__/mocks";
 import { NotificationModel } from "../notification"; // we use the local-defined model
 
@@ -113,6 +114,38 @@ describe("createExtractUserDataActivityHandler", () => {
           err =>
             fail(`Failing decoding result, response: ${readableReport(err)}`),
           e => expect(e.kind).toBe("SUCCESS")
+        );
+      }
+    );
+  });
+  it("should not export webhook notification data", async () => {
+    const notificationWebhookModelMock = ({
+      findNotificationsForMessage: jest.fn(() =>
+        createMockIterator([aRetrievedWebhookNotification])
+      )
+    } as any) as NotificationModel;
+
+    const handler = createExtractUserDataActivityHandler(
+      messageModelMock,
+      notificationWebhookModelMock,
+      notificationStatusModelMock,
+      profileModelMock,
+      senderServiceModelMock,
+      blobServiceMock
+    );
+    const input: ActivityInput = {
+      fiscalCode: aFiscalCode
+    };
+
+    const result = await handler(contextMock, input);
+
+    result.fold(
+      response => fail(`Failing result, response: ${JSON.stringify(response)}`),
+      response => {
+        ActivityResultSuccess.decode(response).fold(
+          err =>
+            fail(`Failing decoding result, response: ${readableReport(err)}`),
+          e => expect(e.value.notifications[0].channels.WEBHOOK).toEqual({})
         );
       }
     );

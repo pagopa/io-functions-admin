@@ -1,3 +1,4 @@
+import { HttpsUrl } from "io-functions-commons/dist/generated/definitions/HttpsUrl";
 import { MaxAllowedPaymentAmount } from "io-functions-commons/dist/generated/definitions/MaxAllowedPaymentAmount";
 import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
 import {
@@ -214,6 +215,25 @@ export const aNewEmailNotification: NewNotification = {
   id: "A_NOTIFICATION_ID" as NonEmptyString,
   kind: "INewNotification",
   messageId: "A_MESSAGE_ID" as NonEmptyString
+};
+
+export const aNewWebhookNotification: NewNotification = {
+  channels: {
+    [NotificationChannelEnum.WEBHOOK]: {
+      url: "http://example.com" as HttpsUrl
+    }
+  },
+  fiscalCode: aFiscalCode,
+  id: "A_WEBHOOK_NOTIFICATION_ID" as NonEmptyString,
+  kind: "INewNotification",
+  messageId: "A_MESSAGE_ID" as NonEmptyString
+};
+
+export const aRetrievedWebhookNotification: RetrievedNotification = {
+  ...aNewWebhookNotification,
+  _self: "xyz",
+  _ts: 123,
+  kind: "IRetrievedNotification"
 };
 
 export const aRetrievedNotification: RetrievedNotification = {

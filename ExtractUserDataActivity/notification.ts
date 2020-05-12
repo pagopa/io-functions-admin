@@ -4,11 +4,29 @@
  */
 
 import * as DocumentDb from "documentdb";
+import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
+  NotificationBase,
+  NotificationChannelEmail,
   NotificationModel as NotificationModelCommons,
   RetrievedNotification
 } from "io-functions-commons/dist/src/models/notification";
 import * as DocumentDbUtils from "io-functions-commons/dist/src/utils/documentdb";
+import * as t from "io-ts";
+
+// like Notification, but it's export-safe (the decoder removes webhook's sensitive data)
+export const SafeNotification = t.intersection([
+  NotificationBase,
+  t.interface({
+    channels: t.exact(
+      t.partial({
+        [NotificationChannelEnum.EMAIL]: NotificationChannelEmail,
+        [NotificationChannelEnum.WEBHOOK]: t.exact(t.interface({}))
+      })
+    )
+  })
+]);
+export type SafeNotification = t.TypeOf<typeof SafeNotification>;
 
 export class NotificationModel extends NotificationModelCommons {
   /**
