@@ -5,7 +5,8 @@
 
 import * as t from "io-ts";
 
-import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
+import { sequenceS } from "fp-ts/lib/Apply";
+import { array } from "fp-ts/lib/Array";
 import { Either, fromOption, left, right } from "fp-ts/lib/Either";
 import {
   fromEither,
@@ -17,10 +18,7 @@ import {
 import { Context } from "@azure/functions";
 
 import { BlobService } from "azure-storage";
-import {
-  QueryError,
-  RetrievedDocument as RetrievedDocumentT
-} from "documentdb";
+import { QueryError } from "documentdb";
 import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
 import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
@@ -253,10 +251,9 @@ export const createExtractUserDataActivityHandler = (
   ): TaskEither<
     ActivityResultQueryFailure,
     ReadonlyArray<MessageContentWithId>
-  > => {
-    if (messages.length) {
-      // this spread is needed as typescript wouldn't recognize messages[0] to be defined otherwise
-      const [firstQuery, ...otherQueries] = messages.map(({ id: messageId }) =>
+  > =>
+    array.sequence(taskEither)(
+      messages.map(({ id: messageId }) =>
         fromQueryEither(
           () => messageModel.getContentFromBlob(blobService, messageId),
           "messageModel.getContentFromBlob"
@@ -278,11 +275,8 @@ export const createExtractUserDataActivityHandler = (
               )
             )
         )
-      );
-      return sequenceT(taskEither)(firstQuery, ...otherQueries);
-    }
-    return taskEither.of([]);
-  };
+      )
+    );
 
   /**
    * Given a list of messages, it queires for relative notifications
@@ -293,20 +287,10 @@ export const createExtractUserDataActivityHandler = (
   ): TaskEither<
     ActivityResultQueryFailure,
     ReadonlyArray<RetrievedNotification>
-  > => {
-    if (messages.length) {
-      // this spread is needed as typescript wouldn't recognize messages[0] to be defined otherwise
-      const [firstMessage, ...otherMessages] = messages;
-
-      return sequenceT(taskEither)(
-        fromQueryEither<ReadonlyArray<RetrievedNotification>>(
-          () =>
-            iteratorToArray(
-              notificationModel.findNotificationsForMessage(firstMessage.id)
-            ),
-          "findNotificationsForRecipient"
-        ),
-        ...otherMessages.map(m =>
+  > =>
+    array
+      .sequence(taskEither)(
+        messages.map(m =>
           fromQueryEither<ReadonlyArray<RetrievedNotification>>(
             () =>
               iteratorToArray(
@@ -315,7 +299,8 @@ export const createExtractUserDataActivityHandler = (
             "findNotificationsForRecipient"
           )
         )
-      ).foldTaskEither(
+      )
+      .foldTaskEither(
         e => fromEither(left(e)),
         arrayOfArray =>
           fromEither(
@@ -327,38 +312,45 @@ export const createExtractUserDataActivityHandler = (
             )
           )
       );
-    }
-    return taskEither.of([]);
-  };
 
   const findAllNotificationStatuses = (
     notifications: ReadonlyArray<RetrievedNotification>
   ): TaskEither<
     ActivityResultQueryFailure,
     ReadonlyArray<NotificationStatus>
-  > => {
-    if (notifications.length) {
-      // this spread is needed as typescript wouldn't recognize queries[0] to be defined otherwise
-      const [firstQuery, ...otherQueries] = notifications
-        .reduce(
-          (q, n) => [
-            ...q,
-            [n.id, NotificationChannelEnum.EMAIL],
-            [n.id, NotificationChannelEnum.WEBHOOK]
-          ],
-          []
-        )
-        .map(([notificationId, channel]) =>
-          fromQueryEither(
-            () =>
-              notificationStatusModel.findOneNotificationStatusByNotificationChannel(
-                notificationId,
-                channel
-              ),
-            "findOneNotificationStatusByNotificationChannel"
+  > =>
+    array
+      .sequence(taskEither)(
+        // compose a query for every supported channel type
+        notifications
+          .reduce(
+            (queries, { id: notificationId }) => [
+              ...queries,
+              ...Object.values(NotificationChannelEnum).map(channel => {
+                switch (channel) {
+                  case NotificationChannelEnum.EMAIL:
+                  case NotificationChannelEnum.WEBHOOK:
+                    return [notificationId, channel];
+                  default:
+                    assertNever(channel);
+                }
+              })
+            ],
+            []
           )
-        );
-      return sequenceT(taskEither)(firstQuery, ...otherQueries).foldTaskEither<
+          .map(([notificationId, channel]) =>
+            fromQueryEither(
+              () =>
+                notificationStatusModel.findOneNotificationStatusByNotificationChannel(
+                  notificationId,
+                  channel
+                ),
+              "findOneNotificationStatusByNotificationChannel"
+            )
+          )
+      )
+      // filter empty results (it might not exist a content for a pair notification/channel)
+      .foldTaskEither<
         ActivityResultQueryFailure,
         ReadonlyArray<NotificationStatus>
       >(
@@ -374,9 +366,6 @@ export const createExtractUserDataActivityHandler = (
           );
         }
       );
-    }
-    return taskEither.of([]);
-  };
 
   /**
    * Perform all the queries to extract all data for a given user
