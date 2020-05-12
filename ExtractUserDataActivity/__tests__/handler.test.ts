@@ -25,7 +25,7 @@ import { SenderServiceModel } from "io-functions-commons/dist/src/models/sender_
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import {
   aMessageContent,
-  aRetrievedMessageWithContent,
+  aRetrievedMessageWithoutContent,
   aRetrievedNotification,
   aRetrievedSenderService
 } from "../../__mocks__/mocks";
@@ -43,7 +43,7 @@ const createMockIterator = <T>(a: ReadonlyArray<T>) => {
 
 const messageModelMock = ({
   findMessages: jest.fn(() =>
-    createMockIterator([aRetrievedMessageWithContent])
+    createMockIterator([aRetrievedMessageWithoutContent])
   ),
   getContentFromBlob: jest.fn(async () => right(some(aMessageContent)))
 } as any) as MessageModel;
@@ -88,20 +88,31 @@ describe("createExtractUserDataActivityHandler", () => {
 
     const result = await handler(contextMock, input);
 
+    expect(messageModelMock.getContentFromBlob).toHaveBeenCalledWith(
+      blobServiceMock,
+      aRetrievedMessageWithoutContent.id
+    );
+    expect(messageModelMock.findMessages).toHaveBeenCalledWith(aFiscalCode);
+    expect(messageModelMock.findMessages).toHaveBeenCalledWith(aFiscalCode);
+    expect(
+      notificationModelMock.findNotificationsForMessage
+    ).toHaveBeenCalledWith(aRetrievedMessageWithoutContent.id);
+    expect(
+      notificationStatusModelMock.findOneNotificationStatusByNotificationChannel
+    ).toHaveBeenCalledWith(aRetrievedNotification.id, "WEBHOOK");
+    expect(
+      notificationStatusModelMock.findOneNotificationStatusByNotificationChannel
+    ).toHaveBeenCalledWith(aRetrievedNotification.id, "EMAIL");
+    expect(
+      senderServiceModelMock.findSenderServicesForRecipient
+    ).toHaveBeenCalledWith(aFiscalCode);
     result.fold(
       response => fail(`Failing result, response: ${JSON.stringify(response)}`),
       response => {
         ActivityResultSuccess.decode(response).fold(
           err =>
             fail(`Failing decoding result, response: ${readableReport(err)}`),
-          e => {
-            expect(e.kind).toBe("SUCCESS");
-            // tslint:disable-next-line: no-commented-code
-            /* expect(e.value.profile).toEqual(aProfile);
-            expect(e.value.messages).toEqual([aRetrievedMessageWithContent]);
-            expect(e.value.senderServices).toEqual([aRetrievedSenderService]);
-            expect(e.value.notifications).toEqual([aRetrievedNotification]); */
-          }
+          e => expect(e.kind).toBe("SUCCESS")
         );
       }
     );

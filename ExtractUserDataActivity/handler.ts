@@ -25,7 +25,7 @@ import { MessageContent } from "io-functions-commons/dist/generated/definitions/
 import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
   MessageModel,
-  MessageWithContent,
+  MessageWithoutContent,
   RetrievedMessageWithContent,
   RetrievedMessageWithoutContent
 } from "io-functions-commons/dist/src/models/message";
@@ -47,12 +47,19 @@ import {
 } from "io-functions-commons/dist/src/models/sender_service";
 import { iteratorToArray } from "io-functions-commons/dist/src/utils/documentdb";
 import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { NotificationModel } from "./notification";
 
+const MessageContentWithId = t.interface({
+  content: MessageContent,
+  messageId: NonEmptyString
+});
+export type MessageContentWithId = t.TypeOf<typeof MessageContentWithId>;
+
 // the shape of the dataset to be extracted
-const AllUserData = t.interface({
-  messages: t.readonlyArray(MessageWithContent, "MessageList"),
+export const AllUserData = t.interface({
+  messageContents: t.readonlyArray(MessageContentWithId, "MessageContentList"),
+  messages: t.readonlyArray(MessageWithoutContent, "MessageList"),
   notificationStatuses: t.readonlyArray(
     NotificationStatus,
     "NotificationStatusList"
@@ -207,45 +214,6 @@ const fromRetrievedDbDocument = <T>(doc: T & RetrievedDocumentT): T => {
 };
 
 /**
- * Safely compose a message with a messa with its content
- * @param messageFromDb a message as it's stored in db
- * @param content a content for the message
- *
- * @returns a new message with content included
- */
-const appendContentToMessage = (
-  messageFromDb: RetrievedMessageWithoutContent,
-  content: MessageContent
-): MessageWithContent => ({
-  content: {
-    due_date: content.due_date,
-    markdown: content.markdown,
-    payment_data: content.payment_data,
-    prescription_data: content.prescription_data
-      ? {
-          iup: content.prescription_data
-            ? content.prescription_data.iup
-            : undefined,
-          nre: content.prescription_data
-            ? content.prescription_data.nre
-            : undefined,
-          prescriber_fiscal_code: content.prescription_data
-            ? content.prescription_data.prescriber_fiscal_code
-            : undefined
-        }
-      : undefined,
-    subject: content.subject
-  },
-  createdAt: messageFromDb.createdAt,
-  fiscalCode: messageFromDb.fiscalCode,
-  indexedId: messageFromDb.indexedId,
-  isPending: messageFromDb.isPending,
-  senderServiceId: messageFromDb.senderServiceId,
-  senderUserId: messageFromDb.senderUserId,
-  timeToLiveSeconds: messageFromDb.timeToLiveSeconds
-});
-
-/**
  * Factory methods that builds an activity function
  *
  * @param messageModel
@@ -295,51 +263,41 @@ export const createExtractUserDataActivityHandler = (
     );
 
   /**
-   * Given a message as it's retrieved from the database, it queries the blob storage for the content and returns a new version of the message including it
-   * @param messageFromDb a message as it's retrieved from db
-   * @return either the message with it's content or a query error
+   * Retrieves all contents for provided messages
+   * @param messages
    */
-  const getMessageWithContent = (
-    messageFromDb: RetrievedMessageWithoutContent
-  ): TaskEither<ActivityResultQueryFailure, MessageWithContent> => {
-    return fromQueryEither(
-      () => messageModel.getContentFromBlob(blobService, messageFromDb.id),
-      "messageModel.getContentFromBlob"
-    ).foldTaskEither<ActivityResultQueryFailure, MessageWithContent>(
-      failure => fromEither(left(failure)),
-      maybeContent =>
-        fromEither<ActivityResultQueryFailure, MessageContent>(
-          fromOption(
-            ActivityResultQueryFailure.encode({
-              kind: "QUERY_FAILURE",
-              query: "messageModel.getContentFromBlob",
-              reason: `Cannot find content for message ${messageFromDb.id}`
-            })
-          )(maybeContent)
-        ).map<MessageWithContent>((content: MessageContent) =>
-          appendContentToMessage(messageFromDb, content)
-        )
-    );
-  };
-
-  /**
-   * Utility that performs enrichMessage over a list of messages
-   * @param messages a list of messages without content
-   * @returns either a list of message with content or a query error
-   */
-  const getAllMessagesWithContent = (
+  const getAllMessageContents = (
     messages: readonly RetrievedMessageWithoutContent[]
   ): TaskEither<
     ActivityResultQueryFailure,
-    ReadonlyArray<MessageWithContent>
+    ReadonlyArray<MessageContentWithId>
   > => {
     if (messages.length) {
       // this spread is needed as typescript wouldn't recognize messages[0] to be defined otherwise
-      const [firstMessage, ...otherMessages] = messages;
-      return sequenceT(taskEither)(
-        getMessageWithContent(firstMessage),
-        ...otherMessages.map(getMessageWithContent)
+      const [firstQuery, ...otherQueries] = messages.map(({ id: messageId }) =>
+        fromQueryEither(
+          () => messageModel.getContentFromBlob(blobService, messageId),
+          "messageModel.getContentFromBlob"
+        ).foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
+          failure => fromEither(left(failure)),
+          maybeContent =>
+            fromEither(
+              fromOption(
+                ActivityResultQueryFailure.encode({
+                  kind: "QUERY_FAILURE",
+                  query: "messageModel.getContentFromBlob",
+                  reason: `Cannot find content for message ${messageId}`
+                })
+              )(maybeContent).map<MessageContentWithId>(
+                (content: MessageContent) => ({
+                  content,
+                  messageId
+                })
+              )
+            )
+        )
       );
+      return sequenceT(taskEither)(firstQuery, ...otherQueries);
     }
     return taskEither.of([]);
   };
@@ -471,21 +429,24 @@ export const createExtractUserDataActivityHandler = (
         const allData: TaskEither<
           ActivityResultUserNotFound | ActivityResultQueryFailure,
           {
-            messages: ReadonlyArray<MessageWithContent>;
+            messages: ReadonlyArray<MessageWithoutContent>;
+            messageContents: ReadonlyArray<MessageContentWithId>;
             profile: Profile;
             notifications: ReadonlyArray<RetrievedNotification>;
           }
           // tslint:disable-next-line: prefer-immediate-return
         > = sequenceS(taskEither)({
-          messages: getAllMessagesWithContent(asRetrievedMessages),
+          messageContents: getAllMessageContents(asRetrievedMessages),
+          messages: taskEither.of(messages),
           notifications: findNotificationsForAllMessages(asRetrievedMessages),
           profile: taskEither.of(profile)
         });
         return allData;
       })
       // step 3: queries notifications statuses
-      .chain(({ profile, messages, notifications }) => {
+      .chain(({ profile, messages, messageContents, notifications }) => {
         return sequenceS(taskEither)({
+          messageContents: taskEither.of(messageContents),
           messages: taskEither.of(messages),
           notificationStatuses: findAllNotificationStatuses(notifications),
           notifications: taskEither.of(

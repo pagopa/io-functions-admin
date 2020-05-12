@@ -45,8 +45,8 @@ import { NotificationChannelStatusValueEnum } from "io-functions-commons/dist/ge
 import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
 import { TimeToLiveSeconds } from "io-functions-commons/dist/generated/definitions/TimeToLiveSeconds";
 import {
-  NewMessageWithContent,
-  RetrievedMessageWithContent
+  MessageWithoutContent,
+  RetrievedMessageWithoutContent
 } from "io-functions-commons/dist/src/models/message";
 import {
   NotificationStatus,
@@ -161,7 +161,7 @@ export const aMessageContent: MessageContent = {
   subject: "test".repeat(10) as MessageSubject
 };
 
-const aSerializedNewMessageWithContent = {
+const aSerializedMessageWithoutContent = {
   content: aMessageContent,
   createdAt: new Date().toISOString(),
   fiscalCode: aFiscalCode,
@@ -172,17 +172,17 @@ const aSerializedNewMessageWithContent = {
   timeToLiveSeconds: 3600 as TimeToLiveSeconds
 };
 
-const aNewMessageWithContent: NewMessageWithContent = {
-  ...aSerializedNewMessageWithContent,
-  createdAt: new Date(),
-  kind: "INewMessageWithContent"
+const aMessageWithoutContent: MessageWithoutContent = {
+  ...aSerializedMessageWithoutContent,
+  createdAt: new Date()
 };
 
-export const aRetrievedMessageWithContent: RetrievedMessageWithContent = {
-  ...aNewMessageWithContent,
+export const aRetrievedMessageWithoutContent: RetrievedMessageWithoutContent = {
+  ...aMessageWithoutContent,
   _self: "xyz",
   _ts: 123,
-  kind: "IRetrievedMessageWithContent"
+  id: "A_MESSAGE_ID" as NonEmptyString,
+  kind: "IRetrievedMessageWithoutContent"
 };
 
 export const aServiceId = "s123" as ServiceId;
