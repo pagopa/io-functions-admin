@@ -4,7 +4,11 @@ import { Either, right } from "fp-ts/lib/Either";
 import { fromNullable, Option, some } from "fp-ts/lib/Option";
 
 import { context as contextMock } from "../../__mocks__/durable-functions";
-import { aFiscalCode, aProfile } from "../../__mocks__/mocks";
+import {
+  aFiscalCode,
+  aProfile,
+  aRetrievedNotificationStatus
+} from "../../__mocks__/mocks";
 
 import {
   ActivityInput,
@@ -15,6 +19,7 @@ import {
 import { BlobService } from "azure-storage";
 import { QueryError } from "documentdb";
 import { MessageModel } from "io-functions-commons/dist/src/models/message";
+import { NotificationStatusModel } from "io-functions-commons/dist/src/models/notification_status";
 import { ProfileModel } from "io-functions-commons/dist/src/models/profile";
 import { SenderServiceModel } from "io-functions-commons/dist/src/models/sender_service";
 import { readableReport } from "italia-ts-commons/lib/reporters";
@@ -59,6 +64,12 @@ const notificationModelMock = ({
   )
 } as any) as NotificationModel;
 
+const notificationStatusModelMock = ({
+  findOneNotificationStatusByNotificationChannel: jest.fn(async () =>
+    right(some(aRetrievedNotificationStatus))
+  )
+} as any) as NotificationStatusModel;
+
 const blobServiceMock = ({} as any) as BlobService;
 
 describe("createExtractUserDataActivityHandler", () => {
@@ -66,6 +77,7 @@ describe("createExtractUserDataActivityHandler", () => {
     const handler = createExtractUserDataActivityHandler(
       messageModelMock,
       notificationModelMock,
+      notificationStatusModelMock,
       profileModelMock,
       senderServiceModelMock,
       blobServiceMock

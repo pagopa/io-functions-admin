@@ -15,6 +15,10 @@ import {
   NOTIFICATION_COLLECTION_NAME // we use the extended, local-defined model
 } from /* NotificationModel */ "io-functions-commons/dist/src/models/notification";
 import {
+  NOTIFICATION_STATUS_COLLECTION_NAME,
+  NotificationStatusModel
+} from "io-functions-commons/dist/src/models/notification_status";
+import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
@@ -45,6 +49,14 @@ const notificationModel = new NotificationModel(
   )
 );
 
+const notificationStatusModel = new NotificationStatusModel(
+  documentClient,
+  documentDbUtils.getCollectionUri(
+    documentDbDatabaseUrl,
+    NOTIFICATION_STATUS_COLLECTION_NAME
+  )
+);
+
 const profileModel = new ProfileModel(
   documentClient,
   documentDbUtils.getCollectionUri(
@@ -68,6 +80,7 @@ const blobService = createBlobService(
 const activityFunctionHandler = createExtractUserDataActivityHandler(
   messageModel,
   notificationModel,
+  notificationStatusModel,
   profileModel,
   senderServiceModel,
   blobService

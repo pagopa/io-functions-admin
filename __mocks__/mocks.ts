@@ -41,6 +41,7 @@ import { MessageBodyMarkdown } from "io-functions-commons/dist/generated/definit
 import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
 import { MessageSubject } from "io-functions-commons/dist/generated/definitions/MessageSubject";
 import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
+import { NotificationChannelStatusValueEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannelStatusValue";
 import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
 import { TimeToLiveSeconds } from "io-functions-commons/dist/generated/definitions/TimeToLiveSeconds";
 import {
@@ -48,9 +49,14 @@ import {
   RetrievedMessageWithContent
 } from "io-functions-commons/dist/src/models/message";
 import {
+  NotificationStatus,
+  NotificationStatusId
+} from "io-functions-commons/dist/src/models/notification_status";
+import {
   NewSenderService,
   RetrievedSenderService
 } from "io-functions-commons/dist/src/models/sender_service";
+import { readableReport } from "italia-ts-commons/lib/reporters";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
@@ -215,4 +221,26 @@ export const aRetrievedNotification: RetrievedNotification = {
   _self: "xyz",
   _ts: 123,
   kind: "IRetrievedNotification"
+};
+
+const aNotificationStatusId = "A_NOTIFICATION_ID:EMAIL" as NotificationStatusId;
+export const aSerializedNotificationStatus = {
+  channel: NotificationChannelEnum.EMAIL,
+  messageId: "A_MESSAGE_ID" as NonEmptyString,
+  notificationId: "A_NOTIFICATION_ID" as NonEmptyString,
+  status: NotificationChannelStatusValueEnum.SENT,
+  statusId: aNotificationStatusId,
+  updatedAt: new Date().toISOString()
+};
+
+export const aNotificationStatus = NotificationStatus.decode(
+  aSerializedNotificationStatus
+).getOrElseL(errs => {
+  const error = readableReport(errs);
+  throw new Error("Fix NotificationStatus mock: " + error);
+});
+
+export const aRetrievedNotificationStatus = {
+  ...aNotificationStatus,
+  id: aNotificationStatusId
 };

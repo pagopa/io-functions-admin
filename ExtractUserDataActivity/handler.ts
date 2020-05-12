@@ -22,6 +22,7 @@ import {
   RetrievedDocument as RetrievedDocumentT
 } from "documentdb";
 import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
+import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
   MessageModel,
   MessageWithContent,
@@ -32,6 +33,10 @@ import {
   Notification,
   RetrievedNotification
 } from "io-functions-commons/dist/src/models/notification";
+import {
+  NotificationStatus,
+  NotificationStatusModel
+} from "io-functions-commons/dist/src/models/notification_status";
 import {
   Profile,
   ProfileModel
@@ -48,6 +53,10 @@ import { NotificationModel } from "./notification";
 // the shape of the dataset to be extracted
 const AllUserData = t.interface({
   messages: t.readonlyArray(MessageWithContent, "MessageList"),
+  notificationStatuses: t.readonlyArray(
+    NotificationStatus,
+    "NotificationStatusList"
+  ),
   notifications: t.readonlyArray(Notification, "NotificationList"),
   profile: Profile,
   senderServices: t.readonlyArray(SenderService, "SenderServiceList")
@@ -250,9 +259,11 @@ const appendContentToMessage = (
 export const createExtractUserDataActivityHandler = (
   messageModel: MessageModel,
   notificationModel: NotificationModel,
+  notificationStatusModel: NotificationStatusModel,
   profileModel: ProfileModel,
   senderServiceModel: SenderServiceModel,
   blobService: BlobService
+  // tslint:disable-next-line: no-big-function
 ) => {
   /**
    * Look for a profile from a given fiscal code
@@ -380,6 +391,55 @@ export const createExtractUserDataActivityHandler = (
     return taskEither.of([]);
   };
 
+  const findAllNotificationStatuses = (
+    notifications: ReadonlyArray<RetrievedNotification>
+  ): TaskEither<
+    ActivityResultQueryFailure,
+    ReadonlyArray<NotificationStatus>
+  > => {
+    if (notifications.length) {
+      // this spread is needed as typescript wouldn't recognize queries[0] to be defined otherwise
+      const [firstQuery, ...otherQueries] = notifications
+        .reduce(
+          (q, n) => [
+            ...q,
+            [n.id, NotificationChannelEnum.EMAIL],
+            [n.id, NotificationChannelEnum.WEBHOOK]
+          ],
+          []
+        )
+        .map(([notificationId, channel]) =>
+          fromQueryEither(
+            () =>
+              notificationStatusModel.findOneNotificationStatusByNotificationChannel(
+                notificationId,
+                channel
+              ),
+            "findOneNotificationStatusByNotificationChannel"
+          )
+        );
+      return sequenceT(taskEither)(firstQuery, ...otherQueries).foldTaskEither<
+        ActivityResultQueryFailure,
+        ReadonlyArray<NotificationStatus>
+      >(
+        e => fromEither(left(e)),
+        arrayOfMaybeNotification => {
+          return fromEither(
+            right(
+              arrayOfMaybeNotification
+                // lift Option<T>[] to T[] by filtering all nones
+                .map(opt => opt.getOrElse(undefined))
+                .filter(value => typeof value !== "undefined")
+                // convert to base type
+                .map(fromRetrievedDbDocument)
+            )
+          );
+        }
+      );
+    }
+    return taskEither.of([]);
+  };
+
   /**
    * Perform all the queries to extract all data for a given user
    * @param fiscalCode user identifier
@@ -393,7 +453,7 @@ export const createExtractUserDataActivityHandler = (
   > =>
     // step 0: look for the profile
     taskifiedFindProfile(fiscalCode)
-      // step 1: get messages and sender services, which can be queried by only knowing the fiscal code
+      // step 1: get messages, which can be queried by only knowing the fiscal code
       .chain(profile =>
         sequenceS(taskEither)({
           // queries all messages for the user
@@ -401,8 +461,37 @@ export const createExtractUserDataActivityHandler = (
             () => iteratorToArray(messageModel.findMessages(fiscalCode)),
             "findMessages"
           ),
+          profile: taskEither.of(profile)
+        })
+      )
+      // step 2: queries notifications and message contents, which need message data to be queried first
+      .chain(({ profile, messages }) => {
+        // tslint:disable-next-line: no-any
+        const asRetrievedMessages = (messages as any) as readonly RetrievedMessageWithoutContent[]; // this cast is needed because messageModel.findMessages is erroneously marked as RetrievedMessageWithContent, although content isn't included
+        const allData: TaskEither<
+          ActivityResultUserNotFound | ActivityResultQueryFailure,
+          {
+            messages: ReadonlyArray<MessageWithContent>;
+            profile: Profile;
+            notifications: ReadonlyArray<RetrievedNotification>;
+          }
+          // tslint:disable-next-line: prefer-immediate-return
+        > = sequenceS(taskEither)({
+          messages: getAllMessagesWithContent(asRetrievedMessages),
+          notifications: findNotificationsForAllMessages(asRetrievedMessages),
+          profile: taskEither.of(profile)
+        });
+        return allData;
+      })
+      // step 3: queries notifications statuses
+      .chain(({ profile, messages, notifications }) => {
+        return sequenceS(taskEither)({
+          messages: taskEither.of(messages),
+          notificationStatuses: findAllNotificationStatuses(notifications),
+          notifications: taskEither.of(
+            notifications.map(fromRetrievedDbDocument)
+          ),
           profile: taskEither.of(profile),
-          // queries all services that sent a message to the user
           senderServices: fromQueryEither<ReadonlyArray<SenderService>>(
             () =>
               iteratorToArray(
@@ -410,25 +499,7 @@ export const createExtractUserDataActivityHandler = (
               ),
             "findSenderServicesForRecipient"
           ).map(retrievedDocs => retrievedDocs.map(fromRetrievedDbDocument))
-        })
-      )
-      // step 2: queries notifications and message contents, which need message data to be queried first
-      .chain(({ profile, messages, senderServices }) => {
-        // tslint:disable-next-line: no-any
-        const asRetrievedMessages = (messages as any) as readonly RetrievedMessageWithoutContent[]; // this cast is needed because messageModel.findMessages is erroneously marked as RetrievedMessageWithContent, although content isn't included
-        const allData: TaskEither<
-          ActivityResultUserNotFound | ActivityResultQueryFailure,
-          AllUserData
-          // tslint:disable-next-line: prefer-immediate-return
-        > = sequenceS(taskEither)({
-          messages: getAllMessagesWithContent(asRetrievedMessages),
-          notifications: findNotificationsForAllMessages(
-            asRetrievedMessages
-          ).map(retrievedDocs => retrievedDocs.map(fromRetrievedDbDocument)),
-          profile: taskEither.of(profile),
-          senderServices: taskEither.of(senderServices)
         });
-        return allData;
       });
 
   // the actual handler
