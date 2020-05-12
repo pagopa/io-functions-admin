@@ -58,15 +58,18 @@ export type MessageContentWithId = t.TypeOf<typeof MessageContentWithId>;
 
 // the shape of the dataset to be extracted
 export const AllUserData = t.interface({
-  messageContents: t.readonlyArray(MessageContentWithId, "MessageContentList"),
-  messages: t.readonlyArray(MessageWithoutContent, "MessageList"),
+  messageContents: t.readonlyArray(
+    t.exact(MessageContentWithId),
+    "MessageContentList"
+  ),
+  messages: t.readonlyArray(t.exact(MessageWithoutContent), "MessageList"),
   notificationStatuses: t.readonlyArray(
-    NotificationStatus,
+    t.exact(NotificationStatus),
     "NotificationStatusList"
   ),
-  notifications: t.readonlyArray(Notification, "NotificationList"),
+  notifications: t.readonlyArray(t.exact(Notification), "NotificationList"),
   profile: Profile,
-  senderServices: t.readonlyArray(SenderService, "SenderServiceList")
+  senderServices: t.readonlyArray(t.exact(SenderService), "SenderServiceList")
 });
 export type AllUserData = t.TypeOf<typeof AllUserData>;
 
@@ -190,27 +193,6 @@ const logFailure = (context: Context) => (
     default:
       assertNever(failure);
   }
-};
-
-/**
- * Skims a db document from db-related fields
- * @param doc the document as retrieved from db
- *
- * @returns the same document without db metadata
- */
-const fromRetrievedDbDocument = <T>(doc: T & RetrievedDocumentT): T => {
-  const RETRIEVED_DOCUMENT_KEYS: ReadonlyArray<keyof RetrievedDocumentT> = [
-    "_self",
-    "_ts",
-    "_attachments",
-    "_etag",
-    "_rid"
-  ];
-  return Object.entries(doc).reduce(
-    (p: T, [key, value]) =>
-      RETRIEVED_DOCUMENT_KEYS.includes(key) ? p : { ...p, [key]: value },
-    {} as T
-  );
 };
 
 /**
@@ -388,8 +370,6 @@ export const createExtractUserDataActivityHandler = (
                 // lift Option<T>[] to T[] by filtering all nones
                 .map(opt => opt.getOrElse(undefined))
                 .filter(value => typeof value !== "undefined")
-                // convert to base type
-                .map(fromRetrievedDbDocument)
             )
           );
         }
@@ -449,9 +429,7 @@ export const createExtractUserDataActivityHandler = (
           messageContents: taskEither.of(messageContents),
           messages: taskEither.of(messages),
           notificationStatuses: findAllNotificationStatuses(notifications),
-          notifications: taskEither.of(
-            notifications.map(fromRetrievedDbDocument)
-          ),
+          notifications: taskEither.of(notifications),
           profile: taskEither.of(profile),
           senderServices: fromQueryEither<ReadonlyArray<SenderService>>(
             () =>
@@ -459,7 +437,7 @@ export const createExtractUserDataActivityHandler = (
                 senderServiceModel.findSenderServicesForRecipient(fiscalCode)
               ),
             "findSenderServicesForRecipient"
-          ).map(retrievedDocs => retrievedDocs.map(fromRetrievedDbDocument))
+          )
         });
       });
 
