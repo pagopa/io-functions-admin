@@ -1,15 +1,5 @@
 /**
  * Updates the status of a UserDataProcessing record
- *
- * The validation process use a `id and validator` strategy.
- *
- * The `id` is generated using an ulid generator and is used when searching
- * a specific ValidationToken entity in the table storage.
- *
- * For the `validator` we use a random-bytes generator. This `validator` value is
- * hashed using the `sha256` strategy and then stored in the entity as `validatorHash`
- *
- * Each token has also a `InvalidAfter` field to set the token lifetime.
  */
 
 import * as t from "io-ts";
