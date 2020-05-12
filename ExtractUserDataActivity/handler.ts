@@ -6,7 +6,7 @@
 import * as t from "io-ts";
 
 import { sequenceS } from "fp-ts/lib/Apply";
-import { array } from "fp-ts/lib/Array";
+import { array, flatten } from "fp-ts/lib/Array";
 import { Either, fromOption, left, right } from "fp-ts/lib/Either";
 import {
   fromEither,
@@ -303,14 +303,8 @@ export const createExtractUserDataActivityHandler = (
       .foldTaskEither(
         e => fromEither(left(e)),
         arrayOfArray =>
-          fromEither(
-            right(
-              arrayOfArray.reduce(
-                /* flatten */ (flat, elem) => [...flat, ...elem],
-                []
-              )
-            )
-          )
+          // tslint:disable-next-line: readonly-array
+          fromEither(right(flatten(arrayOfArray as RetrievedNotification[][])))
       );
 
   const findAllNotificationStatuses = (
