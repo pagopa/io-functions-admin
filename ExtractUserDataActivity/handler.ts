@@ -276,7 +276,7 @@ export const createExtractUserDataActivityHandler = (
     );
 
   /**
-   * Given a list of messages, it queires for relative notifications
+   * Given a list of messages, get the relative notifications
    * @param messages
    */
   const findNotificationsForAllMessages = (
