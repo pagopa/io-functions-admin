@@ -183,7 +183,7 @@ const logFailure = (context: Context) => (
       );
       break;
     case "USER_NOT_FOUND_FAILURE":
-      context.log.error(`${logPrefix}|Error user not found |ERROR=`);
+      context.log.error(`${logPrefix}|Error user not found|ERROR=`);
       break;
     default:
       assertNever(failure);
