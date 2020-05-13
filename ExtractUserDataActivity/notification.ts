@@ -43,7 +43,7 @@ export class NotificationModel extends NotificationModelCommons {
   }
 
   /**
-   * Returns the messages for the provided fiscal code
+   * Returns the notifications for the provided message id
    *
    * @param messageId The message the notifications refer to
    */
