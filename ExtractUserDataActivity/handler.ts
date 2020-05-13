@@ -398,25 +398,28 @@ export const createExtractUserDataActivityHandler = (
         });
       });
 
-  // the actual handler
+  // the actual handler©
   return (context: Context, input: unknown) =>
-    fromEither(ActivityInput.decode(input))
-      .mapLeft<ActivityResultFailure>((reason: t.Errors) =>
-        ActivityResultInvalidInputFailure.encode({
-          kind: "INVALID_INPUT_FAILURE",
-          reason: readableReport(reason)
-        })
+    fromEither(
+      ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
+        (reason: t.Errors) =>
+          ActivityResultInvalidInputFailure.encode({
+            kind: "INVALID_INPUT_FAILURE",
+            reason: readableReport(reason)
+          })
       )
+    )
       .chain(({ fiscalCode }) => queryAllUserData(fiscalCode))
-      .map(allUserData =>
-        ActivityResultSuccess.encode({
-          kind: "SUCCESS",
-          value: allUserData
-        })
+      .bimap(
+        failure => {
+          logFailure(context)(failure);
+          return failure;
+        },
+        allUserData =>
+          ActivityResultSuccess.encode({
+            kind: "SUCCESS",
+            value: allUserData
+          })
       )
-      .mapLeft(failure => {
-        logFailure(context)(failure);
-        return failure;
-      })
       .run();
 };
