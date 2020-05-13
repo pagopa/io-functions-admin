@@ -74,7 +74,7 @@ const senderServiceModel = new SenderServiceModel(
 );
 
 const blobService = createBlobService(
-  getRequiredStringEnv("StorageConnection")
+  getRequiredStringEnv("UserDataArchiveStorageConnection")
 );
 
 const activityFunctionHandler = createExtractUserDataActivityHandler(
