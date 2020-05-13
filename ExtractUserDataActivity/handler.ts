@@ -274,11 +274,9 @@ export const createExtractUserDataActivityHandler = (
           )
         )
       )
-      .foldTaskEither(
-        e => fromEither(left(e)),
-        arrayOfArray =>
-          // tslint:disable-next-line: readonly-array
-          fromEither(right(flatten(arrayOfArray as RetrievedNotification[][])))
+      .map(arrayOfArray =>
+        // tslint:disable-next-line: readonly-array
+        flatten(arrayOfArray as RetrievedNotification[][])
       );
 
   const findAllNotificationStatuses = (
