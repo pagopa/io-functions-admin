@@ -1,6 +1,5 @@
 /**
  * This activity extracts all the data about a user contained in our db.
- *
  */
 
 import * as t from "io-ts";
@@ -42,31 +41,9 @@ import {
 } from "io-functions-commons/dist/src/models/sender_service";
 import { iteratorToArray } from "io-functions-commons/dist/src/utils/documentdb";
 import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
-import { NotificationModel, SafeNotification } from "./notification";
-
-const MessageContentWithId = t.interface({
-  content: MessageContent,
-  messageId: NonEmptyString
-});
-export type MessageContentWithId = t.TypeOf<typeof MessageContentWithId>;
-
-// the shape of the dataset to be extracted
-export const AllUserData = t.interface({
-  messageContents: t.readonlyArray(
-    t.exact(MessageContentWithId),
-    "MessageContentList"
-  ),
-  messages: t.readonlyArray(t.exact(MessageWithoutContent), "MessageList"),
-  notificationStatuses: t.readonlyArray(
-    t.exact(NotificationStatus),
-    "NotificationStatusList"
-  ),
-  notifications: t.readonlyArray(t.exact(SafeNotification), "NotificationList"),
-  profile: Profile,
-  senderServices: t.readonlyArray(t.exact(SenderService), "SenderServiceList")
-});
-export type AllUserData = t.TypeOf<typeof AllUserData>;
+import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { AllUserData, MessageContentWithId } from "../utils/userData";
+import { NotificationModel } from "./notification";
 
 // Activity input
 export const ActivityInput = t.interface({
