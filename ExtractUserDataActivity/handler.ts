@@ -156,11 +156,11 @@ const logFailure = (context: Context) => (
       break;
     case "QUERY_FAILURE":
       context.log.error(
-        `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
+        `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
       );
       break;
     case "USER_NOT_FOUND_FAILURE":
-      context.log.error(`${logPrefix}|Error user not found |ERROR=`);
+      context.log.error(`${logPrefix}|Error user not found|ERROR=`);
       break;
     default:
       assertNever(failure);
@@ -253,7 +253,7 @@ export const createExtractUserDataActivityHandler = (
     );
 
   /**
-   * Given a list of messages, it queires for relative notifications
+   * Given a list of messages, get the relative notifications
    * @param messages
    */
   const findNotificationsForAllMessages = (
