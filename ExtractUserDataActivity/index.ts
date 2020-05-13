@@ -12,8 +12,13 @@ import {
   MessageModel
 } from "io-functions-commons/dist/src/models/message";
 import {
-  NOTIFICATION_COLLECTION_NAME // we use the extended, local-defined model
-} from /* NotificationModel */ "io-functions-commons/dist/src/models/notification";
+  MESSAGE_STATUS_COLLECTION_NAME,
+  MessageStatusModel
+} from "io-functions-commons/dist/src/models/message_status";
+import {
+  NOTIFICATION_COLLECTION_NAME
+  /* NotificationModel // we use the extended, local-defined model */
+} from "io-functions-commons/dist/src/models/notification";
 import {
   NOTIFICATION_STATUS_COLLECTION_NAME,
   NotificationStatusModel
@@ -39,6 +44,14 @@ const messageModel = new MessageModel(
     MESSAGE_COLLECTION_NAME
   ),
   getRequiredStringEnv("MESSAGE_CONTAINER_NAME")
+);
+
+const messageStatusModel = new MessageStatusModel(
+  documentClient,
+  documentDbUtils.getCollectionUri(
+    documentDbDatabaseUrl,
+    MESSAGE_STATUS_COLLECTION_NAME
+  )
 );
 
 const notificationModel = new NotificationModel(
@@ -79,6 +92,7 @@ const blobService = createBlobService(
 
 const activityFunctionHandler = createExtractUserDataActivityHandler(
   messageModel,
+  messageStatusModel,
   notificationModel,
   notificationStatusModel,
   profileModel,

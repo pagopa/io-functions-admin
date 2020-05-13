@@ -40,6 +40,7 @@ import {
 
 import { MessageBodyMarkdown } from "io-functions-commons/dist/generated/definitions/MessageBodyMarkdown";
 import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
+import { MessageStatusValueEnum } from "io-functions-commons/dist/generated/definitions/MessageStatusValue";
 import { MessageSubject } from "io-functions-commons/dist/generated/definitions/MessageSubject";
 import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import { NotificationChannelStatusValueEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannelStatusValue";
@@ -49,6 +50,10 @@ import {
   MessageWithoutContent,
   RetrievedMessageWithoutContent
 } from "io-functions-commons/dist/src/models/message";
+import {
+  MessageStatus,
+  RetrievedMessageStatus
+} from "io-functions-commons/dist/src/models/message_status";
 import {
   NotificationStatus,
   NotificationStatusId
@@ -243,10 +248,12 @@ export const aRetrievedNotification: RetrievedNotification = {
   kind: "IRetrievedNotification"
 };
 
+const aMessageId = "A_MESSAGE_ID" as NonEmptyString;
+
 const aNotificationStatusId = "A_NOTIFICATION_ID:EMAIL" as NotificationStatusId;
 export const aSerializedNotificationStatus = {
   channel: NotificationChannelEnum.EMAIL,
-  messageId: "A_MESSAGE_ID" as NonEmptyString,
+  messageId: aMessageId,
   notificationId: "A_NOTIFICATION_ID" as NonEmptyString,
   status: NotificationChannelStatusValueEnum.SENT,
   statusId: aNotificationStatusId,
@@ -264,3 +271,32 @@ export const aRetrievedNotificationStatus = {
   ...aNotificationStatus,
   id: aNotificationStatusId
 };
+
+export const aSerializedMessageStatus = {
+  messageId: aMessageId,
+  status: MessageStatusValueEnum.ACCEPTED,
+  updatedAt: new Date().toISOString()
+};
+
+export const aMessageStatus = MessageStatus.decode(
+  aSerializedMessageStatus
+).getOrElseL(errs => {
+  const error = readableReport(errs);
+  throw new Error("Fix MessageStatus mock: " + error);
+});
+
+export const aSerializedRetrievedMessageStatus = {
+  _self: "_self",
+  _ts: 1,
+  ...aSerializedMessageStatus,
+  id: `${aMessageId}-${"0".repeat(16)}` as NonEmptyString,
+  kind: "IRetrievedMessageStatus",
+  version: 0 as NonNegativeNumber
+};
+
+export const aRetrievedMessageStatus = RetrievedMessageStatus.decode(
+  aSerializedRetrievedMessageStatus
+).getOrElseL(errs => {
+  const error = readableReport(errs);
+  throw new Error("Fix MessageStatus mock: " + error);
+});

@@ -4,7 +4,6 @@
  */
 
 import * as DocumentDb from "documentdb";
-import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
   NotificationModel as NotificationModelCommons,
   RetrievedNotification

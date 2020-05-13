@@ -6,7 +6,7 @@ import * as t from "io-ts";
 
 import { sequenceS } from "fp-ts/lib/Apply";
 import { array, flatten } from "fp-ts/lib/Array";
-import { Either, fromOption, left, right } from "fp-ts/lib/Either";
+import { Either, fromOption, left } from "fp-ts/lib/Either";
 import {
   fromEither,
   TaskEither,
@@ -26,6 +26,10 @@ import {
   RetrievedMessageWithContent,
   RetrievedMessageWithoutContent
 } from "io-functions-commons/dist/src/models/message";
+import {
+  MessageStatus,
+  MessageStatusModel
+} from "io-functions-commons/dist/src/models/message_status";
 import { RetrievedNotification } from "io-functions-commons/dist/src/models/notification";
 import {
   NotificationStatus,
@@ -180,6 +184,7 @@ const logFailure = (context: Context) => (
  */
 export const createExtractUserDataActivityHandler = (
   messageModel: MessageModel,
+  messageStatusModel: MessageStatusModel,
   notificationModel: NotificationModel,
   notificationStatusModel: NotificationStatusModel,
   profileModel: ProfileModel,
@@ -230,8 +235,41 @@ export const createExtractUserDataActivityHandler = (
       messages.map(({ id: messageId }) =>
         fromQueryEither(
           () => messageModel.getContentFromBlob(blobService, messageId),
-          "messageModel.getContentFromBlob"
+          "messageModel.getContentFromBlob (1)"
         ).foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
+          failure => fromEither(left(failure)),
+          maybeContent =>
+            fromEither(
+              fromOption(
+                ActivityResultQueryFailure.encode({
+                  kind: "QUERY_FAILURE",
+                  query: "messageModel.getContentFromBlob (2)",
+                  reason: `Cannot find content for message ${messageId}`
+                })
+              )(maybeContent).map<MessageContentWithId>(
+                (content: MessageContent) => ({
+                  content,
+                  messageId
+                })
+              )
+            )
+        )
+      )
+    );
+
+  /**
+   * Retrieves all statuses for provided messages
+   * @param messages
+   */
+  const getAllMessageStatuses = (
+    messages: readonly RetrievedMessageWithoutContent[]
+  ): TaskEither<ActivityResultQueryFailure, ReadonlyArray<MessageStatus>> =>
+    array.sequence(taskEither)(
+      messages.map(({ id: messageId }) =>
+        fromQueryEither(
+          () => messageStatusModel.findOneByMessageId(messageId),
+          "messageStatusModel.findOneByMessageId"
+        ).foldTaskEither<ActivityResultQueryFailure, MessageStatus>(
           failure => fromEither(left(failure)),
           maybeContent =>
             fromEither(
@@ -241,12 +279,7 @@ export const createExtractUserDataActivityHandler = (
                   query: "messageModel.getContentFromBlob",
                   reason: `Cannot find content for message ${messageId}`
                 })
-              )(maybeContent).map<MessageContentWithId>(
-                (content: MessageContent) => ({
-                  content,
-                  messageId
-                })
-              )
+              )(maybeContent)
             )
         )
       )
@@ -357,6 +390,7 @@ export const createExtractUserDataActivityHandler = (
           ActivityResultUserNotFound | ActivityResultQueryFailure,
           {
             messages: ReadonlyArray<MessageWithoutContent>;
+            messageStatuses: ReadonlyArray<MessageStatus>;
             messageContents: ReadonlyArray<MessageContentWithId>;
             profile: Profile;
             notifications: ReadonlyArray<RetrievedNotification>;
@@ -364,6 +398,7 @@ export const createExtractUserDataActivityHandler = (
           // tslint:disable-next-line: prefer-immediate-return
         > = sequenceS(taskEither)({
           messageContents: getAllMessageContents(asRetrievedMessages),
+          messageStatuses: getAllMessageStatuses(asRetrievedMessages),
           messages: taskEither.of(messages),
           notifications: findNotificationsForAllMessages(asRetrievedMessages),
           profile: taskEither.of(profile)
@@ -371,22 +406,31 @@ export const createExtractUserDataActivityHandler = (
         return allData;
       })
       // step 3: queries notifications statuses
-      .chain(({ profile, messages, messageContents, notifications }) => {
-        return sequenceS(taskEither)({
-          messageContents: taskEither.of(messageContents),
-          messages: taskEither.of(messages),
-          notificationStatuses: findAllNotificationStatuses(notifications),
-          notifications: taskEither.of(notifications),
-          profile: taskEither.of(profile),
-          senderServices: fromQueryEither<ReadonlyArray<SenderService>>(
-            () =>
-              iteratorToArray(
-                senderServiceModel.findSenderServicesForRecipient(fiscalCode)
-              ),
-            "findSenderServicesForRecipient"
-          )
-        });
-      });
+      .chain(
+        ({
+          profile,
+          messages,
+          messageContents,
+          messageStatuses,
+          notifications
+        }) => {
+          return sequenceS(taskEither)({
+            messageContents: taskEither.of(messageContents),
+            messageStatuses: taskEither.of(messageStatuses),
+            messages: taskEither.of(messages),
+            notificationStatuses: findAllNotificationStatuses(notifications),
+            notifications: taskEither.of(notifications),
+            profile: taskEither.of(profile),
+            senderServices: fromQueryEither<ReadonlyArray<SenderService>>(
+              () =>
+                iteratorToArray(
+                  senderServiceModel.findSenderServicesForRecipient(fiscalCode)
+                ),
+              "findSenderServicesForRecipient"
+            )
+          });
+        }
+      );
 
   // the actual handler©
   return (context: Context, input: unknown) =>

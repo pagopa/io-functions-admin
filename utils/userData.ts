@@ -4,6 +4,7 @@
 import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
 import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import { MessageWithoutContent } from "io-functions-commons/dist/src/models/message";
+import { MessageStatus } from "io-functions-commons/dist/src/models/message_status";
 import {
   NotificationBase,
   NotificationChannelEmail
@@ -40,6 +41,7 @@ export const AllUserData = t.interface({
     t.exact(MessageContentWithId),
     "MessageContentList"
   ),
+  messageStatuses: t.readonlyArray(t.exact(MessageStatus), "MessageStatusList"),
   messages: t.readonlyArray(t.exact(MessageWithoutContent), "MessageList"),
   notificationStatuses: t.readonlyArray(
     t.exact(NotificationStatus),

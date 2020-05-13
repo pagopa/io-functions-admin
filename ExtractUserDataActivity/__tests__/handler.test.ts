@@ -7,6 +7,7 @@ import { context as contextMock } from "../../__mocks__/durable-functions";
 import {
   aFiscalCode,
   aProfile,
+  aRetrievedMessageStatus,
   aRetrievedNotificationStatus
 } from "../../__mocks__/mocks";
 
@@ -19,6 +20,7 @@ import {
 import { BlobService } from "azure-storage";
 import { QueryError } from "documentdb";
 import { MessageModel } from "io-functions-commons/dist/src/models/message";
+import { MessageStatusModel } from "io-functions-commons/dist/src/models/message_status";
 import { NotificationStatusModel } from "io-functions-commons/dist/src/models/notification_status";
 import { ProfileModel } from "io-functions-commons/dist/src/models/profile";
 import { SenderServiceModel } from "io-functions-commons/dist/src/models/sender_service";
@@ -49,6 +51,10 @@ const messageModelMock = ({
   getContentFromBlob: jest.fn(async () => right(some(aMessageContent)))
 } as any) as MessageModel;
 
+const messageStatusModelMock = ({
+  findOneByMessageId: jest.fn(async () => right(some(aRetrievedMessageStatus)))
+} as any) as MessageStatusModel;
+
 const senderServiceModelMock = ({
   findSenderServicesForRecipient: jest.fn(() =>
     createMockIterator([aRetrievedSenderService])
@@ -77,6 +83,7 @@ describe("createExtractUserDataActivityHandler", () => {
   it("should handle export for existing user", async () => {
     const handler = createExtractUserDataActivityHandler(
       messageModelMock,
+      messageStatusModelMock,
       notificationModelMock,
       notificationStatusModelMock,
       profileModelMock,
@@ -89,24 +96,6 @@ describe("createExtractUserDataActivityHandler", () => {
 
     const result = await handler(contextMock, input);
 
-    expect(messageModelMock.getContentFromBlob).toHaveBeenCalledWith(
-      blobServiceMock,
-      aRetrievedMessageWithoutContent.id
-    );
-    expect(messageModelMock.findMessages).toHaveBeenCalledWith(aFiscalCode);
-    expect(messageModelMock.findMessages).toHaveBeenCalledWith(aFiscalCode);
-    expect(
-      notificationModelMock.findNotificationsForMessage
-    ).toHaveBeenCalledWith(aRetrievedMessageWithoutContent.id);
-    expect(
-      notificationStatusModelMock.findOneNotificationStatusByNotificationChannel
-    ).toHaveBeenCalledWith(aRetrievedNotification.id, "WEBHOOK");
-    expect(
-      notificationStatusModelMock.findOneNotificationStatusByNotificationChannel
-    ).toHaveBeenCalledWith(aRetrievedNotification.id, "EMAIL");
-    expect(
-      senderServiceModelMock.findSenderServicesForRecipient
-    ).toHaveBeenCalledWith(aFiscalCode);
     result.fold(
       response => fail(`Failing result, response: ${JSON.stringify(response)}`),
       response => {
@@ -118,6 +107,7 @@ describe("createExtractUserDataActivityHandler", () => {
       }
     );
   });
+
   it("should not export webhook notification data", async () => {
     const notificationWebhookModelMock = ({
       findNotificationsForMessage: jest.fn(() =>
@@ -127,6 +117,7 @@ describe("createExtractUserDataActivityHandler", () => {
 
     const handler = createExtractUserDataActivityHandler(
       messageModelMock,
+      messageStatusModelMock,
       notificationWebhookModelMock,
       notificationStatusModelMock,
       profileModelMock,
@@ -149,5 +140,43 @@ describe("createExtractUserDataActivityHandler", () => {
         );
       }
     );
+  });
+
+  it("should query using correct data", async () => {
+    const handler = createExtractUserDataActivityHandler(
+      messageModelMock,
+      messageStatusModelMock,
+      notificationModelMock,
+      notificationStatusModelMock,
+      profileModelMock,
+      senderServiceModelMock,
+      blobServiceMock
+    );
+    const input: ActivityInput = {
+      fiscalCode: aFiscalCode
+    };
+
+    await handler(contextMock, input);
+
+    expect(messageModelMock.getContentFromBlob).toHaveBeenCalledWith(
+      blobServiceMock,
+      aRetrievedMessageWithoutContent.id
+    );
+    expect(messageModelMock.findMessages).toHaveBeenCalledWith(aFiscalCode);
+    expect(messageStatusModelMock.findOneByMessageId).toHaveBeenCalledWith(
+      aRetrievedMessageWithoutContent.id
+    );
+    expect(
+      notificationModelMock.findNotificationsForMessage
+    ).toHaveBeenCalledWith(aRetrievedMessageWithoutContent.id);
+    expect(
+      notificationStatusModelMock.findOneNotificationStatusByNotificationChannel
+    ).toHaveBeenCalledWith(aRetrievedNotification.id, "WEBHOOK");
+    expect(
+      notificationStatusModelMock.findOneNotificationStatusByNotificationChannel
+    ).toHaveBeenCalledWith(aRetrievedNotification.id, "EMAIL");
+    expect(
+      senderServiceModelMock.findSenderServicesForRecipient
+    ).toHaveBeenCalledWith(aFiscalCode);
   });
 });
