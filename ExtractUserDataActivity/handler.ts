@@ -179,7 +179,7 @@ const logFailure = (context: Context) => (
       break;
     case "QUERY_FAILURE":
       context.log.error(
-        `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
+        `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
       );
       break;
     case "USER_NOT_FOUND_FAILURE":
