@@ -318,22 +318,14 @@ export const createExtractUserDataActivityHandler = (
           )
       )
       // filter empty results (it might not exist a content for a pair notification/channel)
-      .foldTaskEither<
-        ActivityResultQueryFailure,
-        ReadonlyArray<NotificationStatus>
-      >(
-        e => fromEither(left(e)),
-        arrayOfMaybeNotification => {
-          return fromEither(
-            right(
-              arrayOfMaybeNotification
-                // lift Option<T>[] to T[] by filtering all nones
-                .map(opt => opt.getOrElse(undefined))
-                .filter(value => typeof value !== "undefined")
-            )
-          );
-        }
-      );
+      .map(arrayOfMaybeNotification => {
+        return (
+          arrayOfMaybeNotification
+            // lift Option<T>[] to T[] by filtering all nones
+            .map(opt => opt.getOrElse(undefined))
+            .filter(value => typeof value !== "undefined")
+        );
+      });
 
   /**
    * Perform all the queries to extract all data for a given user
