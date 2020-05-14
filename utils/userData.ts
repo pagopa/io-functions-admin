@@ -6,7 +6,6 @@ import { NotificationChannelEnum } from "io-functions-commons/dist/generated/def
 import { MessageWithoutContent } from "io-functions-commons/dist/src/models/message";
 import { MessageStatus } from "io-functions-commons/dist/src/models/message_status";
 import {
-  Notification,
   NotificationBase,
   NotificationChannelEmail
 } from "io-functions-commons/dist/src/models/notification";
@@ -22,7 +21,8 @@ export const SafeNotification = t.intersection([
   t.interface({
     channels: t.exact(
       t.partial({
-        [NotificationChannelEnum.EMAIL]: NotificationChannelEmail
+        [NotificationChannelEnum.EMAIL]: NotificationChannelEmail,
+        [NotificationChannelEnum.WEBHOOK]: t.exact(t.interface({}))
       })
     )
   })
@@ -47,7 +47,7 @@ export const AllUserData = t.interface({
     t.exact(NotificationStatus),
     "NotificationStatusList"
   ),
-  notifications: t.readonlyArray(t.exact(Notification), "NotificationList"),
+  notifications: t.readonlyArray(t.exact(SafeNotification), "NotificationList"),
   profile: Profile,
   senderServices: t.readonlyArray(t.exact(SenderService), "SenderServiceList")
 });
