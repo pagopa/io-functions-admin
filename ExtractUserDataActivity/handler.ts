@@ -202,6 +202,8 @@ const logFailure = (context: Context) => (
  * @param profileModel
  * @param senderServiceModel
  * @param blobService
+ * @param userDataContainerName
+ * @param createCompressedStream
  *
  * @returns an activity function in the form (Context, ActivityInput) -> Promise<Either<ActivityResultFailure, ActivityResultSuccess>>
  */
@@ -462,6 +464,13 @@ export const createExtractUserDataActivityHandler = (
         }
       );
 
+  /**
+   * Creates a bundle with all user data and save it to a blob on a remote storage
+   * @param data all extracted user data
+   * @param password a password for bundle encryption
+   *
+   * @returns either a failure or an object with the name of the blob and the password
+   */
   const saveDataToBlob = (
     data: AllUserData,
     password: StrongPassword
