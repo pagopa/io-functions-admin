@@ -25,6 +25,7 @@ import { NotificationStatusModel } from "io-functions-commons/dist/src/models/no
 import { ProfileModel } from "io-functions-commons/dist/src/models/profile";
 import { SenderServiceModel } from "io-functions-commons/dist/src/models/sender_service";
 import { readableReport } from "italia-ts-commons/lib/reporters";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import {
   aMessageContent,
   aRetrievedMessageWithoutContent,
@@ -32,6 +33,8 @@ import {
   aRetrievedSenderService,
   aRetrievedWebhookNotification
 } from "../../__mocks__/mocks";
+import { AllUserData } from "../../utils/userData";
+import { createCompressedStream } from "../../utils/zip";
 import { NotificationModel } from "../notification"; // we use the local-defined model
 
 const createMockIterator = <T>(a: ReadonlyArray<T>) => {
@@ -77,9 +80,25 @@ const notificationStatusModelMock = ({
   )
 } as any) as NotificationStatusModel;
 
-const blobServiceMock = ({} as any) as BlobService;
+const blobServiceMock = ({
+  createWriteStreamToBlockBlob: jest.fn((_, __, cb) => cb(null))
+} as any) as BlobService;
+
+const aUserDataContainerName = "aUserDataContainerName" as NonEmptyString;
+
+const aMockCompressFn = jest.fn(
+  () =>
+    ({
+      pipe: jest.fn()
+    } as any)
+);
+const createCompressedStreamMock = aMockCompressFn as typeof createCompressedStream;
 
 describe("createExtractUserDataActivityHandler", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("should handle export for existing user", async () => {
     const handler = createExtractUserDataActivityHandler(
       messageModelMock,
@@ -88,7 +107,9 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationStatusModelMock,
       profileModelMock,
       senderServiceModelMock,
-      blobServiceMock
+      blobServiceMock,
+      aUserDataContainerName,
+      createCompressedStreamMock
     );
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -122,24 +143,22 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationStatusModelMock,
       profileModelMock,
       senderServiceModelMock,
-      blobServiceMock
+      blobServiceMock,
+      aUserDataContainerName,
+      createCompressedStreamMock
     );
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
     };
 
-    const result = await handler(contextMock, input);
+    await handler(contextMock, input);
 
-    result.fold(
-      response => fail(`Failing result, response: ${JSON.stringify(response)}`),
-      response => {
-        ActivityResultSuccess.decode(response).fold(
-          err =>
-            fail(`Failing decoding result, response: ${readableReport(err)}`),
-          e => expect(e.value.notifications[0].channels.WEBHOOK).toEqual({})
-        );
-      }
-    );
+    const mockCall = (aMockCompressFn.mock.calls[0] as any) as Parameters<
+      typeof createCompressedStreamMock
+    >;
+    const allUserData = mockCall[0][`${aFiscalCode}.json`] as AllUserData;
+
+    expect(allUserData.notifications[0].channels.WEBHOOK).toEqual({});
   });
 
   it("should query using correct data", async () => {
@@ -150,7 +169,9 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationStatusModelMock,
       profileModelMock,
       senderServiceModelMock,
-      blobServiceMock
+      blobServiceMock,
+      aUserDataContainerName,
+      createCompressedStreamMock
     );
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -178,5 +199,12 @@ describe("createExtractUserDataActivityHandler", () => {
     expect(
       senderServiceModelMock.findSenderServicesForRecipient
     ).toHaveBeenCalledWith(aFiscalCode);
+
+    expect(aMockCompressFn).toHaveBeenCalledWith(
+      {
+        [`${aFiscalCode}.json`]: expect.any(Object)
+      },
+      expect.any(String)
+    );
   });
 });

@@ -3,6 +3,7 @@
  */
 
 import * as t from "io-ts";
+import * as stream from "stream";
 
 import { sequenceS } from "fp-ts/lib/Apply";
 import { array, flatten } from "fp-ts/lib/Array";
@@ -11,6 +12,7 @@ import {
   fromEither,
   TaskEither,
   taskEither,
+  taskify,
   tryCatch
 } from "fp-ts/lib/TaskEither";
 
@@ -45,9 +47,16 @@ import {
 } from "io-functions-commons/dist/src/models/sender_service";
 import { iteratorToArray } from "io-functions-commons/dist/src/utils/documentdb";
 import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
+import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { NotificationModel } from "./notification";
+
+export const ArchiveInfo = t.interface({
+  blobName: NonEmptyString,
+  password: StrongPassword
+});
+export type ArchiveInfo = t.TypeOf<typeof ArchiveInfo>;
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -58,7 +67,7 @@ export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 // Activity success result
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS"),
-  value: AllUserData
+  value: ArchiveInfo
 });
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
@@ -87,14 +96,23 @@ export type ActivityResultQueryFailure = t.TypeOf<
 const ActivityResultUserNotFound = t.interface({
   kind: t.literal("USER_NOT_FOUND_FAILURE")
 });
-export type ActivityResultUserNotFound = t.TypeOf<
-  typeof ActivityResultUserNotFound
+type ActivityResultUserNotFound = t.TypeOf<typeof ActivityResultUserNotFound>;
+
+// activity failed for user not found
+const ActivityResultArchiveGenerationFailure = t.interface({
+  kind: t.literal("ARCHIVE_GENERATION_FAILURE"),
+  reason: t.string
+});
+
+export type ActivityResultArchiveGenerationFailure = t.TypeOf<
+  typeof ActivityResultArchiveGenerationFailure
 >;
 
 export const ActivityResultFailure = t.taggedUnion("kind", [
   ActivityResultUserNotFound,
   ActivityResultQueryFailure,
-  ActivityResultInvalidInputFailure
+  ActivityResultInvalidInputFailure,
+  ActivityResultArchiveGenerationFailure
 ]);
 export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
@@ -163,6 +181,11 @@ const logFailure = (context: Context) => (
         `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
       );
       break;
+    case "ARCHIVE_GENERATION_FAILURE":
+      context.log.error(
+        `${logPrefix}|Error saving zip bundle|ERROR=${failure.reason}`
+      );
+      break;
     case "USER_NOT_FOUND_FAILURE":
       context.log.error(`${logPrefix}|Error user not found|ERROR=`);
       break;
@@ -189,8 +212,15 @@ export const createExtractUserDataActivityHandler = (
   notificationStatusModel: NotificationStatusModel,
   profileModel: ProfileModel,
   senderServiceModel: SenderServiceModel,
-  blobService: BlobService
-  // tslint:disable-next-line: no-big-function
+  blobService: BlobService,
+  userDataContainerName: NonEmptyString,
+  createCompressedStream: (
+    // tslint:disable-next-line: no-any
+    data: Record<string, any>,
+    password: NonEmptyString
+  ) => stream.Readable
+
+  // tslint:disable-next-line: no-big-function parameters-max-number
 ) => {
   /**
    * Look for a profile from a given fiscal code
@@ -432,6 +462,64 @@ export const createExtractUserDataActivityHandler = (
         }
       );
 
+  const saveDataToBlob = (
+    data: AllUserData,
+    password: StrongPassword
+  ): TaskEither<ActivityResultArchiveGenerationFailure, ArchiveInfo> =>
+    taskify(
+      (
+        cb: (
+          e: ActivityResultArchiveGenerationFailure | null,
+          r?: ArchiveInfo
+        ) => void
+      ) => {
+        const blobName = `${
+          data.profile.fiscalCode
+        }-${Date.now()}.zip` as NonEmptyString;
+        const fileName = `${data.profile.fiscalCode}.json` as NonEmptyString;
+
+        const readableZipStream = createCompressedStream(
+          {
+            [fileName]: data
+          },
+          password
+        );
+
+        const writableBlobStream = blobService.createWriteStreamToBlockBlob(
+          userDataContainerName,
+          blobName,
+          (err, _) => {
+            if (err) {
+              cb(
+                ActivityResultArchiveGenerationFailure.encode({
+                  kind: "ARCHIVE_GENERATION_FAILURE",
+                  reason: err.message
+                })
+              );
+            } else {
+              cb(
+                null,
+                ArchiveInfo.encode({
+                  blobName,
+                  password
+                })
+              );
+            }
+          }
+        );
+        readableZipStream.pipe(writableBlobStream);
+
+        readableZipStream.on("error", err =>
+          cb(
+            ActivityResultArchiveGenerationFailure.encode({
+              kind: "ARCHIVE_GENERATION_FAILURE",
+              reason: err.message
+            })
+          )
+        );
+      }
+    )();
+
   // the actual handler©
   return (context: Context, input: unknown) =>
     fromEither(
@@ -444,15 +532,26 @@ export const createExtractUserDataActivityHandler = (
       )
     )
       .chain(({ fiscalCode }) => queryAllUserData(fiscalCode))
+      .map(allUserData => {
+        // remove sensitive data
+        allUserData.notifications.forEach(e => {
+          // tslint:disable-next-line: no-object-mutation
+          e.channels.WEBHOOK = { url: undefined };
+        });
+        return allUserData;
+      })
+      .chain(allUserData =>
+        saveDataToBlob(allUserData, generateStrongPassword())
+      )
       .bimap(
         failure => {
           logFailure(context)(failure);
           return failure;
         },
-        allUserData =>
+        archiveInfo =>
           ActivityResultSuccess.encode({
             kind: "SUCCESS",
-            value: allUserData
+            value: archiveInfo
           })
       )
       .run();
