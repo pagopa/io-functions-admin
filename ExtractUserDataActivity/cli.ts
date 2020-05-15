@@ -1,5 +1,5 @@
 /**
- * Esposes ExtractUserDataActivity as a cli command for local usage
+ * Exposes ExtractUserDataActivity as a cli command for local usage
  */
 
 // tslint:disable: no-console
