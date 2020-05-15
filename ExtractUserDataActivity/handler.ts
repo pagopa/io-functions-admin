@@ -24,7 +24,6 @@ import { MessageContent } from "io-functions-commons/dist/generated/definitions/
 import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
   MessageModel,
-  MessageWithoutContent,
   RetrievedMessageWithContent,
   RetrievedMessageWithoutContent
 } from "io-functions-commons/dist/src/models/message";
@@ -161,7 +160,6 @@ const fromQueryEither = <R>(
 
 /**
  * To be used for exhaustive checks
- * @param _
  */
 function assertNever(_: never): void {
   throw new Error("should not have executed this");
@@ -200,19 +198,329 @@ const logFailure = (context: Context) => (
 };
 
 /**
- * Factory methods that builds an activity function
- *
- * @param messageModel
- * @param notificationModel
- * @param profileModel
- * @param senderServiceModel
- * @param blobService
- * @param userDataContainerName
- * @param createCompressedStream
- *
- * @returns an activity function in the form (Context, ActivityInput) -> Promise<Either<ActivityResultFailure, ActivityResultSuccess>>
+ * Look for a profile from a given fiscal code
+ * @param fiscalCode a fiscal code identifying the user
+ * @returns either a user profile, a query error or a user-not-found error
  */
-export const createExtractUserDataActivityHandler = (
+export const getProfile = (
+  profileModel: ProfileModel,
+  fiscalCode: FiscalCode
+): TaskEither<
+  ActivityResultUserNotFound | ActivityResultQueryFailure,
+  Profile
+> =>
+  fromQueryEither(
+    () => profileModel.findOneProfileByFiscalCode(fiscalCode),
+    "findOneProfileByFiscalCode"
+  ).foldTaskEither<
+    ActivityResultUserNotFound | ActivityResultQueryFailure,
+    Profile
+  >(
+    failure => fromEither(left(failure)),
+    maybeProfile =>
+      fromEither<ActivityResultUserNotFound, Profile>(
+        fromOption(
+          ActivityResultUserNotFound.encode({
+            kind: "USER_NOT_FOUND_FAILURE"
+          })
+        )(maybeProfile)
+      )
+  );
+
+/**
+ * Retrieves all contents for provided messages
+ */
+export const getAllMessageContents = (
+  blobService: BlobService,
+  messageModel: MessageModel,
+  messages: readonly RetrievedMessageWithoutContent[]
+): TaskEither<
+  ActivityResultQueryFailure,
+  ReadonlyArray<MessageContentWithId>
+> =>
+  array.sequence(taskEither)(
+    messages.map(({ id: messageId }) =>
+      fromQueryEither(
+        () => messageModel.getContentFromBlob(blobService, messageId),
+        "messageModel.getContentFromBlob (1)"
+      ).foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
+        failure => fromEither(left(failure)),
+        maybeContent =>
+          fromEither(
+            fromOption(
+              ActivityResultQueryFailure.encode({
+                kind: "QUERY_FAILURE",
+                query: "messageModel.getContentFromBlob (2)",
+                reason: `Cannot find content for message ${messageId}`
+              })
+            )(maybeContent).map<MessageContentWithId>(
+              (content: MessageContent) => ({
+                content,
+                messageId
+              })
+            )
+          )
+      )
+    )
+  );
+
+/**
+ * Retrieves all statuses for provided messages
+ */
+export const getAllMessagesStatuses = (
+  messageStatusModel: MessageStatusModel,
+  messages: readonly RetrievedMessageWithoutContent[]
+): TaskEither<ActivityResultQueryFailure, ReadonlyArray<MessageStatus>> =>
+  array.sequence(taskEither)(
+    messages.map(({ id: messageId }) =>
+      fromQueryEither(
+        () => messageStatusModel.findOneByMessageId(messageId),
+        "messageStatusModel.findOneByMessageId"
+      ).foldTaskEither<ActivityResultQueryFailure, MessageStatus>(
+        failure => fromEither(left(failure)),
+        maybeContent =>
+          fromEither(
+            fromOption(
+              ActivityResultQueryFailure.encode({
+                kind: "QUERY_FAILURE",
+                query: "messageModel.getContentFromBlob",
+                reason: `Cannot find content for message ${messageId}`
+              })
+            )(maybeContent)
+          )
+      )
+    )
+  );
+
+/**
+ * Given a list of messages, get the relative notifications
+ * @param messages
+ */
+export const findNotificationsForAllMessages = (
+  notificationModel: NotificationModel,
+  messages: readonly RetrievedMessageWithoutContent[]
+): TaskEither<
+  ActivityResultQueryFailure,
+  ReadonlyArray<RetrievedNotification>
+> =>
+  array
+    .sequence(taskEither)(
+      messages.map(m =>
+        fromQueryEither<ReadonlyArray<RetrievedNotification>>(
+          () =>
+            iteratorToArray(
+              notificationModel.findNotificationsForMessage(m.id)
+            ),
+          "findNotificationsForRecipient"
+        )
+      )
+    )
+    .map(flatten);
+
+export const findAllNotificationStatuses = (
+  notificationStatusModel: NotificationStatusModel,
+  notifications: ReadonlyArray<RetrievedNotification>
+): TaskEither<ActivityResultQueryFailure, ReadonlyArray<NotificationStatus>> =>
+  array
+    .sequence(taskEither)(
+      // compose a query for every supported channel type
+      notifications
+        .reduce(
+          (queries, { id: notificationId }) => [
+            ...queries,
+            ...Object.values(NotificationChannelEnum).map(channel => [
+              notificationId,
+              channel
+            ])
+          ],
+          []
+        )
+        .map(([notificationId, channel]) =>
+          fromQueryEither(
+            () =>
+              notificationStatusModel.findOneNotificationStatusByNotificationChannel(
+                notificationId,
+                channel
+              ),
+            "findOneNotificationStatusByNotificationChannel"
+          )
+        )
+    )
+    // filter empty results (it might not exist a content for a pair notification/channel)
+    .map(arrayOfMaybeNotification => {
+      return (
+        arrayOfMaybeNotification
+          // lift Option<T>[] to T[] by filtering all nones
+          .map(opt => opt.getOrElse(undefined))
+          .filter(value => typeof value !== "undefined")
+      );
+    });
+
+/**
+ * Perform all the queries to extract all data for a given user
+ * @param fiscalCode user identifier
+ * @returns Either a failure or a hash set with all the information regarding the user
+ */
+const queryAllUserData = (
+  messageModel: MessageModel,
+  messageStatusModel: MessageStatusModel,
+  notificationModel: NotificationModel,
+  notificationStatusModel: NotificationStatusModel,
+  profileModel: ProfileModel,
+  senderServiceModel: SenderServiceModel,
+  blobService: BlobService,
+  fiscalCode: FiscalCode
+): TaskEither<
+  ActivityResultUserNotFound | ActivityResultQueryFailure,
+  AllUserData
+  // tslint:disable-next-line: parameters-max-number
+> =>
+  // step 0: look for the profile
+  getProfile(profileModel, fiscalCode)
+    // step 1: get messages, which can be queried by only knowing the fiscal code
+    .chain(profile =>
+      sequenceS(taskEither)({
+        // queries all messages for the user
+        messages: fromQueryEither<ReadonlyArray<RetrievedMessageWithContent>>(
+          () => iteratorToArray(messageModel.findMessages(fiscalCode)),
+          "findMessages"
+        ),
+        profile: taskEither.of(profile)
+      })
+    )
+    // step 2: queries notifications and message contents, which need message data to be queried first
+    .chain(({ profile, messages }) => {
+      // this cast is needed because messageModel.findMessages is erroneously marked as RetrievedMessageWithContent, although content isn't included
+      // tslint:disable-next-line: no-any
+      const asRetrievedMessages = (messages as any) as readonly RetrievedMessageWithoutContent[];
+      return sequenceS(taskEither)({
+        messageContents: getAllMessageContents(
+          blobService,
+          messageModel,
+          asRetrievedMessages
+        ),
+        messageStatuses: getAllMessagesStatuses(
+          messageStatusModel,
+          asRetrievedMessages
+        ),
+        messages: taskEither.of(messages),
+        notifications: findNotificationsForAllMessages(
+          notificationModel,
+          asRetrievedMessages
+        ),
+        profile: taskEither.of(profile)
+      });
+    })
+    // step 3: queries notifications statuses
+    .chain(
+      ({
+        profile,
+        messages,
+        messageContents,
+        messageStatuses,
+        notifications
+      }) => {
+        return sequenceS(taskEither)({
+          messageContents: taskEither.of(messageContents),
+          messageStatuses: taskEither.of(messageStatuses),
+          messages: taskEither.of(messages),
+          notificationStatuses: findAllNotificationStatuses(
+            notificationStatusModel,
+            notifications
+          ),
+          notifications: taskEither.of(notifications),
+          profile: taskEither.of(profile),
+          senderServices: fromQueryEither<ReadonlyArray<SenderService>>(
+            () =>
+              iteratorToArray(
+                senderServiceModel.findSenderServicesForRecipient(fiscalCode)
+              ),
+            "findSenderServicesForRecipient"
+          )
+        });
+      }
+    );
+
+/**
+ * Creates a bundle with all user data and save it to a blob on a remote storage
+ * @param data all extracted user data
+ * @param password a password for bundle encryption
+ *
+ * @returns either a failure or an object with the name of the blob and the password
+ */
+const saveDataToBlob = (
+  blobService: BlobService,
+  userDataContainerName: string,
+  data: AllUserData,
+  password: StrongPassword
+): TaskEither<ActivityResultArchiveGenerationFailure, ArchiveInfo> =>
+  taskify(
+    (
+      cb: (
+        e: ActivityResultArchiveGenerationFailure | null,
+        r?: ArchiveInfo
+      ) => void
+    ) => {
+      const blobName = `${
+        data.profile.fiscalCode
+      }-${Date.now()}.zip` as NonEmptyString;
+      const fileName = `${data.profile.fiscalCode}.json` as NonEmptyString;
+
+      initArchiverZipEncryptedPlugin.run();
+
+      const readableZipStream = archiver.create("zip-encrypted", {
+        encryptionMethod: DEFAULT_ZIP_ENCRYPTION_METHOD,
+        password,
+        zlib: { level: DEFAULT_ZLIB_LEVEL }
+        // following cast due to incomplete archive typings
+        // tslint:disable-next-line: no-any
+      } as any);
+
+      const writableBlobStream = blobService.createWriteStreamToBlockBlob(
+        userDataContainerName,
+        blobName,
+        (err, _) => {
+          if (err) {
+            cb(
+              ActivityResultArchiveGenerationFailure.encode({
+                kind: "ARCHIVE_GENERATION_FAILURE",
+                reason: err.message
+              })
+            );
+          } else {
+            cb(
+              null,
+              ArchiveInfo.encode({
+                blobName,
+                password
+              })
+            );
+          }
+        }
+      );
+      readableZipStream.pipe(writableBlobStream);
+      // tslint:disable-next-line: no-any
+      readableZipStream.on("error", (err: any) =>
+        cb(
+          ActivityResultArchiveGenerationFailure.encode({
+            kind: "ARCHIVE_GENERATION_FAILURE",
+            reason: err.message
+          })
+        )
+      );
+      readableZipStream.append(JSON.stringify(data), {
+        name: fileName
+      });
+      // TODO: handle this promise correctly
+      readableZipStream.finalize().catch();
+    }
+  )();
+
+/**
+ * Factory methods that builds an activity function
+ */
+// tslint:disable-next-line: parameters-max-number
+export function createExtractUserDataActivityHandler(
   messageModel: MessageModel,
   messageStatusModel: MessageStatusModel,
   notificationModel: NotificationModel,
@@ -221,316 +529,10 @@ export const createExtractUserDataActivityHandler = (
   senderServiceModel: SenderServiceModel,
   blobService: BlobService,
   userDataContainerName: NonEmptyString
-
-  // tslint:disable-next-line: no-big-function parameters-max-number
-) => {
-  /**
-   * Look for a profile from a given fiscal code
-   * @param fiscalCode a fiscal code identifying the user
-   * @returns either a user profile, a query error or a user-not-found error
-   */
-  const taskifiedFindProfile = (
-    fiscalCode: FiscalCode
-  ): TaskEither<
-    ActivityResultUserNotFound | ActivityResultQueryFailure,
-    Profile
-  > =>
-    fromQueryEither(
-      () => profileModel.findOneProfileByFiscalCode(fiscalCode),
-      "findOneProfileByFiscalCode"
-    ).foldTaskEither<
-      ActivityResultUserNotFound | ActivityResultQueryFailure,
-      Profile
-    >(
-      failure => fromEither(left(failure)),
-      maybeProfile =>
-        fromEither<ActivityResultUserNotFound, Profile>(
-          fromOption(
-            ActivityResultUserNotFound.encode({
-              kind: "USER_NOT_FOUND_FAILURE"
-            })
-          )(maybeProfile)
-        )
-    );
-
-  /**
-   * Retrieves all contents for provided messages
-   * @param messages
-   */
-  const getAllMessageContents = (
-    messages: readonly RetrievedMessageWithoutContent[]
-  ): TaskEither<
-    ActivityResultQueryFailure,
-    ReadonlyArray<MessageContentWithId>
-  > =>
-    array.sequence(taskEither)(
-      messages.map(({ id: messageId }) =>
-        fromQueryEither(
-          () => messageModel.getContentFromBlob(blobService, messageId),
-          "messageModel.getContentFromBlob (1)"
-        ).foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
-          failure => fromEither(left(failure)),
-          maybeContent =>
-            fromEither(
-              fromOption(
-                ActivityResultQueryFailure.encode({
-                  kind: "QUERY_FAILURE",
-                  query: "messageModel.getContentFromBlob (2)",
-                  reason: `Cannot find content for message ${messageId}`
-                })
-              )(maybeContent).map<MessageContentWithId>(
-                (content: MessageContent) => ({
-                  content,
-                  messageId
-                })
-              )
-            )
-        )
-      )
-    );
-
-  /**
-   * Retrieves all statuses for provided messages
-   * @param messages
-   */
-  const getAllMessageStatuses = (
-    messages: readonly RetrievedMessageWithoutContent[]
-  ): TaskEither<ActivityResultQueryFailure, ReadonlyArray<MessageStatus>> =>
-    array.sequence(taskEither)(
-      messages.map(({ id: messageId }) =>
-        fromQueryEither(
-          () => messageStatusModel.findOneByMessageId(messageId),
-          "messageStatusModel.findOneByMessageId"
-        ).foldTaskEither<ActivityResultQueryFailure, MessageStatus>(
-          failure => fromEither(left(failure)),
-          maybeContent =>
-            fromEither(
-              fromOption(
-                ActivityResultQueryFailure.encode({
-                  kind: "QUERY_FAILURE",
-                  query: "messageModel.getContentFromBlob",
-                  reason: `Cannot find content for message ${messageId}`
-                })
-              )(maybeContent)
-            )
-        )
-      )
-    );
-
-  /**
-   * Given a list of messages, get the relative notifications
-   * @param messages
-   */
-  const findNotificationsForAllMessages = (
-    messages: readonly RetrievedMessageWithoutContent[]
-  ): TaskEither<
-    ActivityResultQueryFailure,
-    ReadonlyArray<RetrievedNotification>
-  > =>
-    array
-      .sequence(taskEither)(
-        messages.map(m =>
-          fromQueryEither<ReadonlyArray<RetrievedNotification>>(
-            () =>
-              iteratorToArray(
-                notificationModel.findNotificationsForMessage(m.id)
-              ),
-            "findNotificationsForRecipient"
-          )
-        )
-      )
-      .map(arrayOfArray =>
-        // tslint:disable-next-line: readonly-array
-        flatten(arrayOfArray as RetrievedNotification[][])
-      );
-
-  const findAllNotificationStatuses = (
-    notifications: ReadonlyArray<RetrievedNotification>
-  ): TaskEither<
-    ActivityResultQueryFailure,
-    ReadonlyArray<NotificationStatus>
-  > =>
-    array
-      .sequence(taskEither)(
-        // compose a query for every supported channel type
-        notifications
-          .reduce(
-            (queries, { id: notificationId }) => [
-              ...queries,
-              ...Object.values(NotificationChannelEnum).map(channel => [
-                notificationId,
-                channel
-              ])
-            ],
-            []
-          )
-          .map(([notificationId, channel]) =>
-            fromQueryEither(
-              () =>
-                notificationStatusModel.findOneNotificationStatusByNotificationChannel(
-                  notificationId,
-                  channel
-                ),
-              "findOneNotificationStatusByNotificationChannel"
-            )
-          )
-      )
-      // filter empty results (it might not exist a content for a pair notification/channel)
-      .map(arrayOfMaybeNotification => {
-        return (
-          arrayOfMaybeNotification
-            // lift Option<T>[] to T[] by filtering all nones
-            .map(opt => opt.getOrElse(undefined))
-            .filter(value => typeof value !== "undefined")
-        );
-      });
-
-  /**
-   * Perform all the queries to extract all data for a given user
-   * @param fiscalCode user identifier
-   * @returns Either a failure or a hash set with all the information regarding the user
-   */
-  const queryAllUserData = (
-    fiscalCode: FiscalCode
-  ): TaskEither<
-    ActivityResultUserNotFound | ActivityResultQueryFailure,
-    AllUserData
-  > =>
-    // step 0: look for the profile
-    taskifiedFindProfile(fiscalCode)
-      // step 1: get messages, which can be queried by only knowing the fiscal code
-      .chain(profile =>
-        sequenceS(taskEither)({
-          // queries all messages for the user
-          messages: fromQueryEither<ReadonlyArray<RetrievedMessageWithContent>>(
-            () => iteratorToArray(messageModel.findMessages(fiscalCode)),
-            "findMessages"
-          ),
-          profile: taskEither.of(profile)
-        })
-      )
-      // step 2: queries notifications and message contents, which need message data to be queried first
-      .chain(({ profile, messages }) => {
-        // tslint:disable-next-line: no-any
-        const asRetrievedMessages = (messages as any) as readonly RetrievedMessageWithoutContent[]; // this cast is needed because messageModel.findMessages is erroneously marked as RetrievedMessageWithContent, although content isn't included
-        const allData: TaskEither<
-          ActivityResultUserNotFound | ActivityResultQueryFailure,
-          {
-            messages: ReadonlyArray<MessageWithoutContent>;
-            messageStatuses: ReadonlyArray<MessageStatus>;
-            messageContents: ReadonlyArray<MessageContentWithId>;
-            profile: Profile;
-            notifications: ReadonlyArray<RetrievedNotification>;
-          }
-          // tslint:disable-next-line: prefer-immediate-return
-        > = sequenceS(taskEither)({
-          messageContents: getAllMessageContents(asRetrievedMessages),
-          messageStatuses: getAllMessageStatuses(asRetrievedMessages),
-          messages: taskEither.of(messages),
-          notifications: findNotificationsForAllMessages(asRetrievedMessages),
-          profile: taskEither.of(profile)
-        });
-        return allData;
-      })
-      // step 3: queries notifications statuses
-      .chain(
-        ({
-          profile,
-          messages,
-          messageContents,
-          messageStatuses,
-          notifications
-        }) => {
-          return sequenceS(taskEither)({
-            messageContents: taskEither.of(messageContents),
-            messageStatuses: taskEither.of(messageStatuses),
-            messages: taskEither.of(messages),
-            notificationStatuses: findAllNotificationStatuses(notifications),
-            notifications: taskEither.of(notifications),
-            profile: taskEither.of(profile),
-            senderServices: fromQueryEither<ReadonlyArray<SenderService>>(
-              () =>
-                iteratorToArray(
-                  senderServiceModel.findSenderServicesForRecipient(fiscalCode)
-                ),
-              "findSenderServicesForRecipient"
-            )
-          });
-        }
-      );
-
-  /**
-   * Creates a bundle with all user data and save it to a blob on a remote storage
-   * @param data all extracted user data
-   * @param password a password for bundle encryption
-   *
-   * @returns either a failure or an object with the name of the blob and the password
-   */
-  const saveDataToBlob = (
-    data: AllUserData,
-    password: StrongPassword
-  ): TaskEither<ActivityResultArchiveGenerationFailure, ArchiveInfo> =>
-    taskify(
-      (
-        cb: (
-          e: ActivityResultArchiveGenerationFailure | null,
-          r?: ArchiveInfo
-        ) => void
-      ) => {
-        const blobName = `${
-          data.profile.fiscalCode
-        }-${Date.now()}.zip` as NonEmptyString;
-        const fileName = `${data.profile.fiscalCode}.json` as NonEmptyString;
-
-        initArchiverZipEncryptedPlugin.run();
-
-        const readableZipStream = archiver.create("zip-encrypted", {
-          encryptionMethod: DEFAULT_ZIP_ENCRYPTION_METHOD,
-          password,
-          zlib: { level: DEFAULT_ZLIB_LEVEL }
-          // following cast due to incomplete archive typings
-          // tslint:disable-next-line: no-any
-        } as any);
-
-        const writableBlobStream = blobService.createWriteStreamToBlockBlob(
-          userDataContainerName,
-          blobName,
-          (err, _) => {
-            if (err) {
-              cb(
-                ActivityResultArchiveGenerationFailure.encode({
-                  kind: "ARCHIVE_GENERATION_FAILURE",
-                  reason: err.message
-                })
-              );
-            } else {
-              cb(
-                null,
-                ArchiveInfo.encode({
-                  blobName,
-                  password
-                })
-              );
-            }
-          }
-        );
-        readableZipStream.pipe(writableBlobStream);
-        // tslint:disable-next-line: no-any
-        readableZipStream.on("error", (err: any) =>
-          cb(
-            ActivityResultArchiveGenerationFailure.encode({
-              kind: "ARCHIVE_GENERATION_FAILURE",
-              reason: err.message
-            })
-          )
-        );
-        readableZipStream.append(JSON.stringify(data), { name: fileName });
-        // TODO: handle this promise correctly
-        readableZipStream.finalize().catch();
-      }
-    )();
-
-  // the actual handler
+): (
+  context: Context,
+  input: unknown
+) => Promise<Either<ActivityResultFailure, ActivityResultSuccess>> {
   return (context: Context, input: unknown) =>
     fromEither(
       ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
@@ -541,7 +543,18 @@ export const createExtractUserDataActivityHandler = (
           })
       )
     )
-      .chain(({ fiscalCode }) => queryAllUserData(fiscalCode))
+      .chain(({ fiscalCode }) =>
+        queryAllUserData(
+          messageModel,
+          messageStatusModel,
+          notificationModel,
+          notificationStatusModel,
+          profileModel,
+          senderServiceModel,
+          blobService,
+          fiscalCode
+        )
+      )
       .map(allUserData => {
         // remove sensitive data
         allUserData.notifications.forEach(e => {
@@ -551,7 +564,12 @@ export const createExtractUserDataActivityHandler = (
         return allUserData;
       })
       .chain(allUserData =>
-        saveDataToBlob(allUserData, generateStrongPassword())
+        saveDataToBlob(
+          blobService,
+          userDataContainerName,
+          allUserData,
+          generateStrongPassword()
+        )
       )
       .bimap(
         failure => {
@@ -565,4 +583,4 @@ export const createExtractUserDataActivityHandler = (
           })
       )
       .run();
-};
+}
