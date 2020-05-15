@@ -1,5 +1,4 @@
 /* tslint:disable: no-any */
-jest.mock("../../utils/zip");
 import { Either, right } from "fp-ts/lib/Either";
 import { fromNullable, Option, some } from "fp-ts/lib/Option";
 
@@ -34,7 +33,6 @@ import {
   aRetrievedWebhookNotification
 } from "../../__mocks__/mocks";
 import { AllUserData } from "../../utils/userData";
-import { createCompressedStream } from "../../utils/zip";
 import { NotificationModel } from "../notification"; // we use the local-defined model
 
 const createMockIterator = <T>(a: ReadonlyArray<T>) => {
@@ -120,36 +118,6 @@ describe("createExtractUserDataActivityHandler", () => {
     );
   });
 
-  it("should not export webhook notification data", async () => {
-    const notificationWebhookModelMock = ({
-      findNotificationsForMessage: jest.fn(() =>
-        createMockIterator([aRetrievedWebhookNotification])
-      )
-    } as any) as NotificationModel;
-
-    const handler = createExtractUserDataActivityHandler(
-      messageModelMock,
-      messageStatusModelMock,
-      notificationWebhookModelMock,
-      notificationStatusModelMock,
-      profileModelMock,
-      senderServiceModelMock,
-      blobServiceMock,
-      aUserDataContainerName
-    );
-    const input: ActivityInput = {
-      fiscalCode: aFiscalCode
-    };
-
-    await handler(contextMock, input);
-
-    // @ts-ignore as
-    const mockCall = createCompressedStream.mock.calls[0];
-    const allUserData: AllUserData = mockCall[0][`${aFiscalCode}.json`];
-
-    expect(allUserData.notifications[0].channels.WEBHOOK).toEqual({});
-  });
-
   it("should query using correct data", async () => {
     const handler = createExtractUserDataActivityHandler(
       messageModelMock,
@@ -187,12 +155,5 @@ describe("createExtractUserDataActivityHandler", () => {
     expect(
       senderServiceModelMock.findSenderServicesForRecipient
     ).toHaveBeenCalledWith(aFiscalCode);
-
-    expect(createCompressedStream).toHaveBeenCalledWith(
-      {
-        [`${aFiscalCode}.json`]: expect.any(Object)
-      },
-      expect.any(String)
-    );
   });
 });
