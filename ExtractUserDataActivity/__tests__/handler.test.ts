@@ -29,10 +29,8 @@ import {
   aMessageContent,
   aRetrievedMessageWithoutContent,
   aRetrievedNotification,
-  aRetrievedSenderService,
-  aRetrievedWebhookNotification
+  aRetrievedSenderService
 } from "../../__mocks__/mocks";
-import { AllUserData } from "../../utils/userData";
 import { NotificationModel } from "../notification"; // we use the local-defined model
 
 const createMockIterator = <T>(a: ReadonlyArray<T>) => {
@@ -83,12 +81,6 @@ const blobServiceMock = ({
 } as any) as BlobService;
 
 const aUserDataContainerName = "aUserDataContainerName" as NonEmptyString;
-
-jest.mock("../../utils/zip", () => ({
-  createCompressedStream: jest.fn(() => ({
-    pipe: jest.fn()
-  }))
-}));
 
 describe("createExtractUserDataActivityHandler", () => {
   beforeEach(() => {
