@@ -49,6 +49,8 @@
     "@azure/arm-apimanagement": "^5.1.1",
     "@azure/graph": "^4.0.1",
     "@azure/ms-rest-nodeauth": "^2.0.5",
+    "archiver": "^4.0.1",
+    "archiver-zip-encrypted": "^1.0.8",
     "azure-storage": "^2.10.3",
     "documentdb": "^1.12.2",
     "durable-functions": "^1.2.4",

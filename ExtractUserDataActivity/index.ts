@@ -97,7 +97,8 @@ const activityFunctionHandler = createExtractUserDataActivityHandler(
   notificationStatusModel,
   profileModel,
   senderServiceModel,
-  blobService
+  blobService,
+  getRequiredStringEnv("USER_DATA_CONTAINER_NAME")
 );
 
 export default activityFunctionHandler;
