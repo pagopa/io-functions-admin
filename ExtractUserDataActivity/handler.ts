@@ -482,13 +482,13 @@ export const createExtractUserDataActivityHandler = (
         }-${Date.now()}.zip` as NonEmptyString;
         const fileName = `${data.profile.fiscalCode}.json` as NonEmptyString;
 
-        initArchiverZipEncryptedPlugin.init();
+        initArchiverZipEncryptedPlugin.run();
 
         const readableZipStream = archiver.create("zip-encrypted", {
           encryptionMethod: DEFAULT_ZIP_ENCRYPTION_METHOD,
           password,
           zlib: { level: DEFAULT_ZLIB_LEVEL }
-          // following cast due to uncomplete archive typings
+          // following cast due to incomplete archive typings
           // tslint:disable-next-line: no-any
         } as any);
 

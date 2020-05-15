@@ -2,7 +2,7 @@ import * as archiver from "archiver";
 
 export const initArchiverZipEncryptedPlugin = {
   called: false,
-  init(): void {
+  run(): void {
     if (!initArchiverZipEncryptedPlugin.called) {
       // tslint:disable-next-line: no-object-mutation
       initArchiverZipEncryptedPlugin.called = true;
