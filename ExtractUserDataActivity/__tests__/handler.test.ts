@@ -1,5 +1,4 @@
 /* tslint:disable: no-any */
-jest.mock("../../utils/zip");
 import { Either, right } from "fp-ts/lib/Either";
 import { fromNullable, Option, some } from "fp-ts/lib/Option";
 
@@ -85,6 +84,12 @@ const blobServiceMock = ({
 } as any) as BlobService;
 
 const aUserDataContainerName = "aUserDataContainerName" as NonEmptyString;
+
+jest.mock("../../utils/zip", () => ({
+  createCompressedStream: jest.fn(() => ({
+    pipe: jest.fn()
+  }))
+}));
 
 describe("createExtractUserDataActivityHandler", () => {
   beforeEach(() => {
