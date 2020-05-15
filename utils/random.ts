@@ -3,12 +3,14 @@
  */
 
 import * as t from "io-ts";
+import { readableReport } from "italia-ts-commons/lib/reporters";
 import { NonEmptyString, PatternString } from "italia-ts-commons/lib/strings";
+import * as randomstring from "randomstring";
 
-const UPPERCASED_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWYZ".split("");
-const LOWERCASE_LETTERS = "abcdefghijklmnopqrstuvwyz".split("");
-const NUMBERS = "0123456789".split("");
-const SYMBOLS = "!£$%&()?+@=€".split("");
+const UPPERCASED_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWYZ";
+const LOWERCASE_LETTERS = "abcdefghijklmnopqrstuvwyz";
+const NUMBERS = "0123456789";
+const SYMBOLS = "!£$%&()?+@=€";
 
 // at least 10 characters, at least one symbol one uppercase, one lowercase, one number
 const STRONG_PASSWORD_PATTERN =
@@ -20,32 +22,42 @@ export const StrongPassword = t.intersection([
 ]);
 export type StrongPassword = t.TypeOf<typeof StrongPassword>;
 
-const shuffle = <T>(arr: ReadonlyArray<T>) => {
-  const a = Array.from(arr);
+const shuffleString = (str: string): string => {
+  const a = str.split("");
   // tslint:disable-next-line: no-let
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
-  return a;
+  return a.join("");
 };
-
-/**
- * Given an array, returns a random element of it
- * @param arr an array
- *
- * @return a random element of the array
- */
-export const randomElement = <T>(arr: ReadonlyArray<T>): T =>
-  arr[Math.floor(Math.random() * (arr.length - 1))];
 
 /**
  * Generates a randomic passwords with a high variety of characters
  */
 export const generateStrongPassword = (): StrongPassword =>
-  shuffle([
-    ...Array.from({ length: 5 }).map(_ => randomElement(UPPERCASED_LETTERS)),
-    ...Array.from({ length: 5 }).map(_ => randomElement(LOWERCASE_LETTERS)),
-    ...Array.from({ length: 5 }).map(_ => randomElement(NUMBERS)),
-    ...Array.from({ length: 3 }).map(_ => randomElement(SYMBOLS))
-  ]).join("") as StrongPassword;
+  StrongPassword.decode(
+    shuffleString(
+      // tslint:disable-next-line: restrict-plus-operands
+      randomstring.generate({
+        charset: UPPERCASED_LETTERS,
+        length: 5
+      }) +
+        randomstring.generate({
+          charset: LOWERCASE_LETTERS,
+          length: 5
+        }) +
+        randomstring.generate({
+          charset: NUMBERS,
+          length: 5
+        }) +
+        randomstring.generate({
+          charset: SYMBOLS,
+          length: 3
+        })
+    )
+  ).getOrElseL(err => {
+    throw new Error(
+      `Failed generating strong password - ${readableReport(err)}`
+    );
+  });
