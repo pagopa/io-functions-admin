@@ -2,6 +2,7 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
+import * as archiver from "archiver";
 import * as t from "io-ts";
 
 import { sequenceS } from "fp-ts/lib/Apply";
@@ -49,7 +50,11 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
-import { createCompressedStream } from "../utils/zip";
+import {
+  DEFAULT_ZIP_ENCRYPTION_METHOD,
+  DEFAULT_ZLIB_LEVEL,
+  initArchiverZipEncryptedPlugin
+} from "../utils/zip";
 import { NotificationModel } from "./notification";
 
 export const ArchiveInfo = t.interface({
@@ -352,15 +357,10 @@ export const createExtractUserDataActivityHandler = (
           .reduce(
             (queries, { id: notificationId }) => [
               ...queries,
-              ...Object.values(NotificationChannelEnum).map(channel => {
-                switch (channel) {
-                  case NotificationChannelEnum.EMAIL:
-                  case NotificationChannelEnum.WEBHOOK:
-                    return [notificationId, channel];
-                  default:
-                    assertNever(channel);
-                }
-              })
+              ...Object.values(NotificationChannelEnum).map(channel => [
+                notificationId,
+                channel
+              ])
             ],
             []
           )
@@ -482,12 +482,15 @@ export const createExtractUserDataActivityHandler = (
         }-${Date.now()}.zip` as NonEmptyString;
         const fileName = `${data.profile.fiscalCode}.json` as NonEmptyString;
 
-        const readableZipStream = createCompressedStream(
-          {
-            [fileName]: data
-          },
-          password
-        );
+        initArchiverZipEncryptedPlugin.run();
+
+        const readableZipStream = archiver.create("zip-encrypted", {
+          encryptionMethod: DEFAULT_ZIP_ENCRYPTION_METHOD,
+          password,
+          zlib: { level: DEFAULT_ZLIB_LEVEL }
+          // following cast due to incomplete archive typings
+          // tslint:disable-next-line: no-any
+        } as any);
 
         const writableBlobStream = blobService.createWriteStreamToBlockBlob(
           userDataContainerName,
@@ -512,8 +515,8 @@ export const createExtractUserDataActivityHandler = (
           }
         );
         readableZipStream.pipe(writableBlobStream);
-
-        readableZipStream.on("error", err =>
+        // tslint:disable-next-line: no-any
+        readableZipStream.on("error", (err: any) =>
           cb(
             ActivityResultArchiveGenerationFailure.encode({
               kind: "ARCHIVE_GENERATION_FAILURE",
@@ -521,10 +524,13 @@ export const createExtractUserDataActivityHandler = (
             })
           )
         );
+        readableZipStream.append(JSON.stringify(data), { name: fileName });
+        // TODO: handle this promise correctly
+        readableZipStream.finalize().catch();
       }
     )();
 
-  // the actual handler©
+  // the actual handler
   return (context: Context, input: unknown) =>
     fromEither(
       ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
