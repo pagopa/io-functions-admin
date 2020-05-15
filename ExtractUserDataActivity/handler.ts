@@ -361,7 +361,7 @@ export const findAllNotificationStatuses = (
  * @param fiscalCode user identifier
  * @returns Either a failure or a hash set with all the information regarding the user
  */
-const queryAllUserData = (
+export const queryAllUserData = (
   messageModel: MessageModel,
   messageStatusModel: MessageStatusModel,
   notificationModel: NotificationModel,
@@ -448,7 +448,7 @@ const queryAllUserData = (
  *
  * @returns either a failure or an object with the name of the blob and the password
  */
-const saveDataToBlob = (
+export const saveDataToBlob = (
   blobService: BlobService,
   userDataContainerName: string,
   data: AllUserData,
