@@ -84,6 +84,12 @@ const blobServiceMock = ({
 
 const aUserDataContainerName = "aUserDataContainerName" as NonEmptyString;
 
+jest.mock("../../utils/zip", () => ({
+  createCompressedStream: jest.fn(() => ({
+    pipe: jest.fn()
+  }))
+}));
+
 describe("createExtractUserDataActivityHandler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
