@@ -33,8 +33,6 @@ import {
 } from "io-functions-commons/dist/src/models/sender_service";
 import { NotificationModel } from "./notification";
 
-import { createCompressedStream } from "../utils/zip";
-
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 
 const documentDbDatabaseUrl = documentDbUtils.getDatabaseUri(cosmosDbName);
@@ -100,8 +98,7 @@ const activityFunctionHandler = createExtractUserDataActivityHandler(
   profileModel,
   senderServiceModel,
   blobService,
-  getRequiredStringEnv("USER_DATA_CONTAINER_NAME"),
-  createCompressedStream
+  getRequiredStringEnv("USER_DATA_CONTAINER_NAME")
 );
 
 export default activityFunctionHandler;

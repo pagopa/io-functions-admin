@@ -3,7 +3,6 @@
  */
 
 import * as t from "io-ts";
-import * as stream from "stream";
 
 import { sequenceS } from "fp-ts/lib/Apply";
 import { array, flatten } from "fp-ts/lib/Array";
@@ -50,6 +49,7 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
+import { createCompressedStream } from "../utils/zip";
 import { NotificationModel } from "./notification";
 
 export const ArchiveInfo = t.interface({
@@ -215,12 +215,7 @@ export const createExtractUserDataActivityHandler = (
   profileModel: ProfileModel,
   senderServiceModel: SenderServiceModel,
   blobService: BlobService,
-  userDataContainerName: NonEmptyString,
-  createCompressedStream: (
-    // tslint:disable-next-line: no-any
-    data: Record<string, any>,
-    password: NonEmptyString
-  ) => stream.Readable
+  userDataContainerName: NonEmptyString
 
   // tslint:disable-next-line: no-big-function parameters-max-number
 ) => {

@@ -1,5 +1,5 @@
 /* tslint:disable: no-any */
-
+jest.mock("../../utils/zip");
 import { Either, right } from "fp-ts/lib/Either";
 import { fromNullable, Option, some } from "fp-ts/lib/Option";
 
@@ -86,14 +86,6 @@ const blobServiceMock = ({
 
 const aUserDataContainerName = "aUserDataContainerName" as NonEmptyString;
 
-const aMockCompressFn = jest.fn(
-  () =>
-    ({
-      pipe: jest.fn()
-    } as any)
-);
-const createCompressedStreamMock = aMockCompressFn as typeof createCompressedStream;
-
 describe("createExtractUserDataActivityHandler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -108,8 +100,7 @@ describe("createExtractUserDataActivityHandler", () => {
       profileModelMock,
       senderServiceModelMock,
       blobServiceMock,
-      aUserDataContainerName,
-      createCompressedStreamMock
+      aUserDataContainerName
     );
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -144,8 +135,7 @@ describe("createExtractUserDataActivityHandler", () => {
       profileModelMock,
       senderServiceModelMock,
       blobServiceMock,
-      aUserDataContainerName,
-      createCompressedStreamMock
+      aUserDataContainerName
     );
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -153,10 +143,9 @@ describe("createExtractUserDataActivityHandler", () => {
 
     await handler(contextMock, input);
 
-    const mockCall = (aMockCompressFn.mock.calls[0] as any) as Parameters<
-      typeof createCompressedStreamMock
-    >;
-    const allUserData = mockCall[0][`${aFiscalCode}.json`] as AllUserData;
+    // @ts-ignore as
+    const mockCall = createCompressedStream.mock.calls[0];
+    const allUserData: AllUserData = mockCall[0][`${aFiscalCode}.json`];
 
     expect(allUserData.notifications[0].channels.WEBHOOK).toEqual({});
   });
@@ -170,8 +159,7 @@ describe("createExtractUserDataActivityHandler", () => {
       profileModelMock,
       senderServiceModelMock,
       blobServiceMock,
-      aUserDataContainerName,
-      createCompressedStreamMock
+      aUserDataContainerName
     );
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -200,7 +188,7 @@ describe("createExtractUserDataActivityHandler", () => {
       senderServiceModelMock.findSenderServicesForRecipient
     ).toHaveBeenCalledWith(aFiscalCode);
 
-    expect(aMockCompressFn).toHaveBeenCalledWith(
+    expect(createCompressedStream).toHaveBeenCalledWith(
       {
         [`${aFiscalCode}.json`]: expect.any(Object)
       },
