@@ -10,6 +10,7 @@ export enum EncryptionMethodEnum {
 }
 
 export const DEFAULT_ENCRYPTION_METHOD = EncryptionMethodEnum.ZIP20;
+export const DEFAULT_ZLIB_LEVEL = 8;
 
 export const createCompressedStream = (
   // tslint:disable-next-line: no-any
@@ -21,10 +22,10 @@ export const createCompressedStream = (
     ? archiver("zip-encrypted", {
         encryptionMethod,
         password,
-        zlib: { level: 8 }
+        zlib: { level: DEFAULT_ZLIB_LEVEL }
       })
     : archiver("zip", {
-        zlib: { level: 8 }
+        zlib: { level: DEFAULT_ZLIB_LEVEL }
       });
 
   Object.entries(data).forEach(([fileName, content]) => {
