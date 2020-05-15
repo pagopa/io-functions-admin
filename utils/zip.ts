@@ -9,7 +9,7 @@ export enum EncryptionMethodEnum {
   AES256 = "aes256"
 }
 
-export const ENCRYPTION_METHOD = "zip20";
+export const DEFAULT_ENCRYPTION_METHOD = EncryptionMethodEnum.ZIP20;
 
 export const createCompressedStream = (
   // tslint:disable-next-line: no-any
