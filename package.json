@@ -61,7 +61,7 @@
     "io-functions-commons": "^9.0.0",
     "io-functions-express": "^0.1.0",
     "io-ts": "1.8.5",
-    "italia-ts-commons": "^5.1.11",
+    "italia-ts-commons": "^8.1.0",
     "randomstring": "^1.1.5",
     "ulid": "^2.3.0",
     "winston": "^3.2.1"
