@@ -1,5 +1,4 @@
 import * as archiver from "archiver";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { StrongPassword } from "./random";
 
 const initArchiverZipEncryptedPlugin = {
