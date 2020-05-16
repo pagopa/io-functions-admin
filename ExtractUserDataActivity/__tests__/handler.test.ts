@@ -28,15 +28,13 @@ import { MessageModel } from "io-functions-commons/dist/src/models/message";
 import { MessageStatusModel } from "io-functions-commons/dist/src/models/message_status";
 import { NotificationStatusModel } from "io-functions-commons/dist/src/models/notification_status";
 import { ProfileModel } from "io-functions-commons/dist/src/models/profile";
-import { SenderServiceModel } from "io-functions-commons/dist/src/models/sender_service";
 import { DeferredPromise } from "italia-ts-commons/lib/promises";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import {
   aMessageContent,
   aRetrievedMessageWithoutContent,
-  aRetrievedNotification,
-  aRetrievedSenderService
+  aRetrievedNotification
 } from "../../__mocks__/mocks";
 import { AllUserData } from "../../utils/userData";
 import { NotificationModel } from "../notification"; // we use the local-defined model
@@ -61,12 +59,6 @@ const messageModelMock = ({
 const messageStatusModelMock = ({
   findOneByMessageId: jest.fn(async () => right(some(aRetrievedMessageStatus)))
 } as any) as MessageStatusModel;
-
-const senderServiceModelMock = ({
-  findSenderServicesForRecipient: jest.fn(() =>
-    createMockIterator([aRetrievedSenderService])
-  )
-} as any) as SenderServiceModel;
 
 const profileModelMock = ({
   findOneProfileByFiscalCode: jest.fn(async () => right(some(aProfile)))
@@ -124,7 +116,6 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationModelMock,
       notificationStatusModelMock,
       profileModelMock,
-      senderServiceModelMock,
       blobServiceMock,
       aUserDataContainerName
     );
@@ -162,7 +153,6 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationWebhookModelMock,
       notificationStatusModelMock,
       profileModelMock,
-      senderServiceModelMock,
       blobServiceMock,
       aUserDataContainerName
     );
@@ -189,7 +179,6 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationModelMock,
       notificationStatusModelMock,
       profileModelMock,
-      senderServiceModelMock,
       blobServiceMock,
       aUserDataContainerName
     );
@@ -216,9 +205,6 @@ describe("createExtractUserDataActivityHandler", () => {
     expect(
       notificationStatusModelMock.findOneNotificationStatusByNotificationChannel
     ).toHaveBeenCalledWith(aRetrievedNotification.id, "EMAIL");
-    expect(
-      senderServiceModelMock.findSenderServicesForRecipient
-    ).toHaveBeenCalledWith(aFiscalCode);
 
     expect(appendSpy).toHaveBeenCalledWith(
       expect.any(String),
