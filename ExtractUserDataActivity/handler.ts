@@ -42,10 +42,6 @@ import {
   Profile,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
-import {
-  SenderService,
-  SenderServiceModel
-} from "io-functions-commons/dist/src/models/sender_service";
 import { iteratorToArray } from "io-functions-commons/dist/src/utils/documentdb";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
@@ -377,13 +373,11 @@ export const queryAllUserData = (
   notificationModel: NotificationModel,
   notificationStatusModel: NotificationStatusModel,
   profileModel: ProfileModel,
-  senderServiceModel: SenderServiceModel,
   blobService: BlobService,
   fiscalCode: FiscalCode
 ): TaskEither<
   ActivityResultUserNotFound | ActivityResultQueryFailure,
   AllUserData
-  // tslint:disable-next-line: parameters-max-number
 > =>
   // step 0: look for the profile
   getProfile(profileModel, fiscalCode)
@@ -439,14 +433,7 @@ export const queryAllUserData = (
             notifications
           ),
           notifications: taskEither.of(notifications),
-          profile: taskEither.of(profile),
-          senderServices: fromQueryEither<ReadonlyArray<SenderService>>(
-            () =>
-              iteratorToArray(
-                senderServiceModel.findSenderServicesForRecipient(fiscalCode)
-              ),
-            "findSenderServicesForRecipient"
-          )
+          profile: taskEither.of(profile)
         });
       }
     );
@@ -536,14 +523,12 @@ export const saveDataToBlob = (
 /**
  * Factory methods that builds an activity function
  */
-// tslint:disable-next-line: parameters-max-number
 export function createExtractUserDataActivityHandler(
   messageModel: MessageModel,
   messageStatusModel: MessageStatusModel,
   notificationModel: NotificationModel,
   notificationStatusModel: NotificationStatusModel,
   profileModel: ProfileModel,
-  senderServiceModel: SenderServiceModel,
   blobService: BlobService,
   userDataContainerName: NonEmptyString
 ): (
@@ -567,7 +552,6 @@ export function createExtractUserDataActivityHandler(
           notificationModel,
           notificationStatusModel,
           profileModel,
-          senderServiceModel,
           blobService,
           fiscalCode
         )

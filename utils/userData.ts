@@ -11,7 +11,6 @@ import {
 } from "io-functions-commons/dist/src/models/notification";
 import { NotificationStatus } from "io-functions-commons/dist/src/models/notification_status";
 import { Profile } from "io-functions-commons/dist/src/models/profile";
-import { SenderService } from "io-functions-commons/dist/src/models/sender_service";
 import * as t from "io-ts";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
@@ -48,7 +47,6 @@ export const AllUserData = t.interface({
     "NotificationStatusList"
   ),
   notifications: t.readonlyArray(t.exact(SafeNotification), "NotificationList"),
-  profile: Profile,
-  senderServices: t.readonlyArray(t.exact(SenderService), "SenderServiceList")
+  profile: Profile
 });
 export type AllUserData = t.TypeOf<typeof AllUserData>;

@@ -27,10 +27,6 @@ import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
-import {
-  SENDER_SERVICE_COLLECTION_NAME,
-  SenderServiceModel
-} from "io-functions-commons/dist/src/models/sender_service";
 import { NotificationModel } from "./notification";
 
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
@@ -78,14 +74,6 @@ const profileModel = new ProfileModel(
   )
 );
 
-const senderServiceModel = new SenderServiceModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    SENDER_SERVICE_COLLECTION_NAME
-  )
-);
-
 const blobService = createBlobService(
   getRequiredStringEnv("UserDataArchiveStorageConnection")
 );
@@ -96,7 +84,6 @@ const activityFunctionHandler = createExtractUserDataActivityHandler(
   notificationModel,
   notificationStatusModel,
   profileModel,
-  senderServiceModel,
   blobService,
   getRequiredStringEnv("USER_DATA_CONTAINER_NAME")
 );
