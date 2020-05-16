@@ -11,7 +11,8 @@ import {
   aFiscalCode,
   aProfile,
   aRetrievedMessageStatus,
-  aRetrievedNotificationStatus
+  aRetrievedNotificationStatus,
+  aRetrievedWebhookNotification
 } from "../../__mocks__/mocks";
 
 import {
@@ -37,6 +38,7 @@ import {
   aRetrievedNotification,
   aRetrievedSenderService
 } from "../../__mocks__/mocks";
+import { AllUserData } from "../../utils/userData";
 import { NotificationModel } from "../notification"; // we use the local-defined model
 
 const createMockIterator = <T>(a: ReadonlyArray<T>) => {
@@ -82,6 +84,7 @@ const notificationStatusModelMock = ({
   )
 } as any) as NotificationStatusModel;
 
+const mockZipFileAppend = jest.fn();
 const setupStreamMocks = () => {
   const { e1: errorOrResult, e2: resolve } = DeferredPromise<void>();
   const aMockBlobStream = new stream.PassThrough();
@@ -98,6 +101,8 @@ const setupStreamMocks = () => {
   aZipStream.finalize = () => {
     return origFinalize().then(resolve);
   };
+  // tslint:disable-next-line: no-object-mutation
+  aZipStream.append = mockZipFileAppend;
   jest
     .spyOn(zipstream, "getEncryptedZipStream")
     .mockReturnValueOnce(aZipStream);
@@ -139,6 +144,37 @@ describe("createExtractUserDataActivityHandler", () => {
         );
       }
     );
+  });
+
+  it("should not export webhook notification data", async () => {
+    const { blobServiceMock } = setupStreamMocks();
+    const notificationWebhookModelMock = ({
+      findNotificationsForMessage: jest.fn(() =>
+        createMockIterator([aRetrievedWebhookNotification])
+      )
+    } as any) as NotificationModel;
+
+    const handler = createExtractUserDataActivityHandler(
+      messageModelMock,
+      messageStatusModelMock,
+      notificationWebhookModelMock,
+      notificationStatusModelMock,
+      profileModelMock,
+      senderServiceModelMock,
+      blobServiceMock,
+      aUserDataContainerName
+    );
+    const input: ActivityInput = {
+      fiscalCode: aFiscalCode
+    };
+
+    await handler(contextMock, input);
+
+    // @ts-ignore as
+    const mockCall = mockZipFileAppend.mock.calls[0];
+    const allUserData: AllUserData = JSON.parse(mockCall[0]);
+
+    expect(allUserData.notifications[0].channels.WEBHOOK).toEqual({});
   });
 
   it("should query using correct data", async () => {
