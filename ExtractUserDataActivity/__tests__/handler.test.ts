@@ -2,6 +2,8 @@
 import { Either, right } from "fp-ts/lib/Either";
 import { fromNullable, Option, some } from "fp-ts/lib/Option";
 
+import * as stream from "stream";
+
 import { context as contextMock } from "../../__mocks__/durable-functions";
 import {
   aFiscalCode,
@@ -76,8 +78,13 @@ const notificationStatusModelMock = ({
   )
 } as any) as NotificationStatusModel;
 
+const aMockBlobStream = new stream.PassThrough();
+
 const blobServiceMock = ({
-  createWriteStreamToBlockBlob: jest.fn((_, __, cb) => cb(null))
+  createWriteStreamToBlockBlob: jest.fn((_, __, cb) => {
+    setTimeout(cb, 1000);
+    return aMockBlobStream;
+  })
 } as any) as BlobService;
 
 const aUserDataContainerName = "aUserDataContainerName" as NonEmptyString;
