@@ -1,6 +1,8 @@
 import * as archiver from "archiver";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { StrongPassword } from "./random";
 
-export const initArchiverZipEncryptedPlugin = {
+const initArchiverZipEncryptedPlugin = {
   called: false,
   run(): void {
     if (!initArchiverZipEncryptedPlugin.called) {
@@ -22,3 +24,18 @@ export enum EncryptionMethodEnum {
 
 export const DEFAULT_ZIP_ENCRYPTION_METHOD = EncryptionMethodEnum.ZIP20;
 export const DEFAULT_ZLIB_LEVEL = 8;
+
+export function getEncryptedZipStream(
+  password: StrongPassword
+): archiver.Archiver {
+  initArchiverZipEncryptedPlugin.run();
+  return archiver.create("zip-encrypted", {
+    encryptionMethod: DEFAULT_ZIP_ENCRYPTION_METHOD,
+    password,
+    zlib: {
+      level: DEFAULT_ZLIB_LEVEL
+    }
+    // following cast due to incomplete archive typings
+    // tslint:disable-next-line: no-any
+  } as any);
+}

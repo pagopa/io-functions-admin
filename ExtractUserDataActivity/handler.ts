@@ -2,7 +2,6 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
-import * as archiver from "archiver";
 import * as t from "io-ts";
 import * as stream from "stream";
 
@@ -52,11 +51,7 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
-import {
-  DEFAULT_ZIP_ENCRYPTION_METHOD,
-  DEFAULT_ZLIB_LEVEL,
-  initArchiverZipEncryptedPlugin
-} from "../utils/zip";
+import { getEncryptedZipStream } from "../utils/zip";
 import { NotificationModel } from "./notification";
 
 export const ArchiveInfo = t.interface({
@@ -161,6 +156,10 @@ const fromQueryEither = <R>(
     )
   );
 
+/**
+ * Converts a Promise<Either<L, R>> that can reject
+ * into a TaskEither<L, R>
+ */
 const fromPromiseEither = <L, R>(
   promise: Promise<Either<L, R>>
 ): TaskEither<Error | L, R> =>
@@ -487,17 +486,7 @@ export const saveDataToBlob = (
   }-${Date.now()}.zip` as NonEmptyString;
   const fileName = `${data.profile.fiscalCode}.json` as NonEmptyString;
 
-  initArchiverZipEncryptedPlugin.run();
-
-  const zipStream = archiver.create("zip-encrypted", {
-    encryptionMethod: DEFAULT_ZIP_ENCRYPTION_METHOD,
-    password,
-    zlib: {
-      level: DEFAULT_ZLIB_LEVEL
-    }
-    // following cast due to incomplete archive typings
-    // tslint:disable-next-line: no-any
-  } as any);
+  const zipStream = getEncryptedZipStream(password);
 
   const failure = (err: Error) =>
     ActivityResultArchiveGenerationFailure.encode({
@@ -505,10 +494,11 @@ export const saveDataToBlob = (
       reason: err.message
     });
 
-  const success = ArchiveInfo.encode({
-    blobName,
-    password
-  });
+  const success = () =>
+    ArchiveInfo.encode({
+      blobName,
+      password
+    });
 
   const { blobStream, errorOrResult } = getCreateWriteStreamToBlockBlob(
     blobService
@@ -529,10 +519,10 @@ export const saveDataToBlob = (
   // This task will run only when `onZipStreamFinalized` completes.
   // If `onZipStreamFinalized` does not finish, the process hangs here
   // until the function runtime timeout is reached
-  const onBlobStreamWritten: TaskEither<
-    ActivityResultArchiveGenerationFailure,
-    ArchiveInfo
-  > = fromPromiseEither(errorOrResult).bimap(failure, _ => success);
+  const onBlobStreamWritten = fromPromiseEither(errorOrResult).bimap(
+    failure,
+    success
+  );
 
   // run tasks in parallel
   return sequenceT(taskEither)(
