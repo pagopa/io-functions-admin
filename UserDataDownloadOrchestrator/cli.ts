@@ -31,11 +31,9 @@ const context = ({
 
 // tslint:disable-next-line: max-union-size
 async function run(): Promise<any> {
-  const fiscalCode = "SPNDNL80R13C523K" as FiscalCode;
-  // tslint:disable-next-line: no-commented-code
-  // const fiscalCode = FiscalCode.decode(process.argv[2]).getOrElseL(reason => {
-  //   throw new Error(`Invalid input: ${readableReport(reason)}`);
-  // });
+  const fiscalCode = FiscalCode.decode(process.argv[2]).getOrElseL(reason => {
+    throw new Error(`Invalid input: ${readableReport(reason)}`);
+  });
   const currentUserDataProcessing = UserDataProcessing.decode({
     choice: UserDataProcessingChoiceEnum.DOWNLOAD,
     createdAt: new Date().toISOString(),
