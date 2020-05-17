@@ -170,5 +170,6 @@ export const createSetUserDataProcessingStatusActivityHandler = (
       logFailure(context)(failure);
       return failure;
     })
-    .run();
+    .run()
+    .then(e => e.value);
 };

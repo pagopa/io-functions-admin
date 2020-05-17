@@ -531,10 +531,7 @@ export function createExtractUserDataActivityHandler(
   profileModel: ProfileModel,
   blobService: BlobService,
   userDataContainerName: NonEmptyString
-): (
-  context: Context,
-  input: unknown
-) => Promise<Either<ActivityResultFailure, ActivityResultSuccess>> {
+): (context: Context, input: unknown) => Promise<ActivityResult> {
   return (context: Context, input: unknown) =>
     fromEither(
       ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
@@ -583,5 +580,6 @@ export function createExtractUserDataActivityHandler(
             value: archiveInfo
           })
       )
-      .run();
+      .run()
+      .then(e => e.value);
 }
