@@ -6,25 +6,31 @@ import * as t from "io-ts";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 
 // TODO: switch text based on user's preferred_language
-const userDataDownloadMessage = (blobName: string, password: string) =>
+const userDataDownloadMessage = (
+  blobName: string,
+  password: string,
+  publicDownloadBaseUrl: string
+) =>
   NewMessage.decode({
     content: {
       markdown: `Caro/a Utente,
-        Abbiamo completato la gestione della tua richiesta di accesso.
-        Puoi scaricare al link che segue i tuoi dati personali che trattiamo tramite l’App IO utilizzando la relativa password. 
-        Se hai necessità di maggiori dettagli o informazioni su questi dati o vuoi riceverne dettaglio, 
-        ti invitiamo a scrivere all’indirizzo email dpo@pagopa.it.
-        Nel caso in cui tu non sia soddisfatto/a dalla modalità con cui abbiamo gestito la tua richiesta,
-        siamo a disposizione per risolvere domande o dubbi aggiuntivi, che puoi indicare scrivendo all’indirizzo email indicato sopra.
+Abbiamo completato la gestione della tua richiesta di accesso.
+Puoi scaricare al link che segue i tuoi dati personali che trattiamo tramite l’App IO utilizzando la relativa password.
 
-        Link per il download:
-        ${blobName}
+Se hai necessità di maggiori dettagli o informazioni su questi dati o vuoi riceverne dettaglio,
+ti invitiamo a scrivere all’indirizzo email dpo@pagopa.it.
 
-        Password dell'archivio ZIP:
-        ${password}
+Nel caso in cui tu non sia soddisfatto/a dalla modalità con cui abbiamo gestito la tua richiesta,
+siamo a disposizione per risolvere domande o dubbi aggiuntivi, che puoi indicare scrivendo all’indirizzo email indicato sopra.
 
-        Grazie ancora per aver utilizzato IO,
-        il Team Privacy di PagoPA
+[Link all'archivio ZIP](${publicDownloadBaseUrl}/${blobName})
+
+Password dell'archivio ZIP:
+
+${password}
+
+Grazie ancora per aver utilizzato IO,
+il Team Privacy di PagoPA
 `,
       subject: `IO App - richiesta di accesso ai dati`
     }
@@ -87,6 +93,7 @@ export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 export const getActivityFunction = (
   publicApiUrl: NonEmptyString,
   publicApiKey: NonEmptyString,
+  publicDownloadBaseUrl: NonEmptyString,
   timeoutFetch: typeof fetch
 ) => (context: Context, input: unknown): Promise<ActivityResult> => {
   const failure = (reason: string) => {
@@ -119,7 +126,7 @@ export const getActivityFunction = (
         fiscalCode,
         publicApiUrl,
         publicApiKey,
-        userDataDownloadMessage(blobName, password),
+        userDataDownloadMessage(blobName, password, publicDownloadBaseUrl),
         timeoutFetch
       );
 
