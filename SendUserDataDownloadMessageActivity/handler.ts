@@ -1,4 +1,4 @@
-﻿import { AzureFunction, Context } from "@azure/functions";
+﻿import { Context } from "@azure/functions";
 import { NewMessage } from "io-functions-commons/dist/generated/definitions/NewMessage";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 

@@ -36,12 +36,10 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
     };
     const result = await handler(contextMock, input);
 
-    result.fold(
-      response => fail(`Failing result, reason: ${response.reason}`),
-      response => {
-        expect(response.value.status).toEqual(UserDataProcessingStatusEnum.WIP);
-      }
-    );
+    expect(result.kind).toEqual("SUCCESS");
+    if (result.kind === "SUCCESS") {
+      expect(result.value.status === UserDataProcessingStatusEnum.WIP);
+    }
   });
 
   it("should handle a query error", async () => {
@@ -63,17 +61,11 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
     };
     const result = await handler(contextMock, input);
 
-    result.fold(
-      response => {
-        ActivityResultFailure.decode(response).fold(
-          err =>
-            fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
-          failure => {
-            expect(failure.kind).toEqual(expect.any(String));
-          }
-        );
-      },
-      _ => fail(`Should not consider this a Right`)
+    ActivityResultFailure.decode(result).fold(
+      err => fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
+      failure => {
+        expect(failure.kind).toEqual(expect.any(String));
+      }
     );
   });
 
@@ -94,17 +86,11 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
     };
     const result = await handler(contextMock, input);
 
-    result.fold(
-      response => {
-        ActivityResultFailure.decode(response).fold(
-          err =>
-            fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
-          failure => {
-            expect(failure.kind).toEqual(expect.any(String));
-          }
-        );
-      },
-      _ => fail(`Should not consider this a Right`)
+    ActivityResultFailure.decode(result).fold(
+      err => fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
+      failure => {
+        expect(failure.kind).toEqual(expect.any(String));
+      }
     );
   });
 
@@ -118,17 +104,11 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       invalid: "input"
     });
 
-    result.fold(
-      response => {
-        ActivityResultFailure.decode(response).fold(
-          err =>
-            fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
-          failure => {
-            expect(failure.kind).toEqual(expect.any(String));
-          }
-        );
-      },
-      _ => fail(`Should not consider this a Right`)
+    ActivityResultFailure.decode(result).fold(
+      err => fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
+      failure => {
+        expect(failure.kind).toEqual(expect.any(String));
+      }
     );
   });
 });

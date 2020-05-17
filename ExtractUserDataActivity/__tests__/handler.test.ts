@@ -125,15 +125,9 @@ describe("createExtractUserDataActivityHandler", () => {
 
     const result = await handler(contextMock, input);
 
-    result.fold(
-      response => fail(`Failing result, response: ${JSON.stringify(response)}`),
-      response => {
-        ActivityResultSuccess.decode(response).fold(
-          err =>
-            fail(`Failing decoding result, response: ${readableReport(err)}`),
-          e => expect(e.kind).toBe("SUCCESS")
-        );
-      }
+    ActivityResultSuccess.decode(result).fold(
+      err => fail(`Failing decoding result, response: ${readableReport(err)}`),
+      e => expect(e.kind).toBe("SUCCESS")
     );
   });
 
