@@ -4,6 +4,9 @@
 
 // tslint:disable: no-console no-any
 
+import * as dotenv from "dotenv";
+dotenv.config();
+
 import { Context } from "@azure/functions";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
@@ -19,15 +22,20 @@ import {
 } from "io-functions-commons/dist/src/models/user_data_processing";
 
 const context = ({
-  log: console
+  log: {
+    info: console.log,
+    verbose: console.log
+  }
   // tslint:disable-next-line: no-any
 } as any) as Context;
 
 // tslint:disable-next-line: max-union-size
 async function run(): Promise<any> {
-  const fiscalCode = FiscalCode.decode(process.argv[2]).getOrElseL(reason => {
-    throw new Error(`Invalid input: ${readableReport(reason)}`);
-  });
+  const fiscalCode = "SPNDNL80R13C523K" as FiscalCode;
+  // tslint:disable-next-line: no-commented-code
+  // const fiscalCode = FiscalCode.decode(process.argv[2]).getOrElseL(reason => {
+  //   throw new Error(`Invalid input: ${readableReport(reason)}`);
+  // });
   const currentUserDataProcessing = UserDataProcessing.decode({
     choice: UserDataProcessingChoiceEnum.DOWNLOAD,
     createdAt: new Date().toISOString(),
@@ -43,24 +51,15 @@ async function run(): Promise<any> {
     );
   });
 
-  const setToWipOrError = setUserDataProcessingStatusActivity(context, {
+  return setUserDataProcessingStatusActivity(context, {
     currentRecord: currentUserDataProcessing,
     nextStatus: UserDataProcessingStatusEnum.WIP
-  });
-
-  const createUserDataBundleOrError = extractUserDataActivity(context, {
-    fiscalCode
-  });
-
-  const setToClosedOrError = setUserDataProcessingStatusActivity(context, {
-    currentRecord: currentUserDataProcessing,
-    nextStatus: UserDataProcessingStatusEnum.CLOSED
-  });
-
-  return setToWipOrError
+  })
     .then(userData => {
       if (userData.kind === "SUCCESS") {
-        return createUserDataBundleOrError;
+        return extractUserDataActivity(context, {
+          fiscalCode
+        });
       } else {
         throw new Error(userData.kind);
       }
@@ -76,7 +75,12 @@ async function run(): Promise<any> {
         throw new Error(bundle.kind);
       }
     })
-    .then(() => setToClosedOrError)
+    .then(() =>
+      setUserDataProcessingStatusActivity(context, {
+        currentRecord: currentUserDataProcessing,
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
+      })
+    )
     .catch(console.error);
 }
 
