@@ -58,10 +58,6 @@ import {
   NotificationStatus,
   NotificationStatusId
 } from "io-functions-commons/dist/src/models/notification_status";
-import {
-  NewSenderService,
-  RetrievedSenderService
-} from "io-functions-commons/dist/src/models/sender_service";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 
@@ -192,22 +188,6 @@ export const aRetrievedMessageWithoutContent: RetrievedMessageWithoutContent = {
 };
 
 export const aServiceId = "s123" as ServiceId;
-
-export const aNewSenderService: NewSenderService = {
-  id: "A_SenderService_ID" as NonEmptyString,
-  kind: "INewSenderService",
-  lastNotificationAt: new Date(),
-  recipientFiscalCode: aFiscalCode,
-  serviceId: aServiceId,
-  version: 1 as NonNegativeNumber
-};
-
-export const aRetrievedSenderService: RetrievedSenderService = {
-  ...aNewSenderService,
-  _self: "xyz",
-  _ts: 123,
-  kind: "IRetrievedSenderService"
-};
 
 export const aNewEmailNotification: NewNotification = {
   channels: {
