@@ -110,15 +110,16 @@ describe("createExtractUserDataActivityHandler", () => {
 
   it("should handle export for existing user", async () => {
     const { blobServiceMock } = setupStreamMocks();
-    const handler = createExtractUserDataActivityHandler(
-      messageModelMock,
-      messageStatusModelMock,
-      notificationModelMock,
-      notificationStatusModelMock,
-      profileModelMock,
-      blobServiceMock,
-      aUserDataContainerName
-    );
+    const handler = createExtractUserDataActivityHandler({
+      messageContentBlobService: blobServiceMock,
+      messageModel: messageModelMock,
+      messageStatusModel: messageStatusModelMock,
+      notificationModel: notificationModelMock,
+      notificationStatusModel: notificationStatusModelMock,
+      profileModel: profileModelMock,
+      userDataBlobService: blobServiceMock,
+      userDataContainerName: aUserDataContainerName
+    });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
     };
@@ -141,15 +142,16 @@ describe("createExtractUserDataActivityHandler", () => {
       )
     } as any) as NotificationModel;
 
-    const handler = createExtractUserDataActivityHandler(
-      messageModelMock,
-      messageStatusModelMock,
-      notificationWebhookModelMock,
-      notificationStatusModelMock,
-      profileModelMock,
-      blobServiceMock,
-      aUserDataContainerName
-    );
+    const handler = createExtractUserDataActivityHandler({
+      messageContentBlobService: blobServiceMock,
+      messageModel: messageModelMock,
+      messageStatusModel: messageStatusModelMock,
+      notificationModel: notificationWebhookModelMock,
+      notificationStatusModel: notificationStatusModelMock,
+      profileModel: profileModelMock,
+      userDataBlobService: blobServiceMock,
+      userDataContainerName: aUserDataContainerName
+    });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
     };
@@ -167,15 +169,16 @@ describe("createExtractUserDataActivityHandler", () => {
     const { blobServiceMock, aZipStream } = setupStreamMocks();
     const appendSpy = jest.spyOn(aZipStream, "append");
 
-    const handler = createExtractUserDataActivityHandler(
-      messageModelMock,
-      messageStatusModelMock,
-      notificationModelMock,
-      notificationStatusModelMock,
-      profileModelMock,
-      blobServiceMock,
-      aUserDataContainerName
-    );
+    const handler = createExtractUserDataActivityHandler({
+      messageContentBlobService: blobServiceMock,
+      messageModel: messageModelMock,
+      messageStatusModel: messageStatusModelMock,
+      notificationModel: notificationModelMock,
+      notificationStatusModel: notificationStatusModelMock,
+      profileModel: profileModelMock,
+      userDataBlobService: blobServiceMock,
+      userDataContainerName: aUserDataContainerName
+    });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
     };

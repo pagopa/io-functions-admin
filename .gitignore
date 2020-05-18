@@ -47,3 +47,6 @@ coverage
 yarn-error.log
 
 generated
+.env.prod
+.env.test
+todo.md

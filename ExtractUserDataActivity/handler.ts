@@ -237,7 +237,7 @@ export const getProfile = (
  * Retrieves all contents for provided messages
  */
 export const getAllMessageContents = (
-  blobService: BlobService,
+  messageContentBlobService: BlobService,
   messageModel: MessageModel,
   messages: readonly RetrievedMessageWithoutContent[]
 ): TaskEither<
@@ -247,7 +247,8 @@ export const getAllMessageContents = (
   array.sequence(taskEither)(
     messages.map(({ id: messageId }) =>
       fromQueryEither(
-        () => messageModel.getContentFromBlob(blobService, messageId),
+        () =>
+          messageModel.getContentFromBlob(messageContentBlobService, messageId),
         "messageModel.getContentFromBlob (1)"
       ).foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
         failure => fromEither(left(failure)),
@@ -373,7 +374,7 @@ export const queryAllUserData = (
   notificationModel: NotificationModel,
   notificationStatusModel: NotificationStatusModel,
   profileModel: ProfileModel,
-  blobService: BlobService,
+  messageContentBlobService: BlobService,
   fiscalCode: FiscalCode
 ): TaskEither<
   ActivityResultUserNotFound | ActivityResultQueryFailure,
@@ -399,7 +400,7 @@ export const queryAllUserData = (
       const asRetrievedMessages = (messages as any) as readonly RetrievedMessageWithoutContent[];
       return sequenceS(taskEither)({
         messageContents: getAllMessageContents(
-          blobService,
+          messageContentBlobService,
           messageModel,
           asRetrievedMessages
         ),
@@ -520,18 +521,33 @@ export const saveDataToBlob = (
   ).map(_ => _[2]);
 };
 
+export interface IActivityHandlerInput {
+  messageModel: MessageModel;
+  messageStatusModel: MessageStatusModel;
+  notificationModel: NotificationModel;
+  notificationStatusModel: NotificationStatusModel;
+  profileModel: ProfileModel;
+  messageContentBlobService: BlobService;
+  userDataBlobService: BlobService;
+  userDataContainerName: NonEmptyString;
+}
+
 /**
  * Factory methods that builds an activity function
  */
-export function createExtractUserDataActivityHandler(
-  messageModel: MessageModel,
-  messageStatusModel: MessageStatusModel,
-  notificationModel: NotificationModel,
-  notificationStatusModel: NotificationStatusModel,
-  profileModel: ProfileModel,
-  blobService: BlobService,
-  userDataContainerName: NonEmptyString
-): (context: Context, input: unknown) => Promise<ActivityResult> {
+export function createExtractUserDataActivityHandler({
+  messageModel,
+  messageStatusModel,
+  notificationModel,
+  notificationStatusModel,
+  profileModel,
+  messageContentBlobService,
+  userDataBlobService,
+  userDataContainerName
+}: IActivityHandlerInput): (
+  context: Context,
+  input: unknown
+) => Promise<ActivityResult> {
   return (context: Context, input: unknown) =>
     fromEither(
       ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
@@ -549,7 +565,7 @@ export function createExtractUserDataActivityHandler(
           notificationModel,
           notificationStatusModel,
           profileModel,
-          blobService,
+          messageContentBlobService,
           fiscalCode
         )
       )
@@ -563,7 +579,7 @@ export function createExtractUserDataActivityHandler(
       })
       .chain(allUserData =>
         saveDataToBlob(
-          blobService,
+          userDataBlobService,
           userDataContainerName,
           allUserData,
           generateStrongPassword()

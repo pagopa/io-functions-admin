@@ -5,7 +5,9 @@
 // tslint:disable: no-console no-any
 
 import * as dotenv from "dotenv";
-dotenv.config();
+dotenv.config({
+  path: ".env.test"
+});
 
 import { Context } from "@azure/functions";
 import { readableReport } from "italia-ts-commons/lib/reporters";
