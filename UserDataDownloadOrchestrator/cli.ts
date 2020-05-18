@@ -5,9 +5,7 @@
 // tslint:disable: no-console no-any
 
 import * as dotenv from "dotenv";
-dotenv.config({
-  path: ".env.test"
-});
+dotenv.config();
 
 import { Context } from "@azure/functions";
 import { readableReport } from "italia-ts-commons/lib/reporters";
@@ -15,6 +13,8 @@ import { FiscalCode } from "italia-ts-commons/lib/strings";
 import extractUserDataActivity from "../ExtractUserDataActivity";
 import sendUserDataDownloadMessageActivity from "../SendUserDataDownloadMessageActivity";
 import setUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
+
+import { toString } from "fp-ts/lib/function";
 
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
@@ -32,6 +32,7 @@ import { documentClient } from "../utils/cosmosdb";
 
 const context = ({
   log: {
+    error: console.error,
     info: console.log,
     verbose: console.log
   }
@@ -84,9 +85,10 @@ async function run(): Promise<any> {
   );
 
   if (
-    currentUserDataProcessing.status !== UserDataProcessingStatusEnum.PENDING
+    currentUserDataProcessing.status !== UserDataProcessingStatusEnum.PENDING &&
+    currentUserDataProcessing.status !== UserDataProcessingStatusEnum.FAILED
   ) {
-    throw new Error("User data processing status !== PENDING");
+    throw new Error("User data processing status !== PENDING & != FAILED");
   }
 
   return setUserDataProcessingStatusActivity(context, {
@@ -110,7 +112,7 @@ async function run(): Promise<any> {
           password: bundle.value.password
         });
       } else {
-        throw new Error(bundle.kind);
+        throw new Error(toString(bundle));
       }
     })
     .then(() =>
@@ -119,7 +121,13 @@ async function run(): Promise<any> {
         nextStatus: UserDataProcessingStatusEnum.CLOSED
       })
     )
-    .catch(console.error);
+    .catch(err => {
+      console.error(err);
+      return setUserDataProcessingStatusActivity(context, {
+        currentRecord: currentUserDataProcessing,
+        nextStatus: UserDataProcessingStatusEnum.FAILED
+      });
+    });
 }
 
 run()

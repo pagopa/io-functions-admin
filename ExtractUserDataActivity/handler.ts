@@ -249,22 +249,18 @@ export const getAllMessageContents = (
       fromQueryEither(
         () =>
           messageModel.getContentFromBlob(messageContentBlobService, messageId),
-        "messageModel.getContentFromBlob (1)"
+        `messageModel.getContentFromBlob ${messageId} (1)`
       ).foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
-        failure => fromEither(left(failure)),
+        _ => fromEither(right({ messageId } as MessageContentWithId)),
         maybeContent =>
           fromEither(
-            fromOption(
-              ActivityResultQueryFailure.encode({
-                kind: "QUERY_FAILURE",
-                query: "messageModel.getContentFromBlob (2)",
-                reason: `Cannot find content for message ${messageId}`
-              })
-            )(maybeContent).map<MessageContentWithId>(
-              (content: MessageContent) => ({
-                content,
-                messageId
-              })
+            maybeContent.foldL(
+              () => right({ messageId } as MessageContentWithId),
+              (content: MessageContent) =>
+                right({
+                  content,
+                  messageId
+                })
             )
           )
       )
@@ -287,13 +283,10 @@ export const getAllMessagesStatuses = (
         failure => fromEither(left(failure)),
         maybeContent =>
           fromEither(
-            fromOption(
-              ActivityResultQueryFailure.encode({
-                kind: "QUERY_FAILURE",
-                query: "messageModel.getContentFromBlob",
-                reason: `Cannot find content for message ${messageId}`
-              })
-            )(maybeContent)
+            maybeContent.foldL(
+              () => right({ messageId } as MessageStatus),
+              content => right(content)
+            )
           )
       )
     )
