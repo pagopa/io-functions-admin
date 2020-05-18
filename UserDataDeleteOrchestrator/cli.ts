@@ -1,0 +1,143 @@
+/**
+ * Exposes ExtractUserDataActivity as a cli command for local usage
+ */
+
+// tslint:disable: no-console no-any
+
+import * as dotenv from "dotenv";
+dotenv.config();
+
+import { readableReport } from "italia-ts-commons/lib/reporters";
+import { FiscalCode } from "italia-ts-commons/lib/strings";
+import RedisSessionStorage from "./session-utils/redisSessionStorage";
+
+import { sequenceT } from "fp-ts/lib/Apply";
+import { Either, toError } from "fp-ts/lib/Either";
+import { taskEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
+import { NodeEnvironmentEnum } from "italia-ts-commons/lib/environment";
+import { getNodeEnvironmentFromProcessEnv } from "italia-ts-commons/lib/environment";
+import {
+  createClusterRedisClient,
+  createSimpleRedisClient
+} from "./session-utils/redis";
+const trace = (l: string) => (e: any) => {
+  console.log(l, e);
+  return e;
+};
+const REDIS_CLIENT =
+  getNodeEnvironmentFromProcessEnv(process.env) ===
+  NodeEnvironmentEnum.DEVELOPMENT
+    ? createSimpleRedisClient(process.env.REDIS_URL)
+    : createClusterRedisClient(
+        getRequiredStringEnv("REDIS_URL"),
+        process.env.REDIS_PASSWORD,
+        process.env.REDIS_PORT
+      );
+// Create the Session Storage service
+const SESSION_STORAGE = new RedisSessionStorage(REDIS_CLIENT);
+
+// placeholder fot methods steps to be implemented
+const notImplementedTask = (name: string): TaskEither<Error, true> => {
+  console.warn(`task ${name} hasn't been implemented yet!`);
+  return taskEither.of(true);
+};
+
+// before deleting data we block the user and clrear all its session data
+const pre = (fiscalCode: FiscalCode): TaskEither<Error, boolean> => {
+  const delByFiscalCode = tryCatch(
+    () =>
+      SESSION_STORAGE.delByFiscalCode(fiscalCode)
+        .then(trace("delByFiscalCode"))
+        .then(e =>
+          e.getOrElseL((err: any) => {
+            throw err;
+          })
+        ),
+    toError
+  );
+
+  const delUserMetadataByFiscalCode = tryCatch(
+    () =>
+      SESSION_STORAGE.delUserMetadataByFiscalCode(fiscalCode)
+        .then(trace("delUserMetadataByFiscalCode"))
+        .then(e =>
+          e.getOrElseL((err: any) => {
+            throw err;
+          })
+        ),
+    toError
+  );
+
+  const setBlockedUser = tryCatch(
+    () =>
+      SESSION_STORAGE.setBlockedUser(fiscalCode)
+        .then(trace("setBlockedUser"))
+        .then(e =>
+          e.getOrElseL((err: any) => {
+            throw err;
+          })
+        ),
+    toError
+  );
+
+  return sequenceT(taskEither)(
+    delByFiscalCode,
+    delUserMetadataByFiscalCode
+  ).chain(_ => setBlockedUser);
+};
+
+// creates a bundle with user data and save it to a dedicated storage
+const saveUserDataToStorage = (
+  // tslint:disable-next-line: variable-name
+  _fiscalCode: FiscalCode
+): TaskEither<Error, true> => notImplementedTask("saveUserDataToStorage");
+
+// delete all user data from our db
+const deleteUserData = (
+  // tslint:disable-next-line: variable-name
+  _fiscalCode: FiscalCode
+): TaskEither<Error, true> => notImplementedTask("deleteUserData");
+
+// change status on user request
+const setUserDataProcessingStatus = (
+  // tslint:disable-next-line: variable-name
+  _status: UserDataProcessingStatusEnum
+): TaskEither<Error, true> => notImplementedTask("setUserDataProcessingStatus");
+
+// after the operation, unblock the user to allow another login
+const post = (fiscalCode: FiscalCode): TaskEither<Error, true> =>
+  tryCatch(
+    () =>
+      SESSION_STORAGE.unsetBlockedUser(fiscalCode)
+        .then(trace("unsetBlockedUser"))
+        .then(e =>
+          e.getOrElseL((err: Error) => {
+            throw err;
+          })
+        ),
+    toError
+  );
+
+async function run(): Promise<Either<Error, boolean>> {
+  const fiscalCode = FiscalCode.decode(process.argv[2]).getOrElseL(reason => {
+    throw new Error(`Invalid input: ${readableReport(reason)}`);
+  });
+
+  return pre(fiscalCode)
+    .chain(_ => setUserDataProcessingStatus(UserDataProcessingStatusEnum.WIP))
+    .chain(_ => saveUserDataToStorage(fiscalCode))
+    .chain(_ => deleteUserData(fiscalCode))
+    .chain(_ => post(fiscalCode))
+    .chain(_ =>
+      setUserDataProcessingStatus(UserDataProcessingStatusEnum.CLOSED)
+    )
+    .run();
+}
+
+// tslint:disable-next-line: no-floating-promises
+run()
+  .then(result => console.log("OK", result))
+  .catch(ex => console.error("KO", ex))
+  .then(_ => REDIS_CLIENT.quit());
