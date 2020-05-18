@@ -16,8 +16,10 @@ import * as df from "durable-functions";
 const orchestrator = df.orchestrator(function*(
   context: IFunctionContext
 ): IterableIterator<Task> {
+  const input = context.df.getInput();
   const xx = yield context.df.callActivity("ExtractUserDataActivity", {
-    fiscalCode: "SPNDNL80R13C523K"
+    // tslint:disable-next-line: no-any
+    fiscalCode: (input as any).fiscalCode
   });
   context.log.info(JSON.stringify(xx));
 });
