@@ -74,18 +74,25 @@ const profileModel = new ProfileModel(
   )
 );
 
-const blobService = createBlobService(
+const userDataBlobService = createBlobService(
   getRequiredStringEnv("UserDataArchiveStorageConnection")
 );
 
-const activityFunctionHandler = createExtractUserDataActivityHandler(
+const messageContentBlobService = createBlobService(
+  getRequiredStringEnv("MessageContentStorageConnection")
+);
+
+const userDataContainerName = getRequiredStringEnv("USER_DATA_CONTAINER_NAME");
+
+const activityFunctionHandler = createExtractUserDataActivityHandler({
+  messageContentBlobService,
   messageModel,
   messageStatusModel,
   notificationModel,
   notificationStatusModel,
   profileModel,
-  blobService,
-  getRequiredStringEnv("USER_DATA_CONTAINER_NAME")
-);
+  userDataBlobService,
+  userDataContainerName
+});
 
 export default activityFunctionHandler;
