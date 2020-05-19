@@ -11,8 +11,8 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
 import RedisSessionStorage from "./session-utils/redisSessionStorage";
 
-import GetUserDataProcessingActivity from "../GetUserDataProcessingActivity";
 import SetUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
+import getUserDataProcessing from "./GetUserDataProcessing";
 
 import { sequenceT } from "fp-ts/lib/Apply";
 import { Either, toError } from "fp-ts/lib/Either";
@@ -157,13 +157,10 @@ async function run(): Promise<Either<Error, boolean>> {
     throw new Error(`Invalid input: ${readableReport(reason)}`);
   });
 
-  const userDataProcessingResult = await GetUserDataProcessingActivity(
-    context,
-    {
-      choice: UserDataProcessingChoiceEnum.DELETE,
-      fiscalCode
-    }
-  );
+  const userDataProcessingResult = await getUserDataProcessing(context, {
+    choice: UserDataProcessingChoiceEnum.DELETE,
+    fiscalCode
+  });
 
   if (userDataProcessingResult.kind === "RECORD_NOT_FOUND") {
     throw new Error(`No data delete has been requested for the current user`);

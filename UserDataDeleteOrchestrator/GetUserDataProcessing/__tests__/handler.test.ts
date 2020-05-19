@@ -2,13 +2,13 @@
 
 import { left, right } from "fp-ts/lib/Either";
 
-import { context as contextMock } from "../../__mocks__/durable-functions";
-import { aUserDataProcessing } from "../../__mocks__/mocks";
+import { context as contextMock } from "../../../__mocks__/durable-functions";
+import { aUserDataProcessing } from "../../../__mocks__/mocks";
 
 import {
   ActivityInput,
   ActivityResultFailure,
-  createGetUserDataProcessingActivityHandler
+  createGetUserDataProcessingHandler
 } from "../handler";
 
 import { QueryError } from "documentdb";
@@ -18,7 +18,7 @@ import { UserDataProcessingModel } from "io-functions-commons/dist/src/models/us
 const aFiscalCode = aUserDataProcessing.fiscalCode;
 const aChoice = aUserDataProcessing.choice;
 
-describe("GetUserDataProcessingActivityHandler", () => {
+describe("GetUserDataProcessingHandler", () => {
   it("should retrieve an existing record", async () => {
     const mockModel = ({
       findOneUserDataProcessingById: jest.fn(async () =>
@@ -26,7 +26,7 @@ describe("GetUserDataProcessingActivityHandler", () => {
       )
     } as any) as UserDataProcessingModel;
 
-    const handler = createGetUserDataProcessingActivityHandler(mockModel);
+    const handler = createGetUserDataProcessingHandler(mockModel);
     const input: ActivityInput = {
       choice: aChoice,
       fiscalCode: aFiscalCode
@@ -45,7 +45,7 @@ describe("GetUserDataProcessingActivityHandler", () => {
       )
     } as any) as UserDataProcessingModel;
 
-    const handler = createGetUserDataProcessingActivityHandler(mockModel);
+    const handler = createGetUserDataProcessingHandler(mockModel);
     const input: ActivityInput = {
       choice: aChoice,
       fiscalCode: aFiscalCode
@@ -65,7 +65,7 @@ describe("GetUserDataProcessingActivityHandler", () => {
       findOneUserDataProcessingById: jest.fn(async () => right(none))
     } as any) as UserDataProcessingModel;
 
-    const handler = createGetUserDataProcessingActivityHandler(mockModel);
+    const handler = createGetUserDataProcessingHandler(mockModel);
     const input: ActivityInput = {
       choice: aChoice,
       fiscalCode: aFiscalCode
@@ -83,7 +83,7 @@ describe("GetUserDataProcessingActivityHandler", () => {
   it("should handle an invalid input", async () => {
     const mockModel = ({} as any) as UserDataProcessingModel;
 
-    const handler = createGetUserDataProcessingActivityHandler(mockModel);
+    const handler = createGetUserDataProcessingHandler(mockModel);
 
     // @ts-ignore to force bad behavior
     const result = await handler(contextMock, {

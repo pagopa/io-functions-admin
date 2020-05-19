@@ -165,7 +165,7 @@ const getUserDataProcessingRequest = ({
     "userDataProcessingModel.findOneUserDataProcessingById"
   );
 
-export const createGetUserDataProcessingActivityHandler = (
+export const createGetUserDataProcessingHandler = (
   userDataProcessingModel: UserDataProcessingModel
 ) => (context: Context, input: unknown): Promise<ActivityResult> => {
   // the actual handler
