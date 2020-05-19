@@ -140,32 +140,34 @@ const logFailure = (context: Context) => (
   }
 };
 
+/**
+ * Updates a UserDataProcessing record by creating a new version of it with a chenged status
+ * @param param0.currentRecord the record to be modified
+ * @param param0.nextStatus: the status to assign the record to
+ *
+ * @returns either an Error or the new created record
+ */
+const getUserDataProcessingRequest = ({
+  userDataProcessingModel,
+  fiscalCode,
+  choice
+}: {
+  userDataProcessingModel: UserDataProcessingModel;
+  fiscalCode: FiscalCode;
+  choice: UserDataProcessingChoice;
+}): TaskEither<ActivityResultQueryFailure, Option<UserDataProcessing>> =>
+  fromQueryEither(
+    () =>
+      userDataProcessingModel.findOneUserDataProcessingById(
+        fiscalCode,
+        makeUserDataProcessingId(choice, fiscalCode)
+      ),
+    "userDataProcessingModel.findOneUserDataProcessingById"
+  );
+
 export const createGetUserDataProcessingActivityHandler = (
   userDataProcessingModel: UserDataProcessingModel
 ) => (context: Context, input: unknown): Promise<ActivityResult> => {
-  /**
-   * Updates a UserDataProcessing record by creating a new version of it with a chenged status
-   * @param param0.currentRecord the record to be modified
-   * @param param0.nextStatus: the status to assign the record to
-   *
-   * @returns either an Error or the new created record
-   */
-  const fetchRecordFromDb = ({
-    fiscalCode,
-    choice
-  }: {
-    fiscalCode: FiscalCode;
-    choice: UserDataProcessingChoice;
-  }): TaskEither<ActivityResultQueryFailure, Option<UserDataProcessing>> =>
-    fromQueryEither(
-      () =>
-        userDataProcessingModel.findOneUserDataProcessingById(
-          fiscalCode,
-          makeUserDataProcessingId(choice, fiscalCode)
-        ),
-      "userDataProcessingModel.findOneUserDataProcessingById"
-    );
-
   // the actual handler
   return fromEither(ActivityInput.decode(input))
     .mapLeft<ActivityResultFailure>((reason: t.Errors) =>
@@ -174,7 +176,13 @@ export const createGetUserDataProcessingActivityHandler = (
         reason: readableReport(reason)
       })
     )
-    .chain(fetchRecordFromDb)
+    .chain(({ fiscalCode, choice }) =>
+      getUserDataProcessingRequest({
+        choice,
+        fiscalCode,
+        userDataProcessingModel
+      })
+    )
     .foldTaskEither(
       e => fromEither(left(e)),
       maybeRecord =>
