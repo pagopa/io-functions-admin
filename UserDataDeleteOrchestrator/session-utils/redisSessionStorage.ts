@@ -38,6 +38,8 @@ const User = t.interface({
 });
 type User = t.TypeOf<typeof User>;
 
+const log = console;
+
 export default class RedisSessionStorage extends RedisStorageUtils {
   constructor(private readonly redisClient: redis.RedisClient) {
     super();
@@ -103,6 +105,7 @@ export default class RedisSessionStorage extends RedisStorageUtils {
     fiscalCode: string
   ): Promise<Either<Error, true>> {
     return new Promise<Either<Error, true>>(resolve => {
+      log.info(`Deleting metadata for ${fiscalCode}`);
       this.redisClient.del(`${userMetadataPrefix}${fiscalCode}`, err => {
         if (err) {
           resolve(left(err));
@@ -115,6 +118,7 @@ export default class RedisSessionStorage extends RedisStorageUtils {
 
   public setBlockedUser(fiscalCode: string): Promise<Either<Error, boolean>> {
     return new Promise<Either<Error, boolean>>(resolve => {
+      log.info(`Adding ${fiscalCode} to ${blockedUserSetKey} set`);
       this.redisClient.sadd(blockedUserSetKey, fiscalCode, err =>
         resolve(err ? left(err) : right(true))
       );
@@ -122,6 +126,7 @@ export default class RedisSessionStorage extends RedisStorageUtils {
   }
   public unsetBlockedUser(fiscalCode: string): Promise<Either<Error, boolean>> {
     return new Promise<Either<Error, boolean>>(resolve => {
+      log.info(`Removing ${fiscalCode} from ${blockedUserSetKey} set`);
       this.redisClient.srem(blockedUserSetKey, fiscalCode, (err, response) =>
         resolve(
           this.falsyResponseToError(
@@ -142,6 +147,7 @@ export default class RedisSessionStorage extends RedisStorageUtils {
     token: SessionToken
   ): Promise<Either<Error, User>> {
     return new Promise(resolve => {
+      log.info(`Reading user session for token ${token}`);
       this.redisClient.get(`${sessionKeyPrefix}${token}`, (err, value) => {
         if (err) {
           // Client returns an error.
@@ -165,6 +171,7 @@ export default class RedisSessionStorage extends RedisStorageUtils {
     walletToken: WalletToken
   ): Promise<Either<Error, boolean>> {
     const deleteSessionTokens = new Promise<Either<Error, true>>(resolve => {
+      log.info(`Deleting session token ${sessionToken}`);
       // Remove the specified key. A key is ignored if it does not exist.
       // @see https://redis.io/commands/del
       this.redisClient.del(
@@ -182,6 +189,7 @@ export default class RedisSessionStorage extends RedisStorageUtils {
     });
 
     const deleteWalletToken = new Promise<Either<Error, true>>(resolve => {
+      log.info(`Deleting wallet token ${walletToken}`);
       // Remove the specified key. A key is ignored if it does not exist.
       // @see https://redis.io/commands/del
       this.redisClient.del(
@@ -219,6 +227,7 @@ export default class RedisSessionStorage extends RedisStorageUtils {
     fiscalCode: FiscalCode
   ): Promise<Either<Error, ReadonlyArray<string>>> {
     return new Promise<Either<Error, ReadonlyArray<string>>>(resolve => {
+      log.info(`Reading session list ${userSessionsSetKeyPrefix}${fiscalCode}`);
       this.redisClient.smembers(
         `${userSessionsSetKeyPrefix}${fiscalCode}`,
         (err, response) => resolve(this.arrayStringReply(err, response))
@@ -230,6 +239,9 @@ export default class RedisSessionStorage extends RedisStorageUtils {
     fiscalCode: FiscalCode
   ): Promise<Either<Error, true>> {
     return new Promise<Either<Error, true>>(resolve => {
+      log.info(
+        `Deleting session info ${userSessionsSetKeyPrefix}${fiscalCode}`
+      );
       this.redisClient.del(`${userSessionsSetKeyPrefix}${fiscalCode}`, err =>
         resolve(err ? left(err) : right(true))
       );
