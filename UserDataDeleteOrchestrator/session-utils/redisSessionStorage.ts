@@ -25,7 +25,7 @@ const sessionKeyPrefix = "SESSION-";
 const walletKeyPrefix = "WALLET-";
 const userSessionsSetKeyPrefix = "USERSESSIONS-";
 const sessionInfoKeyPrefix = "SESSIONINFO-";
-const blockedUserKeyPrefix = "BLOCKEDUSER-";
+const blockedUserSetKey = "BLOCKEDUSERS";
 const userMetadataPrefix = "USERMETA-";
 
 export const sessionNotFoundError = new Error("Session not found");
@@ -115,27 +115,22 @@ export default class RedisSessionStorage extends RedisStorageUtils {
 
   public setBlockedUser(fiscalCode: string): Promise<Either<Error, boolean>> {
     return new Promise<Either<Error, boolean>>(resolve => {
-      this.redisClient.set(
-        `${blockedUserKeyPrefix}${fiscalCode}`,
-        JSON.stringify({ created_at: new Date().toISOString() }),
-        "NX",
-        err => resolve(err ? left(err) : right(true))
+      this.redisClient.sadd(blockedUserSetKey, fiscalCode, err =>
+        resolve(err ? left(err) : right(true))
       );
     });
   }
   public unsetBlockedUser(fiscalCode: string): Promise<Either<Error, boolean>> {
     return new Promise<Either<Error, boolean>>(resolve => {
-      this.redisClient.del(
-        `${blockedUserKeyPrefix}${fiscalCode}`,
-        (err, response) =>
-          resolve(
-            this.falsyResponseToError(
-              this.integerReply(err, response, 1),
-              new Error(
-                "Unexpected response from redis client deleting blockedUserKey"
-              )
+      this.redisClient.srem(blockedUserSetKey, fiscalCode, (err, response) =>
+        resolve(
+          this.falsyResponseToError(
+            this.integerReply(err, response, 1),
+            new Error(
+              "Unexpected response from redis client deleting blockedUserKey"
             )
           )
+        )
       );
     });
   }
