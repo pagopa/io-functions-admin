@@ -45,7 +45,7 @@ const notImplementedTask = (name: string): TaskEither<Error, true> => {
 };
 
 // before deleting data we block the user and clrear all its session data
-const pre = (fiscalCode: FiscalCode): TaskEither<Error, boolean> => {
+const blockUser = (fiscalCode: FiscalCode): TaskEither<Error, boolean> => {
   const delByFiscalCode = tryCatch(
     () =>
       SESSION_STORAGE.delByFiscalCode(fiscalCode)
@@ -107,7 +107,7 @@ const setUserDataProcessingStatus = (
 ): TaskEither<Error, true> => notImplementedTask("setUserDataProcessingStatus");
 
 // after the operation, unblock the user to allow another login
-const post = (fiscalCode: FiscalCode): TaskEither<Error, true> =>
+const unblockUser = (fiscalCode: FiscalCode): TaskEither<Error, true> =>
   tryCatch(
     () =>
       SESSION_STORAGE.unsetBlockedUser(fiscalCode)
@@ -125,11 +125,11 @@ async function run(): Promise<Either<Error, boolean>> {
     throw new Error(`Invalid input: ${readableReport(reason)}`);
   });
 
-  return pre(fiscalCode)
+  return blockUser(fiscalCode)
     .chain(_ => setUserDataProcessingStatus(UserDataProcessingStatusEnum.WIP))
     .chain(_ => saveUserDataToStorage(fiscalCode))
     .chain(_ => deleteUserData(fiscalCode))
-    .chain(_ => post(fiscalCode))
+    .chain(_ => unblockUser(fiscalCode))
     .chain(_ =>
       setUserDataProcessingStatus(UserDataProcessingStatusEnum.CLOSED)
     )
