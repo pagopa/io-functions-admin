@@ -3,7 +3,7 @@ import { Either, right } from "fp-ts/lib/Either";
 import { fromNullable, Option, some } from "fp-ts/lib/Option";
 
 import * as stream from "stream";
-
+import * as yaml from "yaml";
 import * as zipstream from "../../utils/zip";
 
 import { context as contextMock } from "../../__mocks__/durable-functions";
@@ -159,10 +159,12 @@ describe("createExtractUserDataActivityHandler", () => {
     await handler(contextMock, input);
 
     expect(aZipStream.finalize).toHaveBeenCalledTimes(1);
-    const allUserData: AllUserData = JSON.parse(
+    const allUserData: AllUserData = yaml.parse(
       appendSpy.mock.calls[0][0].toString()
     );
-    expect(allUserData.notifications[0].channels.WEBHOOK).toEqual({});
+    expect(allUserData.notifications[0].channels.WEBHOOK).toEqual({
+      url: null
+    });
   });
 
   it("should query using correct data", async () => {

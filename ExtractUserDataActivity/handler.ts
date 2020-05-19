@@ -50,6 +50,8 @@ import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { getEncryptedZipStream } from "../utils/zip";
 import { NotificationModel } from "./notification";
 
+import * as yaml from "yaml";
+
 export const ArchiveInfo = t.interface({
   blobName: NonEmptyString,
   password: StrongPassword
@@ -427,7 +429,7 @@ export const queryAllUserData = (
             notifications
           ),
           notifications: taskEither.of(notifications),
-          profile: taskEither.of(profile)
+          profiles: taskEither.of([profile])
         });
       }
     );
@@ -462,10 +464,9 @@ export const saveDataToBlob = (
   data: AllUserData,
   password: StrongPassword
 ): TaskEither<ActivityResultArchiveGenerationFailure, ArchiveInfo> => {
-  const blobName = `${
-    data.profile.fiscalCode
-  }-${Date.now()}.zip` as NonEmptyString;
-  const fileName = `${data.profile.fiscalCode}.json` as NonEmptyString;
+  const profile = data.profiles[0];
+  const blobName = `${profile.fiscalCode}-${Date.now()}.zip` as NonEmptyString;
+  const fileName = `${profile.fiscalCode}.yaml` as NonEmptyString;
 
   const zipStream = getEncryptedZipStream(password);
 
@@ -486,7 +487,7 @@ export const saveDataToBlob = (
   )(userDataContainerName, blobName);
 
   zipStream.pipe(blobStream);
-  zipStream.append(JSON.stringify(data), {
+  zipStream.append(yaml.stringify(data), {
     name: fileName
   });
 
@@ -524,6 +525,12 @@ export interface IActivityHandlerInput {
   userDataBlobService: BlobService;
   userDataContainerName: NonEmptyString;
 }
+
+// tslint:disable-next-line: no-any
+const cleanData = (v: any) => {
+  const { _self, _etag, _attachments, _rid, _ts, ...clean } = v;
+  return clean;
+};
 
 /**
  * Factory methods that builds an activity function
@@ -564,11 +571,20 @@ export function createExtractUserDataActivityHandler({
       )
       .map(allUserData => {
         // remove sensitive data
-        allUserData.notifications.forEach(e => {
-          // tslint:disable-next-line: no-object-mutation
-          e.channels.WEBHOOK = { url: undefined };
+        const notifications = allUserData.notifications.map(e => {
+          return cleanData({
+            ...e,
+            channels: { ...e.channels, WEBHOOK: { url: undefined } }
+          });
         });
-        return allUserData;
+        return {
+          messageContents: allUserData.messageContents,
+          messageStatuses: allUserData.messageStatuses.map(cleanData),
+          messages: allUserData.messages.map(cleanData),
+          notificationStatuses: allUserData.messageStatuses.map(cleanData),
+          notifications,
+          profiles: allUserData.profiles.map(cleanData)
+        } as AllUserData;
       })
       .chain(allUserData =>
         saveDataToBlob(

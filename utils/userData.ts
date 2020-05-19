@@ -47,6 +47,6 @@ export const AllUserData = t.interface({
     "NotificationStatusList"
   ),
   notifications: t.readonlyArray(t.exact(SafeNotification), "NotificationList"),
-  profile: Profile
+  profiles: t.readonlyArray(t.exact(Profile))
 });
 export type AllUserData = t.TypeOf<typeof AllUserData>;
