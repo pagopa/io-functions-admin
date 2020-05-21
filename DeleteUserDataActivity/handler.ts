@@ -215,26 +215,82 @@ export const saveDataToBlob = <T>(
   { blobService, containerName, folder }: IBlobServiceInfo,
   blobName: string,
   data: T
-): TaskEither<BlobCreationFailure, T> => {
-  return taskify<BlobCreationFailure, T>(cb => {
-    blobService.createBlockBlobFromText(
-      containerName,
-      `${folder}${folder ? "/" : ""}${blobName}`,
-      JSON.stringify(data),
-      err => {
-        if (err) {
-          cb(
-            BlobCreationFailure.encode({
-              kind: "BLOB_FAILURE",
-              reason: err.message
-            })
-          );
-        } else {
-          cb(null, data);
-        }
-      }
+): TaskEither<BlobCreationFailure, T> =>
+  taskify(blobService.createBlockBlobFromText)(
+    containerName,
+    `${folder}${folder ? "/" : ""}${blobName}`,
+    JSON.stringify(data)
+  ).bimap(
+    err =>
+      BlobCreationFailure.encode({
+        kind: "BLOB_FAILURE",
+        reason: err.message
+      }),
+    _ => data
+  );
+
+/**
+ * Recursively consumes an iterator and executes operations on every item
+ * @param deleteSingle takes an item and delete it
+ * @param userDataBackup references about where to save data
+ * @param makeBackupBlobName takes an item and construct a name for the backup blob
+ * @param iterator an iterator of every result from the db
+ */
+const executeRecursiveBackupAndDelete = <T>(
+  deleteSingle: (item: T) => Promise<Either<QueryError, string>>,
+  userDataBackup: IBlobServiceInfo,
+  makeBackupBlobName: (item: T) => string,
+  iterator: IResultIterator<T>
+): TaskEither<
+  QueryFailure | BlobCreationFailure,
+  // tslint:disable-next-line: readonly-array
+  T[]
+> => {
+  return tryCatch(iterator.executeNext, toQueryError)
+    .chain(fromEither)
+    .foldTaskEither<
+      QueryFailure | BlobCreationFailure,
+      // tslint:disable-next-line: readonly-array
+      T[]
+    >(
+      e => fromEither(left(toQueryFailure(e))),
+      maybeResults =>
+        maybeResults.fold(
+          // if the iterator content is none, exit the recursion
+          taskEither.of([]),
+          items =>
+            // executes backup&delete for this set of items
+            array
+              .sequence(taskEither)(
+                items.map((item: T) =>
+                  sequenceT(taskEitherSeq)<
+                    BlobCreationFailure | QueryFailure,
+                    // tslint:disable-next-line: readonly-array
+                    [
+                      TaskEither<QueryFailure | BlobCreationFailure, T>,
+                      TaskEither<QueryFailure | BlobCreationFailure, string>
+                    ]
+                  >(
+                    saveDataToBlob<T>(
+                      userDataBackup,
+                      makeBackupBlobName(item),
+                      item
+                    ),
+                    fromQueryEither(() => deleteSingle(item), "deleteSingle")
+                  ).map(_ => item)
+                )
+              )
+              // recursive step
+              .chain(_ =>
+                executeRecursiveBackupAndDelete<T>(
+                  deleteSingle,
+                  userDataBackup,
+                  makeBackupBlobName,
+                  iterator
+                )
+              )
+        )
     );
-  })();
 };
 
 /**
@@ -253,66 +309,10 @@ const backupAndDeleteProfile = ({
   userDataBackup: IBlobServiceInfo;
   fiscalCode: FiscalCode;
 }) => {
-  // execute backup&delete for a single version record item
-  const executeOnSingleVersionItem = (
-    item: RetrievedProfile
-  ): TaskEither<BlobCreationFailure | QueryFailure, RetrievedProfile> => {
-    const sequencedTasks = sequenceT(taskEitherSeq)<
-      BlobCreationFailure | QueryFailure,
-      // tslint:disable-next-line: readonly-array
-      [
-        TaskEither<QueryFailure | BlobCreationFailure, RetrievedProfile>,
-        TaskEither<QueryFailure | BlobCreationFailure, string>
-      ]
-    >(
-      saveDataToBlob<RetrievedProfile>(
-        userDataBackup,
-        `profile--${item.version}.json`,
-        item
-      ),
-      fromQueryEither(
-        () => profileModel.deleteProfileVersion(item.fiscalCode, item.id),
-        "deleteProfileVersion"
-      )
-    ).map(_ => item);
-
-    return sequencedTasks.map(_ => item);
-  };
-
-  // recursively consumes an iterator and executes operations on every item
-  const executeRecursiveOperations = (
-    iterator: IResultIterator<RetrievedProfile>
-  ): TaskEither<
-    QueryFailure | BlobCreationFailure,
-    // tslint:disable-next-line: readonly-array
-    RetrievedProfile[]
-  > => {
-    const taskMaybeArrayOfMessageStatus = tryCatch(
-      iterator.executeNext,
-      toQueryError
-    ).chain(fromEither);
-
-    return taskMaybeArrayOfMessageStatus.foldTaskEither<
-      QueryFailure | BlobCreationFailure,
-      // tslint:disable-next-line: readonly-array
-      RetrievedProfile[]
-    >(
-      e => fromEither(left(toQueryFailure(e))),
-      maybeResults =>
-        maybeResults.fold(
-          // if the iterator content is none, exit the recursion
-          taskEither.of([]),
-          items =>
-            // executes backup&delete for this set of items
-            array
-              .sequence(taskEither)(items.map(executeOnSingleVersionItem))
-              // recursive step
-              .chain(_ => executeRecursiveOperations(iterator))
-        )
-    );
-  };
-
-  return executeRecursiveOperations(
+  return executeRecursiveBackupAndDelete<RetrievedProfile>(
+    item => profileModel.deleteProfileVersion(item.fiscalCode, item.id),
+    userDataBackup,
+    item => `profile--${item.version}.json`,
     profileModel.findAllVersionsByModelId(fiscalCode)
   );
 };
@@ -383,80 +383,11 @@ const backupAndDeleteMessageStatus = ({
   QueryFailure | BlobCreationFailure,
   readonly RetrievedMessageStatus[]
 > => {
-  // execute backup&delete for a single version record item
-  const executeOnSingleVersionItem = (
-    item: RetrievedMessageStatus
-  ): TaskEither<QueryFailure | BlobCreationFailure, RetrievedMessageStatus> => {
-    return (
-      sequenceT(taskEitherSeq)<
-        QueryFailure | BlobCreationFailure,
-        // tslint:disable-next-line: readonly-array
-        [
-          TaskEither<
-            QueryFailure | BlobCreationFailure,
-            RetrievedMessageStatus
-          >,
-          TaskEither<QueryFailure | BlobCreationFailure, string>
-        ]
-      >(
-        saveDataToBlob<RetrievedMessageStatus>(
-          userDataBackup,
-          `message-status--${item.id}--${item.version}.json`,
-          item
-        ), // .mapLeft(e => e as ActivityResultFailure), // cast needed to fit the generic failuire type
-        fromQueryEither(
-          () =>
-            messageStatusModel.deleteMessageStatusVersion(
-              item.messageId,
-              item.id
-            ),
-          "deleteMessageStatusVersion"
-        )
-      )
-        // I only need the original item to be returned
-        .map(_ => item)
-    );
-  };
-
-  // recursively consumes an iterator and executes operations on every item
-  const executeRecursiveOperations = (
-    iterator: IResultIterator<RetrievedMessageStatus>
-    // tslint:disable-next-line: readonly-array
-  ): TaskEither<
-    QueryFailure | BlobCreationFailure,
-    readonly RetrievedMessageStatus[]
-  > => {
-    const taskMaybeArrayOfMessageStatus = tryCatch(
-      iterator.executeNext,
-      toQueryError
-    )
-      .chain(fromEither)
-      .mapLeft(toQueryFailure);
-
-    return taskMaybeArrayOfMessageStatus.foldTaskEither<
-      QueryFailure | BlobCreationFailure,
-      readonly RetrievedMessageStatus[]
-    >(
-      e => fromEither(left(e)),
-      maybeResults =>
-        maybeResults.fold(
-          // if the iterator content is none, exit the recursion
-          taskEither.of([]),
-          items =>
-            // executes backup&delete for this set of items
-            array
-              .sequence(taskEither)(items.map(executeOnSingleVersionItem))
-              // recursive step
-              .chain(actualResults =>
-                executeRecursiveOperations(iterator).map(nextResult => [
-                  ...actualResults,
-                  ...nextResult
-                ])
-              )
-        )
-    );
-  };
-  return executeRecursiveOperations(
+  return executeRecursiveBackupAndDelete<RetrievedMessageStatus>(
+    item =>
+      messageStatusModel.deleteMessageStatusVersion(item.messageId, item.id),
+    userDataBackup,
+    item => `message-status--${item.version}.json`,
     messageStatusModel.findAllVersionsByModelId(message.id)
   );
 };

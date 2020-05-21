@@ -52,7 +52,7 @@ export function findAllVersionsByModelId<T>(
       ],
       // do not use ${collectionName} here as it may contain special characters
       query: `SELECT * FROM m WHERE (m.${modelIdField} = @modelId
-          AND m.${partitionKeyField} = @partitionKey) ORDER BY m.version DESC`
+          AND m.${partitionKeyField} = @partitionKey)`
     },
     partitionKeyValue
   );
