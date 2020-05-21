@@ -37,11 +37,11 @@ import {
 } from "io-functions-commons/dist/src/utils/documentdb";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
-import { MessageModel } from "./models/message";
-import { MessageStatusModel } from "./models/message_status";
-import { NotificationModel } from "./models/notification";
-import { NotificationStatusModel } from "./models/notification_status";
-import { ProfileModel } from "./models/profile";
+import { MessageModel } from "../utils/models/message";
+import { MessageStatusModel } from "../utils/models/message_status";
+import { NotificationModel } from "../utils/models/notification";
+import { NotificationStatusModel } from "../utils/models/notification_status";
+import { ProfileModel } from "../utils/models/profile";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -136,11 +136,6 @@ function assertNever(_: never): void {
   throw new Error("should not have executed this");
 }
 
-/**
- * to cast an error as QueryError, useful for tryCatch statements
- * @param err a query error
- */
-const toQueryError = (err: QueryError) => err;
 /**
  * to cast an error to QueryFailure
  * @param err

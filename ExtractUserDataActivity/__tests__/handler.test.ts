@@ -36,8 +36,8 @@ import {
   aRetrievedMessageWithoutContent,
   aRetrievedNotification
 } from "../../__mocks__/mocks";
+import { NotificationModel } from "../../utils/models/notification"; // we use the local-defined model
 import { AllUserData } from "../../utils/userData";
-import { NotificationModel } from "../notification"; // we use the local-defined model
 
 const createMockIterator = <T>(a: ReadonlyArray<T>) => {
   const data = Array.from(a);

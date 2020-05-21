@@ -10,16 +10,14 @@ import { createBlobService } from "azure-storage";
 import { MESSAGE_COLLECTION_NAME } from "io-functions-commons/dist/src/models/message";
 import { MESSAGE_STATUS_COLLECTION_NAME } from "io-functions-commons/dist/src/models/message_status";
 import { NOTIFICATION_COLLECTION_NAME } from "io-functions-commons/dist/src/models/notification";
-import {
-  NOTIFICATION_STATUS_COLLECTION_NAME,
-  NotificationStatusModel
-} from "io-functions-commons/dist/src/models/notification_status";
+import { NOTIFICATION_STATUS_COLLECTION_NAME } from "io-functions-commons/dist/src/models/notification_status";
 import { PROFILE_COLLECTION_NAME } from "io-functions-commons/dist/src/models/profile";
-import { MessageModel } from "./models/message";
-import { MessageStatusModel } from "./models/message_status";
+import { MessageModel } from "../utils/models/message";
+import { MessageStatusModel } from "../utils/models/message_status";
+import { NotificationStatusModel } from "../utils/models/notification_status";
 
-import { NotificationModel } from "./models/notification";
-import { ProfileModel } from "./models/profile";
+import { NotificationModel } from "../utils/models/notification";
+import { ProfileModel } from "../utils/models/profile";
 
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 

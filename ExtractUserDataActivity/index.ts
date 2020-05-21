@@ -27,7 +27,7 @@ import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
-import { NotificationModel } from "./notification";
+import { NotificationModel } from "../utils/models/notification";
 
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 

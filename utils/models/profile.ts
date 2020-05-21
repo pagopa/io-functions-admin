@@ -6,7 +6,7 @@ import {
   RetrievedProfile
 } from "io-functions-commons/dist/src/models/profile";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
-import * as DocumentDbUtils from "../utils/documentdb";
+import * as DocumentDbUtils from "../documentdb";
 
 export class ProfileModel extends ProfileModelBase {
   public async deleteProfileVersion(

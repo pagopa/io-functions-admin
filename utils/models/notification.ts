@@ -4,13 +4,15 @@
  */
 
 import * as DocumentDb from "documentdb";
+import { Either } from "fp-ts/lib/Either";
 import {
-  NotificationModel as NotificationModelCommons,
+  NotificationModel as NotificationModelBase,
   RetrievedNotification
 } from "io-functions-commons/dist/src/models/notification";
-import * as DocumentDbUtils from "io-functions-commons/dist/src/utils/documentdb";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import * as DocumentDbUtils from "../documentdb";
 
-export class NotificationModel extends NotificationModelCommons {
+export class NotificationModel extends NotificationModelBase {
   /**
    * Creates a new Notification model
    *
@@ -44,6 +46,23 @@ export class NotificationModel extends NotificationModelCommons {
         ],
         query: `SELECT * FROM m WHERE m.messageId = @messageId`
       },
+      messageId
+    );
+  }
+
+  /**
+   * Deletes a single notification
+   * @param messageId message identifier of the notification (is partition key)
+   * @param notificationId notification identifier
+   */
+  public async deleteNotification(
+    messageId: NonEmptyString,
+    notificationId: NonEmptyString
+  ): Promise<Either<DocumentDb.QueryError, string>> {
+    return DocumentDbUtils.deleteDocument(
+      this.dbClient,
+      this.collectionUri,
+      notificationId,
       messageId
     );
   }

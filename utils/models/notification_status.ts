@@ -1,24 +1,24 @@
 import * as DocumentDb from "documentdb";
 import { Either } from "fp-ts/lib/Either";
 import {
-  MESSAGE_STATUS_MODEL_ID_FIELD,
-  MESSAGE_STATUS_MODEL_PK_FIELD,
-  MessageStatusModel as MessageStatusModelBase,
-  RetrievedMessageStatus
-} from "io-functions-commons/dist/src/models/message_status";
+  NOTIFICATION_STATUS_MODEL_ID_FIELD,
+  NOTIFICATION_STATUS_MODEL_PK_FIELD,
+  NotificationStatusModel as NotificationStatusModelBase,
+  RetrievedNotificationStatus
+} from "io-functions-commons/dist/src/models/notification_status";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
-import * as DocumentDbUtils from "../utils/documentdb";
+import * as DocumentDbUtils from "../documentdb";
 
-export class MessageStatusModel extends MessageStatusModelBase {
-  public async deleteMessageStatusVersion(
-    messageId: NonEmptyString,
+export class NotificationStatusModel extends NotificationStatusModelBase {
+  public async deleteNotificationStatusVersion(
+    notificationId: NonEmptyString,
     documentId: NonEmptyString
   ): Promise<Either<DocumentDb.QueryError, string>> {
     return DocumentDbUtils.deleteDocument(
       this.dbClient,
       this.collectionUri,
       documentId,
-      messageId
+      notificationId
     );
   }
 
@@ -28,13 +28,13 @@ export class MessageStatusModel extends MessageStatusModelBase {
    */
   public findAllVersionsByModelId(
     modelId: NonEmptyString
-  ): DocumentDbUtils.IResultIterator<RetrievedMessageStatus> {
+  ): DocumentDbUtils.IResultIterator<RetrievedNotificationStatus> {
     return DocumentDbUtils.findAllVersionsByModelId(
       this.dbClient,
       this.collectionUri,
-      MESSAGE_STATUS_MODEL_ID_FIELD,
+      NOTIFICATION_STATUS_MODEL_ID_FIELD,
       modelId,
-      MESSAGE_STATUS_MODEL_PK_FIELD,
+      NOTIFICATION_STATUS_MODEL_PK_FIELD,
       modelId
     );
   }
