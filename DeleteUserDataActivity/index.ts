@@ -18,8 +18,8 @@ import { PROFILE_COLLECTION_NAME } from "io-functions-commons/dist/src/models/pr
 import { MessageModel } from "./models/message";
 import { MessageStatusModel } from "./models/message_status";
 
-import { ProfileModel } from "./models/profile";
 import { NotificationModel } from "./models/notification";
+import { ProfileModel } from "./models/profile";
 
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 

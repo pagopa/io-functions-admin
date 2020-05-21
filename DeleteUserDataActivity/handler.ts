@@ -37,8 +37,8 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { MessageModel } from "./models/message";
 import { MessageStatusModel } from "./models/message_status";
-import { ProfileModel } from "./models/profile";
 import { NotificationModel } from "./models/notification";
+import { ProfileModel } from "./models/profile";
 
 // Activity input
 export const ActivityInput = t.interface({
