@@ -64,6 +64,8 @@
     "io-ts": "1.8.5",
     "italia-ts-commons": "^8.1.0",
     "randomstring": "^1.1.5",
+    "redis": "^3.0.2",
+    "redis-clustr": "^1.7.0",
     "ulid": "^2.3.0",
     "winston": "^3.2.1",
     "yaml": "^1.10.0"
