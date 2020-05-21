@@ -11,6 +11,7 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
 import RedisSessionStorage from "./session-utils/redisSessionStorage";
 
+import DeleteUserDataActivity from "../DeleteUserDataActivity";
 import GetUserDataProcessingActivity from "../GetUserDataProcessingActivity";
 import SetUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
 
@@ -19,7 +20,10 @@ import { Either, toError } from "fp-ts/lib/Either";
 import { taskEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
+import {
+  UserDataProcessing,
+  UserDataProcessingId
+} from "io-functions-commons/dist/src/models/user_data_processing";
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { NodeEnvironmentEnum } from "italia-ts-commons/lib/environment";
 import { getNodeEnvironmentFromProcessEnv } from "italia-ts-commons/lib/environment";
@@ -54,12 +58,6 @@ const REDIS_CLIENT =
       );
 // Create the Session Storage service
 const SESSION_STORAGE = new RedisSessionStorage(REDIS_CLIENT);
-
-// placeholder fot methods steps to be implemented
-const notImplementedTask = (name: string): TaskEither<Error, true> => {
-  console.warn(`task ${name} hasn't been implemented yet!`);
-  return taskEither.of(true);
-};
 
 // before deleting data we block the user and clrear all its session data
 const blockUser = (fiscalCode: FiscalCode): TaskEither<Error, boolean> => {
@@ -105,17 +103,26 @@ const blockUser = (fiscalCode: FiscalCode): TaskEither<Error, boolean> => {
   ).chain(_ => setBlockedUser);
 };
 
-// creates a bundle with user data and save it to a dedicated storage
-const saveUserDataToStorage = (
-  // tslint:disable-next-line: variable-name
-  _fiscalCode: FiscalCode
-): TaskEither<Error, true> => notImplementedTask("saveUserDataToStorage");
-
 // delete all user data from our db
 const deleteUserData = (
-  // tslint:disable-next-line: variable-name
-  _fiscalCode: FiscalCode
-): TaskEither<Error, true> => notImplementedTask("deleteUserData");
+  fiscalCode: FiscalCode,
+  userDataProcessingId: UserDataProcessingId
+): TaskEither<Error, true> =>
+  tryCatch(
+    () =>
+      DeleteUserDataActivity(context, {
+        fiscalCode,
+        userDataDeleteRequestId: userDataProcessingId
+      }).then(result => {
+        if (result.kind !== "SUCCESS") {
+          throw new Error(
+            `DeleteUserDataActivity failed: ${result.kind} error`
+          );
+        }
+        return true;
+      }),
+    toError
+  );
 
 // change status on user request
 const setUserDataProcessingStatus = (
@@ -190,8 +197,12 @@ async function run(): Promise<Either<Error, boolean>> {
         UserDataProcessingStatusEnum.WIP
       )
     )
-    .chain(_ => saveUserDataToStorage(fiscalCode))
-    .chain(_ => deleteUserData(fiscalCode))
+    .chain(_ =>
+      deleteUserData(
+        fiscalCode,
+        userDataProcessingResult.value.userDataProcessingId
+      )
+    )
     .chain(_ => unblockUser(fiscalCode))
     .chain(_ =>
       setUserDataProcessingStatus(
@@ -214,8 +225,7 @@ async function run(): Promise<Either<Error, boolean>> {
     .run();
 }
 
-// tslint:disable-next-line: no-floating-promises
 run()
+  .then(_ => REDIS_CLIENT.quit())
   .then(result => console.log("OK", result))
-  .catch(ex => console.error("KO", ex))
-  .then(_ => REDIS_CLIENT.quit());
+  .catch(ex => console.error("KO", ex));
