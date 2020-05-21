@@ -6,7 +6,8 @@ import * as t from "io-ts";
 
 import { sequenceT } from "fp-ts/lib/Apply";
 import { array } from "fp-ts/lib/Array";
-import { Either, left } from "fp-ts/lib/Either";
+import { Either, left, toError } from "fp-ts/lib/Either";
+import { Option } from "fp-ts/lib/Option";
 import {
   fromEither,
   TaskEither,
@@ -26,7 +27,8 @@ import {
   RetrievedMessageWithoutContent
 } from "io-functions-commons/dist/src/models/message";
 import { RetrievedMessageStatus } from "io-functions-commons/dist/src/models/message_status";
-import { NotificationStatusModel } from "io-functions-commons/dist/src/models/notification_status";
+import { RetrievedNotification } from "io-functions-commons/dist/src/models/notification";
+import { RetrievedNotificationStatus } from "io-functions-commons/dist/src/models/notification_status";
 import { RetrievedProfile } from "io-functions-commons/dist/src/models/profile";
 import { UserDataProcessingId } from "io-functions-commons/dist/src/models/user_data_processing";
 import {
@@ -38,6 +40,7 @@ import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { MessageModel } from "./models/message";
 import { MessageStatusModel } from "./models/message_status";
 import { NotificationModel } from "./models/notification";
+import { NotificationStatusModel } from "./models/notification_status";
 import { ProfileModel } from "./models/profile";
 
 // Activity input
@@ -116,24 +119,13 @@ const logPrefix = `DeleteUserDataActivity`;
  * @returns either the query result or a query failure
  */
 const fromQueryEither = <R>(
-  lazyPromise: () => Promise<Either<QueryError | Error, R>>,
-  queryName: string = ""
-): TaskEither<QueryFailure, R> =>
-  tryCatch(lazyPromise, (err: Error) =>
-    QueryFailure.encode({
-      kind: "QUERY_FAILURE",
-      query: queryName,
-      reason: err.message
-    })
-  ).chain((queryErrorOrRecord: Either<QueryError | Error, R>) =>
-    fromEither(
-      queryErrorOrRecord.mapLeft(queryError =>
-        QueryFailure.encode({
-          kind: "QUERY_FAILURE",
-          query: queryName,
-          reason: JSON.stringify(queryError)
-        })
-      )
+  lazyPromise: () => Promise<Either<QueryError | Error, R>>
+): TaskEither<Error, R> =>
+  tryCatch(lazyPromise, toError).chain(errorOrResult =>
+    fromEither(errorOrResult).mapLeft((err: QueryError | Error) =>
+      err instanceof Error
+        ? err
+        : new Error(`QueryError: ${JSON.stringify(err)}`)
     )
   );
 
@@ -150,13 +142,24 @@ function assertNever(_: never): void {
  */
 const toQueryError = (err: QueryError) => err;
 /**
- * to cast an error to a ActivityResultQueryFailure
+ * to cast an error to QueryFailure
  * @param err
  */
-const toQueryFailure = (err: QueryError): QueryFailure =>
+const toQueryFailure = (err: Error | QueryError): QueryFailure =>
   QueryFailure.encode({
     kind: "QUERY_FAILURE",
-    reason: err.body
+    reason:
+      err instanceof Error ? err.message : `QueryError: ${JSON.stringify(err)}`
+  });
+
+/**
+ * to cast an error to a DocumentDeleteFailure
+ * @param err
+ */
+const toDocumentDeleteFailure = (err: Error): DocumentDeleteFailure =>
+  DocumentDeleteFailure.encode({
+    kind: "DELETE_FAILURE",
+    reason: err.message
   });
 
 /**
@@ -242,56 +245,81 @@ const executeRecursiveBackupAndDelete = <T>(
   makeBackupBlobName: (item: T) => string,
   iterator: IResultIterator<T>
 ): TaskEither<
-  QueryFailure | BlobCreationFailure,
-  // tslint:disable-next-line: readonly-array
-  T[]
+  // tslint:disable-next-line: use-type-alias
+  QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+  readonly T[]
 > => {
-  return tryCatch(iterator.executeNext, toQueryError)
-    .chain(fromEither)
-    .foldTaskEither<
-      QueryFailure | BlobCreationFailure,
-      // tslint:disable-next-line: readonly-array
-      T[]
-    >(
-      e => fromEither(left(toQueryFailure(e))),
-      maybeResults =>
-        maybeResults.fold(
-          // if the iterator content is none, exit the recursion
-          taskEither.of([]),
-          items =>
-            // executes backup&delete for this set of items
-            array.sequence(taskEither)(
-              items.map((item: T) =>
-                sequenceT(taskEitherSeq)<
-                  BlobCreationFailure | QueryFailure,
-                  // tslint:disable-next-line: readonly-array
-                  [
-                    TaskEither<QueryFailure | BlobCreationFailure, T>,
-                    TaskEither<QueryFailure | BlobCreationFailure, string>,
+  return (
+    tryCatch(iterator.executeNext, toError)
+      // this is just type lifting
+      .foldTaskEither<
+        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+        Option<readonly T[]>
+      >(
+        e => fromEither(left(toQueryFailure(e))),
+        e => fromEither(e).mapLeft(toQueryFailure)
+      )
+      .foldTaskEither<
+        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+        readonly T[]
+      >(
+        e => fromEither(left(e)),
+        maybeResults =>
+          maybeResults.fold(
+            // if the iterator content is none, exit the recursion
+            taskEither.of([]),
+            items =>
+              // executes backup&delete for this set of items
+              array.sequence(taskEither)(
+                items.map((item: T) =>
+                  sequenceT(taskEitherSeq)<
+                    BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
                     // tslint:disable-next-line: readonly-array
-                    TaskEither<QueryFailure | BlobCreationFailure, T[]>
-                  ]
-                >(
-                  saveDataToBlob<T>(
-                    userDataBackup,
-                    makeBackupBlobName(item),
-                    item
-                  ),
-                  fromQueryEither(() => deleteSingle(item), "deleteSingle"),
-                  // recursive step
-                  executeRecursiveBackupAndDelete<T>(
-                    deleteSingle,
-                    userDataBackup,
-                    makeBackupBlobName,
-                    iterator
+                    [
+                      TaskEither<
+                        | QueryFailure
+                        | BlobCreationFailure
+                        | DocumentDeleteFailure,
+                        T
+                      >,
+                      TaskEither<
+                        | QueryFailure
+                        | BlobCreationFailure
+                        | DocumentDeleteFailure,
+                        string
+                      >,
+                      // tslint:disable-next-line: readonly-array
+                      TaskEither<
+                        | QueryFailure
+                        | BlobCreationFailure
+                        | DocumentDeleteFailure,
+                        readonly T[]
+                      >
+                    ]
+                  >(
+                    saveDataToBlob<T>(
+                      userDataBackup,
+                      makeBackupBlobName(item),
+                      item
+                    ),
+                    fromQueryEither(() => deleteSingle(item)).mapLeft(
+                      toDocumentDeleteFailure
+                    ),
+                    // recursive step
+                    executeRecursiveBackupAndDelete<T>(
+                      deleteSingle,
+                      userDataBackup,
+                      makeBackupBlobName,
+                      iterator
+                    )
                   )
+                    // aggregates the results at the end of the recursion
+                    .map(([_, __, nextResults]) => [item, ...nextResults])
                 )
-                  // aggregates the results at the end of the recursion
-                  .map(([_, __, nextResults]) => [item, ...nextResults])
               )
-            )
-        )
-    );
+          )
+      )
+  );
 };
 
 /**
@@ -319,6 +347,84 @@ const backupAndDeleteProfile = ({
 };
 
 /**
+ * Backup and delete a given notification
+ *
+ * @param param0.notificationModel instance of NotificationModel
+ * @param param0.userDataBackup information about the blob storage account to place backup into
+ * @param param0.notification the notification
+ */
+const backupAndDeleteNotification = ({
+  notificationModel,
+  userDataBackup,
+  notification
+}: {
+  notificationModel: NotificationModel;
+  userDataBackup: IBlobServiceInfo;
+  notification: RetrievedNotification;
+}): TaskEither<
+  BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
+  RetrievedNotification
+> => {
+  return sequenceT(taskEitherSeq)<
+    QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+    // tslint:disable-next-line: readonly-array
+    [
+      TaskEither<
+        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+        RetrievedNotification
+      >,
+      TaskEither<
+        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+        string
+      >
+    ]
+  >(
+    saveDataToBlob<RetrievedNotification>(
+      userDataBackup,
+      `notification--${notification.id}.json`,
+      notification
+    ),
+    fromQueryEither(() =>
+      notificationModel.deleteNotification(
+        notification.messageId,
+        notification.id
+      )
+    ).mapLeft(toDocumentDeleteFailure)
+  ).map(_ => notification);
+};
+
+/**
+ * Find all versions of a notification status, then backup and delete each document
+ * @param param0.notificationStatusModel instance of NotificationStatusModel
+ * @param param0.userDataBackup information about the blob storage account to place backup into
+ * @param param0.notification parent notification
+ *
+ */
+const backupAndDeleteNotificationStatus = ({
+  notificationStatusModel,
+  userDataBackup,
+  notification
+}: {
+  notificationStatusModel: NotificationStatusModel;
+  userDataBackup: IBlobServiceInfo;
+  notification: RetrievedNotification;
+}): TaskEither<
+  QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+  readonly RetrievedNotificationStatus[]
+> => {
+  return executeRecursiveBackupAndDelete<RetrievedNotificationStatus>(
+    item =>
+      notificationStatusModel.deleteNotificationStatusVersion(
+        item.notificationId,
+        item.id
+      ),
+    userDataBackup,
+    item => `notification-status--${item.version}.json`,
+    notificationStatusModel.findAllVersionsByModelId(notification.id)
+  );
+};
+
+/**
  * Backup and delete a given message
  *
  * @param param0.messageStatusModel instance of MessageStatusModel
@@ -334,18 +440,21 @@ const backupAndDeleteMessage = ({
   userDataBackup: IBlobServiceInfo;
   message: RetrievedMessageWithoutContent;
 }): TaskEither<
-  BlobCreationFailure | QueryFailure,
+  BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
   RetrievedMessageWithoutContent
 > => {
   return sequenceT(taskEitherSeq)<
-    QueryFailure | BlobCreationFailure,
+    QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
     // tslint:disable-next-line: readonly-array
     [
       TaskEither<
-        QueryFailure | BlobCreationFailure,
+        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
         RetrievedMessageWithoutContent
       >,
-      TaskEither<QueryFailure | BlobCreationFailure, string>
+      TaskEither<
+        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+        string
+      >
     ]
   >(
     saveDataToBlob<RetrievedMessageWithoutContent>(
@@ -353,15 +462,14 @@ const backupAndDeleteMessage = ({
       `message--${message.id}.json`,
       message
     ),
-    fromQueryEither(
-      () => messageModel.deleteMessage(message.fiscalCode, message.id),
-      "deleteMessage"
-    )
+    fromQueryEither(() =>
+      messageModel.deleteMessage(message.fiscalCode, message.id)
+    ).mapLeft(toDocumentDeleteFailure)
   ).map(_ => message);
 };
 
 const backupAndDeleteMessageContent = (): TaskEither<
-  BlobCreationFailure | QueryFailure,
+  BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
   MessageContent
 > => taskEither.of({} as MessageContent);
 
@@ -381,7 +489,7 @@ const backupAndDeleteMessageStatus = ({
   userDataBackup: IBlobServiceInfo;
   message: RetrievedMessageWithoutContent;
 }): TaskEither<
-  QueryFailure | BlobCreationFailure,
+  QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
   readonly RetrievedMessageStatus[]
 > => {
   return executeRecursiveBackupAndDelete<RetrievedMessageStatus>(
@@ -419,10 +527,10 @@ export const backupAndDeleteAllUserData = ({
   userDataBackup: IBlobServiceInfo;
   fiscalCode: FiscalCode;
 }) => {
-  return fromQueryEither<ReadonlyArray<RetrievedMessageWithContent>>(
-    () => iteratorToArray(messageModel.findMessages(fiscalCode)),
-    "findMessages"
+  return fromQueryEither<ReadonlyArray<RetrievedMessageWithContent>>(() =>
+    iteratorToArray(messageModel.findMessages(fiscalCode))
   )
+    .mapLeft(toQueryFailure)
     .foldTaskEither(
       e => fromEither(left(e)),
       messages => {
