@@ -196,23 +196,30 @@ const logFailure = (context: Context) => (
   }
 };
 
+// define a value object with the info related to the blob storage for backup files
+interface IBlobServiceInfo {
+  blobService: BlobService;
+  containerName: string;
+  folder?: NonEmptyString;
+}
+
 /**
- * Creates a bundle with all user data and save it to a blob on a remote storage
- * @param data all extracted user data
- * @param password a password for bundle encryption
+ * Saves data into a dedicated blob
+ * @param blobServiceInfo references about where to save data
+ * @param blobName name of the blob to be saved. It might not include a folder if specified in blobServiceInfo
+ * @param data serializable data to be saved
  *
- * @returns either a failure or an object with the name of the blob and the password
+ * @returns either a blob failure or the saved object
  */
 export const saveDataToBlob = <T>(
-  blobService: BlobService,
-  userDataContainerName: string,
+  { blobService, containerName, folder }: IBlobServiceInfo,
   blobName: string,
   data: T
 ): TaskEither<BlobCreationFailure, T> => {
   return taskify<BlobCreationFailure, T>(cb => {
     blobService.createBlockBlobFromText(
-      userDataContainerName,
-      blobName,
+      containerName,
+      `${folder}${folder ? "/" : ""}${blobName}`,
       JSON.stringify(data),
       err => {
         if (err) {
@@ -230,13 +237,22 @@ export const saveDataToBlob = <T>(
   })();
 };
 
-const backupAndDeleteProfile = (
-  profileModel: ProfileModel,
-  userDataBlobService: BlobService,
-  userDataContainerName: string,
-  fiscalCode: FiscalCode,
-  backupFolder: NonEmptyString
-) => {
+/**
+ * Backup and delete every version of the profile
+ *
+ * @param param0.profileModel instance of ProfileModel
+ * @param param0.userDataBackup information about the blob storage account to place backup into
+ * @param param0.fiscalCode the identifier of the user
+ */
+const backupAndDeleteProfile = ({
+  fiscalCode,
+  profileModel,
+  userDataBackup
+}: {
+  profileModel: ProfileModel;
+  userDataBackup: IBlobServiceInfo;
+  fiscalCode: FiscalCode;
+}) => {
   // execute backup&delete for a single version record item
   const executeOnSingleVersionItem = (
     item: RetrievedProfile
@@ -250,9 +266,8 @@ const backupAndDeleteProfile = (
       ]
     >(
       saveDataToBlob<RetrievedProfile>(
-        userDataBlobService,
-        userDataContainerName,
-        `${backupFolder}/profile--${item.version}.json`,
+        userDataBackup,
+        `profile--${item.version}.json`,
         item
       ),
       fromQueryEither(
@@ -302,13 +317,22 @@ const backupAndDeleteProfile = (
   );
 };
 
-const backupAndDeleteMessage = (
-  messageModel: MessageModel,
-  userDataBlobService: BlobService,
-  userDataContainerName: string,
-  backupFolder: NonEmptyString,
-  message: RetrievedMessageWithoutContent
-): TaskEither<
+/**
+ * Backup and delete a given message
+ *
+ * @param param0.messageStatusModel instance of MessageStatusModel
+ * @param param0.userDataBackup information about the blob storage account to place backup into
+ * @param param0.message the message
+ */
+const backupAndDeleteMessage = ({
+  messageModel,
+  userDataBackup,
+  message
+}: {
+  messageModel: MessageModel;
+  userDataBackup: IBlobServiceInfo;
+  message: RetrievedMessageWithoutContent;
+}): TaskEither<
   BlobCreationFailure | QueryFailure,
   RetrievedMessageWithoutContent
 > => {
@@ -324,9 +348,8 @@ const backupAndDeleteMessage = (
     ]
   >(
     saveDataToBlob<RetrievedMessageWithoutContent>(
-      userDataBlobService,
-      userDataContainerName,
-      `${backupFolder}/message--${message.id}.json`,
+      userDataBackup,
+      `message--${message.id}.json`,
       message
     ),
     fromQueryEither(
@@ -341,13 +364,22 @@ const backupAndDeleteMessageContent = (): TaskEither<
   MessageContent
 > => taskEither.of({} as MessageContent);
 
-const backupAndDeleteMessageStatus = (
-  messageStatusModel: MessageStatusModel,
-  userDataBlobService: BlobService,
-  userDataContainerName: NonEmptyString,
-  message: RetrievedMessageWithoutContent,
-  backupFolder: NonEmptyString
-): TaskEither<
+/**
+ * Find all versions of a message status, then backup and delete each document
+ * @param param0.messageStatusModel instance of MessageStatusModel
+ * @param param0.userDataBackup information about the blob storage account to place backup into
+ * @param param0.message parent message
+ *
+ */
+const backupAndDeleteMessageStatus = ({
+  messageStatusModel,
+  userDataBackup,
+  message
+}: {
+  messageStatusModel: MessageStatusModel;
+  userDataBackup: IBlobServiceInfo;
+  message: RetrievedMessageWithoutContent;
+}): TaskEither<
   QueryFailure | BlobCreationFailure,
   readonly RetrievedMessageStatus[]
 > => {
@@ -368,9 +400,8 @@ const backupAndDeleteMessageStatus = (
         ]
       >(
         saveDataToBlob<RetrievedMessageStatus>(
-          userDataBlobService,
-          userDataContainerName,
-          `${backupFolder}/message-status--${item.id}--${item.version}.json`,
+          userDataBackup,
+          `message-status--${item.id}--${item.version}.json`,
           item
         ), // .mapLeft(e => e as ActivityResultFailure), // cast needed to fit the generic failuire type
         fromQueryEither(
@@ -430,22 +461,31 @@ const backupAndDeleteMessageStatus = (
   );
 };
 
+/**
+ * Explores the user data structures and deletes all documents and blobs. Before that saves a blob for every found document in a dedicated storage folder
+ * Versioned models are backupped with a blob for each document version.
+ * Deletions happen after and only if the respective document has been successfully backupped.
+ * Backups and deletions of parent models happen after and only if every child model has been backupped and deleted successfully (example: Message and MessageStatus).
+ * This is important because children are found from their parents and otherwise it would create dangling models in case of an error occur.
+ *
+ * @param param0.messageModel instance of MessageModel
+ * @param param0.messageStatusModel instance of MessageStatusModel
+ * @param param0.profileModel instance of ProfileModel
+ * @param param0.userDataBackup information about the blob storage account to place backup into
+ * @param param0.fiscalCode identifier of the user
+ */
 export const backupAndDeleteAllUserData = ({
   messageModel,
   messageStatusModel,
   profileModel,
-  userDataBlobService,
-  userDataContainerName,
-  fiscalCode,
-  backupFolder
+  userDataBackup,
+  fiscalCode
 }: {
   messageModel: MessageModel;
   messageStatusModel: MessageStatusModel;
   profileModel: ProfileModel;
-  userDataBlobService: BlobService;
-  userDataContainerName: NonEmptyString;
+  userDataBackup: IBlobServiceInfo;
   fiscalCode: FiscalCode;
-  backupFolder: NonEmptyString;
 }) => {
   return fromQueryEither<ReadonlyArray<RetrievedMessageWithContent>>(
     () => iteratorToArray(messageModel.findMessages(fiscalCode)),
@@ -461,33 +501,23 @@ export const backupAndDeleteAllUserData = ({
             const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
             return sequenceT(taskEitherSeq)(
               backupAndDeleteMessageContent(),
-              backupAndDeleteMessageStatus(
+              backupAndDeleteMessageStatus({
+                message: retrievedMessage,
                 messageStatusModel,
-                userDataBlobService,
-                userDataContainerName,
-                retrievedMessage,
-                backupFolder
-              ),
-              backupAndDeleteMessage(
+                userDataBackup
+              }),
+              backupAndDeleteMessage({
+                message: retrievedMessage,
                 messageModel,
-                userDataBlobService,
-                userDataContainerName,
-                backupFolder,
-                retrievedMessage
-              )
+                userDataBackup
+              })
             );
           })
         );
       }
     )
     .chain(_ =>
-      backupAndDeleteProfile(
-        profileModel,
-        userDataBlobService,
-        userDataContainerName,
-        fiscalCode,
-        backupFolder
-      )
+      backupAndDeleteProfile({ profileModel, userDataBackup, fiscalCode })
     );
 };
 export interface IActivityHandlerInput {
@@ -497,8 +527,8 @@ export interface IActivityHandlerInput {
   notificationStatusModel: NotificationStatusModel;
   profileModel: ProfileModel;
   messageContentBlobService: BlobService;
-  userDataBlobService: BlobService;
-  userDataContainerName: NonEmptyString;
+  userDataBackupBlobService: BlobService;
+  userDataBackupContainerName: NonEmptyString;
 }
 
 /**
@@ -508,8 +538,8 @@ export function createDeleteUserDataActivityHandler({
   messageModel,
   messageStatusModel,
   profileModel,
-  userDataBlobService,
-  userDataContainerName
+  userDataBackupBlobService,
+  userDataBackupContainerName
 }: IActivityHandlerInput): (
   context: Context,
   input: unknown
@@ -526,13 +556,15 @@ export function createDeleteUserDataActivityHandler({
     )
       .chain(({ fiscalCode, userDataDeleteRequestId }) =>
         backupAndDeleteAllUserData({
-          backupFolder: `${userDataDeleteRequestId}-${Date.now()}` as NonEmptyString,
           fiscalCode,
           messageModel,
           messageStatusModel,
           profileModel,
-          userDataBlobService,
-          userDataContainerName
+          userDataBackup: {
+            blobService: userDataBackupBlobService,
+            containerName: userDataBackupContainerName,
+            folder: `${userDataDeleteRequestId}-${Date.now()}` as NonEmptyString
+          }
         })
       )
       .bimap(

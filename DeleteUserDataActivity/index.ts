@@ -66,15 +66,15 @@ const profileModel = new ProfileModel(
   )
 );
 
-const userDataBlobService = createBlobService(
-  getRequiredStringEnv("UserDataArchiveStorageConnection")
+const userDataBackupBlobService = createBlobService(
+  getRequiredStringEnv("UserDataBackupArchiveStorageConnection")
 );
 
 const messageContentBlobService = createBlobService(
   getRequiredStringEnv("MessageContentStorageConnection")
 );
 
-const userDataContainerName = getRequiredStringEnv(
+const userDataBackupContainerName = getRequiredStringEnv(
   "USER_DATA_BACKUP_CONTAINER_NAME"
 );
 
@@ -85,8 +85,8 @@ const activityFunctionHandler = createDeleteUserDataActivityHandler({
   notificationModel,
   notificationStatusModel,
   profileModel,
-  userDataBlobService,
-  userDataContainerName
+  userDataBackupBlobService,
+  userDataBackupContainerName
 });
 
 export default activityFunctionHandler;
