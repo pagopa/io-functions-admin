@@ -260,35 +260,36 @@ const executeRecursiveBackupAndDelete = <T>(
           taskEither.of([]),
           items =>
             // executes backup&delete for this set of items
-            array
-              .sequence(taskEither)(
-                items.map((item: T) =>
-                  sequenceT(taskEitherSeq)<
-                    BlobCreationFailure | QueryFailure,
+            array.sequence(taskEither)(
+              items.map((item: T) =>
+                sequenceT(taskEitherSeq)<
+                  BlobCreationFailure | QueryFailure,
+                  // tslint:disable-next-line: readonly-array
+                  [
+                    TaskEither<QueryFailure | BlobCreationFailure, T>,
+                    TaskEither<QueryFailure | BlobCreationFailure, string>,
                     // tslint:disable-next-line: readonly-array
-                    [
-                      TaskEither<QueryFailure | BlobCreationFailure, T>,
-                      TaskEither<QueryFailure | BlobCreationFailure, string>
-                    ]
-                  >(
-                    saveDataToBlob<T>(
-                      userDataBackup,
-                      makeBackupBlobName(item),
-                      item
-                    ),
-                    fromQueryEither(() => deleteSingle(item), "deleteSingle")
-                  ).map(_ => item)
+                    TaskEither<QueryFailure | BlobCreationFailure, T[]>
+                  ]
+                >(
+                  saveDataToBlob<T>(
+                    userDataBackup,
+                    makeBackupBlobName(item),
+                    item
+                  ),
+                  fromQueryEither(() => deleteSingle(item), "deleteSingle"),
+                  // recursive step
+                  executeRecursiveBackupAndDelete<T>(
+                    deleteSingle,
+                    userDataBackup,
+                    makeBackupBlobName,
+                    iterator
+                  )
                 )
+                  // aggregates the results at the end of the recursion
+                  .map(([_, __, nextResults]) => [item, ...nextResults])
               )
-              // recursive step
-              .chain(_ =>
-                executeRecursiveBackupAndDelete<T>(
-                  deleteSingle,
-                  userDataBackup,
-                  makeBackupBlobName,
-                  iterator
-                )
-              )
+            )
         )
     );
 };
