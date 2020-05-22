@@ -107,6 +107,9 @@ export const ActivityResult = t.taggedUnion("kind", [
 ]);
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
+// type alias for fetch, delete and backup of data
+type DataFailure = QueryFailure | BlobCreationFailure | DocumentDeleteFailure;
+
 const logPrefix = `DeleteUserDataActivity`;
 
 const debug = (l: string) => <T>(e: T) => {
@@ -252,16 +255,13 @@ const executeRecursiveBackupAndDelete = <T>(
   iterator: IResultIterator<T>
 ): TaskEither<
   // tslint:disable-next-line: use-type-alias
-  QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+  DataFailure,
   readonly T[]
 > => {
   return (
     tryCatch(iterator.executeNext, toError)
       // this is just type lifting
-      .foldTaskEither<
-        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
-        Option<readonly T[]>
-      >(
+      .foldTaskEither<DataFailure, Option<readonly T[]>>(
         e => fromEither(left(toQueryFailure(e))),
         e => fromEither(e).mapLeft(toQueryFailure)
       )
@@ -269,10 +269,7 @@ const executeRecursiveBackupAndDelete = <T>(
         debug("executeRecursiveBackupAndDelete executeNext result left"),
         debug("executeRecursiveBackupAndDelete executeNext result right")
       )
-      .foldTaskEither<
-        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
-        readonly T[]
-      >(
+      .foldTaskEither<DataFailure, readonly T[]>(
         e => fromEither(left(e)),
         maybeResults =>
           maybeResults.fold(
@@ -283,28 +280,13 @@ const executeRecursiveBackupAndDelete = <T>(
               array.sequence(taskEither)(
                 items.map((item: T) =>
                   sequenceT(taskEitherSeq)<
-                    BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
+                    DataFailure,
                     // tslint:disable-next-line: readonly-array
                     [
-                      TaskEither<
-                        | QueryFailure
-                        | BlobCreationFailure
-                        | DocumentDeleteFailure,
-                        T
-                      >,
-                      TaskEither<
-                        | QueryFailure
-                        | BlobCreationFailure
-                        | DocumentDeleteFailure,
-                        string
-                      >,
+                      TaskEither<DataFailure, T>,
+                      TaskEither<DataFailure, string>,
                       // tslint:disable-next-line: readonly-array
-                      TaskEither<
-                        | QueryFailure
-                        | BlobCreationFailure
-                        | DocumentDeleteFailure,
-                        readonly T[]
-                      >
+                      TaskEither<DataFailure, readonly T[]>
                     ]
                   >(
                     saveDataToBlob<T>(
@@ -374,22 +356,13 @@ const backupAndDeleteNotification = ({
   notificationModel: NotificationModel;
   userDataBackup: IBlobServiceInfo;
   notification: RetrievedNotification;
-}): TaskEither<
-  BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
-  RetrievedNotification
-> => {
+}): TaskEither<DataFailure, RetrievedNotification> => {
   return sequenceT(taskEitherSeq)<
-    QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+    DataFailure,
     // tslint:disable-next-line: readonly-array
     [
-      TaskEither<
-        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
-        RetrievedNotification
-      >,
-      TaskEither<
-        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
-        string
-      >
+      TaskEither<DataFailure, RetrievedNotification>,
+      TaskEither<DataFailure, string>
     ]
   >(
     saveDataToBlob<RetrievedNotification>(
@@ -426,10 +399,7 @@ const backupAndDeleteNotificationStatus = ({
   notificationStatusModel: NotificationStatusModel;
   userDataBackup: IBlobServiceInfo;
   notification: RetrievedNotification;
-}): TaskEither<
-  QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
-  readonly RetrievedNotificationStatus[]
-> => {
+}): TaskEither<DataFailure, readonly RetrievedNotificationStatus[]> => {
   debug("backupAndDeleteNotificationStatus input")(notification);
   return executeRecursiveBackupAndDelete<RetrievedNotificationStatus>(
     item =>
@@ -461,22 +431,13 @@ const backupAndDeleteMessage = ({
   messageModel: MessageModel;
   userDataBackup: IBlobServiceInfo;
   message: RetrievedMessageWithoutContent;
-}): TaskEither<
-  BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
-  RetrievedMessageWithoutContent
-> => {
+}): TaskEither<DataFailure, RetrievedMessageWithoutContent> => {
   return sequenceT(taskEitherSeq)<
-    QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+    DataFailure,
     // tslint:disable-next-line: readonly-array
     [
-      TaskEither<
-        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
-        RetrievedMessageWithoutContent
-      >,
-      TaskEither<
-        QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
-        string
-      >
+      TaskEither<DataFailure, RetrievedMessageWithoutContent>,
+      TaskEither<DataFailure, string>
     ]
   >(
     saveDataToBlob<RetrievedMessageWithoutContent>(
@@ -505,10 +466,7 @@ const backupAndDeleteMessageContent = ({
   messageModel: MessageModel;
   userDataBackup: IBlobServiceInfo;
   message: RetrievedMessageWithoutContent;
-}): TaskEither<
-  BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
-  Option<MessageContent>
-> => {
+}): TaskEither<DataFailure, Option<MessageContent>> => {
   return fromQueryEither(() =>
     messageModel
       .getContentFromBlob(messageContentBlobService, message.id)
@@ -518,10 +476,7 @@ const backupAndDeleteMessageContent = ({
         throw e;
       })
   )
-    .foldTaskEither<
-      BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
-      Option<MessageContent>
-    >(
+    .foldTaskEither<DataFailure, Option<MessageContent>>(
       _ => {
         // unfortunately, a document not found is threated like a query error
         return taskEither.of(none);
@@ -532,17 +487,11 @@ const backupAndDeleteMessageContent = ({
           taskEither.of(none),
           content =>
             sequenceT(taskEitherSeq)<
-              BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
+              DataFailure,
               // tslint:disable-next-line: readonly-array
               [
-                TaskEither<
-                  QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
-                  MessageContent
-                >,
-                TaskEither<
-                  QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
-                  true
-                >
+                TaskEither<DataFailure, MessageContent>,
+                TaskEither<DataFailure, true>
               ]
             >(
               saveDataToBlob(
@@ -580,10 +529,7 @@ const backupAndDeleteMessageStatus = ({
   messageStatusModel: MessageStatusModel;
   userDataBackup: IBlobServiceInfo;
   message: RetrievedMessageWithoutContent;
-}): TaskEither<
-  QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
-  readonly RetrievedMessageStatus[]
-> => {
+}): TaskEither<DataFailure, readonly RetrievedMessageStatus[]> => {
   return executeRecursiveBackupAndDelete<RetrievedMessageStatus>(
     item =>
       messageStatusModel.deleteMessageStatusVersion(item.messageId, item.id),
