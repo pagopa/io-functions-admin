@@ -7,7 +7,7 @@ import * as t from "io-ts";
 import { sequenceT } from "fp-ts/lib/Apply";
 import { array } from "fp-ts/lib/Array";
 import { Either, left, toError } from "fp-ts/lib/Either";
-import { Option } from "fp-ts/lib/Option";
+import { none, Option, some } from "fp-ts/lib/Option";
 import {
   fromEither,
   TaskEither,
@@ -30,23 +30,22 @@ import { RetrievedMessageStatus } from "io-functions-commons/dist/src/models/mes
 import { RetrievedNotification } from "io-functions-commons/dist/src/models/notification";
 import { RetrievedNotificationStatus } from "io-functions-commons/dist/src/models/notification_status";
 import { RetrievedProfile } from "io-functions-commons/dist/src/models/profile";
-import { UserDataProcessingId } from "io-functions-commons/dist/src/models/user_data_processing";
 import {
   IResultIterator,
   iteratorToArray
 } from "io-functions-commons/dist/src/utils/documentdb";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
-import { MessageModel } from "../utils/models/message";
-import { MessageStatusModel } from "../utils/models/message_status";
-import { NotificationModel } from "../utils/models/notification";
-import { NotificationStatusModel } from "../utils/models/notification_status";
-import { ProfileModel } from "../utils/models/profile";
+import { MessageModel } from "../utils/extensions/models/message";
+import { MessageStatusModel } from "../utils/extensions/models/message_status";
+import { NotificationModel } from "../utils/extensions/models/notification";
+import { NotificationStatusModel } from "../utils/extensions/models/notification_status";
+import { ProfileModel } from "../utils/extensions/models/profile";
 
 // Activity input
 export const ActivityInput = t.interface({
-  fiscalCode: FiscalCode,
-  userDataDeleteRequestId: UserDataProcessingId
+  backupFolder: NonEmptyString,
+  fiscalCode: FiscalCode
 });
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
@@ -109,6 +108,14 @@ export const ActivityResult = t.taggedUnion("kind", [
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 const logPrefix = `DeleteUserDataActivity`;
+
+const debug = (l: string) => <T>(e: T) => {
+  if (process.env.DEBUG) {
+    // tslint:disable-next-line: no-console
+    console.log(`${logPrefix}:${l}`, e);
+  }
+  return e;
+};
 
 /**
  * Converts a Promise<Either> into a TaskEither
@@ -213,12 +220,15 @@ export const saveDataToBlob = <T>(
   { blobService, containerName, folder }: IBlobServiceInfo,
   blobName: string,
   data: T
-): TaskEither<BlobCreationFailure, T> =>
-  taskify(blobService.createBlockBlobFromText)(
-    containerName,
-    `${folder}${folder ? "/" : ""}${blobName}`,
-    JSON.stringify(data)
-  ).bimap(
+): TaskEither<BlobCreationFailure, T> => {
+  return taskify<Error, unknown>(cb =>
+    blobService.createBlockBlobFromText(
+      containerName,
+      `${folder}${folder ? "/" : ""}${blobName}`,
+      JSON.stringify(data),
+      cb
+    )
+  )().bimap(
     err =>
       BlobCreationFailure.encode({
         kind: "BLOB_FAILURE",
@@ -226,6 +236,7 @@ export const saveDataToBlob = <T>(
       }),
     _ => data
   );
+};
 
 /**
  * Recursively consumes an iterator and executes operations on every item
@@ -253,6 +264,10 @@ const executeRecursiveBackupAndDelete = <T>(
       >(
         e => fromEither(left(toQueryFailure(e))),
         e => fromEither(e).mapLeft(toQueryFailure)
+      )
+      .bimap(
+        debug("executeRecursiveBackupAndDelete executeNext result left"),
+        debug("executeRecursiveBackupAndDelete executeNext result right")
       )
       .foldTaskEither<
         QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
@@ -338,6 +353,9 @@ const backupAndDeleteProfile = ({
     userDataBackup,
     item => `profile--${item.version}.json`,
     profileModel.findAllVersionsByModelId(fiscalCode)
+  ).bimap(
+    debug("backupAndDeleteProfile left"),
+    debug("backupAndDeleteProfile right")
   );
 };
 
@@ -385,7 +403,12 @@ const backupAndDeleteNotification = ({
         notification.id
       )
     ).mapLeft(toDocumentDeleteFailure)
-  ).map(_ => notification);
+  )
+    .map(_ => notification)
+    .bimap(
+      debug("backupAndDeleteNotification left"),
+      debug("backupAndDeleteNotification right")
+    );
 };
 
 /**
@@ -407,6 +430,7 @@ const backupAndDeleteNotificationStatus = ({
   QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
   readonly RetrievedNotificationStatus[]
 > => {
+  debug("backupAndDeleteNotificationStatus input")(notification);
   return executeRecursiveBackupAndDelete<RetrievedNotificationStatus>(
     item =>
       notificationStatusModel.deleteNotificationStatusVersion(
@@ -415,7 +439,10 @@ const backupAndDeleteNotificationStatus = ({
       ),
     userDataBackup,
     item => `notification-status--${item.version}.json`,
-    notificationStatusModel.findAllVersionsByModelId(notification.id)
+    notificationStatusModel.findAllVersionsByNotificationId(notification.id)
+  ).bimap(
+    debug("backupAndDeleteNotificationStatus left"),
+    debug("backupAndDeleteNotificationStatus right")
   );
 };
 
@@ -460,13 +487,83 @@ const backupAndDeleteMessage = ({
     fromQueryEither(() =>
       messageModel.deleteMessage(message.fiscalCode, message.id)
     ).mapLeft(toDocumentDeleteFailure)
-  ).map(_ => message);
+  )
+    .map(_ => message)
+    .bimap(
+      debug("backupAndDeleteMessage left"),
+      debug("backupAndDeleteMessage right")
+    );
 };
 
-const backupAndDeleteMessageContent = (): TaskEither<
+const backupAndDeleteMessageContent = ({
+  messageContentBlobService,
+  messageModel,
+  userDataBackup,
+  message
+}: {
+  messageContentBlobService: BlobService;
+  messageModel: MessageModel;
+  userDataBackup: IBlobServiceInfo;
+  message: RetrievedMessageWithoutContent;
+}): TaskEither<
   BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
-  MessageContent
-> => taskEither.of({} as MessageContent);
+  Option<MessageContent>
+> => {
+  return fromQueryEither(() =>
+    messageModel
+      .getContentFromBlob(messageContentBlobService, message.id)
+      .then(debug("backupAndDeleteMessageContent yes"))
+      .catch(e => {
+        debug("backupAndDeleteMessageContent 0")(e);
+        throw e;
+      })
+  )
+    .foldTaskEither<
+      BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
+      Option<MessageContent>
+    >(
+      _ => {
+        // unfortunately, a document not found is threated like a query error
+        return taskEither.of(none);
+      },
+      maybeContent =>
+        maybeContent.fold(
+          // no document found, no document to delete
+          taskEither.of(none),
+          content =>
+            sequenceT(taskEitherSeq)<
+              BlobCreationFailure | QueryFailure | DocumentDeleteFailure,
+              // tslint:disable-next-line: readonly-array
+              [
+                TaskEither<
+                  QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+                  MessageContent
+                >,
+                TaskEither<
+                  QueryFailure | BlobCreationFailure | DocumentDeleteFailure,
+                  true
+                >
+              ]
+            >(
+              saveDataToBlob(
+                userDataBackup,
+                `messagecontent--${message.id}.json`,
+                content
+              ),
+              fromQueryEither(() =>
+                messageModel.deleteContentFromBlob(
+                  messageContentBlobService,
+                  message.id
+                )
+              ).mapLeft(toDocumentDeleteFailure)
+            ).map(_ => some(content))
+        )
+    )
+    .bimap(
+      debug("backupAndDeleteMessageContent left"),
+      debug("backupAndDeleteMessageContent right")
+    );
+};
 
 /**
  * Find all versions of a message status, then backup and delete each document
@@ -493,36 +590,97 @@ const backupAndDeleteMessageStatus = ({
     userDataBackup,
     item => `message-status--${item.version}.json`,
     messageStatusModel.findAllVersionsByModelId(message.id)
+  ).bimap(
+    debug("backupAndDeleteMessageStatus left"),
+    debug("backupAndDeleteMessageStatus right")
   );
 };
 
 /**
- * Explores the user data structures and deletes all documents and blobs. Before that saves a blob for every found document in a dedicated storage folder
- * Versioned models are backupped with a blob for each document version.
- * Deletions happen after and only if the respective document has been successfully backupped.
- * Backups and deletions of parent models happen after and only if every child model has been backupped and deleted successfully (example: Message and MessageStatus).
- * This is important because children are found from their parents and otherwise it would create dangling models in case of an error occur.
- *
+ * For a given message, search all its notifications and backup&delete each one including its own notification status
  * @param param0.messageModel instance of MessageModel
  * @param param0.messageStatusModel instance of MessageStatusModel
- * @param param0.profileModel instance of ProfileModel
+ * @param param0.NotificationModel instance of NotificationModel
+ * @param param0.notificationStatusModel instance of NotificationStatusModel
  * @param param0.userDataBackup information about the blob storage account to place backup into
  * @param param0.fiscalCode identifier of the user
  */
-export const backupAndDeleteAllUserData = ({
+const backupAndDeleteAllNotificationsData = ({
+  message,
+  notificationModel,
+  notificationStatusModel,
+  userDataBackup
+}: {
+  message: RetrievedMessageWithoutContent;
+  notificationModel: NotificationModel;
+  notificationStatusModel: NotificationStatusModel;
+  userDataBackup: IBlobServiceInfo;
+}) =>
+  fromQueryEither<ReadonlyArray<RetrievedNotification>>(() =>
+    iteratorToArray(notificationModel.findNotificationsForMessage(message.id))
+  )
+    .bimap(
+      debug(
+        `findNotificationsForMessage query result message=${message.id} left`
+      ),
+      debug(
+        `findNotificationsForMessage query result message=${message.id} right`
+      )
+    )
+    .mapLeft(toQueryFailure)
+    .foldTaskEither(
+      e => fromEither(left(e)),
+      notifications =>
+        array.sequence(taskEither)(
+          notifications.map(notification =>
+            sequenceT(taskEitherSeq)(
+              backupAndDeleteNotificationStatus({
+                notification,
+                notificationStatusModel,
+                userDataBackup
+              }),
+              backupAndDeleteNotification({
+                notification,
+                notificationModel,
+                userDataBackup
+              })
+            )
+          )
+        )
+    )
+    .bimap(
+      debug("backupAndDeleteAllNotificationsData left"),
+      debug("backupAndDeleteAllNotificationsData right")
+    );
+
+/**
+ * For a given user, search all its messages and backup&delete each one including its own child models (messagestatus, notifications, message content)
+ * @param param0.messageContentBlobService instance of blob service where message contents are stored
+ * @param param0.messageModel instance of MessageModel
+ * @param param0.messageStatusModel instance of MessageStatusModel
+ * @param param0.NotificationModel instance of NotificationModel
+ * @param param0.notificationStatusModel instance of NotificationStatusModel
+ * @param param0.userDataBackup information about the blob storage account to place backup into
+ * @param param0.fiscalCode identifier of the user
+ */
+const backupAndDeleteAllMessagesData = ({
+  messageContentBlobService,
   messageModel,
   messageStatusModel,
-  profileModel,
+  notificationModel,
+  notificationStatusModel,
   userDataBackup,
   fiscalCode
 }: {
+  messageContentBlobService: BlobService;
   messageModel: MessageModel;
   messageStatusModel: MessageStatusModel;
-  profileModel: ProfileModel;
+  notificationModel: NotificationModel;
+  notificationStatusModel: NotificationStatusModel;
   userDataBackup: IBlobServiceInfo;
   fiscalCode: FiscalCode;
-}) => {
-  return fromQueryEither<ReadonlyArray<RetrievedMessageWithContent>>(() =>
+}) =>
+  fromQueryEither<ReadonlyArray<RetrievedMessageWithContent>>(() =>
     iteratorToArray(messageModel.findMessages(fiscalCode))
   )
     .mapLeft(toQueryFailure)
@@ -534,13 +692,25 @@ export const backupAndDeleteAllUserData = ({
             // cast needed because findMessages has a wrong signature
             // tslint:disable-next-line: no-any
             const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
-            return sequenceT(taskEitherSeq)(
-              backupAndDeleteMessageContent(),
+            return sequenceT(taskEither)(
+              backupAndDeleteMessageContent({
+                message: retrievedMessage,
+                messageContentBlobService,
+                messageModel,
+                userDataBackup
+              }),
               backupAndDeleteMessageStatus({
                 message: retrievedMessage,
                 messageStatusModel,
                 userDataBackup
               }),
+              backupAndDeleteAllNotificationsData({
+                message: retrievedMessage,
+                notificationModel,
+                notificationStatusModel,
+                userDataBackup
+              })
+            ).chain(_ =>
               backupAndDeleteMessage({
                 message: retrievedMessage,
                 messageModel,
@@ -551,9 +721,57 @@ export const backupAndDeleteAllUserData = ({
         );
       }
     )
-    .chain(_ =>
-      backupAndDeleteProfile({ profileModel, userDataBackup, fiscalCode })
+    .bimap(
+      debug("backupAndDeleteAllMessagesData left"),
+      debug("backupAndDeleteAllMessagesData right")
     );
+
+/**
+ * Explores the user data structures and deletes all documents and blobs. Before that saves a blob for every found document in a dedicated storage folder
+ * Versioned models are backupped with a blob for each document version.
+ * Deletions happen after and only if the respective document has been successfully backupped.
+ * Backups and deletions of parent models happen after and only if every child model has been backupped and deleted successfully (example: Message and MessageStatus).
+ * This is important because children are found from their parents and otherwise it would create dangling models in case of an error occur.
+ *
+ * @param param0.messageContentBlobService instance of blob service where message contents are stored
+ * @param param0.messageModel instance of MessageModel
+ * @param param0.messageStatusModel instance of MessageStatusModel
+ * @param param0.NotificationModel instance of NotificationModel
+ * @param param0.notificationStatusModel instance of NotificationStatusModel
+ * @param param0.profileModel instance of ProfileModel
+ * @param param0.userDataBackup information about the blob storage account to place backup into
+ * @param param0.fiscalCode identifier of the user
+ */
+export const backupAndDeleteAllUserData = ({
+  messageContentBlobService,
+  messageModel,
+  messageStatusModel,
+  notificationModel,
+  notificationStatusModel,
+  profileModel,
+  userDataBackup,
+  fiscalCode
+}: {
+  messageContentBlobService: BlobService;
+  messageModel: MessageModel;
+  messageStatusModel: MessageStatusModel;
+  notificationModel: NotificationModel;
+  notificationStatusModel: NotificationStatusModel;
+  profileModel: ProfileModel;
+  userDataBackup: IBlobServiceInfo;
+  fiscalCode: FiscalCode;
+}) => {
+  return backupAndDeleteAllMessagesData({
+    fiscalCode,
+    messageContentBlobService,
+    messageModel,
+    messageStatusModel,
+    notificationModel,
+    notificationStatusModel,
+    userDataBackup
+  }).chain(_ =>
+    backupAndDeleteProfile({ profileModel, userDataBackup, fiscalCode })
+  );
 };
 export interface IActivityHandlerInput {
   messageModel: MessageModel;
@@ -570,8 +788,11 @@ export interface IActivityHandlerInput {
  * Factory methods that builds an activity function
  */
 export function createDeleteUserDataActivityHandler({
+  messageContentBlobService,
   messageModel,
   messageStatusModel,
+  notificationModel,
+  notificationStatusModel,
   profileModel,
   userDataBackupBlobService,
   userDataBackupContainerName
@@ -580,6 +801,7 @@ export function createDeleteUserDataActivityHandler({
   input: unknown
 ) => Promise<ActivityResult> {
   return (context: Context, input: unknown) =>
+    // validtes the input
     fromEither(
       ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
         (reason: t.Errors) =>
@@ -589,16 +811,20 @@ export function createDeleteUserDataActivityHandler({
           })
       )
     )
-      .chain(({ fiscalCode, userDataDeleteRequestId }) =>
+      // then perform backup&delete on all user data
+      .chain(({ fiscalCode, backupFolder }) =>
         backupAndDeleteAllUserData({
           fiscalCode,
+          messageContentBlobService,
           messageModel,
           messageStatusModel,
+          notificationModel,
+          notificationStatusModel,
           profileModel,
           userDataBackup: {
             blobService: userDataBackupBlobService,
             containerName: userDataBackupContainerName,
-            folder: `${userDataDeleteRequestId}-${Date.now()}` as NonEmptyString
+            folder: backupFolder
           }
         })
       )
@@ -613,5 +839,7 @@ export function createDeleteUserDataActivityHandler({
           })
       )
       .run()
+      .then(debug("result"))
+      // unfold the value from the either
       .then(e => e.value);
 }

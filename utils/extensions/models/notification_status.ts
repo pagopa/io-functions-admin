@@ -27,6 +27,7 @@ export class NotificationStatusModel extends NotificationStatusModelBase {
    * @param modelId
    */
   public findAllVersionsByModelId(
+    notificationId: NonEmptyString,
     modelId: NonEmptyString
   ): DocumentDbUtils.IResultIterator<RetrievedNotificationStatus> {
     return DocumentDbUtils.findAllVersionsByModelId(
@@ -35,7 +36,24 @@ export class NotificationStatusModel extends NotificationStatusModelBase {
       NOTIFICATION_STATUS_MODEL_ID_FIELD,
       modelId,
       NOTIFICATION_STATUS_MODEL_PK_FIELD,
-      modelId
+      notificationId
+    );
+  }
+
+  /**
+   * Retrieves a list of every version of the requested model
+   * @param modelId
+   */
+  public findAllVersionsByNotificationId(
+    notificationId: NonEmptyString
+  ): DocumentDbUtils.IResultIterator<RetrievedNotificationStatus> {
+    return DocumentDbUtils.findAllVersionsByModelId(
+      this.dbClient,
+      this.collectionUri,
+      NOTIFICATION_STATUS_MODEL_PK_FIELD,
+      notificationId,
+      NOTIFICATION_STATUS_MODEL_PK_FIELD,
+      notificationId
     );
   }
 }

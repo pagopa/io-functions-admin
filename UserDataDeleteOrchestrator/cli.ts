@@ -8,7 +8,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import RedisSessionStorage from "./session-utils/redisSessionStorage";
 
 import DeleteUserDataActivity from "../DeleteUserDataActivity";
@@ -16,14 +16,11 @@ import SetUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusA
 import getUserDataProcessing from "./GetUserDataProcessing";
 
 import { sequenceT } from "fp-ts/lib/Apply";
-import { Either, toError } from "fp-ts/lib/Either";
+import { toError } from "fp-ts/lib/Either";
 import { taskEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import {
-  UserDataProcessing,
-  UserDataProcessingId
-} from "io-functions-commons/dist/src/models/user_data_processing";
+import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { NodeEnvironmentEnum } from "italia-ts-commons/lib/environment";
 import { getNodeEnvironmentFromProcessEnv } from "italia-ts-commons/lib/environment";
@@ -106,13 +103,13 @@ const blockUser = (fiscalCode: FiscalCode): TaskEither<Error, boolean> => {
 // delete all user data from our db
 const deleteUserData = (
   fiscalCode: FiscalCode,
-  userDataProcessingId: UserDataProcessingId
+  backupFolder: NonEmptyString
 ): TaskEither<Error, true> =>
   tryCatch(
     () =>
       DeleteUserDataActivity(context, {
-        fiscalCode,
-        userDataDeleteRequestId: userDataProcessingId
+        backupFolder,
+        fiscalCode
       }).then(result => {
         if (result.kind !== "SUCCESS") {
           throw new Error(
@@ -159,7 +156,7 @@ const unblockUser = (fiscalCode: FiscalCode): TaskEither<Error, true> =>
     toError
   );
 
-async function run(): Promise<Either<Error, boolean>> {
+async function run(): Promise<string> {
   const fiscalCode = FiscalCode.decode(process.argv[2]).getOrElseL(reason => {
     throw new Error(`Invalid input: ${readableReport(reason)}`);
   });
@@ -187,6 +184,10 @@ async function run(): Promise<Either<Error, boolean>> {
     );
   }
 
+  const backupFolder = `${
+    userDataProcessingResult.value.userDataProcessingId
+  }-${Date.now()}` as NonEmptyString;
+
   return blockUser(fiscalCode)
     .chain(_ =>
       setUserDataProcessingStatus(
@@ -194,12 +195,7 @@ async function run(): Promise<Either<Error, boolean>> {
         UserDataProcessingStatusEnum.WIP
       )
     )
-    .chain(_ =>
-      deleteUserData(
-        fiscalCode,
-        userDataProcessingResult.value.userDataProcessingId
-      )
-    )
+    .chain(_ => deleteUserData(fiscalCode, backupFolder))
     .chain(_ => unblockUser(fiscalCode))
     .chain(_ =>
       setUserDataProcessingStatus(
@@ -219,10 +215,18 @@ async function run(): Promise<Either<Error, boolean>> {
       // just pass
       e => taskEither.of(e)
     )
-    .run();
+    .run()
+    .then(errorOrResult => {
+      if (errorOrResult.isLeft()) {
+        throw errorOrResult;
+      }
+      return backupFolder;
+    });
 }
 
 run()
   .then(_ => REDIS_CLIENT.quit())
-  .then(result => console.log("OK", result))
+  .then(backupFolder =>
+    console.log("OK", `User data backupped into ${backupFolder} folder`)
+  )
   .catch(ex => console.error("KO", ex));

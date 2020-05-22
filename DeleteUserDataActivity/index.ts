@@ -12,12 +12,12 @@ import { MESSAGE_STATUS_COLLECTION_NAME } from "io-functions-commons/dist/src/mo
 import { NOTIFICATION_COLLECTION_NAME } from "io-functions-commons/dist/src/models/notification";
 import { NOTIFICATION_STATUS_COLLECTION_NAME } from "io-functions-commons/dist/src/models/notification_status";
 import { PROFILE_COLLECTION_NAME } from "io-functions-commons/dist/src/models/profile";
-import { MessageModel } from "../utils/models/message";
-import { MessageStatusModel } from "../utils/models/message_status";
-import { NotificationStatusModel } from "../utils/models/notification_status";
+import { MessageModel } from "../utils/extensions/models/message";
+import { MessageStatusModel } from "../utils/extensions/models/message_status";
+import { NotificationStatusModel } from "../utils/extensions/models/notification_status";
 
-import { NotificationModel } from "../utils/models/notification";
-import { ProfileModel } from "../utils/models/profile";
+import { NotificationModel } from "../utils/extensions/models/notification";
+import { ProfileModel } from "../utils/extensions/models/profile";
 
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 
@@ -65,7 +65,7 @@ const profileModel = new ProfileModel(
 );
 
 const userDataBackupBlobService = createBlobService(
-  getRequiredStringEnv("UserDataBackupArchiveStorageConnection")
+  getRequiredStringEnv("UserDataBackupStorageConnection")
 );
 
 const messageContentBlobService = createBlobService(
