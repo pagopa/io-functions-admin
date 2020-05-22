@@ -188,7 +188,7 @@ const logFailure = (context: Context) => (
       break;
     case "BLOB_FAILURE":
       context.log.error(
-        `${logPrefix}|Error saving zip bundle|ERROR=${failure.reason}`
+        `${logPrefix}|Error saving blob|ERROR=${failure.reason}`
       );
       break;
     case "USER_NOT_FOUND_FAILURE":
