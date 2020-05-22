@@ -59,7 +59,7 @@ Dispositivi Android:
 - Verrai reindirizzato alla finestra del browser, in cui una notifica a fondo pagina ti informa dello scaricamento in corso.
 - Al termine dello scaricamento, clicca la notifica per aprire il file.
 - Seleziona l’app con cui aprire il file zip
-- Clicca sul documento e inserisci la password per decomprimere il file.
+- Clicca sul documento e inserisci la password per decomprimere il file.  
 
 ## Informazioni sul trattamento dei tuoi dati
 
@@ -70,9 +70,9 @@ Alcuni dei dati da noi trattati sono raccolti dal tuo provider Spid al momento d
 
 I tuoi dati sono trattati anche per tramite di fornitori terzi, situati in paesi al di fuori dello SEE. Utilizziamo per i trasferimenti extra UE le garanzie previste dagli art. 44 e seguenti del GDPR. In particolare, utilizziamo fornitori certificati Privacy Shield e, in ogni caso, laddove necessario, abbiamo vincolato tali fornitori al rispetto delle condizioni contrattuali tipo approvate dalla Commissione. 
 
-Conserviamo i tuoi dati per un tempo limitato. In particolare, I dati relativi ai Messaggi inviati per conto degli Enti Erogatori sono cancellati dopo 3 anni dalla loro ricezione e i tuoi dati identificativi sono conservati per 10 anni dalla tua cancellazione. 
+Conserviamo i tuoi dati per un tempo limitato. In particolare, I dati relativi ai Messaggi inviati per conto degli Enti Erogatori sono cancellati dopo 3 anni dalla loro ricezione e i tuoi dati identificativi sono conservati per un periodo massimo di 10 anni dalla tua cancellazione.
 
-Hai diritto a richiedere la esercitare il tuo diritto di limitazione e opposizione del trattamento e a chiedere la rettifica del tuo indirizzo email. Potrai inoltre rivolgerti al Garante per la protezione dei dati personali.
+Puoi richiedere di esercitare il tuo diritto di limitazione e opposizione del trattamento e a chiedere la rettifica del tuo indirizzo email. Potrai inoltre rivolgerti al Garante per la protezione dei dati personali.
 Con riferimento ai dati dei Servizi offerti dagli Enti Erogatori, tutti i diritti dovranno essere esercitati presso di loro.
 
 Puoi trovare tutte le informazioni sul trattamento dei tuoi dati nella nostra [Informativa Privacy](ioit://PROFILE_PRIVACY) che è accessibile in ogni momento nella sezione Profilo/Privacy e Condizioni d’uso.
