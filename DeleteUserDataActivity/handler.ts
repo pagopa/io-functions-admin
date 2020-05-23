@@ -21,6 +21,7 @@ import { Context } from "@azure/functions";
 
 import { BlobService } from "azure-storage";
 import { QueryError } from "documentdb";
+import { toString } from "fp-ts/lib/function";
 import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
 import {
   RetrievedMessageWithContent,
@@ -112,14 +113,6 @@ type DataFailure = QueryFailure | BlobCreationFailure | DocumentDeleteFailure;
 
 const logPrefix = `DeleteUserDataActivity`;
 
-const debug = (l: string) => <T>(e: T) => {
-  if (process.env.DEBUG) {
-    // tslint:disable-next-line: no-console
-    console.log(`${logPrefix}:${l}`, e);
-  }
-  return e;
-};
-
 /**
  * Converts a Promise<Either> into a TaskEither
  * This is needed because our models return unconvenient type. Both left and rejection cases are handled as a TaskEither left
@@ -132,17 +125,13 @@ const fromQueryEither = <R>(
   lazyPromise: () => Promise<Either<QueryError | Error, R>>
 ): TaskEither<Error, R> =>
   tryCatch(lazyPromise, toError).chain(errorOrResult =>
-    fromEither(errorOrResult).mapLeft((err: QueryError | Error) =>
-      err instanceof Error
-        ? err
-        : new Error(`QueryError: ${JSON.stringify(err)}`)
-    )
+    fromEither(errorOrResult).mapLeft(toError)
   );
 
 /**
  * To be used for exhaustive checks
  */
-function assertNever(_: never): void {
+function assertNever(_: never): never {
   throw new Error("should not have executed this");
 }
 
@@ -153,8 +142,7 @@ function assertNever(_: never): void {
 const toQueryFailure = (err: Error | QueryError): QueryFailure =>
   QueryFailure.encode({
     kind: "QUERY_FAILURE",
-    reason:
-      err instanceof Error ? err.message : `QueryError: ${JSON.stringify(err)}`
+    reason: err instanceof Error ? err.message : `QueryError: ${toString(err)}`
   });
 
 /**
@@ -224,7 +212,7 @@ export const saveDataToBlob = <T>(
   blobName: string,
   data: T
 ): TaskEither<BlobCreationFailure, T> => {
-  return taskify<Error, unknown>(cb =>
+  return taskify<Error, BlobService.BlobResult>(cb =>
     blobService.createBlockBlobFromText(
       containerName,
       `${folder}${folder ? "/" : ""}${blobName}`,
@@ -264,10 +252,6 @@ const executeRecursiveBackupAndDelete = <T>(
       .foldTaskEither<DataFailure, Option<readonly T[]>>(
         e => fromEither(left(toQueryFailure(e))),
         e => fromEither(e).mapLeft(toQueryFailure)
-      )
-      .bimap(
-        debug("executeRecursiveBackupAndDelete executeNext result left"),
-        debug("executeRecursiveBackupAndDelete executeNext result right")
       )
       .foldTaskEither<DataFailure, readonly T[]>(
         e => fromEither(left(e)),
@@ -335,9 +319,6 @@ const backupAndDeleteProfile = ({
     userDataBackup,
     item => `profile--${item.version}.json`,
     profileModel.findAllVersionsByModelId(fiscalCode)
-  ).bimap(
-    debug("backupAndDeleteProfile left"),
-    debug("backupAndDeleteProfile right")
   );
 };
 
@@ -376,12 +357,7 @@ const backupAndDeleteNotification = ({
         notification.id
       )
     ).mapLeft(toDocumentDeleteFailure)
-  )
-    .map(_ => notification)
-    .bimap(
-      debug("backupAndDeleteNotification left"),
-      debug("backupAndDeleteNotification right")
-    );
+  ).map(_ => notification);
 };
 
 /**
@@ -400,7 +376,6 @@ const backupAndDeleteNotificationStatus = ({
   userDataBackup: IBlobServiceInfo;
   notification: RetrievedNotification;
 }): TaskEither<DataFailure, readonly RetrievedNotificationStatus[]> => {
-  debug("backupAndDeleteNotificationStatus input")(notification);
   return executeRecursiveBackupAndDelete<RetrievedNotificationStatus>(
     item =>
       notificationStatusModel.deleteNotificationStatusVersion(
@@ -410,9 +385,6 @@ const backupAndDeleteNotificationStatus = ({
     userDataBackup,
     item => `notification-status--${item.version}.json`,
     notificationStatusModel.findAllVersionsByNotificationId(notification.id)
-  ).bimap(
-    debug("backupAndDeleteNotificationStatus left"),
-    debug("backupAndDeleteNotificationStatus right")
   );
 };
 
@@ -448,12 +420,7 @@ const backupAndDeleteMessage = ({
     fromQueryEither(() =>
       messageModel.deleteMessage(message.fiscalCode, message.id)
     ).mapLeft(toDocumentDeleteFailure)
-  )
-    .map(_ => message)
-    .bimap(
-      debug("backupAndDeleteMessage left"),
-      debug("backupAndDeleteMessage right")
-    );
+  ).map(_ => message);
 };
 
 const backupAndDeleteMessageContent = ({
@@ -468,50 +435,39 @@ const backupAndDeleteMessageContent = ({
   message: RetrievedMessageWithoutContent;
 }): TaskEither<DataFailure, Option<MessageContent>> => {
   return fromQueryEither(() =>
-    messageModel
-      .getContentFromBlob(messageContentBlobService, message.id)
-      .then(debug("backupAndDeleteMessageContent yes"))
-      .catch(e => {
-        debug("backupAndDeleteMessageContent 0")(e);
-        throw e;
-      })
-  )
-    .foldTaskEither<DataFailure, Option<MessageContent>>(
-      _ => {
-        // unfortunately, a document not found is threated like a query error
-        return taskEither.of(none);
-      },
-      maybeContent =>
-        maybeContent.fold(
-          // no document found, no document to delete
-          taskEither.of(none),
-          content =>
-            sequenceT(taskEitherSeq)<
-              DataFailure,
-              // tslint:disable-next-line: readonly-array
-              [
-                TaskEither<DataFailure, MessageContent>,
-                TaskEither<DataFailure, true>
-              ]
-            >(
-              saveDataToBlob(
-                userDataBackup,
-                `messagecontent--${message.id}.json`,
-                content
-              ),
-              fromQueryEither(() =>
-                messageModel.deleteContentFromBlob(
-                  messageContentBlobService,
-                  message.id
-                )
-              ).mapLeft(toDocumentDeleteFailure)
-            ).map(_ => some(content))
-        )
-    )
-    .bimap(
-      debug("backupAndDeleteMessageContent left"),
-      debug("backupAndDeleteMessageContent right")
-    );
+    messageModel.getContentFromBlob(messageContentBlobService, message.id)
+  ).foldTaskEither<DataFailure, Option<MessageContent>>(
+    _ => {
+      // unfortunately, a document not found is threated like a query error
+      return taskEither.of(none);
+    },
+    maybeContent =>
+      maybeContent.fold(
+        // no document found, no document to delete
+        taskEither.of(none),
+        content =>
+          sequenceT(taskEitherSeq)<
+            DataFailure,
+            // tslint:disable-next-line: readonly-array
+            [
+              TaskEither<DataFailure, MessageContent>,
+              TaskEither<DataFailure, true>
+            ]
+          >(
+            saveDataToBlob(
+              userDataBackup,
+              `messagecontent--${message.id}.json`,
+              content
+            ),
+            fromQueryEither(() =>
+              messageModel.deleteContentFromBlob(
+                messageContentBlobService,
+                message.id
+              )
+            ).mapLeft(toDocumentDeleteFailure)
+          ).map(_ => some(content))
+      )
+  );
 };
 
 /**
@@ -536,9 +492,6 @@ const backupAndDeleteMessageStatus = ({
     userDataBackup,
     item => `message-status--${item.version}.json`,
     messageStatusModel.findAllVersionsByModelId(message.id)
-  ).bimap(
-    debug("backupAndDeleteMessageStatus left"),
-    debug("backupAndDeleteMessageStatus right")
   );
 };
 
@@ -565,14 +518,6 @@ const backupAndDeleteAllNotificationsData = ({
   fromQueryEither<ReadonlyArray<RetrievedNotification>>(() =>
     iteratorToArray(notificationModel.findNotificationsForMessage(message.id))
   )
-    .bimap(
-      debug(
-        `findNotificationsForMessage query result message=${message.id} left`
-      ),
-      debug(
-        `findNotificationsForMessage query result message=${message.id} right`
-      )
-    )
     .mapLeft(toQueryFailure)
     .foldTaskEither(
       e => fromEither(left(e)),
@@ -593,10 +538,6 @@ const backupAndDeleteAllNotificationsData = ({
             )
           )
         )
-    )
-    .bimap(
-      debug("backupAndDeleteAllNotificationsData left"),
-      debug("backupAndDeleteAllNotificationsData right")
     );
 
 /**
@@ -666,10 +607,6 @@ const backupAndDeleteAllMessagesData = ({
           })
         );
       }
-    )
-    .bimap(
-      debug("backupAndDeleteAllMessagesData left"),
-      debug("backupAndDeleteAllMessagesData right")
     );
 
 /**
@@ -785,7 +722,6 @@ export function createDeleteUserDataActivityHandler({
           })
       )
       .run()
-      .then(debug("result"))
       // unfold the value from the either
       .then(e => e.value);
 }

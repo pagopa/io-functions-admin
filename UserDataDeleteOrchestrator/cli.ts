@@ -11,6 +11,8 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import RedisSessionStorage from "./session-utils/redisSessionStorage";
 
+import { toString } from "fp-ts/lib/function";
+
 import DeleteUserDataActivity from "../DeleteUserDataActivity";
 import SetUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
 import getUserDataProcessing from "./GetUserDataProcessing";
@@ -203,18 +205,14 @@ async function run(): Promise<string> {
         UserDataProcessingStatusEnum.CLOSED
       )
     )
-    .foldTaskEither(
-      _ => {
-        console.log("Something went wrong. Mark the requeste as FAILED");
-        // mark as failed
-        return setUserDataProcessingStatus(
-          userDataProcessingResult.value,
-          UserDataProcessingStatusEnum.FAILED
-        );
-      },
-      // just pass
-      e => taskEither.of(e)
-    )
+    .mapLeft(_ => {
+      console.log(`Err: ${toString(_)}. Mark the requeste as FAILED`);
+      // mark as failed
+      return setUserDataProcessingStatus(
+        userDataProcessingResult.value,
+        UserDataProcessingStatusEnum.FAILED
+      );
+    })
     .run()
     .then(errorOrResult => {
       if (errorOrResult.isLeft()) {
