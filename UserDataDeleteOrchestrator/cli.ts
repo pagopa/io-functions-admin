@@ -174,8 +174,7 @@ async function run(): Promise<string> {
     userDataProcessingResult.value.status !==
       UserDataProcessingStatusEnum.PENDING &&
     userDataProcessingResult.value.status !==
-      UserDataProcessingStatusEnum.FAILED &&
-    !process.env.FORCE_DELETE
+      UserDataProcessingStatusEnum.FAILED
   ) {
     throw new Error("User data processing status !== PENDING & != FAILED");
   } else {

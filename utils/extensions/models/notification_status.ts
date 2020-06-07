@@ -50,7 +50,7 @@ export class NotificationStatusModel extends NotificationStatusModelBase {
     return DocumentDbUtils.findAllVersionsByModelId(
       this.dbClient,
       this.collectionUri,
-      NOTIFICATION_STATUS_MODEL_ID_FIELD,
+      NOTIFICATION_STATUS_MODEL_PK_FIELD,
       notificationId,
       NOTIFICATION_STATUS_MODEL_PK_FIELD,
       notificationId
