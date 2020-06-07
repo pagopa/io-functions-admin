@@ -32,6 +32,7 @@ import {
   createClusterRedisClient,
   createSimpleRedisClient
 } from "./session-utils/redis";
+
 const trace = (l: string) => (e: any) => {
   console.log(l, e);
   return e;
@@ -46,41 +47,38 @@ const context = ({
   // tslint:disable-next-line: no-any
 } as any) as Context;
 
+const redisUrl = getRequiredStringEnv("REDIS_URL");
+const redisPort = getRequiredStringEnv("REDIS_PORT");
+const redisPassword = getRequiredStringEnv("REDIS_PASSWORD");
+
 const REDIS_CLIENT =
   getNodeEnvironmentFromProcessEnv(process.env) ===
   NodeEnvironmentEnum.DEVELOPMENT
-    ? createSimpleRedisClient(process.env.REDIS_URL)
-    : createClusterRedisClient(
-        getRequiredStringEnv("REDIS_URL"),
-        process.env.REDIS_PASSWORD,
-        process.env.REDIS_PORT
-      );
+    ? createSimpleRedisClient(redisUrl)
+    : createClusterRedisClient(redisUrl, redisPassword, redisPort);
+
 // Create the Session Storage service
 const SESSION_STORAGE = new RedisSessionStorage(REDIS_CLIENT);
 
-// before deleting data we block the user and clrear all its session data
+// before deleting data we block the user and clear all its session data
 const blockUser = (fiscalCode: FiscalCode): TaskEither<Error, boolean> => {
   const delByFiscalCode = tryCatch(
     () =>
-      SESSION_STORAGE.delByFiscalCode(fiscalCode)
-        .then(trace("delByFiscalCode"))
-        .then(e =>
-          e.getOrElseL((err: any) => {
-            throw err;
-          })
-        ),
+      SESSION_STORAGE.delByFiscalCode(fiscalCode).then(e =>
+        e.getOrElseL((err: any) => {
+          throw err;
+        })
+      ),
     toError
   );
 
   const delUserMetadataByFiscalCode = tryCatch(
     () =>
-      SESSION_STORAGE.delUserMetadataByFiscalCode(fiscalCode)
-        .then(trace("delUserMetadataByFiscalCode"))
-        .then(e =>
-          e.getOrElseL((err: any) => {
-            throw err;
-          })
-        ),
+      SESSION_STORAGE.delUserMetadataByFiscalCode(fiscalCode).then(e =>
+        e.getOrElseL((err: any) => {
+          throw err;
+        })
+      ),
     toError
   );
 
@@ -176,7 +174,8 @@ async function run(): Promise<string> {
     userDataProcessingResult.value.status !==
       UserDataProcessingStatusEnum.PENDING &&
     userDataProcessingResult.value.status !==
-      UserDataProcessingStatusEnum.FAILED
+      UserDataProcessingStatusEnum.FAILED &&
+    !process.env.FORCE_DELETE
   ) {
     throw new Error("User data processing status !== PENDING & != FAILED");
   } else {
@@ -223,8 +222,8 @@ async function run(): Promise<string> {
 }
 
 run()
-  .then(_ => REDIS_CLIENT.quit())
   .then(backupFolder =>
     console.log("OK", `User data backupped into ${backupFolder} folder`)
   )
+  .then(_ => REDIS_CLIENT.quit())
   .catch(ex => console.error("KO", ex));

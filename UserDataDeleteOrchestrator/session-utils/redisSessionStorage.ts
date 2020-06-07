@@ -52,24 +52,27 @@ export default class RedisSessionStorage extends RedisStorageUtils {
   public async delByFiscalCode(
     fiscalCode: FiscalCode
   ): Promise<Either<Error, boolean>> {
-    const sessionsOrError = await this.readSessionInfoKeys(fiscalCode);
+    const errorOrSessions = await this.readSessionInfoKeys(fiscalCode);
 
     const delSingleSession = (
       token: SessionToken
-    ): Promise<Either<Error, boolean>> =>
-      this.loadSessionBySessionToken(token)
+    ): Promise<Either<Error, boolean>> => {
+      return this.loadSessionBySessionToken(token)
         .then(e => {
           const user: User = e.getOrElseL(err => {
             throw err;
           });
+          log.info(`Deleting user session ${token}`);
           return this.del(user.session_token, user.wallet_token);
         })
-        .catch(_ => {
-          // if I didn't find a user by it's token, I assume there's nothing about that user, so its data is deleted already
+        .catch(err => {
+          // if we didn't find a user by session token, we assume
+          // the session is empty because already deleted or expired
           return right<Error, boolean>(true);
         });
+    };
 
-    const delEverySession = sessionTokens =>
+    const delEverySession = (sessionTokens: readonly string[]) =>
       array
         .sequence(taskEither)<Error, boolean>(
           sessionTokens.map(sessionInfoKey =>
@@ -88,15 +91,20 @@ export default class RedisSessionStorage extends RedisStorageUtils {
           )
         );
 
-    return fromEither(sessionsOrError)
+    return fromEither(errorOrSessions)
       .foldTaskEither<Error, boolean>(
-        _ => fromEither(right(true)),
-        sessionInfoKeys =>
-          delEverySession(
+        err => {
+          log.error(`Error getting session list: ${err}`);
+          return fromEither(right(true));
+        },
+        sessionInfoKeys => {
+          log.info(`Deleting ${sessionInfoKeys.length} user's sessions`);
+          return delEverySession(
             sessionInfoKeys.map(sessionInfoKey =>
               sessionInfoKey.replace(sessionInfoKeyPrefix, "")
             )
-          )
+          );
+        }
       )
       .run();
   }
@@ -230,7 +238,12 @@ export default class RedisSessionStorage extends RedisStorageUtils {
       log.info(`Reading session list ${userSessionsSetKeyPrefix}${fiscalCode}`);
       this.redisClient.smembers(
         `${userSessionsSetKeyPrefix}${fiscalCode}`,
-        (err, response) => resolve(this.arrayStringReply(err, response))
+        (err, response) => {
+          if (err) {
+            return resolve(left(err));
+          }
+          resolve(this.arrayStringReply(err, response));
+        }
       );
     });
   }

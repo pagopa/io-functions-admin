@@ -317,7 +317,7 @@ const backupAndDeleteProfile = ({
   return executeRecursiveBackupAndDelete<RetrievedProfile>(
     item => profileModel.deleteProfileVersion(item.fiscalCode, item.id),
     userDataBackup,
-    item => `profile--${item.version}.json`,
+    item => `profile/${item.id}.json`,
     profileModel.findAllVersionsByModelId(fiscalCode)
   );
 };
@@ -348,7 +348,7 @@ const backupAndDeleteNotification = ({
   >(
     saveDataToBlob<RetrievedNotification>(
       userDataBackup,
-      `notification--${notification.id}.json`,
+      `notification/${notification.id}.json`,
       notification
     ),
     fromQueryEither(() =>
@@ -383,7 +383,7 @@ const backupAndDeleteNotificationStatus = ({
         item.id
       ),
     userDataBackup,
-    item => `notification-status--${item.version}.json`,
+    item => `notification-status/${item.id}.json`,
     notificationStatusModel.findAllVersionsByNotificationId(notification.id)
   );
 };
@@ -414,7 +414,7 @@ const backupAndDeleteMessage = ({
   >(
     saveDataToBlob<RetrievedMessageWithoutContent>(
       userDataBackup,
-      `message--${message.id}.json`,
+      `message/${message.id}.json`,
       message
     ),
     fromQueryEither(() =>
@@ -456,7 +456,7 @@ const backupAndDeleteMessageContent = ({
           >(
             saveDataToBlob(
               userDataBackup,
-              `messagecontent--${message.id}.json`,
+              `message-content/${message.id}.json`,
               content
             ),
             fromQueryEither(() =>
@@ -490,7 +490,7 @@ const backupAndDeleteMessageStatus = ({
     item =>
       messageStatusModel.deleteMessageStatusVersion(item.messageId, item.id),
     userDataBackup,
-    item => `message-status--${item.version}.json`,
+    item => `message-status/${item.id}.json`,
     messageStatusModel.findAllVersionsByModelId(message.id)
   );
 };
