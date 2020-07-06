@@ -25,14 +25,14 @@ export const ActivityInput = t.interface({
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity result
-const ActivityResultSuccess = t.interface({
+export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS"),
   value: UserDataProcessing
 });
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
 // Activity failed because of invalid input
-const ActivityResultInvalidInputFailure = t.interface({
+export const ActivityResultInvalidInputFailure = t.interface({
   kind: t.literal("INVALID_INPUT_FAILURE"),
   reason: t.string
 });
@@ -41,7 +41,7 @@ export type ActivityResultInvalidInputFailure = t.TypeOf<
 >;
 
 // Activity failed because of an error on a query
-const ActivityResultQueryFailure = t.intersection([
+export const ActivityResultQueryFailure = t.intersection([
   t.interface({
     kind: t.literal("QUERY_FAILURE"),
     reason: t.string

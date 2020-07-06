@@ -114,11 +114,11 @@ async function sendMessage(
 }
 
 // Activity result
-const ActivityResultSuccess = t.interface({
+export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS")
 });
 
-type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
+export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
 const ActivityResultFailure = t.interface({
   kind: t.literal("FAILURE"),

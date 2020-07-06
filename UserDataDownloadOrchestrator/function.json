@@ -4,6 +4,16 @@
         "name": "context",
         "type": "orchestrationTrigger",
         "direction": "in"
+      },
+      {
+        "type": "cosmosDBTrigger",
+        "name": "documents",
+        "direction": "in",
+        "leaseCollectionName": "leases",
+        "connectionStringSetting": "COSMOSDB_CONNECTION_STRING",
+        "databaseName": "%COSMOSDB_BONUS_DATABASE_NAME%",
+        "collectionName": "user-data-processing",
+        "createLeaseCollectionIfNotExists": true
       }
     ],
     "scriptFile": "../dist/UserDataDownloadOrchestrator/index.js"

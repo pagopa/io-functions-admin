@@ -60,6 +60,7 @@ import {
 } from "io-functions-commons/dist/src/models/notification_status";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
+import { ArchiveInfo } from "../ExtractUserDataActivity/handler";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
 
@@ -279,4 +280,12 @@ export const aRetrievedMessageStatus = RetrievedMessageStatus.decode(
 ).getOrElseL(errs => {
   const error = readableReport(errs);
   throw new Error("Fix MessageStatus mock: " + error);
+});
+
+export const aArchiveInfo = ArchiveInfo.decode({
+  blobName: "blobname",
+  password: "A".repeat(18)
+}).getOrElseL(errs => {
+  const error = readableReport(errs);
+  throw new Error("Fix ArchiveInfo mock: " + error);
 });
