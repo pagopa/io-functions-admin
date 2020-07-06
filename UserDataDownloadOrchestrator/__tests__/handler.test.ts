@@ -81,9 +81,9 @@ describe("handler", () => {
   });
 
   it("should fail on invalid input", () => {
-    const documents: ReadonlyArray<any> = ["invalid"];
+    const document = "invalid";
 
-    const result = consumeOrchestrator(handler(context, documents));
+    const result = consumeOrchestrator(handler(context, document));
 
     expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
@@ -96,30 +96,26 @@ describe("handler", () => {
     ${"WIP"}    | ${UserDataProcessingStatusEnum.WIP}
     ${"CLOSED"} | ${UserDataProcessingStatusEnum.CLOSED}
   `("should skip if the status is $name", ({ status }) => {
-    const documents: ReadonlyArray<any> = [
-      {
-        ...aUserDataProcessing,
-        status
-      }
-    ];
+    const document = {
+      ...aUserDataProcessing,
+      status
+    };
 
-    const result = consumeOrchestrator(handler(context, documents));
+    const result = consumeOrchestrator(handler(context, document));
 
-    expect(SkippedDocument.decode(result).isRight()).toBe(true);
+    expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
     expect(extractUserDataActivity).not.toHaveBeenCalled();
     expect(sendUserDataDownloadMessageActivity).not.toHaveBeenCalled();
   });
 
   it("should success if everything goes well", () => {
-    const documents: ReadonlyArray<any> = [
-      {
-        ...aUserDataProcessing,
-        status: UserDataProcessingStatusEnum.PENDING
-      }
-    ];
+    const document = {
+      ...aUserDataProcessing,
+      status: UserDataProcessingStatusEnum.PENDING
+    };
 
-    const result = consumeOrchestrator(handler(context, documents));
+    const result = consumeOrchestrator(handler(context, document));
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
@@ -148,14 +144,12 @@ describe("handler", () => {
       () => "any non-success value"
     );
 
-    const documents: ReadonlyArray<any> = [
-      {
-        ...aUserDataProcessing,
-        status: UserDataProcessingStatusEnum.PENDING
-      }
-    ];
+    const document = {
+      ...aUserDataProcessing,
+      status: UserDataProcessingStatusEnum.PENDING
+    };
 
-    const result = consumeOrchestrator(handler(context, documents));
+    const result = consumeOrchestrator(handler(context, document));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
     expect(result.activityName).toBe("extractUserDataActivity");
@@ -177,14 +171,12 @@ describe("handler", () => {
       () => "any non-success value"
     );
 
-    const documents: ReadonlyArray<any> = [
-      {
-        ...aUserDataProcessing,
-        status: UserDataProcessingStatusEnum.PENDING
-      }
-    ];
+    const document = {
+      ...aUserDataProcessing,
+      status: UserDataProcessingStatusEnum.PENDING
+    };
 
-    const result = consumeOrchestrator(handler(context, documents));
+    const result = consumeOrchestrator(handler(context, document));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
     expect(result.activityName).toBe("sendUserDataDownloadMessageActivity");
@@ -206,14 +198,12 @@ describe("handler", () => {
       () => "any non-success value"
     );
 
-    const documents: ReadonlyArray<any> = [
-      {
-        ...aUserDataProcessing,
-        status: UserDataProcessingStatusEnum.PENDING
-      }
-    ];
+    const document = {
+      ...aUserDataProcessing,
+      status: UserDataProcessingStatusEnum.PENDING
+    };
 
-    const result = consumeOrchestrator(handler(context, documents));
+    const result = consumeOrchestrator(handler(context, document));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
     expect(result.activityName).toBe("setUserDataProcessingStatusActivity");
@@ -235,14 +225,12 @@ describe("handler", () => {
       () => "any non-success value"
     );
 
-    const documents: ReadonlyArray<any> = [
-      {
-        ...aUserDataProcessing,
-        status: UserDataProcessingStatusEnum.PENDING
-      }
-    ];
+    const document = {
+      ...aUserDataProcessing,
+      status: UserDataProcessingStatusEnum.PENDING
+    };
 
-    const result = consumeOrchestrator(handler(context, documents));
+    const result = consumeOrchestrator(handler(context, document));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
     expect(result.activityName).toBe("setUserDataProcessingStatusActivity");
@@ -274,14 +262,12 @@ describe("handler", () => {
       () => "any non-success value"
     );
 
-    const documents: ReadonlyArray<any> = [
-      {
-        ...aUserDataProcessing,
-        status: UserDataProcessingStatusEnum.PENDING
-      }
-    ];
+    const document = {
+      ...aUserDataProcessing,
+      status: UserDataProcessingStatusEnum.PENDING
+    };
 
-    const result = consumeOrchestrator(handler(context, documents));
+    const result = consumeOrchestrator(handler(context, document));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
     expect(result.activityName).toBe("setUserDataProcessingStatusActivity");

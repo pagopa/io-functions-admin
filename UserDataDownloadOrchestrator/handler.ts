@@ -1,16 +1,28 @@
 import { IFunctionContext } from "durable-functions/lib/src/classes";
-import { toString, identity } from "fp-ts/lib/function";
+import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
+import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from "../ExtractUserDataActivity/handler";
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../SendUserDataDownloadMessageActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 
-import * as t from "io-ts";
-import { left, right, isLeft, Either } from "fp-ts/lib/Either";
-
 const logPrefix = "";
+
+// models the subset of UserDataProcessing documents that this orchestrator accepts
+export type ProcessableUserDataProcessing = t.TypeOf<
+  typeof ProcessableUserDataProcessing
+>;
+export const ProcessableUserDataProcessing = t.intersection([
+  UserDataProcessing,
+  t.interface({
+    status: t.union([
+      t.literal(UserDataProcessingStatusEnum.PENDING),
+      t.literal(UserDataProcessingStatusEnum.FAILED)
+    ])
+  })
+]);
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 export const InvalidInputFailure = t.interface({
@@ -34,8 +46,8 @@ export const ActivityFailure = t.intersection([
   t.partial({ extra: t.object })
 ]);
 
-type OrchestratorFailure = t.TypeOf<typeof OrchestratorFailure>;
-const OrchestratorFailure = t.taggedUnion("kind", [
+export type OrchestratorFailure = t.TypeOf<typeof OrchestratorFailure>;
+export const OrchestratorFailure = t.taggedUnion("kind", [
   InvalidInputFailure,
   UnhanldedFailure,
   ActivityFailure
@@ -51,8 +63,8 @@ export const SkippedDocument = t.interface({
   kind: t.literal("SKIPPED")
 });
 
-type OrchestratorResult = t.TypeOf<typeof OrchestratorResult>;
-const OrchestratorResult = t.union([
+export type OrchestratorResult = t.TypeOf<typeof OrchestratorResult>;
+export const OrchestratorResult = t.union([
   OrchestratorFailure,
   SkippedDocument,
   OrchestratorSuccess
@@ -60,41 +72,28 @@ const OrchestratorResult = t.union([
 
 export const handler = function*(
   context: IFunctionContext,
-  documents: readonly unknown[]
+  document: unknown
 ): IterableIterator<unknown> {
-  const document = documents[0];
-
-  const earlyReturnOrCurrentUserDataProcessing = UserDataProcessing.decode(
+  const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataProcessing.decode(
     document
-  )
-    .mapLeft<OrchestratorResult>(err => {
-      context.log.warn(
-        `${logPrefix}|WARN|Cannot decode UserDataProcessing document: ${readableReport(
-          err
-        )}`
-      );
-      return InvalidInputFailure.encode({
-        kind: "INVALID_INPUT",
-        reason: readableReport(err)
-      });
-    })
-    .fold<Either<OrchestratorResult, UserDataProcessing>>(left, decoded =>
-      [
-        // we are already working on it
-        UserDataProcessingStatusEnum.WIP,
-        // it's done already
-        UserDataProcessingStatusEnum.CLOSED
-      ].includes(decoded.status)
-        ? left(SkippedDocument.encode({ kind: "SKIPPED" }))
-        : right(decoded)
+  ).mapLeft<InvalidInputFailure>(err => {
+    context.log.error(
+      `${logPrefix}|WARN|Cannot decode ProcessableUserDataProcessing document: ${readableReport(
+        err
+      )}`
     );
+    return InvalidInputFailure.encode({
+      kind: "INVALID_INPUT",
+      reason: readableReport(err)
+    });
+  });
 
-  if (isLeft(earlyReturnOrCurrentUserDataProcessing)) {
-    return earlyReturnOrCurrentUserDataProcessing.value;
+  if (isLeft(invalidInputOrCurrentUserDataProcessing)) {
+    return invalidInputOrCurrentUserDataProcessing.value;
   }
 
   const currentUserDataProcessing =
-    earlyReturnOrCurrentUserDataProcessing.value;
+    invalidInputOrCurrentUserDataProcessing.value;
 
   try {
     SetUserDataProcessingStatusActivityResultSuccess.decode(
