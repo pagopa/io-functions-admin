@@ -59,8 +59,8 @@ import {
   NotificationStatusId
 } from "io-functions-commons/dist/src/models/notification_status";
 import { readableReport } from "italia-ts-commons/lib/reporters";
-import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { ArchiveInfo } from "../ExtractUserDataActivity/handler";
+import { EmailAddress } from "../generated/definitions/EmailAddress";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
 

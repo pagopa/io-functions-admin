@@ -11,7 +11,7 @@
         "direction": "in",
         "leaseCollectionName": "leases",
         "connectionStringSetting": "COSMOSDB_CONNECTION_STRING",
-        "databaseName": "%COSMOSDB_BONUS_DATABASE_NAME%",
+        "databaseName": "%COSMOSDB_NAME%",
         "collectionName": "user-data-processing",
         "createLeaseCollectionIfNotExists": true
       }

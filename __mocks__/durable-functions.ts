@@ -64,14 +64,25 @@ export const mockOrchestratorCallActivityWithRetry = jest
       retryOptions
     })
   );
+export const mockCallSubOrchestrator = jest
+  .fn()
+  .mockImplementation((name: string, input?: unknown) => ({
+    input,
+    name
+  }));
 export const mockOrchestratorSetCustomStatus = jest.fn();
 export const mockOrchestratorCreateTimer = jest.fn();
 
 export const mockOrchestratorContext = {
   ...context,
   df: {
+    Task: {
+      all: jest.fn(),
+      any: jest.fn()
+    },
     callActivity: mockOrchestratorCallActivity,
     callActivityWithRetry: mockOrchestratorCallActivityWithRetry,
+    callSubOrchestrator: mockCallSubOrchestrator,
     createTimer: mockOrchestratorCreateTimer,
     getInput: mockOrchestratorGetInput,
     setCustomStatus: mockOrchestratorSetCustomStatus
