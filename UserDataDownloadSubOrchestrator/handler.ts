@@ -1,4 +1,4 @@
-import { IFunctionContext, Task } from "durable-functions/lib/src/classes";
+import { IFunctionContext } from "durable-functions/lib/src/classes";
 import { isLeft } from "fp-ts/lib/Either";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import * as t from "io-ts";
