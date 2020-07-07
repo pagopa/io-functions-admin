@@ -1,6 +1,7 @@
 // tslint:disable: no-any
 
 import { IFunctionContext } from "durable-functions/lib/src/classes";
+import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   mockCallSubOrchestrator,
@@ -8,15 +9,22 @@ import {
 } from "../../__mocks__/durable-functions";
 import { aUserDataProcessing } from "../../__mocks__/mocks";
 import { handler } from "../handler";
+import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 
 const aProcessableDocument = {
   ...aUserDataProcessing,
+  choice: UserDataProcessingChoiceEnum.DOWNLOAD,
   status: UserDataProcessingStatusEnum.PENDING
 };
 
-const aNonProcessableDocument = {
+const aNonProcessableDocumentWrongStatus = {
   ...aUserDataProcessing,
   status: UserDataProcessingStatusEnum.WIP
+};
+
+const aNonProcessableDocumentWrongChoice = {
+  ...aUserDataProcessing,
+  choice: UserDataProcessingChoiceEnum.DELETE
 };
 
 /**
@@ -57,15 +65,21 @@ describe("handler", () => {
   });
 
   it("should process every processable document", () => {
+    const processableDocs: ReadonlyArray<UserDataProcessing> = [
+      aProcessableDocument,
+      aProcessableDocument,
+      aProcessableDocument
+    ];
+
     const input: ReadonlyArray<any> = [
-      aProcessableDocument,
-      aProcessableDocument,
-      aProcessableDocument,
-      aNonProcessableDocument,
-      aNonProcessableDocument
+      ...processableDocs,
+      aNonProcessableDocumentWrongStatus,
+      aNonProcessableDocumentWrongChoice
     ];
 
     consumeOrchestrator(handler(context, input));
-    expect(mockCallSubOrchestrator).toHaveBeenCalledTimes(3);
+    expect(mockCallSubOrchestrator).toHaveBeenCalledTimes(
+      processableDocs.length
+    );
   });
 });

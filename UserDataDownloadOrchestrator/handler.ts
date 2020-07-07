@@ -1,5 +1,6 @@
 import { IFunctionContext } from "durable-functions/lib/src/classes";
 import { isLeft } from "fp-ts/lib/Either";
+import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
@@ -13,7 +14,10 @@ export type ProcessableUserDataProcessing = t.TypeOf<
 >;
 export const ProcessableUserDataProcessing = t.intersection([
   UserDataProcessing,
+  // ony the subset of UserDataProcessing documents
+  // with the following characteristics must be processed
   t.interface({
+    choice: t.literal(UserDataProcessingChoiceEnum.DOWNLOAD),
     status: t.union([
       t.literal(UserDataProcessingStatusEnum.PENDING),
       t.literal(UserDataProcessingStatusEnum.FAILED)
@@ -29,15 +33,10 @@ export const handler = function*(
   input: unknown
 ): IterableIterator<unknown> {
   const subTasks = CosmosDbDocumentCollection.decode(input)
-    .fold(
-      err => {
-        throw Error(
-          `${logPrefix}: cannot decode input [${readableReport(err)}]`
-        );
-      },
-      documents =>
-        documents.map(doc => ProcessableUserDataProcessing.decode(doc))
-    )
+    .getOrElseL(err => {
+      throw Error(`${logPrefix}: cannot decode input [${readableReport(err)}]`);
+    })
+    .map(doc => ProcessableUserDataProcessing.decode(doc))
     .reduce(
       (documents, maybeProcessable) => {
         if (isLeft(maybeProcessable)) {
