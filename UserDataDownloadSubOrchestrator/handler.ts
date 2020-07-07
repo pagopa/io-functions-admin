@@ -1,4 +1,4 @@
-import { IFunctionContext } from "durable-functions/lib/src/classes";
+import { IFunctionContext, Task } from "durable-functions/lib/src/classes";
 import { isLeft } from "fp-ts/lib/Either";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import * as t from "io-ts";
@@ -94,6 +94,9 @@ export const handler = function*(
 
   const currentUserDataProcessing =
     invalidInputOrCurrentUserDataProcessing.value;
+
+  // start this operation tomorrow
+  yield context.df.createTimer(new Date(Date.now() + 24 * 60 * 60 * 100));
 
   try {
     SetUserDataProcessingStatusActivityResultSuccess.decode(
