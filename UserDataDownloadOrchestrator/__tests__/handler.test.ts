@@ -3,13 +3,13 @@
 import { IFunctionContext } from "durable-functions/lib/src/classes";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import {
   mockCallSubOrchestrator,
   mockOrchestratorContext
 } from "../../__mocks__/durable-functions";
 import { aUserDataProcessing } from "../../__mocks__/mocks";
 import { handler } from "../handler";
-import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 
 const aProcessableDocument = {
   ...aUserDataProcessing,
