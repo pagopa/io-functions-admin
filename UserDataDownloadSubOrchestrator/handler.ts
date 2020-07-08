@@ -97,12 +97,6 @@ export const getHandler = (delay: Millisecond = 0 as Millisecond) =>
     const currentUserDataProcessing =
       invalidInputOrCurrentUserDataProcessing.value;
 
-    // start this operation tomorrow
-    yield context.df.createTimer(
-      // tslint:disable-next-line: restrict-plus-operands
-      new Date(context.df.currentUtcDateTime.getTime() + delay)
-    );
-
     try {
       SetUserDataProcessingStatusActivityResultSuccess.decode(
         yield context.df.callActivity("setUserDataProcessingStatusActivity", {
@@ -114,6 +108,12 @@ export const getHandler = (delay: Millisecond = 0 as Millisecond) =>
           status: UserDataProcessingStatusEnum.WIP
         });
       });
+
+      // pause this operation for a while
+      yield context.df.createTimer(
+        // tslint:disable-next-line: restrict-plus-operands
+        new Date(context.df.currentUtcDateTime.getTime() + delay)
+      );
 
       const bundle = ExtractUserDataActivityResultSuccess.decode(
         yield context.df.callActivity("extractUserDataActivity", {
