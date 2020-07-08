@@ -73,7 +73,7 @@ export const handler = function*(
   document: unknown
 ): IterableIterator<unknown> {
   // This check has been done on the parent orchestrator, so it should never fail.
-  // However, it's maybe woth the effort of check it twice
+  // However, it's worth the effort to check it twice
   const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataProcessing.decode(
     document
   ).mapLeft<InvalidInputFailure>(err => {
