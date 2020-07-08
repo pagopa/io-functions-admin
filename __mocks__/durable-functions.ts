@@ -84,6 +84,7 @@ export const mockOrchestratorContext = {
     callActivityWithRetry: mockOrchestratorCallActivityWithRetry,
     callSubOrchestrator: mockCallSubOrchestrator,
     createTimer: mockOrchestratorCreateTimer,
+    currentUtcDateTime: new Date(),
     getInput: mockOrchestratorGetInput,
     setCustomStatus: mockOrchestratorSetCustomStatus
   }

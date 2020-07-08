@@ -3,6 +3,7 @@ import { isLeft } from "fp-ts/lib/Either";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
+import { Millisecond } from "italia-ts-commons/lib/units";
 import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from "../ExtractUserDataActivity/handler";
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../SendUserDataDownloadMessageActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
@@ -68,94 +69,101 @@ const toActivityFailure = (
     reason: readableReport(err)
   });
 
-export const handler = function*(
-  context: IFunctionContext,
-  document: unknown
-): IterableIterator<unknown> {
-  // This check has been done on the parent orchestrator, so it should never fail.
-  // However, it's worth the effort to check it twice
-  const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataProcessing.decode(
-    document
-  ).mapLeft<InvalidInputFailure>(err => {
-    context.log.error(
-      `${logPrefix}|WARN|Cannot decode ProcessableUserDataProcessing document: ${readableReport(
-        err
-      )}`
-    );
-    return InvalidInputFailure.encode({
-      kind: "INVALID_INPUT",
-      reason: readableReport(err)
-    });
-  });
-
-  if (isLeft(invalidInputOrCurrentUserDataProcessing)) {
-    return invalidInputOrCurrentUserDataProcessing.value;
-  }
-
-  const currentUserDataProcessing =
-    invalidInputOrCurrentUserDataProcessing.value;
-
-  // start this operation tomorrow
-  yield context.df.createTimer(new Date(Date.now() + 24 * 60 * 60 * 100));
-
-  try {
-    SetUserDataProcessingStatusActivityResultSuccess.decode(
-      yield context.df.callActivity("setUserDataProcessingStatusActivity", {
-        currentRecord: currentUserDataProcessing,
-        nextStatus: UserDataProcessingStatusEnum.WIP
-      })
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "setUserDataProcessingStatusActivity", {
-        status: UserDataProcessingStatusEnum.WIP
-      });
-    });
-
-    const bundle = ExtractUserDataActivityResultSuccess.decode(
-      yield context.df.callActivity("extractUserDataActivity", {
-        fiscalCode: currentUserDataProcessing.fiscalCode
-      })
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "extractUserDataActivity");
-    });
-
-    SendUserDataDownloadMessageActivityResultSuccess.decode(
-      yield context.df.callActivity("sendUserDataDownloadMessageActivity", {
-        blobName: bundle.value.blobName,
-        fiscalCode: currentUserDataProcessing.fiscalCode,
-        password: bundle.value.password
-      })
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "sendUserDataDownloadMessageActivity");
-    });
-
-    SetUserDataProcessingStatusActivityResultSuccess.decode(
-      yield context.df.callActivity("setUserDataProcessingStatusActivity", {
-        currentRecord: currentUserDataProcessing,
-        nextStatus: UserDataProcessingStatusEnum.CLOSED
-      })
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "setUserDataProcessingStatusActivity", {
-        status: UserDataProcessingStatusEnum.CLOSED
-      });
-    });
-
-    return OrchestratorSuccess.encode({ kind: "SUCCESS" });
-  } catch (error) {
-    SetUserDataProcessingStatusActivityResultSuccess.decode(
-      yield context.df.callActivity("setUserDataProcessingStatusActivity", {
-        currentRecord: currentUserDataProcessing,
-        nextStatus: UserDataProcessingStatusEnum.FAILED
-      })
-    ).getOrElseL(err => {
-      throw new Error(
-        `Activity setUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
+export const getHandler = (delay: Millisecond = 0 as Millisecond) =>
+  function*(
+    context: IFunctionContext,
+    document: unknown
+  ): IterableIterator<unknown> {
+    // This check has been done on the parent orchestrator, so it should never fail.
+    // However, it's worth the effort to check it twice
+    const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataProcessing.decode(
+      document
+    ).mapLeft<InvalidInputFailure>(err => {
+      context.log.error(
+        `${logPrefix}|WARN|Cannot decode ProcessableUserDataProcessing document: ${readableReport(
           err
         )}`
       );
+      return InvalidInputFailure.encode({
+        kind: "INVALID_INPUT",
+        reason: readableReport(err)
+      });
     });
 
-    return OrchestratorFailure.is(error)
-      ? error
-      : UnhanldedFailure.encode({ kind: "UNHANDLED", reason: error.message });
-  }
-};
+    if (isLeft(invalidInputOrCurrentUserDataProcessing)) {
+      return invalidInputOrCurrentUserDataProcessing.value;
+    }
+
+    const currentUserDataProcessing =
+      invalidInputOrCurrentUserDataProcessing.value;
+
+    // start this operation tomorrow
+    yield context.df.createTimer(
+      // tslint:disable-next-line: restrict-plus-operands
+      new Date(context.df.currentUtcDateTime.getTime() + delay)
+    );
+
+    try {
+      SetUserDataProcessingStatusActivityResultSuccess.decode(
+        yield context.df.callActivity("setUserDataProcessingStatusActivity", {
+          currentRecord: currentUserDataProcessing,
+          nextStatus: UserDataProcessingStatusEnum.WIP
+        })
+      ).getOrElseL(err => {
+        throw toActivityFailure(err, "setUserDataProcessingStatusActivity", {
+          status: UserDataProcessingStatusEnum.WIP
+        });
+      });
+
+      const bundle = ExtractUserDataActivityResultSuccess.decode(
+        yield context.df.callActivity("extractUserDataActivity", {
+          fiscalCode: currentUserDataProcessing.fiscalCode
+        })
+      ).getOrElseL(err => {
+        throw toActivityFailure(err, "extractUserDataActivity");
+      });
+
+      SendUserDataDownloadMessageActivityResultSuccess.decode(
+        yield context.df.callActivity("sendUserDataDownloadMessageActivity", {
+          blobName: bundle.value.blobName,
+          fiscalCode: currentUserDataProcessing.fiscalCode,
+          password: bundle.value.password
+        })
+      ).getOrElseL(err => {
+        throw toActivityFailure(err, "sendUserDataDownloadMessageActivity");
+      });
+
+      SetUserDataProcessingStatusActivityResultSuccess.decode(
+        yield context.df.callActivity("setUserDataProcessingStatusActivity", {
+          currentRecord: currentUserDataProcessing,
+          nextStatus: UserDataProcessingStatusEnum.CLOSED
+        })
+      ).getOrElseL(err => {
+        throw toActivityFailure(err, "setUserDataProcessingStatusActivity", {
+          status: UserDataProcessingStatusEnum.CLOSED
+        });
+      });
+
+      return OrchestratorSuccess.encode({ kind: "SUCCESS" });
+    } catch (error) {
+      SetUserDataProcessingStatusActivityResultSuccess.decode(
+        yield context.df.callActivity("setUserDataProcessingStatusActivity", {
+          currentRecord: currentUserDataProcessing,
+          nextStatus: UserDataProcessingStatusEnum.FAILED
+        })
+      ).getOrElseL(err => {
+        throw new Error(
+          `Activity setUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
+            err
+          )}`
+        );
+      });
+
+      return OrchestratorFailure.is(error)
+        ? error
+        : UnhanldedFailure.encode({
+            kind: "UNHANDLED",
+            reason: error.message
+          });
+    }
+  };
