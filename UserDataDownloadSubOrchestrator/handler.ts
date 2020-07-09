@@ -69,7 +69,7 @@ const toActivityFailure = (
     reason: readableReport(err)
   });
 
-export const getHandler = (delay: Millisecond = 0 as Millisecond) =>
+export const getHandler = (delayMs: Millisecond = 0 as Millisecond) =>
   function*(context: IFunctionContext): IterableIterator<unknown> {
     const document = context.df.getInput();
     // This check has been done on the parent orchestrator, so it should never fail.
