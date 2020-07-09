@@ -1,5 +1,4 @@
 import * as df from "durable-functions";
-import { IFunctionContext } from "durable-functions/lib/src/classes";
 import { Hour, Millisecond } from "italia-ts-commons/lib/units";
 import { getHandler } from "./handler";
 
