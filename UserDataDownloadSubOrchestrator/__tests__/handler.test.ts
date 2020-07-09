@@ -5,7 +5,8 @@ import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generate
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
-  mockOrchestratorContext
+  mockOrchestratorContext,
+  mockOrchestratorGetInput
 } from "../../__mocks__/durable-functions";
 import { aArchiveInfo, aUserDataProcessing } from "../../__mocks__/mocks";
 import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from "../../ExtractUserDataActivity/handler";
@@ -44,11 +45,11 @@ const sendUserDataDownloadMessageActivity = jest
 
 // A mock implementation proxy for df.callActivity/df.df.callActivityWithRetry that routes each call to the correct mock implentation
 const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
-  (name === "setUserDataProcessingStatusActivity"
+  (name === "SetUserDataProcessingStatusActivity"
     ? setUserDataProcessingStatusActivity
-    : name === "extractUserDataActivity"
+    : name === "ExtractUserDataActivity"
     ? extractUserDataActivity
-    : name === "sendUserDataDownloadMessageActivity"
+    : name === "SendUserDataDownloadMessageActivity"
     ? sendUserDataDownloadMessageActivity
     : jest.fn())(name, ...args);
 
@@ -84,15 +85,16 @@ const context = (mockOrchestratorContext as unknown) as IFunctionContext;
 const handler = getHandler(DELAY);
 
 // tslint:disable-next-line: no-big-function
-describe("handler(DELAY)", () => {
+describe("handler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it("should fail on invalid input", () => {
     const document = "invalid";
+    mockOrchestratorGetInput.mockReturnValueOnce(document);
 
-    const result = consumeOrchestrator(handler(context, document));
+    const result = consumeOrchestrator(handler(context));
 
     expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
@@ -109,8 +111,9 @@ describe("handler(DELAY)", () => {
       ...aUserDataProcessing,
       status
     };
+    mockOrchestratorGetInput.mockReturnValueOnce(document);
 
-    const result = consumeOrchestrator(handler(context, document));
+    const result = consumeOrchestrator(handler(context));
 
     expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
@@ -123,8 +126,9 @@ describe("handler(DELAY)", () => {
       ...aUserDataProcessing,
       status: UserDataProcessingStatusEnum.PENDING
     };
+    mockOrchestratorGetInput.mockReturnValueOnce(document);
 
-    const result = consumeOrchestrator(handler(context, document));
+    const result = consumeOrchestrator(handler(context));
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
@@ -155,11 +159,12 @@ describe("handler(DELAY)", () => {
       ...aUserDataProcessing,
       status: UserDataProcessingStatusEnum.PENDING
     };
+    mockOrchestratorGetInput.mockReturnValueOnce(document);
 
-    const result = consumeOrchestrator(handler(context, document));
+    const result = consumeOrchestrator(handler(context));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
-    expect(result.activityName).toBe("extractUserDataActivity");
+    expect(result.activityName).toBe("ExtractUserDataActivity");
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalled(); // any times, at least one
     // then, set as FAILED
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
@@ -182,11 +187,12 @@ describe("handler(DELAY)", () => {
       ...aUserDataProcessing,
       status: UserDataProcessingStatusEnum.PENDING
     };
+    mockOrchestratorGetInput.mockReturnValueOnce(document);
 
-    const result = consumeOrchestrator(handler(context, document));
+    const result = consumeOrchestrator(handler(context));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
-    expect(result.activityName).toBe("sendUserDataDownloadMessageActivity");
+    expect(result.activityName).toBe("SendUserDataDownloadMessageActivity");
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalled(); // any times, at least one
     // then, set as FAILED
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
@@ -209,11 +215,12 @@ describe("handler(DELAY)", () => {
       ...aUserDataProcessing,
       status: UserDataProcessingStatusEnum.PENDING
     };
+    mockOrchestratorGetInput.mockReturnValueOnce(document);
 
-    const result = consumeOrchestrator(handler(context, document));
+    const result = consumeOrchestrator(handler(context));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
-    expect(result.activityName).toBe("setUserDataProcessingStatusActivity");
+    expect(result.activityName).toBe("SetUserDataProcessingStatusActivity");
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalled(); // any times, at least one
     // then, set as FAILED
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
@@ -236,11 +243,12 @@ describe("handler(DELAY)", () => {
       ...aUserDataProcessing,
       status: UserDataProcessingStatusEnum.PENDING
     };
+    mockOrchestratorGetInput.mockReturnValueOnce(document);
 
-    const result = consumeOrchestrator(handler(context, document));
+    const result = consumeOrchestrator(handler(context));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
-    expect(result.activityName).toBe("setUserDataProcessingStatusActivity");
+    expect(result.activityName).toBe("SetUserDataProcessingStatusActivity");
     expect(result.extra).toEqual({
       status: UserDataProcessingStatusEnum.WIP
     });
@@ -265,6 +273,7 @@ describe("handler(DELAY)", () => {
         value: aUserDataProcessing
       })
     );
+
     setUserDataProcessingStatusActivity.mockImplementationOnce(
       () => aNonSuccess
     );
@@ -273,11 +282,12 @@ describe("handler(DELAY)", () => {
       ...aUserDataProcessing,
       status: UserDataProcessingStatusEnum.PENDING
     };
+    mockOrchestratorGetInput.mockReturnValueOnce(document);
 
-    const result = consumeOrchestrator(handler(context, document));
+    const result = consumeOrchestrator(handler(context));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
-    expect(result.activityName).toBe("setUserDataProcessingStatusActivity");
+    expect(result.activityName).toBe("SetUserDataProcessingStatusActivity");
     expect(result.extra).toEqual({
       status: UserDataProcessingStatusEnum.CLOSED
     });

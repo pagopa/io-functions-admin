@@ -6,7 +6,8 @@ import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generate
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import {
   mockCallSubOrchestrator,
-  mockOrchestratorContext
+  mockOrchestratorContext,
+  mockOrchestratorGetInput
 } from "../../__mocks__/durable-functions";
 import { aUserDataProcessing } from "../../__mocks__/mocks";
 import { handler } from "../handler";
@@ -55,9 +56,10 @@ describe("handler", () => {
 
   it("should fail on invalid input", () => {
     const input = "invalid";
+    mockOrchestratorGetInput.mockReturnValueOnce(input);
 
     try {
-      consumeOrchestrator(handler(context, input));
+      consumeOrchestrator(handler(context));
       fail("it should throw");
     } catch (error) {
       expect(mockCallSubOrchestrator).not.toHaveBeenCalled();
@@ -76,8 +78,9 @@ describe("handler", () => {
       aNonProcessableDocumentWrongStatus,
       aNonProcessableDocumentWrongChoice
     ];
+    mockOrchestratorGetInput.mockReturnValueOnce(input);
 
-    consumeOrchestrator(handler(context, input));
+    consumeOrchestrator(handler(context));
     expect(mockCallSubOrchestrator).toHaveBeenCalledTimes(
       processableDocs.length
     );

@@ -11,10 +11,6 @@ const delay = (delayInHours * 60 * 60 * 1000) as Millisecond;
 
 const handler = getHandler(delay);
 
-const orchestrator = df.orchestrator(function*(
-  context: IFunctionContext
-): IterableIterator<unknown> {
-  yield handler(context, context.df.getInput());
-});
+const orchestrator = df.orchestrator(handler);
 
 export default orchestrator;

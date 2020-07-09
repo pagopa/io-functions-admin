@@ -70,10 +70,8 @@ const toActivityFailure = (
   });
 
 export const getHandler = (delay: Millisecond = 0 as Millisecond) =>
-  function*(
-    context: IFunctionContext,
-    document: unknown
-  ): IterableIterator<unknown> {
+  function*(context: IFunctionContext): IterableIterator<unknown> {
+    const document = context.df.getInput();
     // This check has been done on the parent orchestrator, so it should never fail.
     // However, it's worth the effort to check it twice
     const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataProcessing.decode(
@@ -99,12 +97,12 @@ export const getHandler = (delay: Millisecond = 0 as Millisecond) =>
 
     try {
       SetUserDataProcessingStatusActivityResultSuccess.decode(
-        yield context.df.callActivity("setUserDataProcessingStatusActivity", {
+        yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
           currentRecord: currentUserDataProcessing,
           nextStatus: UserDataProcessingStatusEnum.WIP
         })
       ).getOrElseL(err => {
-        throw toActivityFailure(err, "setUserDataProcessingStatusActivity", {
+        throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
           status: UserDataProcessingStatusEnum.WIP
         });
       });
@@ -116,44 +114,46 @@ export const getHandler = (delay: Millisecond = 0 as Millisecond) =>
       );
 
       const bundle = ExtractUserDataActivityResultSuccess.decode(
-        yield context.df.callActivity("extractUserDataActivity", {
+        yield context.df.callActivity("ExtractUserDataActivity", {
           fiscalCode: currentUserDataProcessing.fiscalCode
         })
       ).getOrElseL(err => {
-        throw toActivityFailure(err, "extractUserDataActivity");
+        throw toActivityFailure(err, "ExtractUserDataActivity");
       });
 
       SendUserDataDownloadMessageActivityResultSuccess.decode(
-        yield context.df.callActivity("sendUserDataDownloadMessageActivity", {
+        yield context.df.callActivity("SendUserDataDownloadMessageActivity", {
           blobName: bundle.value.blobName,
           fiscalCode: currentUserDataProcessing.fiscalCode,
           password: bundle.value.password
         })
       ).getOrElseL(err => {
-        throw toActivityFailure(err, "sendUserDataDownloadMessageActivity");
+        throw toActivityFailure(err, "SendUserDataDownloadMessageActivity");
       });
 
       SetUserDataProcessingStatusActivityResultSuccess.decode(
-        yield context.df.callActivity("setUserDataProcessingStatusActivity", {
+        yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
           currentRecord: currentUserDataProcessing,
           nextStatus: UserDataProcessingStatusEnum.CLOSED
         })
       ).getOrElseL(err => {
-        throw toActivityFailure(err, "setUserDataProcessingStatusActivity", {
+        throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
           status: UserDataProcessingStatusEnum.CLOSED
         });
       });
-
       return OrchestratorSuccess.encode({ kind: "SUCCESS" });
     } catch (error) {
+      context.log.error(
+        `${logPrefix}|ERROR|Failed processing user data for download: ${error.message}`
+      );
       SetUserDataProcessingStatusActivityResultSuccess.decode(
-        yield context.df.callActivity("setUserDataProcessingStatusActivity", {
+        yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
           currentRecord: currentUserDataProcessing,
           nextStatus: UserDataProcessingStatusEnum.FAILED
         })
       ).getOrElseL(err => {
         throw new Error(
-          `Activity setUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
+          `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
             err
           )}`
         );

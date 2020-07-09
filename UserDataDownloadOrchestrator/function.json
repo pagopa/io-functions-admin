@@ -4,17 +4,6 @@
         "name": "context",
         "type": "orchestrationTrigger",
         "direction": "in"
-      },
-      {
-        "type": "cosmosDBTrigger",
-        "name": "documents",
-        "direction": "in",
-        "leaseCollectionName": "change-feed-leases",
-        "leaseCollectionPrefix": "userDataDownload",
-        "connectionStringSetting": "COSMOSDB_CONNECTION_STRING",
-        "databaseName": "%COSMOSDB_NAME%",
-        "collectionName": "user-data-processing",
-        "createLeaseCollectionIfNotExists": true
       }
     ],
     "scriptFile": "../dist/UserDataDownloadOrchestrator/index.js"

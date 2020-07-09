@@ -18,10 +18,7 @@ export const ProcessableUserDataProcessing = t.intersection([
   // with the following characteristics must be processed
   t.interface({
     choice: t.literal(UserDataProcessingChoiceEnum.DOWNLOAD),
-    status: t.union([
-      t.literal(UserDataProcessingStatusEnum.PENDING),
-      t.literal(UserDataProcessingStatusEnum.FAILED)
-    ])
+    status: t.literal(UserDataProcessingStatusEnum.PENDING)
   })
 ]);
 
@@ -29,9 +26,9 @@ const CosmosDbDocumentCollection = t.readonlyArray(t.readonly(t.UnknownRecord));
 type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
 export const handler = function*(
-  context: IFunctionContext,
-  input: unknown
+  context: IFunctionContext
 ): IterableIterator<unknown> {
+  const input = context.df.getInput();
   const subTasks = CosmosDbDocumentCollection.decode(input)
     .getOrElseL(err => {
       throw Error(`${logPrefix}: cannot decode input [${readableReport(err)}]`);
@@ -63,5 +60,6 @@ export const handler = function*(
       subTasks.length === 1 ? "" : "s"
     }`
   );
-  yield context.df.Task.all(subTasks);
+  const result = yield context.df.Task.all(subTasks);
+  context.log.info(`${logPrefix}: processed ${JSON.stringify(result)}`);
 };
