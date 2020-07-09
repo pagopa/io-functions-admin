@@ -22,7 +22,7 @@ export const mockTerminate = jest.fn(async (_, __) => {
   return;
 });
 
-export const getClient = jest.fn(() => ({
+export const getClient = jest.fn().mockImplementation(() => ({
   getStatus: mockGetStatus,
   startNew: mockStartNew,
   terminate: mockTerminate
@@ -85,6 +85,7 @@ export const mockOrchestratorContext = {
     callSubOrchestrator: mockCallSubOrchestrator,
     createTimer: mockOrchestratorCreateTimer,
     currentUtcDateTime: new Date(),
+    getClient,
     getInput: mockOrchestratorGetInput,
     setCustomStatus: mockOrchestratorSetCustomStatus
   }

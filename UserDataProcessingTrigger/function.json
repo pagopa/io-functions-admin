@@ -17,5 +17,5 @@
         "direction": "in"
       }
     ],
-    "scriptFile": "../dist/UserDataDownloadOrchestratorTrigger/index.js"
+    "scriptFile": "../dist/UserDataProcessingTrigger/index.js"
 }
