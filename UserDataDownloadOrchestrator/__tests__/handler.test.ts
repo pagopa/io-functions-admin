@@ -13,15 +13,12 @@ import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from ".
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../../SendUserDataDownloadMessageActivity/handler";
 import {
   ActivityFailure,
-  getHandler,
+  handler,
   InvalidInputFailure,
   OrchestratorSuccess
 } from "../handler";
 
-import { Millisecond } from "italia-ts-commons/lib/units";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
-
-const DELAY = 1 as Millisecond;
 
 const aNonSuccess = "any non-success value";
 
@@ -81,8 +78,6 @@ const consumeOrchestrator = (orch: any) => {
 
 // just a convenient cast, good for every test case
 const context = (mockOrchestratorContext as unknown) as IFunctionContext;
-
-const handler = getHandler(DELAY);
 
 // tslint:disable-next-line: no-big-function
 describe("UserDataDownloadOrchestrator", () => {

@@ -72,105 +72,100 @@ const toActivityFailure = (
     reason: readableReport(err)
   });
 
-export const getHandler = (delay: Millisecond = 0 as Millisecond) =>
-  function*(context: IFunctionContext): IterableIterator<unknown> {
-    const document = context.df.getInput();
-    // This check has been done on the trigger, so it should never fail.
-    // However, it's worth the effort to check it twice
-    const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataDownload.decode(
-      document
-    ).mapLeft<InvalidInputFailure>(err => {
-      context.log.error(
-        `${logPrefix}|WARN|Cannot decode ProcessableUserDataDownload document: ${readableReport(
-          err
-        )}`
-      );
-      return InvalidInputFailure.encode({
-        kind: "INVALID_INPUT",
-        reason: readableReport(err)
+export const handler = function*(
+  context: IFunctionContext
+): IterableIterator<unknown> {
+  const document = context.df.getInput();
+  // This check has been done on the trigger, so it should never fail.
+  // However, it's worth the effort to check it twice
+  const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataDownload.decode(
+    document
+  ).mapLeft<InvalidInputFailure>(err => {
+    context.log.error(
+      `${logPrefix}|WARN|Cannot decode ProcessableUserDataDownload document: ${readableReport(
+        err
+      )}`
+    );
+    return InvalidInputFailure.encode({
+      kind: "INVALID_INPUT",
+      reason: readableReport(err)
+    });
+  });
+
+  if (isLeft(invalidInputOrCurrentUserDataProcessing)) {
+    return invalidInputOrCurrentUserDataProcessing.value;
+  }
+
+  const currentUserDataProcessing =
+    invalidInputOrCurrentUserDataProcessing.value;
+
+  try {
+    SetUserDataProcessingStatusActivityResultSuccess.decode(
+      yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
+        currentRecord: currentUserDataProcessing,
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    ).getOrElseL(err => {
+      throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
+        status: UserDataProcessingStatusEnum.WIP
       });
     });
 
-    if (isLeft(invalidInputOrCurrentUserDataProcessing)) {
-      return invalidInputOrCurrentUserDataProcessing.value;
-    }
+    const bundle = ExtractUserDataActivityResultSuccess.decode(
+      yield context.df.callActivity("ExtractUserDataActivity", {
+        fiscalCode: currentUserDataProcessing.fiscalCode
+      })
+    ).getOrElseL(err => {
+      throw toActivityFailure(err, "ExtractUserDataActivity");
+    });
 
-    const currentUserDataProcessing =
-      invalidInputOrCurrentUserDataProcessing.value;
+    SendUserDataDownloadMessageActivityResultSuccess.decode(
+      yield context.df.callActivityWithRetry(
+        "SendUserDataDownloadMessageActivity",
+        new RetryOptions(5000, 10),
+        {
+          blobName: bundle.value.blobName,
+          fiscalCode: currentUserDataProcessing.fiscalCode,
+          password: bundle.value.password
+        }
+      )
+    ).getOrElseL(err => {
+      throw toActivityFailure(err, "SendUserDataDownloadMessageActivity");
+    });
 
-    try {
-      SetUserDataProcessingStatusActivityResultSuccess.decode(
-        yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-          currentRecord: currentUserDataProcessing,
-          nextStatus: UserDataProcessingStatusEnum.WIP
-        })
-      ).getOrElseL(err => {
-        throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
-          status: UserDataProcessingStatusEnum.WIP
-        });
+    SetUserDataProcessingStatusActivityResultSuccess.decode(
+      yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
+        currentRecord: currentUserDataProcessing,
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
+      })
+    ).getOrElseL(err => {
+      throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
+        status: UserDataProcessingStatusEnum.CLOSED
       });
-
-      // pause this operation for a while
-      yield context.df.createTimer(
-        // tslint:disable-next-line: restrict-plus-operands
-        new Date(context.df.currentUtcDateTime.getTime() + delay)
+    });
+    return OrchestratorSuccess.encode({ kind: "SUCCESS" });
+  } catch (error) {
+    context.log.error(
+      `${logPrefix}|ERROR|Failed processing user data for download: ${error.message}`
+    );
+    SetUserDataProcessingStatusActivityResultSuccess.decode(
+      yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
+        currentRecord: currentUserDataProcessing,
+        nextStatus: UserDataProcessingStatusEnum.FAILED
+      })
+    ).getOrElseL(err => {
+      throw new Error(
+        `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
+          err
+        )}`
       );
+    });
 
-      const bundle = ExtractUserDataActivityResultSuccess.decode(
-        yield context.df.callActivity("ExtractUserDataActivity", {
-          fiscalCode: currentUserDataProcessing.fiscalCode
-        })
-      ).getOrElseL(err => {
-        throw toActivityFailure(err, "ExtractUserDataActivity");
-      });
-
-      SendUserDataDownloadMessageActivityResultSuccess.decode(
-        yield context.df.callActivityWithRetry(
-          "SendUserDataDownloadMessageActivity",
-          new RetryOptions(5000, 10),
-          {
-            blobName: bundle.value.blobName,
-            fiscalCode: currentUserDataProcessing.fiscalCode,
-            password: bundle.value.password
-          }
-        )
-      ).getOrElseL(err => {
-        throw toActivityFailure(err, "SendUserDataDownloadMessageActivity");
-      });
-
-      SetUserDataProcessingStatusActivityResultSuccess.decode(
-        yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-          currentRecord: currentUserDataProcessing,
-          nextStatus: UserDataProcessingStatusEnum.CLOSED
-        })
-      ).getOrElseL(err => {
-        throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
-          status: UserDataProcessingStatusEnum.CLOSED
+    return OrchestratorFailure.is(error)
+      ? error
+      : UnhanldedFailure.encode({
+          kind: "UNHANDLED",
+          reason: error.message
         });
-      });
-      return OrchestratorSuccess.encode({ kind: "SUCCESS" });
-    } catch (error) {
-      context.log.error(
-        `${logPrefix}|ERROR|Failed processing user data for download: ${error.message}`
-      );
-      SetUserDataProcessingStatusActivityResultSuccess.decode(
-        yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-          currentRecord: currentUserDataProcessing,
-          nextStatus: UserDataProcessingStatusEnum.FAILED
-        })
-      ).getOrElseL(err => {
-        throw new Error(
-          `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
-            err
-          )}`
-        );
-      });
-
-      return OrchestratorFailure.is(error)
-        ? error
-        : UnhanldedFailure.encode({
-            kind: "UNHANDLED",
-            reason: error.message
-          });
-    }
-  };
+  }
+};
