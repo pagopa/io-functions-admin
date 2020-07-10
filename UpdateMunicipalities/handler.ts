@@ -9,6 +9,8 @@ import {
   exportForeignMunicipalities
 } from "../utils/municipality";
 
+const logPrefix = "getUpdateMunicipalitiesHandler";
+
 /**
  * Returns a function for handling UpdateMunicipalities
  */
@@ -20,12 +22,9 @@ export const getUpdateMunicipalitiesHandler = (
     exportCurrentMunicipalities(blobService),
     exportForeignMunicipalities(blobService)
   )
-    .foldTaskEither<Error, void>(
-      err => {
-        context.log.error(`Cannot update municipalities| ${err}`);
-        return fromLeft(err);
-      },
-      _ => void 0
-    )
+    .mapLeft(err => {
+      context.log.error(`${logPrefix}|Cannot update municipalities|${err}`);
+      return fromLeft(err);
+    })
     .run();
 };

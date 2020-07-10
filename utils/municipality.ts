@@ -1,11 +1,10 @@
 import { BlobService } from "azure-storage";
 import { array } from "fp-ts/lib/Array";
-import { left as leftE, parseJSON } from "fp-ts/lib/Either";
+import { isRight, left as leftE, parseJSON } from "fp-ts/lib/Either";
 import { Option } from "fp-ts/lib/Option";
 import { fromLeft, TaskEither, taskEither } from "fp-ts/lib/TaskEither";
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import * as t from "io-ts";
-import { NonNegativeInteger } from "italia-ts-commons/lib/numbers";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { NonEmptyString, PatternString } from "italia-ts-commons/lib/strings";
 import { Municipality } from "../generated/definitions/Municipality";
@@ -16,6 +15,8 @@ import {
   StringMatrix,
   writeBlobFromJson
 } from "./file";
+
+const log = console;
 
 const ITALIAN_MUNICIPALITIES_URL = getRequiredStringEnv(
   "ITALIAN_MUNICIPALITIES_URL"
@@ -165,10 +166,8 @@ const CODICE_CATASTALE_INDEXES = {
   foreignCountry: 9
 };
 
-const filterEmptyCodiceCatastaleRecords = (
-  stringMatrix: StringMatrix,
-  index: NonNegativeInteger
-) => stringMatrix.filter(r => r[index] !== "");
+const filterEmptyCodiceCatastaleRecords = (stringMatrix: StringMatrix) =>
+  stringMatrix.filter(r => r[9] !== "");
 
 /**
  * load all the codici catastali and create a mapping between the name of the municipality and the codice catastale
@@ -202,8 +201,8 @@ const loadMunicipalityToCatastale = (
 const fromAbolishedMunicipalityToSerializableMunicipality = (
   abolishedMunicipality: AbolishedMunicipality,
   codiceCatastale: string
-) => {
-  return ISerializableMunicipality.decode({
+) =>
+  ISerializableMunicipality.decode({
     codiceCatastale,
     municipality: {
       codiceProvincia: "",
@@ -213,12 +212,7 @@ const fromAbolishedMunicipalityToSerializableMunicipality = (
       denominazioneRegione: "",
       siglaProvincia: abolishedMunicipality.provincia
     }
-  }).getOrElseL(_ => {
-    throw new Error(
-      `Cannot decode ISerializableMunicipality| ${readableReport(_)}`
-    );
   });
-};
 
 /**
  * load the abolished municipality and filter the municipality without catastal code
@@ -250,12 +244,21 @@ const loadAbolishedMunicipalities = (
       taskEither.of(
         abolishedMunArray
           .filter(am => municipalityToCatastale.has(am.comune.toLowerCase()))
-          .map(am =>
-            fromAbolishedMunicipalityToSerializableMunicipality(
+          .map(am => {
+            const serializedMunicipality = fromAbolishedMunicipalityToSerializableMunicipality(
               am,
               municipalityToCatastale.get(am.comune.toLowerCase())
-            )
-          )
+            );
+            if (isRight(serializedMunicipality)) {
+              return serializedMunicipality.value;
+            } else {
+              log.warn(
+                `Error while decoding SerializableMunicipality| ${readableReport(
+                  serializedMunicipality.value
+                )}`
+              );
+            }
+          })
       )
     );
 
@@ -343,23 +346,20 @@ export const exportForeignMunicipalities = (
     )
     .chain(result =>
       array.sequence(taskEither)(
-        filterEmptyCodiceCatastaleRecords(result, 9 as NonNegativeInteger).map(
-          r =>
-            decodeForeignCountry(r).fold(
-              e =>
-                fromLeft(
-                  new Error(
-                    `Cannot decode foreign municipality| ${e.toString()}`
-                  )
-                ),
-              municipality =>
-                serializeMunicipalityToJson(blobService, {
-                  codiceCatastale: r[
-                    CODICE_CATASTALE_INDEXES.foreignCountry
-                  ] as NonEmptyString,
-                  municipality
-                })
-            )
+        filterEmptyCodiceCatastaleRecords(result).map(r =>
+          decodeForeignCountry(r).fold(
+            e =>
+              fromLeft(
+                new Error(`Cannot decode foreign municipality| ${e.toString()}`)
+              ),
+            municipality =>
+              serializeMunicipalityToJson(blobService, {
+                codiceCatastale: r[
+                  CODICE_CATASTALE_INDEXES.foreignCountry
+                ] as NonEmptyString,
+                municipality
+              })
+          )
         )
       )
     );
