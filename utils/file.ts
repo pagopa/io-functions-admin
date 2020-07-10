@@ -4,6 +4,8 @@ import { left, right, toError } from "fp-ts/lib/Either";
 import { Option } from "fp-ts/lib/Option";
 import {
   fromEither,
+  fromLeft,
+  fromPredicate,
   TaskEither,
   taskify,
   tryCatch
@@ -13,7 +15,7 @@ import {
   upsertBlobFromText
 } from "io-functions-commons/dist/src/utils/azure_storage";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
-import * as request from "request";
+import nodeFetch from "node-fetch";
 
 export type StringMatrix = ReadonlyArray<ReadonlyArray<string>>;
 
@@ -24,28 +26,20 @@ const parsingTask = taskify<
   StringMatrix
 >((a, b, cb) => parse(a, b, cb));
 
-const getCsvTask = taskify<
-  string,
-  | request.UriOptions & request.CoreOptions
-  | request.UrlOptions & request.CoreOptions,
-  Error,
-  request.Response
->((a, b, cb) => request.get(a, b, cb));
-
 export const parseCsv = (
   content: string,
   options: parse.Options
 ): TaskEither<Error, StringMatrix> => parsingTask(content, options);
 
-export const getCsvFromURL = (
-  url: NonEmptyString,
-  options:
-    | (request.UriOptions & request.CoreOptions)
-    | (request.UrlOptions & request.CoreOptions)
-): TaskEither<Error, string> =>
-  getCsvTask(url, options).map(response =>
-    Buffer.from(response.body).toString()
-  );
+export const getCsvFromURL = (url: NonEmptyString): TaskEither<Error, string> =>
+  tryCatch(() => nodeFetch(url), toError)
+    .chain(
+      fromPredicate(
+        p => p.status >= 200 && p.status < 300,
+        () => new Error("Error fetching file from remote URL")
+      )
+    )
+    .chain(p => tryCatch(() => p.text(), toError));
 
 export const getFileFromBlob = (
   blobService: BlobService,
@@ -56,7 +50,7 @@ export const getFileFromBlob = (
     () => getBlobAsText(blobService, containerName, blobName).then(e => e),
     toError
   ).foldTaskEither(
-    err => fromEither(left(err)),
+    err => fromLeft(err),
     _ => fromEither(_.fold(err => left(err), __ => right(__)))
   );
 
@@ -76,6 +70,6 @@ export const writeBlobFromJson = (
       ).then(e => e),
     toError
   ).foldTaskEither(
-    err => fromEither(left(err)),
+    err => fromLeft(err),
     _ => fromEither(_.fold(err => left(err), __ => right(__)))
   );

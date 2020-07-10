@@ -1,0 +1,11 @@
+{
+  "bindings": [
+    {
+      "schedule": "0 */15 * * * *",
+      "name": "UpdateMunicipalities",
+      "type": "timerTrigger",
+      "direction": "in"
+    }
+  ],
+  "scriptFile": "../dist/UpdateMunicipalities/index.js"
+}
