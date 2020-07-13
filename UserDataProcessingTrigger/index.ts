@@ -1,6 +1,5 @@
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
-import { task } from "fp-ts/lib/Task";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";

@@ -28,18 +28,18 @@ describe("UserDataProcessingTrigger", () => {
     jest.clearAllMocks();
   });
 
-  it("should fail on invalid input", () => {
+  it("should fail on invalid input", async () => {
     const input = "invalid";
 
     try {
-      handler(context, input);
+      await handler(context, input);
       fail("it should throw");
     } catch (error) {
       expect(mockStartNew).not.toHaveBeenCalled();
     }
   });
 
-  it("should process every processable document", () => {
+  it("should process every processable document", async () => {
     const processableDocs: ReadonlyArray<UserDataProcessing> = [
       aProcessableDownload,
       aProcessableDownload,
@@ -52,7 +52,7 @@ describe("UserDataProcessingTrigger", () => {
       aNonProcessableDownloadWrongChoice
     ];
 
-    handler(context, input);
+    await handler(context, input);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
   });
