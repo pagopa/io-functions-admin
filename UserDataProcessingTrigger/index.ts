@@ -5,7 +5,6 @@ import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generate
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
-import { types } from "italia-ts-commons";
 
 const logPrefix = "UserDataProcessingTrigger";
 
