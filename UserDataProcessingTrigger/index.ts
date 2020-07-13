@@ -5,6 +5,7 @@ import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generate
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
+import { types } from "italia-ts-commons";
 
 const logPrefix = "UserDataProcessingTrigger";
 
@@ -27,6 +28,7 @@ type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
 interface ITaskDescriptor {
   orchestrator: string;
+  id: ProcessableUserDataDownload["userDataProcessingId"];
   input: ProcessableUserDataDownload;
 }
 
@@ -42,6 +44,7 @@ export default (context: Context, input: unknown) => {
           return [
             ...tasks,
             {
+              id: maybeProcessable.userDataProcessingId,
               input: maybeProcessable,
               orchestrator: "UserDataDownloadOrchestrator"
             }
@@ -65,8 +68,8 @@ export default (context: Context, input: unknown) => {
   );
 
   const startAllNew = () =>
-    tasksDescriptors.map(({ orchestrator, input: orchestratorInput }) =>
-      dfClient.startNew(orchestrator, undefined, orchestratorInput)
+    tasksDescriptors.map(({ orchestrator, id, input: orchestratorInput }) =>
+      dfClient.startNew(orchestrator, id, orchestratorInput)
     );
 
   return Promise.all(startAllNew());
