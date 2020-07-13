@@ -28,7 +28,6 @@ they may be customized as needed.
 | AZURE_SUBSCRIPTION_ID       | Credentials which identify the Azure subscription, used to init the APIM  client                 | string |
 | UserDataArchiveStorageConnection | Storage connection string to store zip file for user to download their data | string |
 | USER_DATA_CONTAINER_NAME | Name of the container on which zip files with usr data are stored | string |
-| MessageContentStorageConnection | Storage connection string o where message content is stored | string |
 | MESSAGE_CONTAINER_NAME | name of the container which stores message content | string |
 | PUBLIC_API_URL | url of the public api | string |
 | PUBLIC_API_KEY | API Managment access key for public api | string |
