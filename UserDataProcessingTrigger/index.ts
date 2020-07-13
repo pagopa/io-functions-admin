@@ -1,5 +1,6 @@
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
+import { task } from "fp-ts/lib/Task";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
@@ -31,6 +32,7 @@ interface ITaskDescriptor {
 }
 
 export default (context: Context, input: unknown) => {
+  const dfClient = df.getClient(context);
   const tasksDescriptors = CosmosDbDocumentCollection.decode(input)
     .getOrElseL(err => {
       throw Error(`${logPrefix}: cannot decode input [${readableReport(err)}]`);
@@ -63,7 +65,10 @@ export default (context: Context, input: unknown) => {
     }`
   );
 
-  tasksDescriptors.forEach(task =>
-    df.getClient(context).startNew(task.orchestrator, undefined, task.input)
-  );
+  const startAllNew = () =>
+    tasksDescriptors.map(({ orchestrator, input: orchestratorInput }) =>
+      dfClient.startNew(orchestrator, undefined, orchestratorInput)
+    );
+
+  return Promise.all(startAllNew());
 };
