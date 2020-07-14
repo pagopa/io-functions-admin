@@ -12,7 +12,6 @@ import { array, flatten } from "fp-ts/lib/Array";
 import { Either, fromOption, left, right, toError } from "fp-ts/lib/Either";
 import {
   fromEither,
-  fromLeft,
   TaskEither,
   taskEither,
   taskify,
