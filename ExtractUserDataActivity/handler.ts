@@ -12,6 +12,7 @@ import { array, flatten } from "fp-ts/lib/Array";
 import { Either, fromOption, left, right, toError } from "fp-ts/lib/Either";
 import {
   fromEither,
+  fromLeft,
   TaskEither,
   taskEither,
   taskify,
@@ -156,15 +157,13 @@ const fromQueryEither = <R>(
 
 /**
  * Converts a Promise<Either<L, R>> that can reject
- * into a TaskEither<L, R>
+ * into a TaskEither<Error | L, R>
  */
-const fromPromiseEither = <L, R>(
-  promise: Promise<Either<L, R>>
-): TaskEither<Error | L, R> =>
-  tryCatch(() => promise.then(e => e), toError).foldTaskEither<Error | L, R>(
-    err => fromEither(left(err)),
-    _ => fromEither(_.fold(err => left(err), __ => right(__)))
-  );
+const fromPromiseEither = <L, R>(promise: Promise<Either<L, R>>) =>
+  taskEither
+    .of<Error | L, R>(void 0)
+    .chainSecond(tryCatch(() => promise, toError))
+    .chain(fromEither);
 
 /**
  * To be used for exhaustive checks
