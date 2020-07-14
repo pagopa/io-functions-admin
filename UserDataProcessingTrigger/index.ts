@@ -31,7 +31,10 @@ interface ITaskDescriptor {
   input: ProcessableUserDataDownload;
 }
 
-export default (context: Context, input: unknown) => {
+export function index(
+  context: Context,
+  input: unknown
+): Promise<readonly string[]> {
   const dfClient = df.getClient(context);
   const tasksDescriptors = CosmosDbDocumentCollection.decode(input)
     .getOrElseL(err => {
@@ -72,4 +75,4 @@ export default (context: Context, input: unknown) => {
     );
 
   return Promise.all(startAllNew());
-};
+}

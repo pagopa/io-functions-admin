@@ -5,7 +5,7 @@ import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generate
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import { context, mockStartNew } from "../../__mocks__/durable-functions";
 import { aUserDataProcessing } from "../../__mocks__/mocks";
-import handler from "../index";
+import { index } from "../index";
 
 const aProcessableDownload = {
   ...aUserDataProcessing,
@@ -32,7 +32,7 @@ describe("UserDataProcessingTrigger", () => {
     const input = "invalid";
 
     try {
-      await handler(context, input);
+      await index(context, input);
       fail("it should throw");
     } catch (error) {
       expect(mockStartNew).not.toHaveBeenCalled();
@@ -52,7 +52,7 @@ describe("UserDataProcessingTrigger", () => {
       aNonProcessableDownloadWrongChoice
     ];
 
-    await handler(context, input);
+    await index(context, input);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
   });
