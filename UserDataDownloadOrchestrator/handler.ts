@@ -11,7 +11,7 @@ import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSucce
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import { ProcessableUserDataDownload } from "../UserDataProcessingTrigger";
 
-const logPrefix = "UserDataDownloadSubOrchestrator";
+const logPrefix = "UserDataDownloadOrchestrator";
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 export const InvalidInputFailure = t.interface({
