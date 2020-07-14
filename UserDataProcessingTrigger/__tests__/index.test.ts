@@ -13,6 +13,12 @@ const aProcessableDownload = {
   status: UserDataProcessingStatusEnum.PENDING
 };
 
+const aProcessableDelete = {
+  ...aUserDataProcessing,
+  choice: UserDataProcessingChoiceEnum.DELETE,
+  status: UserDataProcessingStatusEnum.PENDING
+};
+
 const aNonProcessableDownloadWrongStatus = {
   ...aUserDataProcessing,
   status: UserDataProcessingStatusEnum.WIP
@@ -43,7 +49,7 @@ describe("UserDataProcessingTrigger", () => {
     const processableDocs: ReadonlyArray<UserDataProcessing> = [
       aProcessableDownload,
       aProcessableDownload,
-      aProcessableDownload
+      aProcessableDelete
     ];
 
     const input: ReadonlyArray<any> = [

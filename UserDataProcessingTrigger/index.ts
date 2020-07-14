@@ -22,13 +22,27 @@ export const ProcessableUserDataDownload = t.intersection([
   })
 ]);
 
+// models the subset of UserDataProcessing documents that this orchestrator accepts
+export type ProcessableUserDataDelete = t.TypeOf<
+  typeof ProcessableUserDataDelete
+>;
+export const ProcessableUserDataDelete = t.intersection([
+  UserDataProcessing,
+  // ony the subset of UserDataProcessing documents
+  // with the following characteristics must be processed
+  t.interface({
+    choice: t.literal(UserDataProcessingChoiceEnum.DELETE),
+    status: t.literal(UserDataProcessingStatusEnum.PENDING)
+  })
+]);
+
 const CosmosDbDocumentCollection = t.readonlyArray(t.readonly(t.UnknownRecord));
 type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
 interface ITaskDescriptor {
   orchestrator: string;
-  id: ProcessableUserDataDownload["userDataProcessingId"];
-  input: ProcessableUserDataDownload;
+  id: UserDataProcessing["userDataProcessingId"];
+  input: ProcessableUserDataDownload | ProcessableUserDataDelete;
 }
 
 export function index(
