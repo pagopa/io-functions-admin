@@ -26,6 +26,7 @@ they may be customized as needed.
 | AZURE_APIM_HOST             | The host name of the API Management service                                                      | string |
 | AZURE_APIM_RESOURCE_GROUP   | The name of the resource group used to get the subscriptions                                     | string |
 | AZURE_SUBSCRIPTION_ID       | Credentials which identify the Azure subscription, used to init the APIM  client                 | string |
+| UserDataArchiveStorageConnection | Storage connection string to store zip file for user to download their data                 | string |
 | USER_DATA_CONTAINER_NAME    | Name of the container on which zip files with usr data are stored                                | string |
 | MESSAGE_CONTAINER_NAME      | Name of the container which stores message content                                               | string |
 | PUBLIC_API_URL              | Internal URL of the API management used to send messages                                         | string |
