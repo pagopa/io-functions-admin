@@ -41,25 +41,25 @@ export function index(
       throw Error(`${logPrefix}: cannot decode input [${readableReport(err)}]`);
     })
     .reduce(
-      (tasks, maybeProcessable) => {
-        if (ProcessableUserDataDownload.is(maybeProcessable)) {
-          return [
+      (tasks, maybeProcessable) =>
+        ProcessableUserDataDownload.decode(maybeProcessable).fold(
+          _ => {
+            context.log.warn(
+              `${logPrefix}: skipping document [${JSON.stringify(
+                maybeProcessable
+              )}]`
+            );
+            return tasks;
+          },
+          processable => [
             ...tasks,
             {
-              id: maybeProcessable.userDataProcessingId,
-              input: maybeProcessable,
+              id: processable.userDataProcessingId,
+              input: processable,
               orchestrator: "UserDataDownloadOrchestrator"
             }
-          ];
-        } else {
-          context.log.warn(
-            `${logPrefix}: skipping document [${JSON.stringify(
-              maybeProcessable
-            )}]`
-          );
-          return tasks;
-        }
-      },
+          ]
+        ),
       [] as readonly ITaskDescriptor[]
     );
 
