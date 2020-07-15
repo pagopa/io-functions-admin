@@ -3,7 +3,8 @@
   "version": "0.3.0",
   "license": "MIT",
   "scripts": {
-    "build": "yarn generate:definitions && tsc",
+    "prebuild": "npm-run-all --parallel generate:*",
+    "build": "tsc",
     "build:production": "npm run prestart && npm prune --production",
     "watch": "tsc --w",
     "prestart": "npm run build && func extensions install",
@@ -16,6 +17,7 @@
     "lint": "tslint -p .",
     "deploy": "npm run build && func azure functionapp publish agid-functions-admin-test",
     "generate:definitions": "rimraf ./generated/definitions && shx mkdir -p ./generated/definitions && gen-api-models --api-spec ./openapi/index.yaml --out-dir ./generated/definitions",
+    "generate:session-api": "rimraf ./generated/session-api && shx mkdir -p ./generated/session-api && gen-api-models --api-spec https://raw.githubusercontent.com/pagopa/io-backend/172884867-webhook-lock-user/api_session.yaml --out-dir ./generated/session-api --request-types --response-decoders",
     "dist:modules": "modclean -r -n default:safe && npm prune --production",
     "predeploy": "npm-run-all build dist:modules"
   },
@@ -51,6 +53,7 @@
     "@azure/graph": "^4.0.1",
     "@azure/ms-rest-nodeauth": "^2.0.5",
     "@types/archiver": "^3.1.0",
+    "@types/node-fetch": "^2.5.7",
     "@types/randomstring": "^1.1.6",
     "archiver": "^4.0.1",
     "archiver-zip-encrypted": "^1.0.8",
@@ -63,6 +66,7 @@
     "io-functions-express": "^0.1.0",
     "io-ts": "1.8.5",
     "italia-ts-commons": "^8.5.0",
+    "node-fetch": "^2.6.0",
     "randomstring": "^1.1.5",
     "redis": "^3.0.2",
     "redis-clustr": "^1.7.0",
