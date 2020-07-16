@@ -34,10 +34,12 @@ export const createMockFetch = ({
   jsonImpl = async () => mockJsonBody,
   status = 100,
   textImpl = async () => mockTextBody
-}: IMockResponseValues = {}): typeof fetch => async (
-  _: RequestInfo,
-  __?: RequestInit
-) => getMockResponse({ jsonImpl, status, textImpl });
+}: IMockResponseValues = {}): typeof fetch =>
+  jest
+    .fn()
+    .mockImplementation(async (_: RequestInfo, __?: RequestInit) =>
+      getMockResponse({ jsonImpl, status, textImpl })
+    );
 
 const mockFetch = jest
   .fn()
