@@ -1,5 +1,6 @@
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
+import { fromNullable } from "fp-ts/lib/Either";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
@@ -55,25 +56,38 @@ export function index(
       throw Error(`${logPrefix}: cannot decode input [${readableReport(err)}]`);
     })
     .reduce(
-      (tasks, maybeProcessable) =>
-        ProcessableUserDataDownload.decode(maybeProcessable).fold(
-          _ => {
-            context.log.warn(
-              `${logPrefix}: skipping document [${JSON.stringify(
-                maybeProcessable
-              )}]`
-            );
-            return tasks;
-          },
-          processable => [
-            ...tasks,
-            {
-              id: processable.userDataProcessingId,
-              input: processable,
-              orchestrator: "UserDataDownloadOrchestrator"
-            }
-          ]
-        ),
+      (tasks, processableOrNot) =>
+        t
+          .union([ProcessableUserDataDownload, ProcessableUserDataDelete])
+          .decode(processableOrNot)
+          .chain(processable =>
+            fromNullable(undefined)(
+              ProcessableUserDataDownload.is(processable)
+                ? {
+                    id: processable.userDataProcessingId,
+                    input: processable,
+                    orchestrator: "UserDataDownloadOrchestrator"
+                  }
+                : ProcessableUserDataDelete.is(processable)
+                ? {
+                    id: processable.userDataProcessingId,
+                    input: processable,
+                    orchestrator: "UserDataDeleteOrchestrator"
+                  }
+                : undefined
+            )
+          )
+          .fold(
+            _ => {
+              context.log.warn(
+                `${logPrefix}: skipping document [${JSON.stringify(
+                  processableOrNot
+                )}]`
+              );
+              return tasks;
+            },
+            task => [...tasks, task]
+          ),
       [] as readonly ITaskDescriptor[]
     );
 
