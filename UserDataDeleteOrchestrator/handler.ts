@@ -1,7 +1,4 @@
-import {
-  IFunctionContext,
-  RetryOptions
-} from "durable-functions/lib/src/classes";
+import { IFunctionContext } from "durable-functions/lib/src/classes";
 import { isLeft } from "fp-ts/lib/Either";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import * as t from "io-ts";
@@ -141,6 +138,7 @@ export const handler = function*(
           fiscalCode: currentUserDataProcessing.fiscalCode
         })
       )
+      // tslint:disable-next-line: no-identical-functions
     ).getOrElseL(err => {
       throw toActivityFailure(err, "SetUserSessionLockActivity", {
         action: "UNLOCK"
