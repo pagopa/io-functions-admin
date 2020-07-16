@@ -10,7 +10,7 @@ import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSucce
 import {
   ActivityInput as SetUserSessionLockActivityInput,
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
-} from "../SetUserSessionLockActivity/types";
+} from "../SetUserSessionLockActivity/handler";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
 
 const logPrefix = "UserDataDeleteOrchestrator";

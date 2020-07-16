@@ -1,114 +1,187 @@
 /* tslint:disable: no-any no-identical-functions */
 
-import { left, right } from "fp-ts/lib/Either";
-
-import { context as contextMock } from "../../__mocks__/durable-functions";
-import { aUserDataProcessing } from "../../__mocks__/mocks";
-
+import { right } from "fp-ts/lib/Either";
+import * as t from "io-ts";
+import { readableReport } from "italia-ts-commons/lib/reporters";
+import { context } from "../../__mocks__/durable-functions";
+import { aFiscalCode } from "../../__mocks__/mocks";
+import { SuccessResponse } from "../../generated/session-api/SuccessResponse";
+import { Client } from "../../utils/sessionApiClient";
 import {
   ActivityInput,
-  ActivityResultFailure,
-  createSetUserDataProcessingStatusActivityHandler
+  ApiCallFailure,
+  BadApiRequestFailure,
+  createSetUserSessionLockActivityHandler,
+  InvalidInputFailure,
+  TransientFailure
 } from "../handler";
 
-import { QueryError } from "documentdb";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { UserDataProcessingModel } from "io-functions-commons/dist/src/models/user_data_processing";
+// dummy but effective
+const aDecodingFailure = t.number.decode("abc");
 
-describe("SetUserDataProcessingStatusActivityHandler", () => {
-  it("should handle a correct status change", async () => {
-    const mockModel = ({
-      createOrUpdateByNewOne: jest.fn(async () =>
-        right({
-          ...aUserDataProcessing,
-          status: UserDataProcessingStatusEnum.WIP
+const aSuccessResponse = SuccessResponse.decode({ message: "ok" }).getOrElseL(
+  err => {
+    throw new Error(`Invalid mock fr SuccessResponse: ${readableReport(err)}`);
+  }
+);
+
+const mockLockUserSession = jest.fn().mockImplementation(async () =>
+  right({
+    status: 200,
+    value: aSuccessResponse
+  })
+);
+const mockUnlockUserSession = jest.fn().mockImplementation(async () =>
+  right({
+    status: 200,
+    value: aSuccessResponse
+  })
+);
+
+const mockClient = {
+  lockUserSession: mockLockUserSession,
+  unlockUserSession: mockUnlockUserSession
+} as Client<"ApiKey">;
+
+describe("createSetUserSessionLockActivityHandler", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should fail on invalid input", async () => {
+    const handler = createSetUserSessionLockActivityHandler(mockClient);
+
+    const result = await handler(context, "invalid");
+    expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
+  });
+
+  it("should execute correct api operation when action is LOCK", async () => {
+    const handler = createSetUserSessionLockActivityHandler(mockClient);
+
+    await handler(
+      context,
+      ActivityInput.encode({
+        action: "LOCK",
+        fiscalCode: aFiscalCode
+      })
+    );
+    expect(mockLockUserSession).toHaveBeenCalledTimes(1);
+    expect(mockUnlockUserSession).not.toHaveBeenCalled();
+  });
+
+  it("should execute correct api operation when action is UNLOCK", async () => {
+    const handler = createSetUserSessionLockActivityHandler(mockClient);
+
+    await handler(
+      context,
+      ActivityInput.encode({
+        action: "UNLOCK",
+        fiscalCode: aFiscalCode
+      })
+    );
+    expect(mockUnlockUserSession).toHaveBeenCalledTimes(1);
+    expect(mockLockUserSession).not.toHaveBeenCalled();
+  });
+
+  it("should fail when api operation fails", async () => {
+    mockLockUserSession.mockImplementationOnce(async () => {
+      throw new Error("any error");
+    });
+
+    const handler = createSetUserSessionLockActivityHandler(mockClient);
+
+    // the handler may throw depending on what we consider to be a transient failure
+    // we wrap in a try/catch so we can test both cases
+    try {
+      const result = await handler(
+        context,
+        ActivityInput.encode({
+          action: "LOCK",
+          fiscalCode: aFiscalCode
         })
-      )
-    } as any) as UserDataProcessingModel;
-
-    const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
-    const input: ActivityInput = {
-      currentRecord: {
-        ...aUserDataProcessing,
-        status: UserDataProcessingStatusEnum.PENDING
-      },
-      nextStatus: UserDataProcessingStatusEnum.WIP
-    };
-    const result = await handler(contextMock, input);
-
-    expect(result.kind).toEqual("SUCCESS");
-    if (result.kind === "SUCCESS") {
-      expect(result.value.status === UserDataProcessingStatusEnum.WIP);
+      );
+      expect(TransientFailure.decode(result).isRight()).toBe(false);
+      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+    } catch (result) {
+      expect(TransientFailure.decode(result).isRight()).toBe(true);
+      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
     }
   });
 
-  it("should handle a query error", async () => {
-    const mockModel = ({
-      createOrUpdateByNewOne: jest.fn(async () =>
-        left(({
-          body: "my mock query error"
-        } as any) as QueryError)
-      )
-    } as any) as UserDataProcessingModel;
+  it("should fail when api operation returns an unparsable payload", async () => {
+    mockLockUserSession.mockImplementationOnce(async () => aDecodingFailure);
 
-    const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
-    const input: ActivityInput = {
-      currentRecord: {
-        ...aUserDataProcessing,
-        status: UserDataProcessingStatusEnum.PENDING
-      },
-      nextStatus: UserDataProcessingStatusEnum.WIP
-    };
-    const result = await handler(contextMock, input);
+    const handler = createSetUserSessionLockActivityHandler(mockClient);
 
-    ActivityResultFailure.decode(result).fold(
-      err => fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
-      failure => {
-        expect(failure.kind).toEqual(expect.any(String));
-      }
-    );
+    // the handler may throw depending on what we consider to be a transient failure
+    // we wrap in a try/catch so we can test both cases
+    try {
+      const result = await handler(
+        context,
+        ActivityInput.encode({
+          action: "LOCK",
+          fiscalCode: aFiscalCode
+        })
+      );
+      expect(TransientFailure.decode(result).isRight()).toBe(false);
+      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+    } catch (result) {
+      expect(TransientFailure.decode(result).isRight()).toBe(true);
+      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+    }
   });
 
-  it("should handle a rejection", async () => {
-    const mockModel = ({
-      createOrUpdateByNewOne: jest.fn(async () => {
-        throw new Error("my unhandled rejection");
+  it("should fail when api operation returns an error response", async () => {
+    mockLockUserSession.mockImplementationOnce(async () =>
+      right({
+        status: 500
       })
-    } as any) as UserDataProcessingModel;
-
-    const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
-    const input: ActivityInput = {
-      currentRecord: {
-        ...aUserDataProcessing,
-        status: UserDataProcessingStatusEnum.PENDING
-      },
-      nextStatus: UserDataProcessingStatusEnum.WIP
-    };
-    const result = await handler(contextMock, input);
-
-    ActivityResultFailure.decode(result).fold(
-      err => fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
-      failure => {
-        expect(failure.kind).toEqual(expect.any(String));
-      }
     );
+
+    const handler = createSetUserSessionLockActivityHandler(mockClient);
+
+    // the handler may throw depending on what we consider to be a transient failure
+    // we wrap in a try/catch so we can test both cases
+    try {
+      const result = await handler(
+        context,
+        ActivityInput.encode({
+          action: "LOCK",
+          fiscalCode: aFiscalCode
+        })
+      );
+      expect(TransientFailure.decode(result).isRight()).toBe(false);
+      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+    } catch (result) {
+      expect(TransientFailure.decode(result).isRight()).toBe(true);
+      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+    }
   });
 
-  it("should handle an invalid input", async () => {
-    const mockModel = ({} as any) as UserDataProcessingModel;
-
-    const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
-
-    // @ts-ignore to force bad behavior
-    const result = await handler(contextMock, {
-      invalid: "input"
-    });
-
-    ActivityResultFailure.decode(result).fold(
-      err => fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
-      failure => {
-        expect(failure.kind).toEqual(expect.any(String));
-      }
+  it("should fail when api operation is called badly", async () => {
+    mockLockUserSession.mockImplementationOnce(async () =>
+      right({
+        status: 400
+      })
     );
+
+    const handler = createSetUserSessionLockActivityHandler(mockClient);
+
+    // the handler may throw depending on what we consider to be a transient failure
+    // we wrap in a try/catch so we can test both cases
+    try {
+      const result = await handler(
+        context,
+        ActivityInput.encode({
+          action: "LOCK",
+          fiscalCode: aFiscalCode
+        })
+      );
+      expect(TransientFailure.decode(result).isRight()).toBe(false);
+      expect(BadApiRequestFailure.decode(result).isRight()).toBe(true);
+    } catch (result) {
+      expect(TransientFailure.decode(result).isRight()).toBe(true);
+      expect(BadApiRequestFailure.decode(result).isRight()).toBe(true);
+    }
   });
 });
