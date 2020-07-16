@@ -35,5 +35,5 @@ they may be customized as needed.
 | PUBLIC_DOWNLOAD_BASE_URL         | Public URL of user's data zip bundle storage                                                     | string |
 | SESSION_API_URL                  | Internal URL of the BACKEND API used to handle session lock/unlock requests                      | string |
 | SESSION_API_KEY                  | service access key for the session API                                                           | string |
-
+| USER_DATA_BACKUP_CONTAINER_NAME  | Name of the storage container in which user data is backuped before being permanently deleted    | string |
 
