@@ -10,7 +10,7 @@ import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from ".
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../SendUserDataDownloadMessageActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import { ProcessableUserDataDownload } from "../UserDataProcessingTrigger";
-import { trackException, trackEvent } from "../utils/appinsights";
+import { trackEvent, trackException } from "../utils/appinsights";
 
 const logPrefix = "UserDataDownloadOrchestrator";
 
