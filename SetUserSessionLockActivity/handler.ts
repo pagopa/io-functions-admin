@@ -160,7 +160,7 @@ export const createSetUserSessionLockActivityHandler = (
       failure => {
         context.log.error(`${logPrefix}|ERROR|Activity failed`, failure);
 
-        // if its a transient failure we let the activity throw, so the orchestrator can retry
+        // in case of transient failures we let the activity throw, so the orchestrator can retry
         if (TransientFailure.is(failure)) {
           throw failure;
         }
