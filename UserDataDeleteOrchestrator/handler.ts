@@ -1,5 +1,6 @@
 import { IFunctionContext } from "durable-functions/lib/src/classes";
 import { isLeft } from "fp-ts/lib/Either";
+import { toString } from "fp-ts/lib/function";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
@@ -17,8 +18,10 @@ import {
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
 
 const logPrefix = "UserDataDeleteOrchestrator";
-
 const aDayInMilliseconds = 24 * 60 * 60 * 1000;
+
+const printableError = (error: Error | unknown): string =>
+  error instanceof Error ? error.message : toString(error);
 
 const makeBackupFolder = (
   context: IFunctionContext,
@@ -194,7 +197,9 @@ export const handler = function*(
     return OrchestratorSuccess.encode({ kind: "SUCCESS" });
   } catch (error) {
     context.log.error(
-      `${logPrefix}|ERROR|Failed processing user data for download: ${error.message}`
+      `${logPrefix}|ERROR|Failed processing user data for download: ${printableError(
+        error
+      )}`
     );
     SetUserDataProcessingStatusActivityResultSuccess.decode(
       yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
