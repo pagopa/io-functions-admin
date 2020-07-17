@@ -57,7 +57,6 @@
     "@azure/graph": "^4.0.1",
     "@azure/ms-rest-nodeauth": "^2.0.5",
     "@types/archiver": "^3.1.0",
-    "@types/node-fetch": "^2.5.7",
     "@types/randomstring": "^1.1.6",
     "archiver": "^4.0.1",
     "archiver-zip-encrypted": "^1.0.8",
