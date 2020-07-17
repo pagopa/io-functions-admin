@@ -50,3 +50,5 @@ generated
 .env.prod
 .env.test
 todo.md
+
+/generated

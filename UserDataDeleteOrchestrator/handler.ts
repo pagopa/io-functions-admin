@@ -5,12 +5,31 @@ import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import {
+  ActivityResultSuccess as DeleteUserDataActivityResultSuccess,
+  ActivityInput as DeleteUserDataActivityInput
+} from "../DeleteUserDataActivity/types";
+import {
   ActivityInput as SetUserSessionLockActivityInput,
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 
 const logPrefix = "UserDataDeleteOrchestrator";
+
+const aDayInMilliseconds = 24 * 60 * 60 * 1000;
+
+const makeBackupFolder = (
+  context: IFunctionContext,
+  currentUserDataProcessing: UserDataProcessing
+) =>
+  `${
+    currentUserDataProcessing.userDataProcessingId
+  }-${context.df.currentUtcDateTime.getTime()}` as NonEmptyString;
+
+const makeWaitIntervalFinishDate = (context: IFunctionContext) =>
+  new Date(context.df.currentUtcDateTime.getTime() + 7 * aDayInMilliseconds);
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 export const InvalidInputFailure = t.interface({
@@ -125,9 +144,25 @@ export const handler = function*(
       });
     });
 
+    // we have an interval on which we wait for eventual cancellation bu the user
+    yield context.df.createTimer(makeWaitIntervalFinishDate(context));
+
     //
-    // TODO: delete data
+    // TODO: handle cancellation
     //
+
+    // backup&delete data
+    DeleteUserDataActivityResultSuccess.decode(
+      yield context.df.callActivity(
+        "DeleteUserDataActivity",
+        DeleteUserDataActivityInput.encode({
+          backupFolder: makeBackupFolder(context, currentUserDataProcessing),
+          fiscalCode: currentUserDataProcessing.fiscalCode
+        })
+      )
+    ).getOrElseL(err => {
+      throw toActivityFailure(err, "DeleteUserDataActivity");
+    });
 
     // unlock user
     SetUserSessionLockActivityResultSuccess.decode(

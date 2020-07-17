@@ -66,7 +66,7 @@
     "durable-functions": "^1.2.4",
     "express": "^4.15.3",
     "fp-ts": "1.17.0",
-    "io-functions-commons": "^10.0.0",
+    "io-functions-commons": "^10.7.0",
     "io-functions-express": "^0.1.0",
     "io-ts": "1.8.5",
     "italia-ts-commons": "^8.5.0",
