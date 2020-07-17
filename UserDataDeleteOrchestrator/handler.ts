@@ -1,20 +1,20 @@
 import { IFunctionContext } from "durable-functions/lib/src/classes";
 import { isLeft } from "fp-ts/lib/Either";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
-import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import {
-  ActivityResultSuccess as DeleteUserDataActivityResultSuccess,
-  ActivityInput as DeleteUserDataActivityInput
+  ActivityInput as DeleteUserDataActivityInput,
+  ActivityResultSuccess as DeleteUserDataActivityResultSuccess
 } from "../DeleteUserDataActivity/types";
+import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import {
   ActivityInput as SetUserSessionLockActivityInput,
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
-import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 
 const logPrefix = "UserDataDeleteOrchestrator";
 
