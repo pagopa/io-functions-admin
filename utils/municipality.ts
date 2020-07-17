@@ -1,8 +1,14 @@
 import { BlobService } from "azure-storage";
 import { array } from "fp-ts/lib/Array";
-import { isRight, left as leftE, parseJSON } from "fp-ts/lib/Either";
+import { isLeft, isRight, left as leftE, parseJSON } from "fp-ts/lib/Either";
 import { Option } from "fp-ts/lib/Option";
-import { fromLeft, TaskEither, taskEither } from "fp-ts/lib/TaskEither";
+import {
+  fromEither,
+  fromLeft,
+  TaskEither,
+  taskEither,
+  taskEitherSeq
+} from "fp-ts/lib/TaskEither";
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
@@ -47,6 +53,14 @@ export const AbolishedMunicipality = t.type({
 export const AbolishedMunicipalityArray = t.readonlyArray(
   AbolishedMunicipality
 );
+
+export const RawAbolishedMunicipalityArray = t.type({
+  value: AbolishedMunicipalityArray
+});
+
+export type RawAbolishedMunicipalityArray = t.TypeOf<
+  typeof RawAbolishedMunicipalityArray
+>;
 
 export type AbolishedMunicipalityArray = t.TypeOf<
   typeof AbolishedMunicipalityArray
@@ -166,8 +180,9 @@ const CODICE_CATASTALE_INDEXES = {
   foreignCountry: 9
 };
 
-const filterEmptyCodiceCatastaleRecords = (stringMatrix: StringMatrix) =>
-  stringMatrix.filter(r => r[9] !== "");
+const filterEmptyAndInvalidCodiceCatastaleRecords = (
+  stringMatrix: StringMatrix
+) => stringMatrix.filter(r => r[9] !== "" && r[9] !== "n.d.");
 
 /**
  * load all the codici catastali and create a mapping between the name of the municipality and the codice catastale
@@ -240,32 +255,43 @@ const loadAbolishedMunicipalities = (
           )
       )
     )
-    .chain((abolishedMunArray: AbolishedMunicipalityArray) =>
-      taskEither.of(
-        abolishedMunArray
-          .filter(am => municipalityToCatastale.has(am.comune.toLowerCase()))
-          .map(am => {
-            const serializedMunicipality = fromAbolishedMunicipalityToSerializableMunicipality(
-              am,
-              municipalityToCatastale.get(am.comune.toLowerCase())
-            );
-            if (isRight(serializedMunicipality)) {
-              return serializedMunicipality.value;
-            } else {
-              log.warn(
-                `Error while decoding SerializableMunicipality| ${readableReport(
-                  serializedMunicipality.value
-                )}`
-              );
-            }
-          })
-      )
-    );
+    .chain((rawArray: RawAbolishedMunicipalityArray) => {
+      return fromEither(
+        AbolishedMunicipalityArray.decode(rawArray.value).bimap(
+          errs =>
+            new Error(
+              `Cannot decode abolished municipality array| ${readableReport(
+                errs
+              )}`
+            ),
+          abolishedMunArray =>
+            abolishedMunArray
+              .filter(am =>
+                municipalityToCatastale.has(am.comune.toLowerCase())
+              )
+              .map(am => {
+                const serializedMunicipality = fromAbolishedMunicipalityToSerializableMunicipality(
+                  am,
+                  municipalityToCatastale.get(am.comune.toLowerCase())
+                );
+                if (isRight(serializedMunicipality)) {
+                  return serializedMunicipality.value;
+                } else {
+                  log.warn(
+                    `Error while decoding SerializableMunicipality| ${readableReport(
+                      serializedMunicipality.value
+                    )}`
+                  );
+                }
+              })
+        )
+      );
+    });
 
 const calculateMunicipalityPath = (codiceCatastale: string) =>
-  `${MUNICIPALITIES_CONTAINER_NAME}/${codiceCatastale.charAt(
-    0
-  )}/${codiceCatastale.charAt(1)}` as NonEmptyString;
+  `${codiceCatastale.charAt(0)}/${codiceCatastale.charAt(
+    1
+  )}/${codiceCatastale}.json` as NonEmptyString;
 
 export const serializeMunicipalityToJson = (
   blobService: BlobService,
@@ -279,8 +305,8 @@ export const serializeMunicipalityToJson = (
     codiceCatastaleValue =>
       writeBlobFromJson(
         blobService,
+        MUNICIPALITIES_CONTAINER_NAME,
         calculateMunicipalityPath(codiceCatastaleValue),
-        `${codiceCatastaleValue}.json` as NonEmptyString,
         JSON.stringify(serializableMunicipality.municipality) as NonEmptyString
       )
   );
@@ -292,40 +318,46 @@ export const exportAbolishedMunicipality = (
     .chain(municipalityToCatastale =>
       loadAbolishedMunicipalities(blobService, municipalityToCatastale)
     )
-    .chain(abolishedMunicipalities =>
-      array.sequence(taskEither)(
+    .chain(abolishedMunicipalities => {
+      log.info(
+        `abolishedMunicipalities size = ${abolishedMunicipalities.length}`
+      );
+      return array.sequence(taskEitherSeq)(
         abolishedMunicipalities.map(municipality =>
           serializeMunicipalityToJson(blobService, municipality)
         )
-      )
-    );
+      );
+    });
+
+export const getItalianMunicipalitiesCsv = (): TaskEither<
+  Error,
+  StringMatrix
+> =>
+  getCsvFromURL(ITALIAN_MUNICIPALITIES_URL).chain(csvContent =>
+    parseCsv(csvContent, currentMunicipalitiesParserOption)
+  );
 
 export const exportCurrentMunicipalities = (
-  blobService: BlobService
-): TaskEither<Error, ReadonlyArray<Option<BlobService.BlobResult>>> =>
-  getCsvFromURL(ITALIAN_MUNICIPALITIES_URL)
-    .chain(csvContent =>
-      parseCsv(csvContent, currentMunicipalitiesParserOption)
+  blobService: BlobService,
+  parsedCsv: StringMatrix
+): ReadonlyArray<TaskEither<Error, Option<BlobService.BlobResult>>> => {
+  log.info(`CurrentMunicipalities size = ${parsedCsv.length}`);
+  return parsedCsv.map<TaskEither<Error, Option<BlobService.BlobResult>>>(r =>
+    decodeMunicipality(r).fold(
+      e =>
+        fromLeft(
+          new Error(`Cannot decode current municipality| ${e.toString()}`)
+        ),
+      municipality =>
+        serializeMunicipalityToJson(blobService, {
+          codiceCatastale: r[
+            CODICE_CATASTALE_INDEXES.currentMunicipality
+          ] as NonEmptyString,
+          municipality
+        })
     )
-    .chain(result =>
-      array.sequence(taskEither)(
-        result.map(r =>
-          decodeMunicipality(r).fold(
-            e =>
-              fromLeft(
-                new Error(`Cannot decode current municipality| ${e.toString()}`)
-              ),
-            municipality =>
-              serializeMunicipalityToJson(blobService, {
-                codiceCatastale: r[
-                  CODICE_CATASTALE_INDEXES.currentMunicipality
-                ] as NonEmptyString,
-                municipality
-              })
-          )
-        )
-      )
-    );
+  );
+};
 
 export const exportForeignMunicipalities = (
   blobService: BlobService
@@ -344,9 +376,10 @@ export const exportForeignMunicipalities = (
         csv => parseCsv(csv, optionCsvParseForeignCountries)
       )
     )
-    .chain(result =>
-      array.sequence(taskEither)(
-        filterEmptyCodiceCatastaleRecords(result).map(r =>
+    .chain(result => {
+      log.info(`ForeignMunicipalities size = ${result.length}`);
+      return array.sequence(taskEitherSeq)(
+        filterEmptyAndInvalidCodiceCatastaleRecords(result).map(r =>
           decodeForeignCountry(r).fold(
             e =>
               fromLeft(
@@ -361,5 +394,5 @@ export const exportForeignMunicipalities = (
               })
           )
         )
-      )
-    );
+      );
+    });
