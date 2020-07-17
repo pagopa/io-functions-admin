@@ -156,7 +156,7 @@ export const createSetUserSessionLockActivityHandler = (
     .chain(({ action, fiscalCode }) =>
       callSessionApi(sessionApiClient, action, fiscalCode)
     )
-    .bimap(
+    .fold<ActivityResult>(
       failure => {
         context.log.error(`${logPrefix}|ERROR|Activity failed`, failure);
 
@@ -171,6 +171,4 @@ export const createSetUserSessionLockActivityHandler = (
         return ActivityResultSuccess.encode({ kind: "SUCCESS" });
       }
     )
-
-    .run()
-    .then(e => e.value);
+    .run();
