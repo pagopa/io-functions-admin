@@ -1,6 +1,6 @@
 import { BlobService } from "azure-storage";
 import { array } from "fp-ts/lib/Array";
-import { isLeft, isRight, left as leftE, parseJSON } from "fp-ts/lib/Either";
+import { isRight, left as leftE, parseJSON } from "fp-ts/lib/Either";
 import { Option } from "fp-ts/lib/Option";
 import {
   fromEither,
