@@ -1,5 +1,5 @@
 ﻿import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
-import nodeFetch from "node-fetch";
+import { timeoutFetch } from "../utils/fetch";
 import { Client, createClient } from "../utils/sessionApiClient";
 import { createSetUserSessionLockActivityHandler } from "./handler";
 
@@ -8,7 +8,7 @@ const sessionApiKey = getRequiredStringEnv("SESSION_API_KEY");
 
 const client: Client<"ApiKey"> = createClient({
   baseUrl: sessionApiUrl,
-  fetchApi: (nodeFetch as unknown) as typeof fetch,
+  fetchApi: timeoutFetch,
   withDefaults: apiOperation => ({ fiscalCode }) =>
     apiOperation({ fiscalCode, ApiKey: sessionApiKey })
 });
