@@ -1,12 +1,16 @@
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
 import { fromNullable } from "fp-ts/lib/Either";
+import { Lazy } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
-import { makeOrchestratorId as makeDeleteOrchestratorId } from "../UserDataDeleteOrchestrator/utils";
+import {
+  ABORT_EVENT as ABORT_DELETE_EVENT,
+  makeOrchestratorId as makeDeleteOrchestratorId
+} from "../UserDataDeleteOrchestrator/utils";
 
 const logPrefix = "UserDataProcessingTrigger";
 
@@ -38,6 +42,20 @@ export const ProcessableUserDataDelete = t.intersection([
   })
 ]);
 
+// models the subset of UserDataProcessing documents that are delete abort requests
+export type ProcessableUserDataDeleteAbort = t.TypeOf<
+  typeof ProcessableUserDataDeleteAbort
+>;
+export const ProcessableUserDataDeleteAbort = t.intersection([
+  UserDataProcessing,
+  // ony the subset of UserDataProcessing documents
+  // with the following characteristics must be processed
+  t.interface({
+    choice: t.literal(UserDataProcessingChoiceEnum.DELETE),
+    status: t.literal(UserDataProcessingStatusEnum.ABORTED)
+  })
+]);
+
 const CosmosDbDocumentCollection = t.readonlyArray(t.readonly(t.UnknownRecord));
 type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
@@ -50,31 +68,44 @@ interface ITaskDescriptor {
 export function index(
   context: Context,
   input: unknown
-): Promise<readonly string[]> {
+): Promise<ReadonlyArray<string | void>> {
   const dfClient = df.getClient(context);
-  const tasksDescriptors = CosmosDbDocumentCollection.decode(input)
+  const operations = CosmosDbDocumentCollection.decode(input)
     .getOrElseL(err => {
       throw Error(`${logPrefix}: cannot decode input [${readableReport(err)}]`);
     })
     .reduce(
-      (tasks, processableOrNot) =>
+      (lazyOperations, processableOrNot) =>
         t
-          .union([ProcessableUserDataDownload, ProcessableUserDataDelete])
+          .union([
+            ProcessableUserDataDownload,
+            ProcessableUserDataDelete,
+            ProcessableUserDataDeleteAbort
+          ])
           .decode(processableOrNot)
           .chain(processable =>
             fromNullable(undefined)(
               ProcessableUserDataDownload.is(processable)
-                ? {
-                    id: processable.userDataProcessingId,
-                    input: processable,
-                    orchestrator: "UserDataDownloadOrchestrator"
-                  }
+                ? () =>
+                    dfClient.startNew(
+                      "UserDataDownloadOrchestrator",
+                      processable.userDataProcessingId,
+                      processable
+                    )
                 : ProcessableUserDataDelete.is(processable)
-                ? {
-                    id: makeDeleteOrchestratorId(processable),
-                    input: processable,
-                    orchestrator: "UserDataDeleteOrchestrator"
-                  }
+                ? () =>
+                    dfClient.startNew(
+                      "UserDataDeleteOrchestrator",
+                      makeDeleteOrchestratorId(processable),
+                      processable
+                    )
+                : ProcessableUserDataDeleteAbort.is(processable)
+                ? () =>
+                    dfClient.raiseEvent(
+                      makeDeleteOrchestratorId(processable),
+                      ABORT_DELETE_EVENT,
+                      {}
+                    )
                 : undefined
             )
           )
@@ -85,23 +116,18 @@ export function index(
                   processableOrNot
                 )}]`
               );
-              return tasks;
+              return lazyOperations;
             },
-            task => [...tasks, task]
+            lazyOp => [...lazyOperations, lazyOp]
           ),
-      [] as readonly ITaskDescriptor[]
+      [] as ReadonlyArray<Lazy<Promise<string | void>>>
     );
 
   context.log.info(
-    `${logPrefix}: processing ${tasksDescriptors.length} document${
-      tasksDescriptors.length === 1 ? "" : "s"
+    `${logPrefix}: processing ${operations.length} document${
+      operations.length === 1 ? "" : "s"
     }`
   );
 
-  const startAllNew = () =>
-    tasksDescriptors.map(({ orchestrator, id, input: orchestratorInput }) =>
-      dfClient.startNew(orchestrator, id, orchestratorInput)
-    );
-
-  return Promise.all(startAllNew());
+  return Promise.all(operations.map(op => op()));
 }

@@ -3,11 +3,16 @@
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
-import { context, mockStartNew } from "../../__mocks__/durable-functions";
+import {
+  context,
+  mockRaiseEvent,
+  mockStartNew
+} from "../../__mocks__/durable-functions";
 import { aUserDataProcessing } from "../../__mocks__/mocks";
 import {
   index,
   ProcessableUserDataDelete,
+  ProcessableUserDataDeleteAbort,
   ProcessableUserDataDownload
 } from "../index";
 
@@ -40,6 +45,12 @@ const aNonProcessableDeleteWrongStatus = {
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DELETE,
   status: UserDataProcessingStatusEnum.WIP
+};
+
+const aProcessableDeleteAbort = {
+  ...aUserDataProcessing,
+  choice: UserDataProcessingChoiceEnum.DELETE,
+  status: UserDataProcessingStatusEnum.ABORTED
 };
 
 describe("UserDataProcessingTrigger", () => {
@@ -83,15 +94,22 @@ describe("UserDataProcessingTrigger", () => {
       aProcessableDelete
     ];
 
+    const processableDocsAbort: ReadonlyArray<UserDataProcessing> = [
+      aProcessableDeleteAbort,
+      aProcessableDeleteAbort
+    ];
+
     const input: ReadonlyArray<any> = [
       ...processableDocs,
       aNonProcessableDownloadWrongStatus,
+      ...processableDocsAbort,
       aNonProcessableDeleteWrongStatus
     ].map(toUndecoded);
 
     await index(context, input);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
+    expect(mockRaiseEvent).toHaveBeenCalledTimes(processableDocsAbort.length);
   });
 });
 
@@ -118,11 +136,29 @@ describe("ProcessableUserDataDelete", () => {
     );
   });
   it.each`
+    name                          | value
+    ${"delete wrong status"}      | ${aNonProcessableDeleteWrongStatus}
+    ${"download wrong status"}    | ${aNonProcessableDownloadWrongStatus}
+    ${"processable download"}     | ${aProcessableDownload}
+    ${"processable delete abort"} | ${aProcessableDeleteAbort}
+  `("should not map unprocessable record '$name'", ({ value }) => {
+    expect(ProcessableUserDataDelete.decode(value).isLeft()).toBe(true);
+  });
+});
+
+describe("ProcessableUserDataDeleteAbort", () => {
+  it("should map processable delete records", () => {
+    expect(
+      ProcessableUserDataDeleteAbort.decode(aProcessableDeleteAbort).isRight()
+    ).toBe(true);
+  });
+  it.each`
     name                       | value
     ${"delete wrong status"}   | ${aNonProcessableDeleteWrongStatus}
     ${"download wrong status"} | ${aNonProcessableDownloadWrongStatus}
     ${"processable download"}  | ${aProcessableDownload}
+    ${"processable delete"}    | ${aProcessableDelete}
   `("should not map unprocessable record '$name'", ({ value }) => {
-    expect(ProcessableUserDataDelete.decode(value).isLeft()).toBe(true);
+    expect(ProcessableUserDataDeleteAbort.decode(value).isLeft()).toBe(true);
   });
 });
