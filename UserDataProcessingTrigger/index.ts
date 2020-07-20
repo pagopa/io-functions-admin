@@ -6,6 +6,7 @@ import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generate
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
+import { makeOrchestratorId as makeDeleteOrchestratorId } from "../UserDataDeleteOrchestrator/utils";
 
 const logPrefix = "UserDataProcessingTrigger";
 
@@ -42,7 +43,7 @@ type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
 interface ITaskDescriptor {
   orchestrator: string;
-  id: UserDataProcessing["userDataProcessingId"];
+  id: string;
   input: ProcessableUserDataDownload | ProcessableUserDataDelete;
 }
 
@@ -70,7 +71,7 @@ export function index(
                   }
                 : ProcessableUserDataDelete.is(processable)
                 ? {
-                    id: processable.userDataProcessingId,
+                    id: makeDeleteOrchestratorId(processable),
                     input: processable,
                     orchestrator: "UserDataDeleteOrchestrator"
                   }

@@ -1,4 +1,4 @@
-import { IFunctionContext } from "durable-functions/lib/src/classes";
+import { IFunctionContext, Task } from "durable-functions/lib/src/classes";
 import { isLeft } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
@@ -17,20 +17,13 @@ import {
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
+import { ABORT_EVENT } from "./utils";
 
 const logPrefix = "UserDataDeleteOrchestrator";
 const aDayInMilliseconds = 24 * 60 * 60 * 1000;
 
 const printableError = (error: Error | unknown): string =>
   error instanceof Error ? error.message : toString(error);
-
-const makeBackupFolder = (
-  context: IFunctionContext,
-  currentUserDataProcessing: UserDataProcessing
-) =>
-  `${
-    currentUserDataProcessing.userDataProcessingId
-  }-${context.df.currentUtcDateTime.getTime()}` as NonEmptyString;
 
 const makeWaitIntervalFinishDate = (context: IFunctionContext, days: Day) =>
   new Date(context.df.currentUtcDateTime.getTime() + days * aDayInMilliseconds);
@@ -93,6 +86,66 @@ const toActivityFailure = (
     reason: readableReport(err)
   });
 
+function* setUserSessionLock(
+  context: IFunctionContext,
+  { action, fiscalCode }: SetUserSessionLockActivityInput
+): IterableIterator<SetUserSessionLockActivityInput | Task> {
+  const result = yield context.df.callActivity(
+    "SetUserSessionLockActivity",
+    SetUserSessionLockActivityInput.encode({
+      action,
+      fiscalCode
+    })
+  );
+  return SetUserSessionLockActivityResultSuccess.decode(result).getOrElseL(
+    err => {
+      throw toActivityFailure(err, "SetUserSessionLockActivity", {
+        action
+      });
+    }
+  );
+}
+
+function* setUserDataProcessingStatus(
+  context: IFunctionContext,
+  currentRecord: UserDataProcessing,
+  nextStatus: UserDataProcessingStatusEnum
+): IterableIterator<SetUserDataProcessingStatusActivityResultSuccess | Task> {
+  const result = yield context.df.callActivity(
+    "SetUserDataProcessingStatusActivity",
+    {
+      currentRecord,
+      nextStatus
+    }
+  );
+  return SetUserDataProcessingStatusActivityResultSuccess.decode(
+    result
+  ).getOrElseL(err => {
+    throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
+      status: nextStatus
+    });
+  });
+}
+
+function* deleteUserData(
+  context: IFunctionContext,
+  currentRecord: UserDataProcessing
+): IterableIterator<DeleteUserDataActivityResultSuccess | Task> {
+  const backupFolder = `${
+    currentRecord.userDataProcessingId
+  }-${context.df.currentUtcDateTime.getTime()}` as NonEmptyString;
+  const result = yield context.df.callActivity(
+    "DeleteUserDataActivity",
+    DeleteUserDataActivityInput.encode({
+      backupFolder,
+      fiscalCode: currentRecord.fiscalCode
+    })
+  );
+  return DeleteUserDataActivityResultSuccess.decode(result).getOrElseL(err => {
+    throw toActivityFailure(err, "DeleteUserDataActivity");
+  });
+}
+
 export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
   function*(context: IFunctionContext): IterableIterator<unknown> {
     const document = context.df.getInput();
@@ -121,31 +174,17 @@ export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
 
     try {
       // lock user session
-      SetUserSessionLockActivityResultSuccess.decode(
-        yield context.df.callActivity(
-          "SetUserSessionLockActivity",
-          SetUserSessionLockActivityInput.encode({
-            action: "LOCK",
-            fiscalCode: currentUserDataProcessing.fiscalCode
-          })
-        )
-      ).getOrElseL(err => {
-        throw toActivityFailure(err, "SetUserSessionLockActivity", {
-          action: "LOCK"
-        });
+      yield* setUserSessionLock(context, {
+        action: "LOCK",
+        fiscalCode: currentUserDataProcessing.fiscalCode
       });
 
       // set as wip
-      SetUserDataProcessingStatusActivityResultSuccess.decode(
-        yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-          currentRecord: currentUserDataProcessing,
-          nextStatus: UserDataProcessingStatusEnum.WIP
-        })
-      ).getOrElseL(err => {
-        throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
-          status: UserDataProcessingStatusEnum.WIP
-        });
-      });
+      yield* setUserDataProcessingStatus(
+        context,
+        currentUserDataProcessing,
+        UserDataProcessingStatusEnum.WIP
+      );
 
       // we have an interval on which we wait for eventual cancellation bu the user
       const intervalExpiredEvent = context.df.createTimer(
@@ -153,77 +192,37 @@ export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
       );
 
       // we wait for eventually abort message from the user
-      const canceledRequestEvent = context.df.waitForExternalEvent(
-        "user-data-processing-delete-abort"
-      );
+      const canceledRequestEvent = context.df.waitForExternalEvent(ABORT_EVENT);
 
       // the first that get triggered
       const triggeredEvent = yield context.df.Task.any([
         intervalExpiredEvent,
         canceledRequestEvent
       ]);
-      console.log(
-        "dddddd",
-        triggeredEvent,
-        intervalExpiredEvent,
-        triggeredEvent === intervalExpiredEvent
-      );
+
       if (triggeredEvent === intervalExpiredEvent) {
         // backup&delete data
-        DeleteUserDataActivityResultSuccess.decode(
-          yield context.df.callActivity(
-            "DeleteUserDataActivity",
-            DeleteUserDataActivityInput.encode({
-              backupFolder: makeBackupFolder(
-                context,
-                currentUserDataProcessing
-              ),
-              fiscalCode: currentUserDataProcessing.fiscalCode
-            })
-          )
-        ).getOrElseL(err => {
-          throw toActivityFailure(err, "DeleteUserDataActivity");
-        });
+        yield* deleteUserData(context, currentUserDataProcessing);
 
         // set as closed
-        SetUserDataProcessingStatusActivityResultSuccess.decode(
-          yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-            currentRecord: currentUserDataProcessing,
-            nextStatus: UserDataProcessingStatusEnum.CLOSED
-          })
-        ).getOrElseL(err => {
-          throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
-            status: UserDataProcessingStatusEnum.CLOSED
-          });
-        });
+        yield* setUserDataProcessingStatus(
+          context,
+          currentUserDataProcessing,
+          UserDataProcessingStatusEnum.CLOSED
+        );
       } else {
-        // set as closed
-        SetUserDataProcessingStatusActivityResultSuccess.decode(
-          yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-            currentRecord: currentUserDataProcessing,
-            nextStatus: UserDataProcessingStatusEnum.ABORTED
-          })
-        ).getOrElseL(err => {
-          throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
-            status: UserDataProcessingStatusEnum.ABORTED
-          });
-        });
+        // set as aborted
+        yield* setUserDataProcessingStatus(
+          context,
+          currentUserDataProcessing,
+          UserDataProcessingStatusEnum.ABORTED
+        );
       }
 
       // unlock user
-      SetUserSessionLockActivityResultSuccess.decode(
-        yield context.df.callActivity(
-          "SetUserSessionLockActivity",
-          SetUserSessionLockActivityInput.encode({
-            action: "UNLOCK",
-            fiscalCode: currentUserDataProcessing.fiscalCode
-          })
-        )
-        // tslint:disable-next-line: no-identical-functions
-      ).getOrElseL(err => {
-        throw toActivityFailure(err, "SetUserSessionLockActivity", {
-          action: "UNLOCK"
-        });
+      yield* setUserSessionLock(context, {
+        action: "UNLOCK",
+        fiscalCode: currentUserDataProcessing.fiscalCode
       });
 
       return OrchestratorSuccess.encode({ kind: "SUCCESS" });
