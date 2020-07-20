@@ -1,6 +1,6 @@
 import * as df from "durable-functions";
-import { handler } from "./handler";
+import { createUserDataDeleteOrchestratorHandler } from "./handler";
 
-const orchestrator = df.orchestrator(handler);
+const orchestrator = df.orchestrator(createUserDataDeleteOrchestratorHandler);
 
 export default orchestrator;

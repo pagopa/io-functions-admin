@@ -92,7 +92,7 @@ const toActivityFailure = (
     reason: readableReport(err)
   });
 
-export const handler = function*(
+export const createUserDataDeleteOrchestratorHandler = function*(
   context: IFunctionContext
 ): IterableIterator<unknown> {
   const document = context.df.getInput();
