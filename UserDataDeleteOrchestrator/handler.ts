@@ -173,19 +173,6 @@ export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
       invalidInputOrCurrentUserDataProcessing.value;
 
     try {
-      // lock user session
-      yield* setUserSessionLock(context, {
-        action: "LOCK",
-        fiscalCode: currentUserDataProcessing.fiscalCode
-      });
-
-      // set as wip
-      yield* setUserDataProcessingStatus(
-        context,
-        currentUserDataProcessing,
-        UserDataProcessingStatusEnum.WIP
-      );
-
       // we have an interval on which we wait for eventual cancellation bu the user
       const intervalExpiredEvent = context.df.createTimer(
         makeWaitIntervalFinishDate(context, waitInterval)
@@ -201,6 +188,19 @@ export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
       ]);
 
       if (triggeredEvent === intervalExpiredEvent) {
+        // lock user session
+        yield* setUserSessionLock(context, {
+          action: "LOCK",
+          fiscalCode: currentUserDataProcessing.fiscalCode
+        });
+
+        // set as wip
+        yield* setUserDataProcessingStatus(
+          context,
+          currentUserDataProcessing,
+          UserDataProcessingStatusEnum.WIP
+        );
+
         // backup&delete data
         yield* deleteUserData(context, currentUserDataProcessing);
 
@@ -210,6 +210,12 @@ export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
           currentUserDataProcessing,
           UserDataProcessingStatusEnum.CLOSED
         );
+
+        // unlock user
+        yield* setUserSessionLock(context, {
+          action: "UNLOCK",
+          fiscalCode: currentUserDataProcessing.fiscalCode
+        });
       } else {
         // set as aborted
         yield* setUserDataProcessingStatus(
@@ -218,12 +224,6 @@ export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
           UserDataProcessingStatusEnum.ABORTED
         );
       }
-
-      // unlock user
-      yield* setUserSessionLock(context, {
-        action: "UNLOCK",
-        fiscalCode: currentUserDataProcessing.fiscalCode
-      });
 
       return OrchestratorSuccess.encode({ kind: "SUCCESS" });
     } catch (error) {

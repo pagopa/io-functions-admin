@@ -266,32 +266,14 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
-    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
-    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        nextStatus: UserDataProcessingStatusEnum.WIP
-      })
-    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.ABORTED
       })
     );
-    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
-    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        action: "LOCK"
-      })
-    );
-    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        action: "UNLOCK"
-      })
-    );
+    expect(setUserSessionLockActivity).not.toHaveBeenCalled();
     expect(deleteUserDataActivity).not.toHaveBeenCalled();
   });
 });
