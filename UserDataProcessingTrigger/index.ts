@@ -11,6 +11,7 @@ import {
   ABORT_EVENT as ABORT_DELETE_EVENT,
   makeOrchestratorId as makeDeleteOrchestratorId
 } from "../UserDataDeleteOrchestrator/utils";
+import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
 
 const logPrefix = "UserDataProcessingTrigger";
 
@@ -59,12 +60,6 @@ export const ProcessableUserDataDeleteAbort = t.intersection([
 const CosmosDbDocumentCollection = t.readonlyArray(t.readonly(t.UnknownRecord));
 type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
-interface ITaskDescriptor {
-  orchestrator: string;
-  id: string;
-  input: ProcessableUserDataDownload | ProcessableUserDataDelete;
-}
-
 export function index(
   context: Context,
   input: unknown
@@ -89,20 +84,20 @@ export function index(
                 ? () =>
                     dfClient.startNew(
                       "UserDataDownloadOrchestrator",
-                      processable.userDataProcessingId,
+                      makeDownloadOrchestratorId(processable.fiscalCode),
                       processable
                     )
                 : ProcessableUserDataDelete.is(processable)
                 ? () =>
                     dfClient.startNew(
                       "UserDataDeleteOrchestrator",
-                      makeDeleteOrchestratorId(processable),
+                      makeDeleteOrchestratorId(processable.fiscalCode),
                       processable
                     )
                 : ProcessableUserDataDeleteAbort.is(processable)
                 ? () =>
                     dfClient.raiseEvent(
-                      makeDeleteOrchestratorId(processable),
+                      makeDeleteOrchestratorId(processable.fiscalCode),
                       ABORT_DELETE_EVENT,
                       {}
                     )
