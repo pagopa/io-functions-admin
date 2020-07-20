@@ -1,32 +1,35 @@
 import { IFunctionContext, Task } from "durable-functions/lib/src/classes";
 import { isLeft } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
+import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
-import { Day } from "italia-ts-commons/lib/units";
+import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
+import { Day, Hour } from "italia-ts-commons/lib/units";
 import {
   ActivityInput as DeleteUserDataActivityInput,
   ActivityResultSuccess as DeleteUserDataActivityResultSuccess
 } from "../DeleteUserDataActivity/types";
+import {
+  ActivityInput as GetUserDataProcessingStatusActivityInput,
+  ActivityResult as GetUserDataProcessingStatusActivityResult,
+  ActivityResultNotFoundFailure as GetUserDataProcessingStatusActivityResultNotFoundFailure,
+  ActivityResultSuccess as GetUserDataProcessingStatusActivityResultSuccess
+} from "../GetUserDataProcessingActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import {
   ActivityInput as SetUserSessionLockActivityInput,
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
-import { ABORT_EVENT } from "./utils";
+import { ABORT_EVENT, addDays, addHours } from "./utils";
 
 const logPrefix = "UserDataDeleteOrchestrator";
-const aDayInMilliseconds = 24 * 60 * 60 * 1000;
 
 const printableError = (error: Error | unknown): string =>
   error instanceof Error ? error.message : toString(error);
-
-const makeWaitIntervalFinishDate = (context: IFunctionContext, days: Day) =>
-  new Date(context.df.currentUtcDateTime.getTime() + days * aDayInMilliseconds);
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 export const InvalidInputFailure = t.interface({
@@ -75,7 +78,7 @@ export const OrchestratorResult = t.union([
 ]);
 
 const toActivityFailure = (
-  err: t.Errors,
+  err: { kind: string },
   activityName: string,
   extra?: object
 ) =>
@@ -83,7 +86,7 @@ const toActivityFailure = (
     activityName,
     extra,
     kind: "ACTIVITY",
-    reason: readableReport(err)
+    reason: err.kind
   });
 
 function* setUserSessionLock(
@@ -98,8 +101,8 @@ function* setUserSessionLock(
     })
   );
   return SetUserSessionLockActivityResultSuccess.decode(result).getOrElseL(
-    err => {
-      throw toActivityFailure(err, "SetUserSessionLockActivity", {
+    _ => {
+      throw toActivityFailure(result, "SetUserSessionLockActivity", {
         action
       });
     }
@@ -120,11 +123,44 @@ function* setUserDataProcessingStatus(
   );
   return SetUserDataProcessingStatusActivityResultSuccess.decode(
     result
-  ).getOrElseL(err => {
-    throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
+  ).getOrElseL(_ => {
+    throw toActivityFailure(result, "SetUserDataProcessingStatusActivity", {
       status: nextStatus
     });
   });
+}
+
+function* hasPendingDownload(
+  context: IFunctionContext,
+  fiscalCode: FiscalCode
+): IterableIterator<SetUserDataProcessingStatusActivityResultSuccess | Task> {
+  const result = yield context.df.callActivity(
+    "GetUserDataProcessingActivity",
+    GetUserDataProcessingStatusActivityInput.encode({
+      choice: UserDataProcessingChoiceEnum.DOWNLOAD,
+      fiscalCode
+    })
+  );
+
+  return GetUserDataProcessingStatusActivityResult.decode(result).fold(
+    _ => {
+      throw toActivityFailure(result, "GetUserDataProcessingActivity");
+    }, // check if
+    response => {
+      if (GetUserDataProcessingStatusActivityResultSuccess.is(response)) {
+        return [
+          UserDataProcessingStatusEnum.PENDING,
+          UserDataProcessingStatusEnum.WIP
+        ].includes(response.value.status);
+      } else if (
+        GetUserDataProcessingStatusActivityResultNotFoundFailure.is(response)
+      ) {
+        return false;
+      }
+
+      throw toActivityFailure(response, "GetUserDataProcessingActivity");
+    }
+  );
 }
 
 function* deleteUserData(
@@ -141,12 +177,21 @@ function* deleteUserData(
       fiscalCode: currentRecord.fiscalCode
     })
   );
-  return DeleteUserDataActivityResultSuccess.decode(result).getOrElseL(err => {
-    throw toActivityFailure(err, "DeleteUserDataActivity");
+  return DeleteUserDataActivityResultSuccess.decode(result).getOrElseL(_ => {
+    throw toActivityFailure(result, "DeleteUserDataActivity");
   });
 }
 
-export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
+/**
+ * Create a handler for the rochestrator
+ *
+ * @param waitForAbortInterval Indicates how many days the request must be left pending, waiting for an eventual abort request
+ * @param waitForDownloadInterval Indicates how many hours the request must be postponed in case a download request is being processing meanwhile
+ */
+export const createUserDataDeleteOrchestratorHandler = (
+  waitForAbortInterval: Day,
+  waitForDownloadInterval: Hour = 12 as Hour
+) =>
   function*(context: IFunctionContext): IterableIterator<unknown> {
     const document = context.df.getInput();
     // This check has been done on the trigger, so it should never fail.
@@ -175,7 +220,7 @@ export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
     try {
       // we have an interval on which we wait for eventual cancellation bu the user
       const intervalExpiredEvent = context.df.createTimer(
-        makeWaitIntervalFinishDate(context, waitInterval)
+        addDays(context, waitForAbortInterval)
       );
 
       // we wait for eventually abort message from the user
@@ -200,6 +245,20 @@ export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
           currentUserDataProcessing,
           UserDataProcessingStatusEnum.WIP
         );
+
+        // If there's a working download request, we postpone delete of one day
+        while (
+          yield* hasPendingDownload(
+            context,
+            currentUserDataProcessing.fiscalCode
+          )
+        ) {
+          // we wait some more time for the download process to end
+          const waitForDownloadEvent = context.df.createTimer(
+            addHours(context, waitForDownloadInterval)
+          );
+          yield waitForDownloadEvent;
+        }
 
         // backup&delete data
         yield* deleteUserData(context, currentUserDataProcessing);
@@ -245,11 +304,11 @@ export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
         );
       });
 
-      return OrchestratorFailure.is(error)
-        ? error
-        : UnhanldedFailure.encode({
-            kind: "UNHANDLED",
-            reason: error.message
-          });
+      return OrchestratorFailure.decode(error).getOrElse(
+        UnhanldedFailure.encode({
+          kind: "UNHANDLED",
+          reason: printableError(error)
+        })
+      );
     }
   };

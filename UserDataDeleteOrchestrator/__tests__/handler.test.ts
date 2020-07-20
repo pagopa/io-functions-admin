@@ -17,13 +17,17 @@ import {
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { readableReport } from "italia-ts-commons/lib/reporters";
+import { Day, Hour } from "italia-ts-commons/lib/units";
 import { aUserDataProcessing } from "../../__mocks__/mocks";
 import { ActivityResultSuccess as DeleteUserDataActivityResultSuccess } from "../../DeleteUserDataActivity/types";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
+import {
+  ActivityResultSuccess as GetUserDataProcessingActivityResultSuccess,
+  ActivityResultNotFoundFailure as GetUserDataProcessingActivityResultNotFoundFailure
+} from "../../GetUserDataProcessingActivity/handler";
 import { ActivityResultSuccess as SetUserSessionLockActivityResultSuccess } from "../../SetUserSessionLockActivity/handler";
 import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler";
 import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger";
-import { Day } from "italia-ts-commons/lib/units";
 
 const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
   ...aUserDataProcessing,
@@ -33,10 +37,34 @@ const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
   fail(`Failed creating a mock input document: ${readableReport(e)}`)
 );
 
+const aUserDataDownloadPending = {
+  ...aUserDataProcessing,
+  choice: UserDataProcessingChoiceEnum.DOWNLOAD,
+  status: UserDataProcessingStatusEnum.PENDING
+};
+
+const aUserDataDownloadWip = {
+  ...aUserDataProcessing,
+  choice: UserDataProcessingChoiceEnum.DOWNLOAD,
+  status: UserDataProcessingStatusEnum.WIP
+};
+
+const aUserDataDownloadClosed = {
+  ...aUserDataProcessing,
+  choice: UserDataProcessingChoiceEnum.DOWNLOAD,
+  status: UserDataProcessingStatusEnum.CLOSED
+};
+
 const setUserDataProcessingStatusActivity = jest.fn().mockImplementation(() =>
   SetUserDataProcessingStatusActivityResultSuccess.encode({
     kind: "SUCCESS",
     value: aProcessableUserDataDelete
+  })
+);
+
+const getUserDataProcessingActivity = jest.fn().mockImplementation(() =>
+  GetUserDataProcessingActivityResultNotFoundFailure.encode({
+    kind: "NOT_FOUND_FAILURE"
   })
 );
 
@@ -56,6 +84,8 @@ const deleteUserDataActivity = jest.fn().mockImplementation(() =>
 const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
   (name === "SetUserDataProcessingStatusActivity"
     ? setUserDataProcessingStatusActivity
+    : name === "GetUserDataProcessingActivity"
+    ? getUserDataProcessingActivity
     : name === "SetUserSessionLockActivity"
     ? setUserSessionLockActivity
     : name === "DeleteUserDataActivity"
@@ -91,7 +121,8 @@ const consumeOrchestrator = (orch: any) => {
 // just a convenient cast, good for every test case
 const context = (mockOrchestratorContext as unknown) as IFunctionContext;
 
-const waitInterval = 0 as Day;
+const waitForAbortInterval = 0 as Day;
+const waitForDownloadInterval = 0 as Hour;
 
 describe("createUserDataDeleteOrchestratorHandler", () => {
   beforeEach(() => {
@@ -102,7 +133,10 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     mockOrchestratorGetInput.mockReturnValueOnce("invalid input");
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
     );
 
     expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
@@ -119,7 +153,10 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
@@ -138,7 +175,10 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
@@ -157,7 +197,10 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
@@ -181,7 +224,10 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
@@ -206,7 +252,10 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
@@ -218,11 +267,14 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
   });
 
-  it("should set status as CLOSED if wait interval expired", () => {
+  it("should set status as CLOSED if wait interval expires", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
     );
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
@@ -262,7 +314,10 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     mockOrchestratorTaskAny.mockImplementationOnce(([, _]) => _);
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
     );
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
@@ -275,5 +330,43 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
     expect(setUserSessionLockActivity).not.toHaveBeenCalled();
     expect(deleteUserDataActivity).not.toHaveBeenCalled();
+  });
+
+  it("should wait if there are pending downloads", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
+    // call 1: it's pending
+    getUserDataProcessingActivity.mockImplementationOnce(() =>
+      GetUserDataProcessingActivityResultSuccess.encode({
+        kind: "SUCCESS",
+        value: aUserDataDownloadPending
+      })
+    );
+
+    // call 2: it's wip
+    getUserDataProcessingActivity.mockImplementationOnce(() =>
+      GetUserDataProcessingActivityResultSuccess.encode({
+        kind: "SUCCESS",
+        value: aUserDataDownloadWip
+      })
+    );
+
+    // call 3: it's closed (so we can continue with delete)
+    getUserDataProcessingActivity.mockImplementationOnce(() =>
+      GetUserDataProcessingActivityResultSuccess.encode({
+        kind: "SUCCESS",
+        value: aUserDataDownloadClosed
+      })
+    );
+
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
+    );
+
+    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(3);
   });
 });
