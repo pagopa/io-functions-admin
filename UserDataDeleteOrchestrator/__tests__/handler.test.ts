@@ -20,8 +20,8 @@ import { aUserDataProcessing } from "../../__mocks__/mocks";
 import { ActivityResultSuccess as DeleteUserDataActivityResultSuccess } from "../../DeleteUserDataActivity/types";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import { ActivityResultSuccess as SetUserSessionLockActivityResultSuccess } from "../../SetUserSessionLockActivity/handler";
-import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger";
 import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler";
+import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger";
 
 const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
   ...aUserDataProcessing,
