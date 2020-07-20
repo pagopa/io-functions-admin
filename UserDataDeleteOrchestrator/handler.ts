@@ -6,6 +6,7 @@ import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_da
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { Day } from "italia-ts-commons/lib/units";
 import {
   ActivityInput as DeleteUserDataActivityInput,
   ActivityResultSuccess as DeleteUserDataActivityResultSuccess
@@ -31,8 +32,8 @@ const makeBackupFolder = (
     currentUserDataProcessing.userDataProcessingId
   }-${context.df.currentUtcDateTime.getTime()}` as NonEmptyString;
 
-const makeWaitIntervalFinishDate = (context: IFunctionContext) =>
-  new Date(context.df.currentUtcDateTime.getTime() + 7 * aDayInMilliseconds);
+const makeWaitIntervalFinishDate = (context: IFunctionContext, days: Day) =>
+  new Date(context.df.currentUtcDateTime.getTime() + days * aDayInMilliseconds);
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 export const InvalidInputFailure = t.interface({
@@ -92,133 +93,164 @@ const toActivityFailure = (
     reason: readableReport(err)
   });
 
-export const createUserDataDeleteOrchestratorHandler = function*(
-  context: IFunctionContext
-): IterableIterator<unknown> {
-  const document = context.df.getInput();
-  // This check has been done on the trigger, so it should never fail.
-  // However, it's worth the effort to check it twice
-  const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataDelete.decode(
-    document
-  ).mapLeft<InvalidInputFailure>(err => {
-    context.log.error(
-      `${logPrefix}|WARN|Cannot decode ProcessableUserDataDelete document: ${readableReport(
-        err
-      )}`
-    );
-    return InvalidInputFailure.encode({
-      kind: "INVALID_INPUT",
-      reason: readableReport(err)
-    });
-  });
-
-  if (isLeft(invalidInputOrCurrentUserDataProcessing)) {
-    return invalidInputOrCurrentUserDataProcessing.value;
-  }
-
-  const currentUserDataProcessing =
-    invalidInputOrCurrentUserDataProcessing.value;
-
-  try {
-    // lock user session
-    SetUserSessionLockActivityResultSuccess.decode(
-      yield context.df.callActivity(
-        "SetUserSessionLockActivity",
-        SetUserSessionLockActivityInput.encode({
-          action: "LOCK",
-          fiscalCode: currentUserDataProcessing.fiscalCode
-        })
-      )
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "SetUserSessionLockActivity", {
-        action: "LOCK"
-      });
-    });
-
-    // set as wip
-    SetUserDataProcessingStatusActivityResultSuccess.decode(
-      yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-        currentRecord: currentUserDataProcessing,
-        nextStatus: UserDataProcessingStatusEnum.WIP
-      })
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
-        status: UserDataProcessingStatusEnum.WIP
-      });
-    });
-
-    // we have an interval on which we wait for eventual cancellation bu the user
-    yield context.df.createTimer(makeWaitIntervalFinishDate(context));
-
-    //
-    // TODO: handle cancellation
-    //
-
-    // backup&delete data
-    DeleteUserDataActivityResultSuccess.decode(
-      yield context.df.callActivity(
-        "DeleteUserDataActivity",
-        DeleteUserDataActivityInput.encode({
-          backupFolder: makeBackupFolder(context, currentUserDataProcessing),
-          fiscalCode: currentUserDataProcessing.fiscalCode
-        })
-      )
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "DeleteUserDataActivity");
-    });
-
-    // unlock user
-    SetUserSessionLockActivityResultSuccess.decode(
-      yield context.df.callActivity(
-        "SetUserSessionLockActivity",
-        SetUserSessionLockActivityInput.encode({
-          action: "UNLOCK",
-          fiscalCode: currentUserDataProcessing.fiscalCode
-        })
-      )
-      // tslint:disable-next-line: no-identical-functions
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "SetUserSessionLockActivity", {
-        action: "UNLOCK"
-      });
-    });
-
-    // set as closed
-    SetUserDataProcessingStatusActivityResultSuccess.decode(
-      yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-        currentRecord: currentUserDataProcessing,
-        nextStatus: UserDataProcessingStatusEnum.CLOSED
-      })
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
-        status: UserDataProcessingStatusEnum.CLOSED
-      });
-    });
-    return OrchestratorSuccess.encode({ kind: "SUCCESS" });
-  } catch (error) {
-    context.log.error(
-      `${logPrefix}|ERROR|Failed processing user data for download: ${printableError(
-        error
-      )}`
-    );
-    SetUserDataProcessingStatusActivityResultSuccess.decode(
-      yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-        currentRecord: currentUserDataProcessing,
-        nextStatus: UserDataProcessingStatusEnum.FAILED
-      })
-    ).getOrElseL(err => {
-      throw new Error(
-        `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
+export const createUserDataDeleteOrchestratorHandler = (waitInterval: Day) =>
+  function*(context: IFunctionContext): IterableIterator<unknown> {
+    const document = context.df.getInput();
+    // This check has been done on the trigger, so it should never fail.
+    // However, it's worth the effort to check it twice
+    const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataDelete.decode(
+      document
+    ).mapLeft<InvalidInputFailure>(err => {
+      context.log.error(
+        `${logPrefix}|WARN|Cannot decode ProcessableUserDataDelete document: ${readableReport(
           err
         )}`
       );
+      return InvalidInputFailure.encode({
+        kind: "INVALID_INPUT",
+        reason: readableReport(err)
+      });
     });
 
-    return OrchestratorFailure.is(error)
-      ? error
-      : UnhanldedFailure.encode({
-          kind: "UNHANDLED",
-          reason: error.message
+    if (isLeft(invalidInputOrCurrentUserDataProcessing)) {
+      return invalidInputOrCurrentUserDataProcessing.value;
+    }
+
+    const currentUserDataProcessing =
+      invalidInputOrCurrentUserDataProcessing.value;
+
+    try {
+      // lock user session
+      SetUserSessionLockActivityResultSuccess.decode(
+        yield context.df.callActivity(
+          "SetUserSessionLockActivity",
+          SetUserSessionLockActivityInput.encode({
+            action: "LOCK",
+            fiscalCode: currentUserDataProcessing.fiscalCode
+          })
+        )
+      ).getOrElseL(err => {
+        throw toActivityFailure(err, "SetUserSessionLockActivity", {
+          action: "LOCK"
         });
-  }
-};
+      });
+
+      // set as wip
+      SetUserDataProcessingStatusActivityResultSuccess.decode(
+        yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
+          currentRecord: currentUserDataProcessing,
+          nextStatus: UserDataProcessingStatusEnum.WIP
+        })
+      ).getOrElseL(err => {
+        throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
+          status: UserDataProcessingStatusEnum.WIP
+        });
+      });
+
+      // we have an interval on which we wait for eventual cancellation bu the user
+      const intervalExpiredEvent = context.df.createTimer(
+        makeWaitIntervalFinishDate(context, waitInterval)
+      );
+
+      // we wait for eventually abort message from the user
+      const canceledRequestEvent = context.df.waitForExternalEvent(
+        "user-data-processing-delete-abort"
+      );
+
+      // the first that get triggered
+      const triggeredEvent = yield context.df.Task.any([
+        intervalExpiredEvent,
+        canceledRequestEvent
+      ]);
+      console.log(
+        "dddddd",
+        triggeredEvent,
+        intervalExpiredEvent,
+        triggeredEvent === intervalExpiredEvent
+      );
+      if (triggeredEvent === intervalExpiredEvent) {
+        // backup&delete data
+        DeleteUserDataActivityResultSuccess.decode(
+          yield context.df.callActivity(
+            "DeleteUserDataActivity",
+            DeleteUserDataActivityInput.encode({
+              backupFolder: makeBackupFolder(
+                context,
+                currentUserDataProcessing
+              ),
+              fiscalCode: currentUserDataProcessing.fiscalCode
+            })
+          )
+        ).getOrElseL(err => {
+          throw toActivityFailure(err, "DeleteUserDataActivity");
+        });
+
+        // set as closed
+        SetUserDataProcessingStatusActivityResultSuccess.decode(
+          yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
+            currentRecord: currentUserDataProcessing,
+            nextStatus: UserDataProcessingStatusEnum.CLOSED
+          })
+        ).getOrElseL(err => {
+          throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
+            status: UserDataProcessingStatusEnum.CLOSED
+          });
+        });
+      } else {
+        // set as closed
+        SetUserDataProcessingStatusActivityResultSuccess.decode(
+          yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
+            currentRecord: currentUserDataProcessing,
+            nextStatus: UserDataProcessingStatusEnum.ABORTED
+          })
+        ).getOrElseL(err => {
+          throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
+            status: UserDataProcessingStatusEnum.ABORTED
+          });
+        });
+      }
+
+      // unlock user
+      SetUserSessionLockActivityResultSuccess.decode(
+        yield context.df.callActivity(
+          "SetUserSessionLockActivity",
+          SetUserSessionLockActivityInput.encode({
+            action: "UNLOCK",
+            fiscalCode: currentUserDataProcessing.fiscalCode
+          })
+        )
+        // tslint:disable-next-line: no-identical-functions
+      ).getOrElseL(err => {
+        throw toActivityFailure(err, "SetUserSessionLockActivity", {
+          action: "UNLOCK"
+        });
+      });
+
+      return OrchestratorSuccess.encode({ kind: "SUCCESS" });
+    } catch (error) {
+      context.log.error(
+        `${logPrefix}|ERROR|Failed processing user data for download: ${printableError(
+          error
+        )}`
+      );
+      SetUserDataProcessingStatusActivityResultSuccess.decode(
+        yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
+          currentRecord: currentUserDataProcessing,
+          nextStatus: UserDataProcessingStatusEnum.FAILED
+        })
+      ).getOrElseL(err => {
+        throw new Error(
+          `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
+            err
+          )}`
+        );
+      });
+
+      return OrchestratorFailure.is(error)
+        ? error
+        : UnhanldedFailure.encode({
+            kind: "UNHANDLED",
+            reason: error.message
+          });
+    }
+  };

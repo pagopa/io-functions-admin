@@ -5,7 +5,8 @@ import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
   mockOrchestratorContext,
-  mockOrchestratorGetInput
+  mockOrchestratorGetInput,
+  mockOrchestratorTaskAny
 } from "../../__mocks__/durable-functions";
 import {
   createUserDataDeleteOrchestratorHandler,
@@ -22,6 +23,7 @@ import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSucce
 import { ActivityResultSuccess as SetUserSessionLockActivityResultSuccess } from "../../SetUserSessionLockActivity/handler";
 import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler";
 import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger";
+import { Day } from "italia-ts-commons/lib/units";
 
 const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
   ...aUserDataProcessing,
@@ -89,6 +91,8 @@ const consumeOrchestrator = (orch: any) => {
 // just a convenient cast, good for every test case
 const context = (mockOrchestratorContext as unknown) as IFunctionContext;
 
+const waitInterval = 0 as Day;
+
 describe("createUserDataDeleteOrchestratorHandler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -98,7 +102,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     mockOrchestratorGetInput.mockReturnValueOnce("invalid input");
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(context)
+      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
     );
 
     expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
@@ -111,11 +115,11 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
   it("should set processing ad FAILED if fails to lock the user session", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
     setUserSessionLockActivity.mockImplementationOnce(
-      async () => "any unsuccessful value"
+      () => "any unsuccessful value"
     );
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(context)
+      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
@@ -134,7 +138,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(context)
+      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
@@ -153,7 +157,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(context)
+      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
@@ -177,7 +181,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(context)
+      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
@@ -202,7 +206,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(context)
+      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
@@ -214,11 +218,11 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
   });
 
-  it("should return success if everything is fine", () => {
+  it("should set status as CLOSED if wait interval expired", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
 
     const result = consumeOrchestrator(
-      createUserDataDeleteOrchestratorHandler(context)
+      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
     );
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
@@ -249,5 +253,45 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       })
     );
     expect(deleteUserDataActivity).toHaveBeenCalledTimes(1);
+  });
+
+  it("should set status as CLOSED if abort request comes before wait interval expires", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
+    // I trick the implementation of Task.any to return the second event, not the first
+    mockOrchestratorTaskAny.mockImplementationOnce(([, _]) => _);
+
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(waitInterval)(context)
+    );
+
+    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.ABORTED
+      })
+    );
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        action: "LOCK"
+      })
+    );
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        action: "UNLOCK"
+      })
+    );
+    expect(deleteUserDataActivity).not.toHaveBeenCalled();
   });
 });

@@ -71,14 +71,24 @@ export const mockCallSubOrchestrator = jest
     name
   }));
 export const mockOrchestratorSetCustomStatus = jest.fn();
-export const mockOrchestratorCreateTimer = jest.fn();
+export const mockOrchestratorCreateTimer = jest
+  .fn()
+  .mockReturnValue("mockOrchestratorCreateTimer");
+export const mockWaitForExternalEvent = jest
+  .fn()
+  .mockReturnValue("mockWaitForExternalEvent");
+
+export const mockOrchestratorTaskAny = jest
+  .fn()
+  // mock implementation: return the first task
+  .mockImplementation(([_]) => _);
 
 export const mockOrchestratorContext = {
   ...context,
   df: {
     Task: {
       all: jest.fn(),
-      any: jest.fn()
+      any: mockOrchestratorTaskAny
     },
     callActivity: mockOrchestratorCallActivity,
     callActivityWithRetry: mockOrchestratorCallActivityWithRetry,
@@ -87,7 +97,8 @@ export const mockOrchestratorContext = {
     currentUtcDateTime: new Date(),
     getClient,
     getInput: mockOrchestratorGetInput,
-    setCustomStatus: mockOrchestratorSetCustomStatus
+    setCustomStatus: mockOrchestratorSetCustomStatus,
+    waitForExternalEvent: mockWaitForExternalEvent
   }
 };
 
