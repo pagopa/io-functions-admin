@@ -36,4 +36,4 @@ they may be customized as needed.
 | SESSION_API_URL                  | Internal URL of the BACKEND API used to handle session lock/unlock requests                      | string |
 | SESSION_API_KEY                  | service access key for the session API                                                           | string |
 | USER_DATA_BACKUP_CONTAINER_NAME  | Name of the storage container in which user data is backuped before being permanently deleted    | string |
-
+| USER_DATA_DELETE_DELAY_DAYS      | How many days to wait when a user asks for cancellation before effectively delete her data       | number |
