@@ -442,6 +442,7 @@ const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
   const blobStream = blobService.createWriteStreamToBlockBlob(
     container,
     blob,
+    { contentSettings: { contentType: "application/zip" } },
     (err, result) => (err ? resolve(left(err)) : resolve(right(result)))
   );
   return { errorOrResult, blobStream };
