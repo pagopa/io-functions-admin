@@ -128,7 +128,7 @@ export function createClient<K extends string>({
     ),
 
     response_decoder: lockUserSessionDefaultDecoder(),
-    url: ({ fiscalCode }) => `${basePath}/session/${fiscalCode}/lock`,
+    url: ({ fiscalCode }) => `${basePath}/sessions/${fiscalCode}/lock`,
 
     body: () => "{}",
 
@@ -152,7 +152,7 @@ export function createClient<K extends string>({
     ),
 
     response_decoder: unlockUserSessionDefaultDecoder(),
-    url: ({ fiscalCode }) => `${basePath}/session/${fiscalCode}/lock`,
+    url: ({ fiscalCode }) => `${basePath}/sessions/${fiscalCode}/lock`,
 
     query: () => ({})
   };
