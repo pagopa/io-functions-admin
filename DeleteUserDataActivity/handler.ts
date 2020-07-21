@@ -57,7 +57,7 @@ export function createDeleteUserDataActivityHandler({
   input: unknown
 ) => Promise<ActivityResult> {
   return (context: Context, input: unknown) =>
-    // validtes the input
+    // validates the input
     fromEither(
       ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
         (reason: t.Errors) =>

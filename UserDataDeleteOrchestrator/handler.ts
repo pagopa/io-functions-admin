@@ -183,7 +183,7 @@ function* deleteUserData(
 }
 
 /**
- * Create a handler for the rochestrator
+ * Create a handler for the orchestrator
  *
  * @param waitForAbortInterval Indicates how many days the request must be left pending, waiting for an eventual abort request
  * @param waitForDownloadInterval Indicates how many hours the request must be postponed in case a download request is being processing meanwhile
@@ -218,7 +218,7 @@ export const createUserDataDeleteOrchestratorHandler = (
       invalidInputOrCurrentUserDataProcessing.value;
 
     try {
-      // we have an interval on which we wait for eventual cancellation bu the user
+      // we have an interval on which we wait for eventual cancellation by the user
       const intervalExpiredEvent = context.df.createTimer(
         addDays(context, waitForAbortInterval)
       );
