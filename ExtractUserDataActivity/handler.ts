@@ -8,8 +8,15 @@ import * as stream from "stream";
 import { DeferredPromise } from "italia-ts-commons/lib/promises";
 
 import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
-import { array, flatten } from "fp-ts/lib/Array";
-import { Either, fromOption, left, right, toError } from "fp-ts/lib/Either";
+import { array, flatten, rights } from "fp-ts/lib/Array";
+import {
+  Either,
+  fromOption,
+  left,
+  right,
+  toError,
+  either
+} from "fp-ts/lib/Either";
 import {
   fromEither,
   TaskEither,
@@ -42,7 +49,10 @@ import {
   Profile,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
-import { iteratorToArray } from "io-functions-commons/dist/src/utils/documentdb";
+import {
+  asyncIteratorToArray,
+  asyncIterableToArray
+} from "io-functions-commons/dist/src/utils/async";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
@@ -215,23 +225,30 @@ export const getProfile = (
   ActivityResultUserNotFound | ActivityResultQueryFailure,
   Profile
 > =>
-  fromQueryEither(
-    () => profileModel.findOneProfileByFiscalCode(fiscalCode),
-    "findOneProfileByFiscalCode"
-  ).foldTaskEither<
-    ActivityResultUserNotFound | ActivityResultQueryFailure,
-    Profile
-  >(
-    failure => fromEither(left(failure)),
-    maybeProfile =>
-      fromEither<ActivityResultUserNotFound, Profile>(
-        fromOption(
-          ActivityResultUserNotFound.encode({
-            kind: "USER_NOT_FOUND_FAILURE"
-          })
-        )(maybeProfile)
-      )
-  );
+  profileModel
+    .findLastVersionByModelId(fiscalCode)
+    .foldTaskEither<
+      ActivityResultUserNotFound | ActivityResultQueryFailure,
+      Profile
+    >(
+      failure =>
+        fromEither(
+          left(
+            ActivityResultQueryFailure.encode({
+              kind: "QUERY_FAILURE",
+              reason: failure.kind // FIXME: better mapping from CosmosErrors to ActivityResultQueryFailure?
+            })
+          )
+        ),
+      maybeProfile =>
+        fromEither<ActivityResultUserNotFound, Profile>(
+          fromOption(
+            ActivityResultUserNotFound.encode({
+              kind: "USER_NOT_FOUND_FAILURE"
+            })
+          )(maybeProfile)
+        )
+    );
 
 /**
  * Retrieves all contents for provided messages
@@ -248,6 +265,7 @@ export const getAllMessageContents = (
     messages.map(({ id: messageId }) =>
       fromQueryEither(
         () =>
+          // FIXME: make getContentFromBlob return TaskEither
           messageModel.getContentFromBlob(messageContentBlobService, messageId),
         `messageModel.getContentFromBlob ${messageId} (1)`
       ).foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
@@ -276,21 +294,60 @@ export const getAllMessagesStatuses = (
 ): TaskEither<ActivityResultQueryFailure, ReadonlyArray<MessageStatus>> =>
   array.sequence(taskEither)(
     messages.map(({ id: messageId }) =>
-      fromQueryEither(
-        () => messageStatusModel.findOneByMessageId(messageId),
-        "messageStatusModel.findOneByMessageId"
-      ).foldTaskEither<ActivityResultQueryFailure, MessageStatus>(
-        failure => fromEither(left(failure)),
-        maybeContent =>
-          fromEither(
-            maybeContent.foldL(
-              () => right({ messageId } as MessageStatus),
-              content => right(content)
+      messageStatusModel
+        .findLastVersionByModelId(messageId)
+        .foldTaskEither<ActivityResultQueryFailure, MessageStatus>(
+          failure =>
+            fromEither(
+              left(
+                ActivityResultQueryFailure.encode({
+                  kind: "QUERY_FAILURE",
+                  reason: failure.kind // FIXME: better mapping from CosmosErrors to ActivityResultQueryFailure?
+                })
+              )
+            ),
+          maybeContent =>
+            fromEither(
+              maybeContent.foldL(
+                () => right({ messageId } as MessageStatus),
+                content => right(content)
+              )
             )
-          )
-      )
+        )
     )
   );
+
+export const findNotificationsForMessage = (
+  notificationModel: NotificationModel,
+  messageId: RetrievedMessageWithoutContent["id"]
+): TaskEither<ActivityResultQueryFailure, Array<RetrievedNotification>> =>
+  tryCatch(
+    () =>
+      asyncIterableToArray(
+        notificationModel.getQueryIterator(
+          {
+            parameters: [
+              {
+                name: "@messageId",
+                value: messageId
+              }
+            ],
+            query: `SELECT * FROM m WHERE m.messageId = @messageId`
+          },
+          { partitionKey: messageId }
+        )
+      ),
+    toError
+  )
+    .map(flatten)
+    .map(rights)
+    .mapLeft(e =>
+      // FIXME: better mapping
+      ActivityResultQueryFailure.encode({
+        kind: "QUERY_FAILURE",
+        reason: String(e)
+      })
+    );
 
 /**
  * Given a list of messages, get the relative notifications
@@ -305,15 +362,7 @@ export const findNotificationsForAllMessages = (
 > =>
   array
     .sequence(taskEither)(
-      messages.map(m =>
-        fromQueryEither<ReadonlyArray<RetrievedNotification>>(
-          () =>
-            iteratorToArray(
-              notificationModel.findNotificationsForMessage(m.id)
-            ),
-          "findNotificationsForRecipient"
-        )
-      )
+      messages.map(m => findNotificationsForMessage(notificationModel, m.id))
     )
     .map(flatten);
 
