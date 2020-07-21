@@ -82,6 +82,7 @@ const logPrefix = `SetUserSessionLockActivity`;
  * @param fiscalCode
  */
 const callSessionApi = (
+  context: Context,
   sessionApiClient: Client<"ApiKey">,
   action: ActivityInput["action"],
   fiscalCode: FiscalCode
@@ -100,20 +101,31 @@ const callSessionApi = (
               assertNever(action);
           }
         },
-        error =>
-          ApiCallFailure.encode({
+        error => {
+          context.log.error(
+            `${logPrefix}|ERROR|failed using api`,
+            action,
+            error
+          );
+          return ApiCallFailure.encode({
             kind: "API_CALL_FAILURE",
             reason: toError(error).message
-          })
+          });
+        }
       )
     )
     .chain(decodeErrorOrResponse =>
-      fromEither(decodeErrorOrResponse).mapLeft(error =>
-        ApiCallFailure.encode({
+      fromEither(decodeErrorOrResponse).mapLeft(error => {
+        context.log.error(
+          `${logPrefix}|ERROR|failed decoding api payload`,
+          action,
+          error
+        );
+        return ApiCallFailure.encode({
           kind: "API_CALL_FAILURE",
           reason: readableReport(error)
-        })
-      )
+        });
+      })
     )
     .chain(({ status, value }) => {
       switch (status) {
@@ -122,6 +134,11 @@ const callSessionApi = (
         case 400:
         case 401:
         case 404:
+          context.log.error(
+            `${logPrefix}|ERROR|API bad request ${status}`,
+            action,
+            value
+          );
           return fromLeft(
             BadApiRequestFailure.encode({
               kind: "BAD_API_REQUEST_FAILURE",
@@ -129,6 +146,11 @@ const callSessionApi = (
             })
           );
         case 500:
+          context.log.error(
+            `${logPrefix}|ERROR|API error response ${status}`,
+            action,
+            value
+          );
           return fromLeft(
             ApiCallFailure.encode({
               kind: "API_CALL_FAILURE",
@@ -154,7 +176,7 @@ export const createSetUserSessionLockActivityHandler = (
       )
     )
     .chain(({ action, fiscalCode }) =>
-      callSessionApi(sessionApiClient, action, fiscalCode)
+      callSessionApi(context, sessionApiClient, action, fiscalCode)
     )
     .fold<ActivityResult>(
       failure => {

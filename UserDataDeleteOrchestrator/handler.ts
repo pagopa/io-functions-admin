@@ -102,6 +102,11 @@ function* setUserSessionLock(
   );
   return SetUserSessionLockActivityResultSuccess.decode(result).getOrElseL(
     _ => {
+      context.log.error(
+        `${logPrefix}|ERROR|SetUserSessionLockActivity fail`,
+        result,
+        readableReport(_)
+      );
       throw toActivityFailure(result, "SetUserSessionLockActivity", {
         action
       });
@@ -217,6 +222,11 @@ export const createUserDataDeleteOrchestratorHandler = (
     const currentUserDataProcessing =
       invalidInputOrCurrentUserDataProcessing.value;
 
+    context.log.verbose(
+      `${logPrefix}|VERBOSE|Executing delete`,
+      currentUserDataProcessing
+    );
+
     try {
       // we have an interval on which we wait for eventual cancellation by the user
       const intervalExpiredEvent = context.df.createTimer(
@@ -226,6 +236,10 @@ export const createUserDataDeleteOrchestratorHandler = (
       // we wait for eventually abort message from the user
       const canceledRequestEvent = context.df.waitForExternalEvent(ABORT_EVENT);
 
+      context.log.verbose(
+        `${logPrefix}|VERBOSE|Operation stopped for ${waitForAbortInterval} days`
+      );
+
       // the first that get triggered
       const triggeredEvent = yield context.df.Task.any([
         intervalExpiredEvent,
@@ -233,6 +247,10 @@ export const createUserDataDeleteOrchestratorHandler = (
       ]);
 
       if (triggeredEvent === intervalExpiredEvent) {
+        context.log.verbose(
+          `${logPrefix}|VERBOSE|Operation resumed after ${waitForAbortInterval} days`
+        );
+
         // lock user session
         yield* setUserSessionLock(context, {
           action: "LOCK",
@@ -253,6 +271,9 @@ export const createUserDataDeleteOrchestratorHandler = (
             currentUserDataProcessing.fiscalCode
           )
         ) {
+          context.log.verbose(
+            `${logPrefix}|VERBOSE|Found an active DOWNLOAD procedure, wait for ${waitForDownloadInterval} hours`
+          );
           // we wait some more time for the download process to end
           const waitForDownloadEvent = context.df.createTimer(
             addHours(context.df.currentUtcDateTime, waitForDownloadInterval)
@@ -276,6 +297,10 @@ export const createUserDataDeleteOrchestratorHandler = (
           fiscalCode: currentUserDataProcessing.fiscalCode
         });
       } else {
+        context.log.verbose(
+          `${logPrefix}|VERBOSE|Operation resumed because of abort event`
+        );
+
         // set as aborted
         yield* setUserDataProcessingStatus(
           context,
