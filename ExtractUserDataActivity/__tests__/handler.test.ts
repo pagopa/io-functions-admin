@@ -83,7 +83,7 @@ const setupStreamMocks = () => {
   const { e1: errorOrResult, e2: resolve } = DeferredPromise<void>();
   const aBlobStream = new stream.PassThrough();
   const blobServiceMock = ({
-    createWriteStreamToBlockBlob: jest.fn((_, __, cb) => {
+    createWriteStreamToBlockBlob: jest.fn((_, __, ___, cb) => {
       // the following callback must be executed after zipStream.finalize
       errorOrResult.then(cb).catch();
       return aBlobStream;
