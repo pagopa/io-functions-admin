@@ -312,12 +312,11 @@ const backupAndDeleteMessageStatus = ({
 
 /**
  * For a given message, search all its notifications and backup&delete each one including its own notification status
- * @param param0.messageModel instance of MessageModel
- * @param param0.messageStatusModel instance of MessageStatusModel
- * @param param0.NotificationModel instance of NotificationModel
+ *
+ * @param param0.message the message to search notification for
+ * @param param0.notificationModel instance of NotificationModel
  * @param param0.notificationStatusModel instance of NotificationStatusModel
  * @param param0.userDataBackup information about the blob storage account to place backup into
- * @param param0.fiscalCode identifier of the user
  */
 const backupAndDeleteAllNotificationsData = ({
   message,
@@ -337,7 +336,7 @@ const backupAndDeleteAllNotificationsData = ({
     .foldTaskEither(
       e => fromEither(left(e)),
       notifications =>
-        array.sequence(taskEither)(
+        array.sequence(taskEitherSeq)(
           notifications.map(notification =>
             sequenceT(taskEitherSeq)(
               backupAndDeleteNotificationStatus({
@@ -389,12 +388,12 @@ const backupAndDeleteAllMessagesData = ({
     .foldTaskEither(
       e => fromEither(left(e)),
       messages => {
-        return array.sequence(taskEither)(
+        return array.sequence(taskEitherSeq)(
           messages.map(message => {
             // cast needed because findMessages has a wrong signature
             // tslint:disable-next-line: no-any
             const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
-            return sequenceT(taskEither)(
+            return sequenceT(taskEitherSeq)(
               backupAndDeleteMessageContent({
                 message: retrievedMessage,
                 messageContentBlobService,
