@@ -208,6 +208,6 @@ function removeNullProperties<T>(obj: T): unknown {
   );
 }
 
-function errorsToError(errors: Errors): Error {
+export function errorsToError(errors: Errors): Error {
   return new Error(errorsToReadableMessages(errors).join(" / "));
 }

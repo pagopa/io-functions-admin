@@ -657,6 +657,28 @@ definitions:
       - blocked
       - pending
       - deleted
+  Municipality:
+    type: object
+    required:
+      - codiceRegione
+      - codiceProvincia
+      - denominazione
+      - denominazioneInItaliano
+      - denominazioneRegione
+      - siglaProvincia
+    properties:
+      codiceRegione:
+        type: string
+      codiceProvincia:
+        type: string
+      denominazione:
+        type: string
+      denominazioneInItaliano:
+        type: string
+      denominazioneRegione:
+        type: string
+      siglaProvincia:
+        type: string
 responses: {}
 parameters:
   SandboxFiscalCode:
