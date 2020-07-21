@@ -220,7 +220,7 @@ export const createUserDataDeleteOrchestratorHandler = (
     try {
       // we have an interval on which we wait for eventual cancellation by the user
       const intervalExpiredEvent = context.df.createTimer(
-        addDays(context, waitForAbortInterval)
+        addDays(context.df.currentUtcDateTime, waitForAbortInterval)
       );
 
       // we wait for eventually abort message from the user
@@ -255,7 +255,7 @@ export const createUserDataDeleteOrchestratorHandler = (
         ) {
           // we wait some more time for the download process to end
           const waitForDownloadEvent = context.df.createTimer(
-            addHours(context, waitForDownloadInterval)
+            addHours(context.df.currentUtcDateTime, waitForDownloadInterval)
           );
           yield waitForDownloadEvent;
         }

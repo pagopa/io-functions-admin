@@ -8,11 +8,9 @@ export const makeOrchestratorId = (fiscalCode: FiscalCode): string =>
   `user-data-delete-${fiscalCode}`;
 
 const aHourInMilliseconds = 60 * 60 * 1000;
-export const addHours = (context: IFunctionContext, hours: Hour) =>
-  new Date(
-    context.df.currentUtcDateTime.getTime() + hours * aHourInMilliseconds
-  );
+export const addHours = (now: Date, hours: Hour) =>
+  new Date(now.getTime() + hours * aHourInMilliseconds);
 
 const aDayInMilliseconds = 24 * aHourInMilliseconds;
-export const addDays = (context: IFunctionContext, days: Day) =>
-  new Date(context.df.currentUtcDateTime.getTime() + days * aDayInMilliseconds);
+export const addDays = (now: Date, days: Day) =>
+  new Date(now.getTime() + days * aDayInMilliseconds);
