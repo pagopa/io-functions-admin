@@ -104,32 +104,29 @@ export function CreateDevelopmentProfileHandler(
 
     const fiscalCode = errorOrFiscalCode.value;
 
-    const profile: Profile = {
+    const newProfile = {
       email: developmentProfilePayload.email,
       fiscalCode,
       isInboxEnabled: true,
-      isWebhookEnabled: true
+      isWebhookEnabled: true,
+      kind: "INewProfile" as const
     };
 
-    const errorOrCreatedProfile = await profileModel.create(
-      profile,
-      profile.fiscalCode
-    );
+    const errorOrCreatedProfile = await profileModel.create(newProfile).run();
 
     if (isLeft(errorOrCreatedProfile)) {
-      const { code, body } = errorOrCreatedProfile.value;
+      const error = errorOrCreatedProfile.value;
+      context.log.error(`${logPrefix}|ERROR=${error}`);
 
-      context.log.error(`${logPrefix}|ERROR=${body}`);
-
-      // Conflict, resource already exists
-      if (code === 409) {
+      if (error.kind === "COSMOS_ERROR_RESPONSE" && error.error.code === 409) {
         return ResponseErrorConflict(
           "A profile with the requested fiscal_code already exists"
         );
       }
+
       return ResponseErrorQuery(
         "Error while creating a new development profile",
-        errorOrCreatedProfile.value
+        error
       );
     }
 
