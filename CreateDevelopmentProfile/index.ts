@@ -1,6 +1,6 @@
 import { Context } from "@azure/functions";
 
-import * as cosmosdb from "@azure/cosmos";
+import { CosmosClient } from "@azure/cosmos";
 
 import * as express from "express";
 import * as winston from "winston";
@@ -27,7 +27,7 @@ const cosmosDbUri = getRequiredStringEnv("COSMOSDB_URI");
 const cosmosDbKey = getRequiredStringEnv("COSMOSDB_KEY");
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 
-const cosmosdbClient = new cosmosdb.CosmosClient({
+const cosmosdbClient = new CosmosClient({
   endpoint: cosmosDbUri,
   key: cosmosDbKey
 });
