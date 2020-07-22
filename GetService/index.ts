@@ -1,7 +1,5 @@
 import { Context } from "@azure/functions";
 
-import { CosmosClient } from "@azure/cosmos";
-
 import * as express from "express";
 import * as winston from "winston";
 
@@ -17,16 +15,12 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
+import { cosmosdbClient } from "../utils/cosmosdb";
+
 import { GetService } from "./handler";
 
-const cosmosDbUri = getRequiredStringEnv("COSMOSDB_URI");
-const cosmosDbKey = getRequiredStringEnv("COSMOSDB_KEY");
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 
-const cosmosdbClient = new CosmosClient({
-  endpoint: cosmosDbUri,
-  key: cosmosDbKey
-});
 const servicesContainer = cosmosdbClient
   .database(cosmosDbName)
   .container(SERVICE_COLLECTION_NAME);
