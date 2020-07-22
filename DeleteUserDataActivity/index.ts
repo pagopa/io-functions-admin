@@ -68,7 +68,7 @@ const userDataBackupBlobService = createBlobService(
 );
 
 const messageContentBlobService = createBlobService(
-  getRequiredStringEnv("MessageContentStorageConnection")
+  getRequiredStringEnv("StorageConnection")
 );
 
 const userDataBackupContainerName = getRequiredStringEnv(

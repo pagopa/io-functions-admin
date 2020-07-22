@@ -75,7 +75,7 @@ export const ActivityResult = t.taggedUnion("kind", [
 
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
-const logPrefix = `SetUserDataProcessingStatusActivity`;
+const logPrefix = `GetUserDataProcessingActivity`;
 
 function assertNever(_: never): void {
   throw new Error("should not have executed this");

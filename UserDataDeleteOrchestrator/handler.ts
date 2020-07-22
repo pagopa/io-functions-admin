@@ -183,6 +183,11 @@ function* deleteUserData(
     })
   );
   return DeleteUserDataActivityResultSuccess.decode(result).getOrElseL(_ => {
+    context.log.error(
+      `${logPrefix}|ERROR|DeleteUserDataActivity fail`,
+      result,
+      readableReport(_)
+    );
     throw toActivityFailure(result, "DeleteUserDataActivity");
   });
 }
