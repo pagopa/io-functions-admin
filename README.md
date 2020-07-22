@@ -37,3 +37,4 @@ they may be customized as needed.
 | SESSION_API_KEY                  | service access key for the session API                                                           | string |
 | USER_DATA_BACKUP_CONTAINER_NAME  | Name of the storage container in which user data is backuped before being permanently deleted    | string |
 | USER_DATA_DELETE_DELAY_DAYS      | How many days to wait when a user asks for cancellation before effectively delete her data       | number |
+| UserDataBackupStorageConnection  | Storage connection string for GDPR user data storage                                             | string |
