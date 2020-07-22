@@ -81,26 +81,38 @@ export function index(
           .chain(processable =>
             fromNullable(undefined)(
               ProcessableUserDataDownload.is(processable)
-                ? () =>
-                    dfClient.startNew(
+                ? () => {
+                    context.log.info(
+                      `${logPrefix}: starting UserDataDownloadOrchestrator with ${processable.fiscalCode}`
+                    );
+                    return dfClient.startNew(
                       "UserDataDownloadOrchestrator",
                       makeDownloadOrchestratorId(processable.fiscalCode),
                       processable
-                    )
+                    );
+                  }
                 : ProcessableUserDataDelete.is(processable)
-                ? () =>
-                    dfClient.startNew(
+                ? () => {
+                    context.log.info(
+                      `${logPrefix}: starting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
+                    );
+                    return dfClient.startNew(
                       "UserDataDeleteOrchestrator",
                       makeDeleteOrchestratorId(processable.fiscalCode),
                       processable
-                    )
+                    );
+                  }
                 : ProcessableUserDataDeleteAbort.is(processable)
-                ? () =>
-                    dfClient.raiseEvent(
+                ? () => {
+                    context.log.info(
+                      `${logPrefix}: aborting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
+                    );
+                    return dfClient.raiseEvent(
                       makeDeleteOrchestratorId(processable.fiscalCode),
                       ABORT_DELETE_EVENT,
                       {}
-                    )
+                    );
+                  }
                 : undefined
             )
           )

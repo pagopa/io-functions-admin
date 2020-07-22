@@ -1,5 +1,5 @@
 import { IFunctionContext, Task } from "durable-functions/lib/src/classes";
-import { isLeft } from "fp-ts/lib/Either";
+import { isLeft, toError } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
@@ -24,6 +24,7 @@ import {
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
+import { trackEvent, trackException } from "../utils/appinsights";
 import { ABORT_EVENT, addDays, addHours } from "./utils";
 
 const logPrefix = "UserDataDeleteOrchestrator";
@@ -276,10 +277,10 @@ export const createUserDataDeleteOrchestratorHandler = (
             currentUserDataProcessing.fiscalCode
           )
         ) {
+          // we wait some more time for the download process to end
           context.log.verbose(
             `${logPrefix}|VERBOSE|Found an active DOWNLOAD procedure, wait for ${waitForDownloadInterval} hours`
           );
-          // we wait some more time for the download process to end
           const waitForDownloadEvent = context.df.createTimer(
             addHours(context.df.currentUtcDateTime, waitForDownloadInterval)
           );
@@ -314,6 +315,18 @@ export const createUserDataDeleteOrchestratorHandler = (
         );
       }
 
+      trackEvent({
+        // tslint:disable-next-line: no-duplicate-string
+        name: "user.data.delete",
+        properties: {
+          userDataProcessingId: currentUserDataProcessing.userDataProcessingId
+        },
+        tagOverrides: {
+          "ai.operation.id": currentUserDataProcessing.userDataProcessingId,
+          "ai.operation.parentId":
+            currentUserDataProcessing.userDataProcessingId
+        }
+      });
       return OrchestratorSuccess.encode({ kind: "SUCCESS" });
     } catch (error) {
       context.log.error(
@@ -321,12 +334,28 @@ export const createUserDataDeleteOrchestratorHandler = (
           error
         )}`
       );
+      trackException({
+        exception: toError(error),
+        properties: {
+          name: "user.data.delete",
+          userDataProcessingId: currentUserDataProcessing.userDataProcessingId
+        }
+      });
+
       SetUserDataProcessingStatusActivityResultSuccess.decode(
         yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
           currentRecord: currentUserDataProcessing,
           nextStatus: UserDataProcessingStatusEnum.FAILED
         })
       ).getOrElseL(err => {
+        trackException({
+          exception: new Error(readableReport(err)),
+          properties: {
+            name: "user.data.delete",
+            type: "unhandled exception when trying to set document as FAILED",
+            userDataProcessingId: currentUserDataProcessing.userDataProcessingId
+          }
+        });
         throw new Error(
           `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
             err
