@@ -1,4 +1,3 @@
-import { IFunctionContext } from "durable-functions/lib/src/classes";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
 import { Day, Hour } from "italia-ts-commons/lib/units";
 
