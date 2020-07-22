@@ -47,9 +47,9 @@ export function GetServiceHandler(
   serviceModel: ServiceModel
 ): IGetServiceHandler {
   return async (_, __, serviceId) => {
-    const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
-      serviceId
-    );
+    const errorOrMaybeRetrievedService = await serviceModel
+      .findOneByServiceId(serviceId)
+      .run();
 
     if (isRight(errorOrMaybeRetrievedService)) {
       const maybeRetrievedService = errorOrMaybeRetrievedService.value;

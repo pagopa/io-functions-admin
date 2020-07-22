@@ -44,7 +44,7 @@ export function GetServicesHandler(
   serviceModel: ServiceModel
 ): IGetServicesHandler {
   return async (_, __) => {
-    const allRetrievedServicesIterator = await serviceModel.getCollectionIterator();
+    const allRetrievedServicesIterator = serviceModel.getCollectionIterator();
     const allServicesIterator: IFoldableResultIterator<
       Record<string, ApiService>
     > = reduceResultIterator(allRetrievedServicesIterator, (prev, curr) => {

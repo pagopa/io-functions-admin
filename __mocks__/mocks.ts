@@ -30,7 +30,10 @@ import {
   UserDataProcessing,
   UserDataProcessingId
 } from "io-functions-commons/dist/src/models/user_data_processing";
-import { NonNegativeNumber } from "italia-ts-commons/lib/numbers";
+import {
+  NonNegativeInteger,
+  NonNegativeNumber
+} from "italia-ts-commons/lib/numbers";
 import {
   EmailString,
   FiscalCode,
@@ -96,16 +99,15 @@ export const aService: Service = {
 
 export const aNewService: NewService = {
   ...aService,
-  id: "123" as NonEmptyString,
   kind: "INewService",
-  version: 1 as NonNegativeNumber
+  version: 1 as NonNegativeInteger
 };
 
 export const aRetrievedService: RetrievedService = {
   ...aNewService,
-  _self: "123",
-  _ts: 123,
-  kind: "IRetrievedService"
+  id: "MySubscriptionId",
+  kind: "IRetrievedService",
+  version: 1 as NonNegativeInteger
 };
 
 export const aSeralizedService: ApiService = {
@@ -149,11 +151,9 @@ export const aProfile: Profile = {
 };
 
 export const aRetrievedProfile: RetrievedProfile = {
-  _self: "123",
-  _ts: 123,
   id: "123" as NonEmptyString,
   kind: "IRetrievedProfile",
-  version: 0 as NonNegativeNumber,
+  version: 0 as NonNegativeInteger,
   ...aProfile
 };
 
@@ -182,8 +182,6 @@ const aMessageWithoutContent: MessageWithoutContent = {
 
 export const aRetrievedMessageWithoutContent: RetrievedMessageWithoutContent = {
   ...aMessageWithoutContent,
-  _self: "xyz",
-  _ts: 123,
   id: "A_MESSAGE_ID" as NonEmptyString,
   kind: "IRetrievedMessageWithoutContent"
 };
@@ -217,15 +215,11 @@ export const aNewWebhookNotification: NewNotification = {
 
 export const aRetrievedWebhookNotification: RetrievedNotification = {
   ...aNewWebhookNotification,
-  _self: "xyz",
-  _ts: 123,
   kind: "IRetrievedNotification"
 };
 
 export const aRetrievedNotification: RetrievedNotification = {
   ...aNewEmailNotification,
-  _self: "xyz",
-  _ts: 123,
   kind: "IRetrievedNotification"
 };
 
@@ -267,12 +261,10 @@ export const aMessageStatus = MessageStatus.decode(
 });
 
 export const aSerializedRetrievedMessageStatus = {
-  _self: "_self",
-  _ts: 1,
   ...aSerializedMessageStatus,
   id: `${aMessageId}-${"0".repeat(16)}` as NonEmptyString,
   kind: "IRetrievedMessageStatus",
-  version: 0 as NonNegativeNumber
+  version: 0 as NonNegativeInteger
 };
 
 export const aRetrievedMessageStatus = RetrievedMessageStatus.decode(
