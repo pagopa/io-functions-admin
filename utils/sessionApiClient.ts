@@ -7,9 +7,10 @@
 import {
   RequestParams,
   TypeofApiCall,
-  composeHeaderProducers,
   createFetchRequestForApi,
-  ReplaceRequestParams
+  ReplaceRequestParams,
+  ApiHeaderJson,
+  TypeofApiParams
 } from "italia-ts-commons/lib/requests";
 
 import {
@@ -18,13 +19,23 @@ import {
   UnlockUserSessionT,
   unlockUserSessionDefaultDecoder
 } from "../generated/session-api/requestTypes";
+import { identity } from "fp-ts/lib/function";
+
+export type ApiOperation = TypeofApiCall<LockUserSessionT> &
+  TypeofApiCall<UnlockUserSessionT>;
+
+export type ParamKeys = keyof (TypeofApiParams<LockUserSessionT> &
+  TypeofApiParams<UnlockUserSessionT>);
 
 /**
  * Defines an adapter for TypeofApiCall which omit one or more parameters in the signature
  * @param ApiT the type which defines the operation to expose
  * @param K the parameter to omit. undefined means no parameters will be omitted
  */
-export type OmitApiCallParams<ApiT, K = undefined> = (
+export type OmitApiCallParams<
+  ApiT,
+  K extends ParamKeys | undefined = undefined
+> = (
   op: TypeofApiCall<ApiT>
 ) => K extends string
   ? TypeofApiCall<ReplaceRequestParams<ApiT, Omit<RequestParams<ApiT>, K>>>
@@ -35,16 +46,15 @@ export type OmitApiCallParams<ApiT, K = undefined> = (
  * @param ApiT the type which defines the operation to expose
  * @param K the parameter to omit. undefined means no parameters will be omitted
  */
-export type WithDefaultsT<K = undefined> = OmitApiCallParams<
-  LockUserSessionT | UnlockUserSessionT,
-  K
->;
+export type WithDefaultsT<
+  K extends ParamKeys | undefined = undefined
+> = OmitApiCallParams<LockUserSessionT | UnlockUserSessionT, K>;
 
 /**
  * Defines a collection of api operations
  * @param K name of the parameters that the Clients masks from the operations
  */
-export type Client<K extends string = ""> = {
+export type Client<K extends ParamKeys | undefined = undefined> = {
   readonly lockUserSession: TypeofApiCall<
     ReplaceRequestParams<
       LockUserSessionT,
@@ -61,14 +71,6 @@ export type Client<K extends string = ""> = {
 };
 
 /**
- * Identity function for OmitApiCallParams.
- * @param op the operation to be wrapped
- */
-const noDefaults: WithDefaultsT = (
-  operation: TypeofApiCall<LockUserSessionT> & TypeofApiCall<UnlockUserSessionT>
-) => operation;
-
-/**
  * Create an instance of a client
  * @param params hash map of parameters thata define the client:
  *  - baseUrl: the base url for every api call (required)
@@ -77,12 +79,11 @@ const noDefaults: WithDefaultsT = (
  *  - withDefaults: optional adapter to be applied to every operation, to omit some paramenters
  * @returns a collection of api operations
  */
-export function createClient<K extends string>(params: {
+export function createClient<K extends ParamKeys>(params: {
   baseUrl: string;
   // tslint:disable-next-line:no-any
   fetchApi: typeof fetch;
-  withDefaults: OmitApiCallParams<LockUserSessionT, K> &
-    OmitApiCallParams<UnlockUserSessionT, K>;
+  withDefaults: WithDefaultsT<K>;
   basePath?: string;
 }): Client<K>;
 export function createClient(params: {
@@ -92,7 +93,7 @@ export function createClient(params: {
   withDefaults?: undefined;
   basePath?: string;
 }): Client;
-export function createClient<K extends string>({
+export function createClient<K extends ParamKeys>({
   baseUrl,
   // tslint:disable-next-line:no-any
   fetchApi,
@@ -102,10 +103,7 @@ export function createClient<K extends string>({
   baseUrl: string;
   // tslint:disable-next-line:no-any
   fetchApi: typeof fetch;
-  withDefaults?: K extends ""
-    ? undefined
-    : OmitApiCallParams<LockUserSessionT, K> &
-        OmitApiCallParams<UnlockUserSessionT, K>;
+  withDefaults?: WithDefaultsT<K>;
 
   basePath?: string;
 }) {
@@ -120,21 +118,16 @@ export function createClient<K extends string>({
   > = {
     method: "post",
 
-    headers: composeHeaderProducers(
-      ({ ApiKey }: { ApiKey: string }) => ({
-        "X-Functions-Key": `Bearer ${ApiKey}`
-      }),
-      () => ({ "Content-Type": "application/json" })
-    ),
+    headers: ApiHeaderJson,
 
     response_decoder: lockUserSessionDefaultDecoder(),
     url: ({ fiscalCode }) => `${basePath}/sessions/${fiscalCode}/lock`,
 
     body: () => "{}",
 
-    query: () => ({})
+    query: ({ token }) => ({ token })
   };
-  const lockUserSession = (withDefaults || noDefaults)(
+  const lockUserSession = (withDefaults || identity)(
     createFetchRequestForApi(lockUserSessionT, options)
   );
 
@@ -144,19 +137,14 @@ export function createClient<K extends string>({
   > = {
     method: "delete",
 
-    headers: composeHeaderProducers(
-      ({ ApiKey }: { ApiKey: string }) => ({
-        "X-Functions-Key": `Bearer ${ApiKey}`
-      }),
-      () => ({ "Content-Type": "application/json" })
-    ),
+    headers: ApiHeaderJson,
 
     response_decoder: unlockUserSessionDefaultDecoder(),
     url: ({ fiscalCode }) => `${basePath}/sessions/${fiscalCode}/lock`,
 
-    query: () => ({})
+    query: ({ token }) => ({ token })
   };
-  const unlockUserSession = (withDefaults || noDefaults)(
+  const unlockUserSession = (withDefaults || identity)(
     createFetchRequestForApi(unlockUserSessionT, options)
   );
 

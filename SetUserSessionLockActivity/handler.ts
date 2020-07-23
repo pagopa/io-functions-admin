@@ -83,7 +83,7 @@ const logPrefix = `SetUserSessionLockActivity`;
  */
 const callSessionApi = (
   context: Context,
-  sessionApiClient: Client<"ApiKey">,
+  sessionApiClient: Client<"token">,
   action: ActivityInput["action"],
   fiscalCode: FiscalCode
 ): TaskEither<ApiCallFailure | BadApiRequestFailure, SuccessResponse> =>
@@ -163,7 +163,7 @@ const callSessionApi = (
     });
 
 export const createSetUserSessionLockActivityHandler = (
-  sessionApiClient: Client<"ApiKey">
+  sessionApiClient: Client<"token">
 ) => (context: Context, input: unknown) =>
   taskEither
     .of<ActivityResultFailure, void>(void 0)
