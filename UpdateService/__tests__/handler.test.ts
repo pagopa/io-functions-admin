@@ -10,7 +10,7 @@ import { none, some } from "fp-ts/lib/Option";
 import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
-import { fromEither } from "fp-ts/lib/TaskEither";
+import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   aRetrievedService,
@@ -28,9 +28,7 @@ const anUpdatedApiService = apiServiceToService({
 });
 
 const leftErrorFn = jest.fn(() => {
-  return fromEither(
-    left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
-  );
+  return fromLeft(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }));
 });
 
 // tslint:disable-next-line: no-let

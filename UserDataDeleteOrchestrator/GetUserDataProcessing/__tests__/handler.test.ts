@@ -1,6 +1,6 @@
 /* tslint:disable: no-any no-identical-functions */
 
-import { left, right } from "fp-ts/lib/Either";
+import { right } from "fp-ts/lib/Either";
 
 import { context as contextMock } from "../../../__mocks__/durable-functions";
 import { aUserDataProcessing } from "../../../__mocks__/mocks";
@@ -11,9 +11,10 @@ import {
   createGetUserDataProcessingHandler
 } from "../handler";
 
-import { QueryError } from "documentdb";
 import { none, some } from "fp-ts/lib/Option";
+import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
 import { UserDataProcessingModel } from "io-functions-commons/dist/src/models/user_data_processing";
+import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 
 const aFiscalCode = aUserDataProcessing.fiscalCode;
 const aChoice = aUserDataProcessing.choice;
@@ -21,8 +22,8 @@ const aChoice = aUserDataProcessing.choice;
 describe("GetUserDataProcessingHandler", () => {
   it("should retrieve an existing record", async () => {
     const mockModel = ({
-      findOneUserDataProcessingById: jest.fn(async () =>
-        right(some(aUserDataProcessing))
+      findLastVersionByModelId: jest.fn(() =>
+        fromEither(right(some(aUserDataProcessing)))
       )
     } as any) as UserDataProcessingModel;
 
@@ -38,10 +39,8 @@ describe("GetUserDataProcessingHandler", () => {
 
   it("should handle a query error", async () => {
     const mockModel = ({
-      findOneUserDataProcessingById: jest.fn(async () =>
-        left(({
-          body: "my mock query error"
-        } as any) as QueryError)
+      findLastVersionByModelId: jest.fn(() =>
+        fromLeft(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
     } as any) as UserDataProcessingModel;
 
@@ -62,7 +61,7 @@ describe("GetUserDataProcessingHandler", () => {
 
   it("should handle a record not found", async () => {
     const mockModel = ({
-      findOneUserDataProcessingById: jest.fn(async () => right(none))
+      findLastVersionByModelId: jest.fn(() => fromEither(right(none)))
     } as any) as UserDataProcessingModel;
 
     const handler = createGetUserDataProcessingHandler(mockModel);

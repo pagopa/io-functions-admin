@@ -156,14 +156,19 @@ const getUserDataProcessingRequest = ({
   fiscalCode: FiscalCode;
   choice: UserDataProcessingChoice;
 }): TaskEither<ActivityResultQueryFailure, Option<UserDataProcessing>> =>
-  fromQueryEither(
-    () =>
-      userDataProcessingModel.findOneUserDataProcessingById(
-        fiscalCode,
-        makeUserDataProcessingId(choice, fiscalCode)
-      ),
-    "userDataProcessingModel.findOneUserDataProcessingById"
-  );
+  userDataProcessingModel
+    .findLastVersionByModelId(
+      makeUserDataProcessingId(choice, fiscalCode),
+      fiscalCode
+    )
+    .mapLeft(err =>
+      ActivityResultQueryFailure.encode({
+        kind: "QUERY_FAILURE",
+        query: "userDataProcessingModel.findOneUserDataProcessingById",
+        // FIXME - get a useful reason from CosmosErrors
+        reason: err.kind
+      })
+    );
 
 export const createGetUserDataProcessingHandler = (
   userDataProcessingModel: UserDataProcessingModel
