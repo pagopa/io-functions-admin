@@ -12,6 +12,7 @@ import {
   makeOrchestratorId as makeDeleteOrchestratorId
 } from "../UserDataDeleteOrchestrator/utils";
 import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
+import { trackEvent } from "../utils/appinsights";
 
 const logPrefix = "UserDataProcessingTrigger";
 
@@ -85,6 +86,17 @@ export function index(
                     context.log.info(
                       `${logPrefix}: starting UserDataDownloadOrchestrator with ${processable.fiscalCode}`
                     );
+                    trackEvent({
+                      name: "user.data.download.start",
+                      properties: {
+                        userDataProcessingId: processable.userDataProcessingId
+                      },
+                      tagOverrides: {
+                        "ai.operation.id": processable.userDataProcessingId,
+                        "ai.operation.parentId":
+                          processable.userDataProcessingId
+                      }
+                    });
                     return dfClient.startNew(
                       "UserDataDownloadOrchestrator",
                       makeDownloadOrchestratorId(processable.fiscalCode),
@@ -96,6 +108,17 @@ export function index(
                     context.log.info(
                       `${logPrefix}: starting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
                     );
+                    trackEvent({
+                      name: "user.data.delete.start",
+                      properties: {
+                        userDataProcessingId: processable.userDataProcessingId
+                      },
+                      tagOverrides: {
+                        "ai.operation.id": processable.userDataProcessingId,
+                        "ai.operation.parentId":
+                          processable.userDataProcessingId
+                      }
+                    });
                     return dfClient.startNew(
                       "UserDataDeleteOrchestrator",
                       makeDeleteOrchestratorId(processable.fiscalCode),
@@ -107,6 +130,17 @@ export function index(
                     context.log.info(
                       `${logPrefix}: aborting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
                     );
+                    trackEvent({
+                      name: "user.data.delete.abort",
+                      properties: {
+                        userDataProcessingId: processable.userDataProcessingId
+                      },
+                      tagOverrides: {
+                        "ai.operation.id": processable.userDataProcessingId,
+                        "ai.operation.parentId":
+                          processable.userDataProcessingId
+                      }
+                    });
                     return dfClient.raiseEvent(
                       makeDeleteOrchestratorId(processable.fiscalCode),
                       ABORT_DELETE_EVENT,

@@ -2,7 +2,7 @@ import {
   IFunctionContext,
   RetryOptions
 } from "durable-functions/lib/src/classes";
-import { isLeft } from "fp-ts/lib/Either";
+import { isLeft, toError } from "fp-ts/lib/Either";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
@@ -10,7 +10,11 @@ import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from ".
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../SendUserDataDownloadMessageActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import { ProcessableUserDataDownload } from "../UserDataProcessingTrigger";
-import { trackEvent, trackException } from "../utils/appinsights";
+import {
+  trackUserDataDownloadEvent,
+  trackUserDataDownloadException
+} from "../utils/appinsightsEvents";
+import { trackException } from "../utils/appinsights";
 
 const logPrefix = "UserDataDownloadOrchestrator";
 
@@ -144,27 +148,15 @@ export const handler = function*(
       });
     });
 
-    trackEvent({
-      // tslint:disable-next-line: no-duplicate-string
-      name: "user.data.download",
-      properties: {
-        userDataProcessingId: currentUserDataProcessing.userDataProcessingId
-      },
-      tagOverrides: {
-        "ai.operation.id": currentUserDataProcessing.userDataProcessingId,
-        "ai.operation.parentId": currentUserDataProcessing.userDataProcessingId
-      }
-    });
+    trackUserDataDownloadEvent("done", currentUserDataProcessing);
 
     return OrchestratorSuccess.encode({ kind: "SUCCESS" });
   } catch (error) {
-    trackException({
-      exception: new Error(error),
-      properties: {
-        name: "user.data.download",
-        userDataProcessingId: currentUserDataProcessing.userDataProcessingId
-      }
-    });
+    trackUserDataDownloadException(
+      "failed",
+      toError(error),
+      currentUserDataProcessing
+    );
     context.log.error(
       `${logPrefix}|ERROR|Failed processing user data for download: ${error.message}`
     );
@@ -174,14 +166,12 @@ export const handler = function*(
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
     ).getOrElseL(err => {
-      trackException({
-        exception: new Error(readableReport(err)),
-        properties: {
-          name: "user.data.download",
-          type: "unhandled exception when trying to set document as FAILED",
-          userDataProcessingId: currentUserDataProcessing.userDataProcessingId
-        }
-      });
+      trackUserDataDownloadException(
+        "unhandled_failed_status",
+        new Error(readableReport(err)),
+        currentUserDataProcessing
+      );
+
       throw new Error(
         `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
           err
