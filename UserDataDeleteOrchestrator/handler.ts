@@ -24,12 +24,11 @@ import {
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
-import { trackEvent, trackException } from "../utils/appinsights";
-import { ABORT_EVENT, addDays, addHours } from "./utils";
 import {
   trackUserDataDeleteEvent,
   trackUserDataDeleteException
 } from "../utils/appinsightsEvents";
+import { ABORT_EVENT, addDays, addHours } from "./utils";
 
 const logPrefix = "UserDataDeleteOrchestrator";
 

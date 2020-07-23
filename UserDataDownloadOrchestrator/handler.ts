@@ -14,7 +14,6 @@ import {
   trackUserDataDownloadEvent,
   trackUserDataDownloadException
 } from "../utils/appinsightsEvents";
-import { trackException } from "../utils/appinsights";
 
 const logPrefix = "UserDataDownloadOrchestrator";
 
