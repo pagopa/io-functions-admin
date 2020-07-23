@@ -142,14 +142,19 @@ export const createSetUserDataProcessingStatusActivityHandler = (
     currentRecord: UserDataProcessing;
     nextStatus: UserDataProcessingStatus;
   }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
-    fromQueryEither(
-      () =>
-        userDataProcessingModel.createOrUpdateByNewOne({
-          ...currentRecord,
-          status: nextStatus
-        }),
-      "userDataProcessingModel.createOrUpdateByNewOne"
-    );
+    userDataProcessingModel
+      .createOrUpdateByNewOne({
+        ...currentRecord,
+        status: nextStatus
+      })
+      .mapLeft(err =>
+        ActivityResultQueryFailure.encode({
+          kind: "QUERY_FAILURE",
+          query: "userDataProcessingModel.createOrUpdateByNewOne",
+          // FIXME - get a useful error's reason
+          reason: err.kind
+        })
+      );
 
   // the actual handler
   return fromEither(ActivityInput.decode(input))
