@@ -56,56 +56,53 @@ const executeRecursiveBackupAndDelete = <T>(
   // tslint:disable-next-line: use-type-alias
   DataFailure,
   readonly T[]
-> => {
-  return (
-    tryCatch(iterator.executeNext, toError)
-      // this is just type lifting
-      .foldTaskEither<DataFailure, Option<readonly T[]>>(
-        e => fromLeft(toQueryFailure(e)),
-        e => fromEither(e).mapLeft(toQueryFailure)
-      )
-      .chain(maybeResults =>
-        maybeResults.fold(
-          // if the iterator content is none, exit the recursion
-          taskEither.of([]),
-          items =>
-            // executes backup&delete for this set of items
-            array.sequence(taskEither)(
-              items.map((item: T) =>
-                sequenceT(taskEitherSeq)<
-                  DataFailure,
+> =>
+  tryCatch(iterator.executeNext, toError)
+    // this is just type lifting
+    .foldTaskEither<DataFailure, Option<readonly T[]>>(
+      e => fromLeft(toQueryFailure(e)),
+      e => fromEither(e).mapLeft(toQueryFailure)
+    )
+    .chain(maybeResults =>
+      maybeResults.fold(
+        // if the iterator content is none, exit the recursion
+        taskEither.of([]),
+        items =>
+          // executes backup&delete for this set of items
+          array.sequence(taskEither)(
+            items.map((item: T) =>
+              sequenceT(taskEitherSeq)<
+                DataFailure,
+                // tslint:disable-next-line: readonly-array
+                [
+                  TaskEither<DataFailure, T>,
+                  TaskEither<DataFailure, string>,
                   // tslint:disable-next-line: readonly-array
-                  [
-                    TaskEither<DataFailure, T>,
-                    TaskEither<DataFailure, string>,
-                    // tslint:disable-next-line: readonly-array
-                    TaskEither<DataFailure, readonly T[]>
-                  ]
-                >(
-                  saveDataToBlob<T>(
-                    userDataBackup,
-                    makeBackupBlobName(item),
-                    item
-                  ),
-                  tryCatch(() => deleteSingle(item), toError)
-                    .mapLeft(toDocumentDeleteFailure)
-                    .chain(_ => fromEither(_).mapLeft(toDocumentDeleteFailure)),
-                  // recursive step
-                  executeRecursiveBackupAndDelete<T>(
-                    deleteSingle,
-                    userDataBackup,
-                    makeBackupBlobName,
-                    iterator
-                  )
+                  TaskEither<DataFailure, readonly T[]>
+                ]
+              >(
+                saveDataToBlob<T>(
+                  userDataBackup,
+                  makeBackupBlobName(item),
+                  item
+                ),
+                tryCatch(() => deleteSingle(item), toError)
+                  .mapLeft(toDocumentDeleteFailure)
+                  .chain(_ => fromEither(_).mapLeft(toDocumentDeleteFailure)),
+                // recursive step
+                executeRecursiveBackupAndDelete<T>(
+                  deleteSingle,
+                  userDataBackup,
+                  makeBackupBlobName,
+                  iterator
                 )
-                  // aggregates the results at the end of the recursion
-                  .map(([_, __, nextResults]) => [item, ...nextResults])
               )
+                // aggregates the results at the end of the recursion
+                .map(([_, __, nextResults]) => [item, ...nextResults])
             )
-        )
+          )
       )
-  );
-};
+    );
 
 /**
  * Backup and delete every version of the profile
@@ -122,14 +119,13 @@ const backupAndDeleteProfile = ({
   profileModel: ProfileDeletableModel;
   userDataBackup: IBlobServiceInfo;
   fiscalCode: FiscalCode;
-}) => {
-  return executeRecursiveBackupAndDelete<RetrievedProfile>(
+}) =>
+  executeRecursiveBackupAndDelete<RetrievedProfile>(
     item => profileModel.deleteProfileVersion(item.fiscalCode, item.id),
     userDataBackup,
     item => `profile/${item.id}.json`,
     profileModel.findAllVersionsByModelId(fiscalCode)
   );
-};
 
 /**
  * Backup and delete a given notification
@@ -146,8 +142,8 @@ const backupAndDeleteNotification = ({
   notificationModel: NotificationDeletableModel;
   userDataBackup: IBlobServiceInfo;
   notification: RetrievedNotification;
-}): TaskEither<DataFailure, RetrievedNotification> => {
-  return sequenceT(taskEitherSeq)<
+}): TaskEither<DataFailure, RetrievedNotification> =>
+  sequenceT(taskEitherSeq)<
     DataFailure,
     // tslint:disable-next-line: readonly-array
     [
@@ -167,7 +163,6 @@ const backupAndDeleteNotification = ({
       )
     ).mapLeft(toDocumentDeleteFailure)
   ).map(_ => notification);
-};
 
 /**
  * Find all versions of a notification status, then backup and delete each document
@@ -212,8 +207,8 @@ const backupAndDeleteMessage = ({
   messageModel: MessageDeletableModel;
   userDataBackup: IBlobServiceInfo;
   message: RetrievedMessageWithoutContent;
-}): TaskEither<DataFailure, RetrievedMessageWithoutContent> => {
-  return sequenceT(taskEitherSeq)<
+}): TaskEither<DataFailure, RetrievedMessageWithoutContent> =>
+  sequenceT(taskEitherSeq)<
     DataFailure,
     // tslint:disable-next-line: readonly-array
     [
@@ -230,7 +225,6 @@ const backupAndDeleteMessage = ({
       messageModel.deleteMessage(message.fiscalCode, message.id)
     ).mapLeft(toDocumentDeleteFailure)
   ).map(_ => message);
-};
 
 const backupAndDeleteMessageContent = ({
   messageContentBlobService,
@@ -242,48 +236,45 @@ const backupAndDeleteMessageContent = ({
   messageModel: MessageDeletableModel;
   userDataBackup: IBlobServiceInfo;
   message: RetrievedMessageWithoutContent;
-}): TaskEither<DataFailure, Option<MessageContent>> => {
-  return (
-    tryCatch(
-      () =>
-        messageModel.getContentFromBlob(messageContentBlobService, message.id),
-      toError
-    )
-      // type lift
-      // from TaskEither of Either of Option of X
-      // to TaskEither of X
-      // this way we collaps every left/none case into the same path
-      .chain(fromEither)
-      .chain(e => fromEither(fromOption(undefined)(e)))
-      .foldTaskEither<DataFailure, Option<MessageContent>>(
-        _ => {
-          // unfortunately, a document not found is threated like a query error
-          return taskEither.of(none);
-        },
-        content =>
-          taskEither
-            .of<DataFailure, void>(void 0)
-            .chain(_ =>
-              saveDataToBlob(
-                userDataBackup,
-                `message-content/${message.id}.json`,
-                content
-              )
+}): TaskEither<DataFailure, Option<MessageContent>> =>
+  tryCatch(
+    () =>
+      messageModel.getContentFromBlob(messageContentBlobService, message.id),
+    toError
+  )
+    // type lift
+    // from TaskEither of Either of Option of X
+    // to TaskEither of X
+    // this way we collaps every left/none case into the same path
+    .chain(fromEither)
+    .chain(e => fromEither(fromOption(undefined)(e)))
+    .foldTaskEither<DataFailure, Option<MessageContent>>(
+      _ => {
+        // unfortunately, a document not found is threated like a query error
+        return taskEither.of(none);
+      },
+      content =>
+        taskEither
+          .of<DataFailure, void>(void 0)
+          .chain(_ =>
+            saveDataToBlob(
+              userDataBackup,
+              `message-content/${message.id}.json`,
+              content
             )
-            .chain(_ =>
-              tryCatch(
-                () =>
-                  messageModel.deleteContentFromBlob(
-                    messageContentBlobService,
-                    message.id
-                  ),
-                toError
-              ).mapLeft(toDocumentDeleteFailure)
-            )
-            .map(_ => some(content))
-      )
-  );
-};
+          )
+          .chain(_ =>
+            tryCatch(
+              () =>
+                messageModel.deleteContentFromBlob(
+                  messageContentBlobService,
+                  message.id
+                ),
+              toError
+            ).mapLeft(toDocumentDeleteFailure)
+          )
+          .map(_ => some(content))
+    );
 
 /**
  * Find all versions of a message status, then backup and delete each document
@@ -300,15 +291,14 @@ const backupAndDeleteMessageStatus = ({
   messageStatusModel: MessageStatusDeletableModel;
   userDataBackup: IBlobServiceInfo;
   message: RetrievedMessageWithoutContent;
-}): TaskEither<DataFailure, readonly RetrievedMessageStatus[]> => {
-  return executeRecursiveBackupAndDelete<RetrievedMessageStatus>(
+}): TaskEither<DataFailure, readonly RetrievedMessageStatus[]> =>
+  executeRecursiveBackupAndDelete<RetrievedMessageStatus>(
     item =>
       messageStatusModel.deleteMessageStatusVersion(item.messageId, item.id),
     userDataBackup,
     item => `message-status/${item.id}.json`,
     messageStatusModel.findAllVersionsByModelId(message.id)
   );
-};
 
 /**
  * For a given message, search all its notifications and backup&delete each one including its own notification status
@@ -457,8 +447,8 @@ export const backupAndDeleteAllUserData = ({
   profileModel: ProfileDeletableModel;
   userDataBackup: IBlobServiceInfo;
   fiscalCode: FiscalCode;
-}) => {
-  return backupAndDeleteAllMessagesData({
+}) =>
+  backupAndDeleteAllMessagesData({
     fiscalCode,
     messageContentBlobService,
     messageModel,
@@ -469,4 +459,3 @@ export const backupAndDeleteAllUserData = ({
   }).chain(_ =>
     backupAndDeleteProfile({ profileModel, userDataBackup, fiscalCode })
   );
-};
