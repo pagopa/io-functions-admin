@@ -20,11 +20,11 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 import { Day, Hour } from "italia-ts-commons/lib/units";
 import { aUserDataProcessing } from "../../__mocks__/mocks";
 import { ActivityResultSuccess as DeleteUserDataActivityResultSuccess } from "../../DeleteUserDataActivity/types";
-import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import {
-  ActivityResultSuccess as GetUserDataProcessingActivityResultSuccess,
-  ActivityResultNotFoundFailure as GetUserDataProcessingActivityResultNotFoundFailure
+  ActivityResultNotFoundFailure as GetUserDataProcessingActivityResultNotFoundFailure,
+  ActivityResultSuccess as GetUserDataProcessingActivityResultSuccess
 } from "../../GetUserDataProcessingActivity/handler";
+import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import { ActivityResultSuccess as SetUserSessionLockActivityResultSuccess } from "../../SetUserSessionLockActivity/handler";
 import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler";
 import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger";

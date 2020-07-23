@@ -16,14 +16,6 @@ const aSuccessResponse = SuccessResponse.decode({ message: "ok" }).getOrElseL(
     throw new Error(`Invalid mock fr SuccessResponse: ${readableReport(err)}`);
   }
 );
-
-const aProblemJson400 = ProblemJson.decode({
-  status: 400,
-  title: "Bad Request"
-}).getOrElseL(err => {
-  throw new Error(`Invalid mock fr ProblemJson400: ${readableReport(err)}`);
-});
-
 const aProblemJson500 = ProblemJson.decode({
   status: 400,
   title: "Server Error"
@@ -31,9 +23,9 @@ const aProblemJson500 = ProblemJson.decode({
   throw new Error(`Invalid mock fr ProblemJson400: ${readableReport(err)}`);
 });
 
-const withDefaultApiKey: WithDefaultsT<"ApiKey"> = apiOperation => ({
+const withDefaultApiKey: WithDefaultsT<"token"> = apiOperation => ({
   fiscalCode
-}) => apiOperation({ fiscalCode, ApiKey: anApyKey });
+}) => apiOperation({ fiscalCode, token: anApyKey });
 
 describe("sessionApiClient#lockUserSession", () => {
   it.each`
@@ -41,7 +33,7 @@ describe("sessionApiClient#lockUserSession", () => {
     ${"Success"}        | ${200} | ${aSuccessResponse}
     ${"Not Found"}      | ${404} | ${undefined}
     ${"Server Error"}   | ${500} | ${aProblemJson500}
-    ${"Bad Request"}    | ${400} | ${aProblemJson400}
+    ${"Bad Request"}    | ${400} | ${undefined}
     ${"Not Authorized"} | ${401} | ${undefined}
   `("should handle $name response", async ({ status, payload }) => {
     const fetchApi = createMockFetch({
@@ -51,8 +43,8 @@ describe("sessionApiClient#lockUserSession", () => {
     const client = createClient({ baseUrl, fetchApi });
 
     const result = await client.lockUserSession({
-      ApiKey: anApyKey,
-      fiscalCode: aFiscalCode
+      fiscalCode: aFiscalCode,
+      token: anApyKey
     });
 
     expect(result.isRight()).toBe(true);
@@ -85,11 +77,11 @@ describe("sessionApiClient#lockUserSession", () => {
     // check that arguments are correctly passed to fetch
     expect(spiedFetch).toHaveBeenCalledWith(
       expect.stringContaining(aFiscalCode),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          "X-Functions-Key": expect.stringContaining(anApyKey)
-        })
-      })
+      expect.any(Object)
+    );
+    expect(spiedFetch).toHaveBeenCalledWith(
+      expect.stringContaining(anApyKey),
+      expect.any(Object)
     );
   });
 });
@@ -99,7 +91,7 @@ describe("sessionApiClient#unlockUserSession", () => {
     name                | status | payload
     ${"Success"}        | ${200} | ${aSuccessResponse}
     ${"Server Error"}   | ${500} | ${aProblemJson500}
-    ${"Bad Request"}    | ${400} | ${aProblemJson400}
+    ${"Bad Request"}    | ${400} | ${undefined}
     ${"Not Authorized"} | ${401} | ${undefined}
   `("should handle $name response", async ({ status, payload }) => {
     const fetchApi = createMockFetch({
@@ -109,8 +101,8 @@ describe("sessionApiClient#unlockUserSession", () => {
     const client = createClient({ baseUrl, fetchApi });
 
     const result = await client.unlockUserSession({
-      ApiKey: anApyKey,
-      fiscalCode: aFiscalCode
+      fiscalCode: aFiscalCode,
+      token: anApyKey
     });
 
     expect(result.isRight()).toBe(true);
@@ -143,11 +135,11 @@ describe("sessionApiClient#unlockUserSession", () => {
     // check that arguments are correctly passed to fetch
     expect(spiedFetch).toHaveBeenCalledWith(
       expect.stringContaining(aFiscalCode),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          "X-Functions-Key": expect.stringContaining(anApyKey)
-        })
-      })
+      expect.any(Object)
+    );
+    expect(spiedFetch).toHaveBeenCalledWith(
+      expect.stringContaining(anApyKey),
+      expect.any(Object)
     );
   });
 });

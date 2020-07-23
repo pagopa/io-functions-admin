@@ -41,7 +41,7 @@ const mockUnlockUserSession = jest.fn().mockImplementation(async () =>
 const mockClient = {
   lockUserSession: mockLockUserSession,
   unlockUserSession: mockUnlockUserSession
-} as Client<"ApiKey">;
+} as Client<"token">;
 
 describe("createSetUserSessionLockActivityHandler", () => {
   beforeEach(() => {
