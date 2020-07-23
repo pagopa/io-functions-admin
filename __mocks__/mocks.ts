@@ -100,7 +100,7 @@ export const aService: Service = {
 export const aNewService: NewService = {
   ...aService,
   kind: "INewService",
-  version: 1 as NonNegativeInteger
+  serviceMetadata: undefined
 };
 
 export const aRetrievedService: RetrievedService = {
@@ -112,7 +112,7 @@ export const aRetrievedService: RetrievedService = {
 
 export const aSeralizedService: ApiService = {
   ...aServicePayload,
-  id: "123" as NonEmptyString,
+  id: "MySubscriptionId" as NonEmptyString,
   version: 1 as NonNegativeNumber
 };
 

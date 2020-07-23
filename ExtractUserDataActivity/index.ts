@@ -14,8 +14,8 @@ import {
   MessageStatusModel
 } from "io-functions-commons/dist/src/models/message_status";
 import {
-  NOTIFICATION_COLLECTION_NAME
-  /* NotificationModel // we use the extended, local-defined model */
+  NOTIFICATION_COLLECTION_NAME,
+  NotificationModel
 } from "io-functions-commons/dist/src/models/notification";
 import {
   NOTIFICATION_STATUS_COLLECTION_NAME,
@@ -25,7 +25,6 @@ import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
-import { NotificationModel } from "./notification";
 
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 const database = cosmosdbClient.database(cosmosDbName);

@@ -3,13 +3,10 @@ import { Context } from "@azure/functions";
 import * as express from "express";
 import * as winston from "winston";
 
-import { DocumentClient as DocumentDBClient } from "documentdb";
-
 import {
   SERVICE_COLLECTION_NAME,
   ServiceModel
 } from "io-functions-commons/dist/src/models/service";
-import * as documentDbUtils from "io-functions-commons/dist/src/utils/documentdb";
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { secureExpressApp } from "io-functions-commons/dist/src/utils/express";
 import { AzureContextTransport } from "io-functions-commons/dist/src/utils/logging";
@@ -17,24 +14,16 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
+import { cosmosdbClient } from "../utils/cosmosdb";
 import { UploadServiceLogo } from "./handler";
 
-const cosmosDbUri = getRequiredStringEnv("COSMOSDB_URI");
-const cosmosDbKey = getRequiredStringEnv("COSMOSDB_KEY");
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
+const database = cosmosdbClient.database(cosmosDbName);
 const logosUrl = getRequiredStringEnv("LOGOS_URL");
 
-const documentDbDatabaseUrl = documentDbUtils.getDatabaseUri(cosmosDbName);
-const servicesCollectionUrl = documentDbUtils.getCollectionUri(
-  documentDbDatabaseUrl,
-  SERVICE_COLLECTION_NAME
-);
+const servicesContainer = database.container(SERVICE_COLLECTION_NAME);
 
-const documentClient = new DocumentDBClient(cosmosDbUri, {
-  masterKey: cosmosDbKey
-});
-
-const serviceModel = new ServiceModel(documentClient, servicesCollectionUrl);
+const serviceModel = new ServiceModel(servicesContainer);
 
 // tslint:disable-next-line: no-let
 let logger: Context["log"] | undefined;

@@ -6,6 +6,8 @@ import { none, some } from "fp-ts/lib/Option";
 
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
+import { fromEither } from "fp-ts/lib/TaskEither";
+import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { aRetrievedService, aSeralizedService } from "../../__mocks__/mocks";
 import { GetServiceHandler } from "../handler";
 
@@ -14,7 +16,7 @@ describe("GetServiceHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const mockServiceModel = {
       findOneByServiceId: jest.fn(() => {
-        return Promise.resolve(right(none));
+        return fromEither(right(none));
       })
     };
 
@@ -35,7 +37,9 @@ describe("GetServiceHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const mockServiceModel = {
       findOneByServiceId: jest.fn(() => {
-        return Promise.resolve(left({}));
+        return fromEither(
+          left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
+        );
       })
     };
 
@@ -53,10 +57,10 @@ describe("GetServiceHandler", () => {
   });
 
   it("should return the requested service if found in the db", async () => {
-    const aServiceId = "1" as NonEmptyString;
+    const aServiceId = "MySubscriptionId" as NonEmptyString;
     const mockServiceModel = {
       findOneByServiceId: jest.fn(() => {
-        return Promise.resolve(right(some(aRetrievedService)));
+        return fromEither(right(some(aRetrievedService)));
       })
     };
 
