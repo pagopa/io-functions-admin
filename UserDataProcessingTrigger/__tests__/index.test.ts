@@ -53,6 +53,13 @@ const aProcessableDeleteAbort = {
   status: UserDataProcessingStatusEnum.ABORTED
 };
 
+jest.mock("../../utils/featureFlags", () => ({
+  flags: {
+    ENABLE_USER_DATA_DELETE: true,
+    ENABLE_USER_DATA_DOWNLOAD: true
+  }
+}));
+
 describe("UserDataProcessingTrigger", () => {
   beforeEach(() => {
     jest.clearAllMocks();

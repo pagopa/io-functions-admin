@@ -1,19 +1,13 @@
 /**
- *
+ * Contains feature flags for the app
  */
 
 import { fromNullable } from "fp-ts/lib/Option";
-import * as t from "io-ts";
 
-const getEnvVariable = (decoder: t.Mixed) => (
-  name: string,
-  defaultValue: typeof decoder["_A"]
-) =>
+const getFlagFromEnv = (name: string, defaultValue: boolean) =>
   fromNullable(process.env[name])
-    .map(decoder.decode)
+    .map(value => value === "1")
     .getOrElse(defaultValue);
-
-const getFlagFromEnv = getEnvVariable(t.boolean);
 
 export const flags = {
   ENABLE_USER_DATA_DELETE: getFlagFromEnv("FF_ENABLE_USER_DATA_DELETE", true),
