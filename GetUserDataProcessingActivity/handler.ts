@@ -101,7 +101,8 @@ const logFailure = (context: Context) => (
       );
       break;
     case "NOT_FOUND_FAILURE":
-      context.log.error(`${logPrefix}|Error UserDataProcessing not found`);
+      // it might not be a failure
+      context.log.warn(`${logPrefix}|Error UserDataProcessing not found`);
       break;
     default:
       assertNever(failure);
