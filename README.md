@@ -38,3 +38,13 @@ they may be customized as needed.
 | USER_DATA_BACKUP_CONTAINER_NAME  | Name of the storage container in which user data is backuped before being permanently deleted    | string |
 | USER_DATA_DELETE_DELAY_DAYS      | How many days to wait when a user asks for cancellation before effectively delete her data       | number |
 | UserDataBackupStorageConnection  | Storage connection string for GDPR user data storage                                             | string |
+
+
+#### Feature flags
+
+This flags enable/disable some features and are expected to be boolean. To set them true, assign them the literal value `1`
+
+| Variable name                | Description                                       | default |
+|------------------------------|---------------------------------------------------|---------|
+| FF_ENABLE_USER_DATA_DOWNLOAD | Users' GDPR data access claims are processed      | true    |
+| FF_ENABLE_USER_DATA_DELETE   | Users' GDPR right to erasure claims are processed | true    |
