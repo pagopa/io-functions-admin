@@ -9,14 +9,7 @@ import { DeferredPromise } from "italia-ts-commons/lib/promises";
 
 import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
 import { array, flatten, rights } from "fp-ts/lib/Array";
-import {
-  Either,
-  fromOption,
-  left,
-  right,
-  toError,
-  either
-} from "fp-ts/lib/Either";
+import { Either, fromOption, left, right, toError } from "fp-ts/lib/Either";
 import {
   fromEither,
   TaskEither,
@@ -41,6 +34,7 @@ import {
   MessageStatusModel
 } from "io-functions-commons/dist/src/models/message_status";
 import { RetrievedNotification } from "io-functions-commons/dist/src/models/notification";
+import { NotificationModel } from "io-functions-commons/dist/src/models/notification";
 import {
   NotificationStatus,
   NotificationStatusModel
@@ -49,17 +43,14 @@ import {
   Profile,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
-import {
-  asyncIteratorToArray,
-  asyncIterableToArray
-} from "io-functions-commons/dist/src/utils/async";
+import { asyncIterableToArray } from "io-functions-commons/dist/src/utils/async";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { getEncryptedZipStream } from "../utils/zip";
-import { NotificationModel } from "./notification";
 
+import { fromLeft } from "fp-ts/lib/TaskEither";
 import * as yaml from "yaml";
 
 export const ArchiveInfo = t.interface({
@@ -277,7 +268,7 @@ export const getAllMessageContents = (
               (content: MessageContent) =>
                 right({
                   content,
-                  messageId
+                  messageId: messageId as NonEmptyString
                 })
             )
           )
@@ -302,7 +293,7 @@ export const getAllMessagesStatuses = (
               left(
                 ActivityResultQueryFailure.encode({
                   kind: "QUERY_FAILURE",
-                  reason: failure.kind // FIXME: better mapping from CosmosErrors to ActivityResultQueryFailure?
+                  reason: `messageStatusModel|${failure.kind}` // FIXME: better mapping from CosmosErrors to ActivityResultQueryFailure?
                 })
               )
             ),
@@ -320,7 +311,10 @@ export const getAllMessagesStatuses = (
 export const findNotificationsForMessage = (
   notificationModel: NotificationModel,
   messageId: RetrievedMessageWithoutContent["id"]
-): TaskEither<ActivityResultQueryFailure, Array<RetrievedNotification>> =>
+): TaskEither<
+  ActivityResultQueryFailure,
+  ReadonlyArray<RetrievedNotification>
+> =>
   tryCatch(
     () =>
       asyncIterableToArray(
@@ -345,7 +339,7 @@ export const findNotificationsForMessage = (
       // FIXME: better mapping
       ActivityResultQueryFailure.encode({
         kind: "QUERY_FAILURE",
-        reason: String(e)
+        reason: `notificationModel.getQueryIterator|${String(e)}`
       })
     );
 
@@ -385,14 +379,19 @@ export const findAllNotificationStatuses = (
           []
         )
         .map(([notificationId, channel]) =>
-          fromQueryEither(
-            () =>
-              notificationStatusModel.findOneNotificationStatusByNotificationChannel(
-                notificationId,
-                channel
-              ),
-            "findOneNotificationStatusByNotificationChannel"
-          )
+          notificationStatusModel
+            .findOneNotificationStatusByNotificationChannel(
+              notificationId,
+              channel
+            )
+            .mapLeft(e =>
+              ActivityResultQueryFailure.encode({
+                kind: "QUERY_FAILURE",
+                reason: `notificationStatusModel.findOneNotificationStatusByNotificationChannel|${
+                  toError(e).message
+                }`
+              })
+            )
         )
     )
     // filter empty results (it might not exist a content for a pair notification/channel)
@@ -428,17 +427,45 @@ export const queryAllUserData = (
     .chain(profile =>
       sequenceS(taskEither)({
         // queries all messages for the user
-        messages: fromQueryEither<ReadonlyArray<RetrievedMessageWithContent>>(
-          () => iteratorToArray(messageModel.findMessages(fiscalCode)),
-          "findMessages"
-        ),
+        messages: messageModel
+          .findAllByQuery({
+            parameters: [
+              {
+                name: "@fiscaCode",
+                value: fiscalCode
+              }
+            ],
+            query: `SELECT * FROM m WHERE m.fiscalCode = @fiscalCode`
+          })
+          .mapLeft(_ =>
+            ActivityResultQueryFailure.encode({
+              kind: "QUERY_FAILURE",
+              query: "findMessages",
+              reason: _.kind
+            })
+          )
+          .foldTaskEither(
+            _ => fromLeft(_),
+            maybeMessages =>
+              maybeMessages.foldL(
+                () =>
+                  fromLeft(
+                    ActivityResultQueryFailure.encode({
+                      kind: "QUERY_FAILURE",
+                      query: "findMessages",
+                      reason: "No messages found"
+                    })
+                  ),
+                _ => fromEither(right(_))
+              )
+          ),
         profile: taskEither.of(profile)
       })
     )
     // step 2: queries notifications and message contents, which need message data to be queried first
     .chain(({ profile, messages }) => {
       // this cast is needed because messageModel.findMessages is erroneously marked as RetrievedMessageWithContent, although content isn't included
-      // tslint:disable-next-line: no-any
+      // tslint:disable-next-line: no-useless-cast no-any
       const asRetrievedMessages = (messages as any) as readonly RetrievedMessageWithoutContent[];
       return sequenceS(taskEither)({
         messageContents: getAllMessageContents(
