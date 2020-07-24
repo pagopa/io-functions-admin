@@ -3,11 +3,7 @@ import { Context } from "@azure/functions";
 import * as express from "express";
 
 import { ServiceModel } from "io-functions-commons/dist/src/models/service";
-import {
-  IFoldableResultIterator,
-  iteratorToValue,
-  reduceResultIterator
-} from "io-functions-commons/dist/src/utils/documentdb";
+
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -23,7 +19,15 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
+import { rights } from "fp-ts/lib/Array";
+import { Either, isLeft, left, right } from "fp-ts/lib/Either";
+import { Option } from "fp-ts/lib/Option";
 import { collect, StrMap } from "fp-ts/lib/StrMap";
+import {
+  CosmosErrors,
+  toCosmosErrorResponse
+} from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { Errors } from "io-ts";
 import {
   IResponseSuccessJson,
   ResponseSuccessJson
@@ -40,11 +44,70 @@ type IGetServicesHandler = (
   auth: IAzureApiAuthorization
 ) => Promise<IGetServicesHandlerResult>;
 
+interface IFoldableResultIterator<T> {
+  readonly executeNext: (init: T) => Promise<Either<CosmosErrors, T>>;
+}
+
+function reduceResultIterator<A, B>(
+  i: AsyncIterator<ReadonlyArray<Either<Errors, A>>>,
+  f: (prev: B, curr: A) => B
+): IFoldableResultIterator<B> {
+  return {
+    executeNext: (init: B) =>
+      new Promise((resolve, reject) =>
+        i.next().then(
+          errorOrMaybeDocuments =>
+            errorOrMaybeDocuments.value().map(arrayOfMaybeDocs => {
+              if (rights(arrayOfMaybeDocs).length !== arrayOfMaybeDocs.length) {
+                return resolve(
+                  left<CosmosErrors, B>(
+                    toCosmosErrorResponse(
+                      new Error("Some service cannot be decoded correctly")
+                    )
+                  )
+                );
+              } else {
+                rights(arrayOfMaybeDocs).forEach(
+                  (documents: ReadonlyArray<A>) => {
+                    if (documents && documents.length > 0) {
+                      return resolve(
+                        right<CosmosErrors, B>(documents.reduce(f, init))
+                      );
+                    } else {
+                      return resolve(right<CosmosErrors, B>(init));
+                    }
+                  }
+                );
+              }
+            }),
+          reject
+        )
+      )
+  };
+}
+
+async function iteratorToValue<T>(
+  _: IFoldableResultIterator<T>,
+  init: T
+): Promise<Either<CosmosErrors, T>> {
+  async function iterate(a: T): Promise<Either<CosmosErrors, T>> {
+    const errorOrResult = await _.executeNext(a);
+    if (isLeft(errorOrResult)) {
+      return left<CosmosErrors, T>(errorOrResult.value);
+    }
+    const result = errorOrResult.value;
+    return iterate(result);
+  }
+  return iterate(init);
+}
+
 export function GetServicesHandler(
   serviceModel: ServiceModel
 ): IGetServicesHandler {
   return async (_, __) => {
-    const allRetrievedServicesIterator = serviceModel.getCollectionIterator();
+    const allRetrievedServicesIterator = serviceModel
+      .getCollectionIterator()
+      [Symbol.asyncIterator]();
     const allServicesIterator: IFoldableResultIterator<
       Record<string, ApiService>
     > = reduceResultIterator(allRetrievedServicesIterator, (prev, curr) => {
@@ -61,7 +124,8 @@ export function GetServicesHandler(
     return (await iteratorToValue(allServicesIterator, {})).fold<
       IGetServicesHandlerResult
     >(
-      error => ResponseErrorQuery("Cannot get services", error),
+      error =>
+        ResponseErrorQuery("Cannot get services", toCosmosErrorResponse(error)),
       services => {
         const items = collect(new StrMap(services), (_____, v) => v);
         return ResponseSuccessJson({
