@@ -16,6 +16,7 @@ import {
   trackUserDataDeleteEvent,
   trackUserDataDownloadEvent
 } from "../utils/appinsightsEvents";
+import { flags } from "../utils/featureFlags";
 
 const logPrefix = "UserDataProcessingTrigger";
 
@@ -84,7 +85,8 @@ export function index(
           .decode(processableOrNot)
           .chain(processable =>
             fromNullable(undefined)(
-              ProcessableUserDataDownload.is(processable)
+              flags.ENABLE_USER_DATA_DOWNLOAD &&
+                ProcessableUserDataDownload.is(processable)
                 ? () => {
                     context.log.info(
                       `${logPrefix}: starting UserDataDownloadOrchestrator with ${processable.fiscalCode}`
@@ -96,7 +98,8 @@ export function index(
                       processable
                     );
                   }
-                : ProcessableUserDataDelete.is(processable)
+                : flags.ENABLE_USER_DATA_DELETE &&
+                  ProcessableUserDataDelete.is(processable)
                 ? () => {
                     context.log.info(
                       `${logPrefix}: starting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
