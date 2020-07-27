@@ -1,19 +1,59 @@
 /* tslint:disable: no-any */
 
 import { left, right } from "fp-ts/lib/Either";
-
-import { none, some } from "fp-ts/lib/Option";
+import * as asyncI from "io-functions-commons/dist/src/utils/async";
+import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { aRetrievedService, aSeralizedService } from "../../__mocks__/mocks";
 import { GetServicesHandler } from "../handler";
 
+const serviceIteratorMock = {
+  next: jest.fn(() =>
+    Promise.resolve({
+      value: jest.fn(() => [
+        right(aRetrievedService),
+        right({
+          ...aRetrievedService,
+          version: 3
+        }),
+        right({
+          ...aRetrievedService,
+          version: 2
+        })
+      ])
+    })
+  )
+};
+
+const serviceIteratorErrorMock = {
+  next: jest.fn(() =>
+    Promise.resolve({
+      value: jest.fn(() => [
+        left(toCosmosErrorResponse(new Error("Query Error")))
+      ])
+    })
+  )
+};
+
+const symbolAsyncIterator = jest.fn(() => {
+  return {
+    [Symbol.asyncIterator]: () => serviceIteratorMock
+  };
+});
+
+const symbolAsyncErrorIterator = jest.fn(() => {
+  return {
+    [Symbol.asyncIterator]: () => serviceIteratorErrorMock
+  };
+});
+
 describe("GetServices", () => {
   it("Should return a query error when a database error occurs", async () => {
+    jest
+      .spyOn(asyncI, "mapAsyncIterable")
+      .mockImplementationOnce(symbolAsyncErrorIterator);
+
     const mockServiceModel = {
-      getCollectionIterator: jest.fn(() =>
-        Promise.resolve({
-          executeNext: () => Promise.resolve(left(new Error()))
-        })
-      )
+      getCollectionIterator: symbolAsyncErrorIterator
     };
 
     const getServicesHandler = GetServicesHandler(mockServiceModel as any);
@@ -28,31 +68,12 @@ describe("GetServices", () => {
   });
 
   it("Should return the collection of services from the database", async () => {
+    jest
+      .spyOn(asyncI, "mapAsyncIterable")
+      .mockImplementationOnce(symbolAsyncIterator);
+
     const mockServiceModel = {
-      getCollectionIterator: jest.fn(() =>
-        Promise.resolve({
-          executeNext: jest
-            .fn()
-            .mockImplementationOnce(() =>
-              Promise.resolve(
-                right(
-                  some([
-                    aRetrievedService,
-                    {
-                      ...aRetrievedService,
-                      version: 3
-                    },
-                    {
-                      ...aRetrievedService,
-                      version: 2
-                    }
-                  ])
-                )
-              )
-            )
-            .mockImplementationOnce(() => Promise.resolve(right(none)))
-        })
-      )
+      getCollectionIterator: symbolAsyncIterator
     };
 
     const getServicesHandler = GetServicesHandler(mockServiceModel as any);

@@ -1,6 +1,6 @@
 /* tslint:disable: no-any */
-import { Either, right } from "fp-ts/lib/Either";
-import { fromNullable, Option, some } from "fp-ts/lib/Option";
+import { right } from "fp-ts/lib/Either";
+import { some } from "fp-ts/lib/Option";
 
 import * as stream from "stream";
 import * as yaml from "yaml";
@@ -11,8 +11,7 @@ import {
   aFiscalCode,
   aProfile,
   aRetrievedMessageStatus,
-  aRetrievedNotificationStatus,
-  aRetrievedWebhookNotification
+  aRetrievedNotificationStatus
 } from "../../__mocks__/mocks";
 
 import {
@@ -23,7 +22,6 @@ import {
 
 import archiver = require("archiver");
 import { BlobService } from "azure-storage";
-import { QueryError } from "documentdb";
 import { fromEither } from "fp-ts/lib/TaskEither";
 import { MessageModel } from "io-functions-commons/dist/src/models/message";
 import { MessageStatusModel } from "io-functions-commons/dist/src/models/message_status";
@@ -51,7 +49,9 @@ const anotherRetrievedNotification: RetrievedNotification = {
 
 const messageIteratorMock = {
   next: jest.fn(() =>
-    Promise.resolve(right([right(aRetrievedMessageWithoutContent)]))
+    Promise.resolve({
+      value: jest.fn(() => [right(aRetrievedMessageWithoutContent)])
+    })
   )
 };
 
@@ -63,12 +63,12 @@ jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
 
 const notificationIteratorMock = {
   next: jest.fn(() =>
-    Promise.resolve(
-      right([
+    Promise.resolve({
+      value: jest.fn(() => [
         right(aRetrievedNotification),
         right(anotherRetrievedNotification)
       ])
-    )
+    })
   )
 };
 
@@ -86,16 +86,6 @@ jest
       [right(anotherRetrievedNotification)]
     ])
   );
-
-const createMockIterator = <T>(a: ReadonlyArray<T>) => {
-  const data = Array.from(a);
-  return {
-    async next(): Promise<Either<QueryError, Option<readonly T[]>>> {
-      const next = data.shift();
-      return right(fromNullable(next ? [next] : undefined));
-    }
-  };
-};
 
 const messageModelMock = ({
   findAllByQuery: jest.fn(() =>

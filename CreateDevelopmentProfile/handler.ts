@@ -17,7 +17,6 @@ import { FiscalCode, SandboxFiscalCode } from "italia-ts-commons/lib/strings";
 
 import { ExtendedProfile } from "io-functions-commons/dist/generated/definitions/ExtendedProfile";
 import {
-  Profile,
   ProfileModel,
   RetrievedProfile
 } from "io-functions-commons/dist/src/models/profile";

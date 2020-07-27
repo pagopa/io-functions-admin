@@ -26,7 +26,6 @@ import { MessageContent } from "io-functions-commons/dist/generated/definitions/
 import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
   MessageModel,
-  RetrievedMessageWithContent,
   RetrievedMessageWithoutContent
 } from "io-functions-commons/dist/src/models/message";
 import {

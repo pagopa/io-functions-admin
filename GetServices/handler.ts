@@ -20,8 +20,7 @@ import {
 } from "io-functions-commons/dist/src/utils/response";
 
 import { rights } from "fp-ts/lib/Array";
-import { Either, isLeft, left, right } from "fp-ts/lib/Either";
-import { Option } from "fp-ts/lib/Option";
+import { Either, left, right } from "fp-ts/lib/Either";
 import { collect, StrMap } from "fp-ts/lib/StrMap";
 import {
   CosmosErrors,
@@ -55,50 +54,26 @@ function reduceResultIterator<A, B>(
   return {
     executeNext: (init: B) =>
       new Promise((resolve, reject) =>
-        i.next().then(
-          errorOrMaybeDocuments =>
-            errorOrMaybeDocuments.value().map(arrayOfMaybeDocs => {
-              if (rights(arrayOfMaybeDocs).length !== arrayOfMaybeDocs.length) {
-                return resolve(
-                  left<CosmosErrors, B>(
-                    toCosmosErrorResponse(
-                      new Error("Some service cannot be decoded correctly")
-                    )
-                  )
-                );
-              } else {
-                rights(arrayOfMaybeDocs).forEach(
-                  (documents: ReadonlyArray<A>) => {
-                    if (documents && documents.length > 0) {
-                      return resolve(
-                        right<CosmosErrors, B>(documents.reduce(f, init))
-                      );
-                    } else {
-                      return resolve(right<CosmosErrors, B>(init));
-                    }
-                  }
-                );
-              }
-            }),
-          reject
-        )
+        i.next().then(arrayOfMaybeDocs => {
+          const docs: ReadonlyArray<A> = rights(arrayOfMaybeDocs.value());
+          if (docs.length !== arrayOfMaybeDocs.value().length) {
+            return resolve(
+              left<CosmosErrors, B>(
+                toCosmosErrorResponse(
+                  new Error("Some service cannot be decoded correctly")
+                )
+              )
+            );
+          } else {
+            if (docs && docs.length > 0) {
+              return resolve(right<CosmosErrors, B>(docs.reduce(f, init)));
+            } else {
+              return resolve(right<CosmosErrors, B>(init));
+            }
+          }
+        }, reject)
       )
   };
-}
-
-async function iteratorToValue<T>(
-  _: IFoldableResultIterator<T>,
-  init: T
-): Promise<Either<CosmosErrors, T>> {
-  async function iterate(a: T): Promise<Either<CosmosErrors, T>> {
-    const errorOrResult = await _.executeNext(a);
-    if (isLeft(errorOrResult)) {
-      return left<CosmosErrors, T>(errorOrResult.value);
-    }
-    const result = errorOrResult.value;
-    return iterate(result);
-  }
-  return iterate(init);
 }
 
 export function GetServicesHandler(
@@ -121,9 +96,8 @@ export function GetServicesHandler(
           : {})
       };
     });
-    return (await iteratorToValue(allServicesIterator, {})).fold<
-      IGetServicesHandlerResult
-    >(
+    const results = await allServicesIterator.executeNext({});
+    return results.fold<IGetServicesHandlerResult>(
       error =>
         ResponseErrorQuery("Cannot get services", toCosmosErrorResponse(error)),
       services => {

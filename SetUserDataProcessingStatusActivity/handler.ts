@@ -4,12 +4,10 @@
 
 import * as t from "io-ts";
 
-import { Either } from "fp-ts/lib/Either";
-import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { fromEither, TaskEither } from "fp-ts/lib/TaskEither";
 
 import { Context } from "@azure/functions";
 
-import { QueryError } from "documentdb";
 import { UserDataProcessingStatus } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
@@ -70,36 +68,6 @@ const logPrefix = `SetUserDataProcessingStatusActivity`;
 function assertNever(_: never): void {
   throw new Error("should not have executed this");
 }
-
-/**
- * Converts a Promise<Either> into a TaskEither
- * This is needed because our models return unconvenient type. Both left and rejection cases are handled as a TaskEither left
- * @param lazyPromise a lazy promise to convert
- * @param queryName an optional name for the query, for logging purpose
- *
- * @returns either the query result or a query failure
- */
-const fromQueryEither = <R>(
-  lazyPromise: () => Promise<Either<QueryError, R>>,
-  queryName: string = ""
-) =>
-  tryCatch(lazyPromise, (err: Error) =>
-    ActivityResultQueryFailure.encode({
-      kind: "QUERY_FAILURE",
-      query: queryName,
-      reason: err.message
-    })
-  ).chain((queryErrorOrRecord: Either<QueryError, R>) =>
-    fromEither(
-      queryErrorOrRecord.mapLeft(queryError =>
-        ActivityResultQueryFailure.encode({
-          kind: "QUERY_FAILURE",
-          query: queryName,
-          reason: JSON.stringify(queryError)
-        })
-      )
-    )
-  );
 
 /**
  * Logs depending on failure type
