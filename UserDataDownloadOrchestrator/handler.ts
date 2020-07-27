@@ -1,5 +1,5 @@
 import {
-  IFunctionContext,
+  IOrchestrationFunctionContext,
   RetryOptions
 } from "durable-functions/lib/src/classes";
 import { isLeft, toError } from "fp-ts/lib/Either";
@@ -76,8 +76,8 @@ const toActivityFailure = (
   });
 
 export const handler = function*(
-  context: IFunctionContext
-): IterableIterator<unknown> {
+  context: IOrchestrationFunctionContext
+): Generator<unknown> {
   const document = context.df.getInput();
   // This check has been done on the trigger, so it should never fail.
   // However, it's worth the effort to check it twice

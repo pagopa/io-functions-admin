@@ -62,7 +62,7 @@
     "archiver-zip-encrypted": "^1.0.8",
     "azure-storage": "^2.10.3",
     "documentdb": "^1.12.2",
-    "durable-functions": "^1.2.4",
+    "durable-functions": "^1.4.3",
     "express": "^4.15.3",
     "fp-ts": "1.17.0",
     "io-functions-commons": "^10.7.0",

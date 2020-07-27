@@ -1,6 +1,6 @@
 import * as df from "durable-functions";
 
-import { IFunctionContext } from "durable-functions/lib/src/classes";
+import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 
 import { isLeft } from "fp-ts/lib/Either";
 import { isSome, none, Option, some } from "fp-ts/lib/Option";
@@ -43,8 +43,8 @@ function computeMaybeAction(
 }
 
 export const handler = function*(
-  context: IFunctionContext
-): IterableIterator<unknown> {
+  context: IOrchestrationFunctionContext
+): Generator<unknown> {
   const input = context.df.getInput();
 
   const retryOptions = new df.RetryOptions(5000, 10);

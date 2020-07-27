@@ -1,4 +1,8 @@
-import { IFunctionContext, Task } from "durable-functions/lib/src/classes";
+import {
+  IOrchestrationFunctionContext,
+  Task,
+  TaskSet
+} from "durable-functions/lib/src/classes";
 import { isLeft, toError } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
@@ -94,9 +98,9 @@ const toActivityFailure = (
   });
 
 function* setUserSessionLock(
-  context: IFunctionContext,
+  context: IOrchestrationFunctionContext,
   { action, fiscalCode }: SetUserSessionLockActivityInput
-): IterableIterator<SetUserSessionLockActivityInput | Task> {
+): Generator<Task> {
   const result = yield context.df.callActivity(
     "SetUserSessionLockActivity",
     SetUserSessionLockActivityInput.encode({
@@ -107,22 +111,26 @@ function* setUserSessionLock(
   return SetUserSessionLockActivityResultSuccess.decode(result).getOrElseL(
     _ => {
       context.log.error(
-        `${logPrefix}|ERROR|SetUserSessionLockActivity fail`,
-        result,
-        readableReport(_)
+        `${logPrefix}|ERROR|SetUserSessionLockActivity fail|${readableReport(
+          _
+        )}`
       );
-      throw toActivityFailure(result, "SetUserSessionLockActivity", {
-        action
-      });
+      throw toActivityFailure(
+        { kind: "SET_USER_SESSION_LOCK" },
+        "SetUserSessionLockActivity",
+        {
+          action
+        }
+      );
     }
   );
 }
 
 function* setUserDataProcessingStatus(
-  context: IFunctionContext,
+  context: IOrchestrationFunctionContext,
   currentRecord: UserDataProcessing,
   nextStatus: UserDataProcessingStatusEnum
-): IterableIterator<SetUserDataProcessingStatusActivityResultSuccess | Task> {
+): Generator<Task> {
   const result = yield context.df.callActivity(
     "SetUserDataProcessingStatusActivity",
     {
@@ -133,16 +141,20 @@ function* setUserDataProcessingStatus(
   return SetUserDataProcessingStatusActivityResultSuccess.decode(
     result
   ).getOrElseL(_ => {
-    throw toActivityFailure(result, "SetUserDataProcessingStatusActivity", {
-      status: nextStatus
-    });
+    throw toActivityFailure(
+      { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
+      "SetUserDataProcessingStatusActivity",
+      {
+        status: nextStatus
+      }
+    );
   });
 }
 
 function* hasPendingDownload(
-  context: IFunctionContext,
+  context: IOrchestrationFunctionContext,
   fiscalCode: FiscalCode
-): IterableIterator<SetUserDataProcessingStatusActivityResultSuccess | Task> {
+): Generator<Task> {
   const result = yield context.df.callActivity(
     "GetUserDataProcessingActivity",
     GetUserDataProcessingStatusActivityInput.encode({
@@ -153,7 +165,10 @@ function* hasPendingDownload(
 
   return GetUserDataProcessingStatusActivityResult.decode(result).fold(
     _ => {
-      throw toActivityFailure(result, "GetUserDataProcessingActivity");
+      throw toActivityFailure(
+        { kind: "GET_USER_DATA_PROCESSING_ACTIVITY_RESULT" },
+        "GetUserDataProcessingActivity"
+      );
     }, // check if
     response => {
       if (GetUserDataProcessingStatusActivityResultSuccess.is(response)) {
@@ -173,9 +188,9 @@ function* hasPendingDownload(
 }
 
 function* deleteUserData(
-  context: IFunctionContext,
+  context: IOrchestrationFunctionContext,
   currentRecord: UserDataProcessing
-): IterableIterator<DeleteUserDataActivityResultSuccess | Task> {
+): Generator<Task> {
   const backupFolder = `${
     currentRecord.userDataProcessingId
   }-${context.df.currentUtcDateTime.getTime()}` as NonEmptyString;
@@ -192,7 +207,10 @@ function* deleteUserData(
       result,
       readableReport(_)
     );
-    throw toActivityFailure(result, "DeleteUserDataActivity");
+    throw toActivityFailure(
+      { kind: "DELETE_USER_DATA" },
+      "DeleteUserDataActivity"
+    );
   });
 }
 
@@ -206,7 +224,7 @@ export const createUserDataDeleteOrchestratorHandler = (
   waitForAbortInterval: Day,
   waitForDownloadInterval: Hour = 12 as Hour
 ) =>
-  function*(context: IFunctionContext): IterableIterator<unknown> {
+  function*(context: IOrchestrationFunctionContext): Generator<Task | TaskSet> {
     const document = context.df.getInput();
     // This check has been done on the trigger, so it should never fail.
     // However, it's worth the effort to check it twice
