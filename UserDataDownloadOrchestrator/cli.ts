@@ -51,15 +51,19 @@ async function run(): Promise<any> {
     throw new Error(`Invalid input: ${readableReport(reason)}`);
   });
 
-  const errorOrMaybeRetrievedUserDataProcessing = await userDataProcessingModel.findOneUserDataProcessingById(
-    fiscalCode,
-    makeUserDataProcessingId(UserDataProcessingChoiceEnum.DOWNLOAD, fiscalCode)
-  );
+  const errorOrMaybeRetrievedUserDataProcessing = await userDataProcessingModel
+    .findLastVersionByModelId(
+      makeUserDataProcessingId(
+        UserDataProcessingChoiceEnum.DOWNLOAD,
+        fiscalCode
+      ),
+      fiscalCode
+    )
+    .run();
 
   if (isLeft(errorOrMaybeRetrievedUserDataProcessing)) {
     throw new Error(
-      "Cannot retrieve user data processing" +
-        errorOrMaybeRetrievedUserDataProcessing.value.body
+      `Cannot retrieve user data processing ${errorOrMaybeRetrievedUserDataProcessing.value.kind}`
     );
   }
 

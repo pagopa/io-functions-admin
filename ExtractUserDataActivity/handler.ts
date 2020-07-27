@@ -267,6 +267,7 @@ export const getAllMessageContents = (
               (content: MessageContent) =>
                 right({
                   content,
+                  // tslint:disable-next-line: no-useless-cast
                   messageId: messageId as NonEmptyString
                 })
             )
