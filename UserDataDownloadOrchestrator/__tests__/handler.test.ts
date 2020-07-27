@@ -1,6 +1,6 @@
 // tslint:disable: no-any
 
-import { IFunctionContext } from "durable-functions/lib/src/classes";
+import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   mockOrchestratorCallActivity,
@@ -77,7 +77,7 @@ const consumeOrchestrator = (orch: any) => {
 };
 
 // just a convenient cast, good for every test case
-const context = (mockOrchestratorContext as unknown) as IFunctionContext;
+const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
 
 // tslint:disable-next-line: no-big-function
 describe("UserDataDownloadOrchestrator", () => {
