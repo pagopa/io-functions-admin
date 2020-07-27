@@ -1,6 +1,6 @@
 // tslint:disable: no-any
 
-import { IFunctionContext } from "durable-functions/lib/src/classes";
+import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
@@ -119,11 +119,12 @@ const consumeOrchestrator = (orch: any) => {
 };
 
 // just a convenient cast, good for every test case
-const context = (mockOrchestratorContext as unknown) as IFunctionContext;
+const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
 
 const waitForAbortInterval = 0 as Day;
 const waitForDownloadInterval = 0 as Hour;
 
+// tslint:disable-next-line: no-big-function
 describe("createUserDataDeleteOrchestratorHandler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -149,6 +150,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
   it("should set processing ad FAILED if fails to lock the user session", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
     setUserSessionLockActivity.mockImplementationOnce(
+      // tslint:disable-next-line: no-duplicate-string
       () => "any unsuccessful value"
     );
 
