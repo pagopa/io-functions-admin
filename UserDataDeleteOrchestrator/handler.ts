@@ -329,6 +329,9 @@ export const createUserDataDeleteOrchestratorHandler = (
 
         trackUserDataDeleteEvent("closed", currentUserDataProcessing);
       } else {
+        // stop the timer to let the orchestrator end
+        intervalExpiredEvent.cancel();
+
         context.log.verbose(
           `${logPrefix}|VERBOSE|Operation resumed because of abort event`
         );
