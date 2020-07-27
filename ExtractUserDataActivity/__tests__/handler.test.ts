@@ -44,7 +44,7 @@ import { AllUserData } from "../../utils/userData";
 
 const anotherRetrievedNotification: RetrievedNotification = {
   ...aRetrievedNotification,
-  id: "ANOTHER_NOTIFICATION_ID"
+  id: "ANOTHER_NOTIFICATION_ID" as NonEmptyString
 };
 
 const messageIteratorMock = {
@@ -91,7 +91,7 @@ const messageModelMock = ({
   findAllByQuery: jest.fn(() =>
     fromEither(right(some([aRetrievedMessageWithoutContent])))
   ),
-  getContentFromBlob: jest.fn(async () => right(some(aMessageContent)))
+  getContentFromBlob: jest.fn(() => fromEither(right(some(aMessageContent))))
 } as any) as MessageModel;
 
 const messageStatusModelMock = ({

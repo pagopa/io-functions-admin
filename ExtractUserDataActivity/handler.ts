@@ -21,7 +21,6 @@ import {
 import { Context } from "@azure/functions";
 
 import { BlobService } from "azure-storage";
-import { QueryError } from "documentdb";
 import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
 import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
@@ -125,36 +124,6 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 const logPrefix = `ExtractUserDataActivity`;
 
 /**
- * Converts a Promise<Either> into a TaskEither
- * This is needed because our models return unconvenient type. Both left and rejection cases are handled as a TaskEither left
- * @param lazyPromise a lazy promise to convert
- * @param queryName an optional name for the query, for logging purpose
- *
- * @returns either the query result or a query failure
- */
-const fromQueryEither = <R>(
-  lazyPromise: () => Promise<Either<QueryError | Error, R>>,
-  queryName: string = ""
-): TaskEither<ActivityResultQueryFailure, R> =>
-  tryCatch(lazyPromise, (err: Error) =>
-    ActivityResultQueryFailure.encode({
-      kind: "QUERY_FAILURE",
-      query: queryName,
-      reason: err.message
-    })
-  ).chain((queryErrorOrRecord: Either<QueryError | Error, R>) =>
-    fromEither(
-      queryErrorOrRecord.mapLeft(queryError =>
-        ActivityResultQueryFailure.encode({
-          kind: "QUERY_FAILURE",
-          query: queryName,
-          reason: JSON.stringify(queryError)
-        })
-      )
-    )
-  );
-
-/**
  * Converts a Promise<Either<L, R>> that can reject
  * into a TaskEither<Error | L, R>
  */
@@ -253,26 +222,24 @@ export const getAllMessageContents = (
 > =>
   array.sequence(taskEither)(
     messages.map(({ id: messageId }) =>
-      fromQueryEither(
-        () =>
-          // FIXME: make getContentFromBlob return TaskEither
-          messageModel.getContentFromBlob(messageContentBlobService, messageId),
-        `messageModel.getContentFromBlob ${messageId} (1)`
-      ).foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
-        _ => fromEither(right({ messageId } as MessageContentWithId)),
-        maybeContent =>
-          fromEither(
-            maybeContent.foldL(
-              () => right({ messageId } as MessageContentWithId),
-              (content: MessageContent) =>
-                right({
-                  content,
-                  // tslint:disable-next-line: no-useless-cast
-                  messageId: messageId as NonEmptyString
-                })
+      // FIXME: make getContentFromBlob return TaskEither
+      messageModel
+        .getContentFromBlob(messageContentBlobService, messageId)
+        .foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
+          _ => fromEither(right({ messageId } as MessageContentWithId)),
+          maybeContent =>
+            fromEither(
+              maybeContent.foldL(
+                () => right({ messageId } as MessageContentWithId),
+                (content: MessageContent) =>
+                  right({
+                    content,
+                    // tslint:disable-next-line: no-useless-cast
+                    messageId: messageId as NonEmptyString
+                  })
+              )
             )
-          )
-      )
+        )
     )
   );
 

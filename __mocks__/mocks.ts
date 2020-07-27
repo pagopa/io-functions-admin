@@ -105,7 +105,7 @@ export const aNewService: NewService = {
 
 export const aRetrievedService: RetrievedService = {
   ...aNewService,
-  id: "MySubscriptionId",
+  id: "MySubscriptionId" as NonEmptyString,
   kind: "IRetrievedService",
   version: 1 as NonNegativeInteger
 };
