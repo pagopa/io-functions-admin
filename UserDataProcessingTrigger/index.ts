@@ -1,7 +1,7 @@
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
-import { fromNullable } from "fp-ts/lib/Either";
+import { fromNullable, toError } from "fp-ts/lib/Either";
 import { Lazy } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
@@ -18,6 +18,7 @@ import {
   trackUserDataDownloadEvent
 } from "../utils/appinsightsEvents";
 import { flags } from "../utils/featureFlags";
+import { isOrchestratorRunning } from "../utils/orchestrator";
 
 const logPrefix = "UserDataProcessingTrigger";
 
@@ -74,10 +75,21 @@ const startOrchestrator = async (
   orchestratorId: string,
   orchestratorInput: unknown
 ) => {
-  const existingInstance = await dfClient.getStatus(orchestratorId);
-  return !existingInstance
-    ? dfClient.startNew(orchestratorName, orchestratorId, orchestratorInput)
-    : null;
+  return isOrchestratorRunning(dfClient, orchestratorId)
+    .fold(
+      error => {
+        throw error;
+      },
+      _ =>
+        !_.isRunning
+          ? dfClient.startNew(
+              orchestratorName,
+              orchestratorId,
+              orchestratorInput
+            )
+          : null
+    )
+    .run();
 };
 
 export function index(
