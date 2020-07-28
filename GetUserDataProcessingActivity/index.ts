@@ -1,4 +1,4 @@
-﻿import {
+import {
   USER_DATA_PROCESSING_COLLECTION_NAME,
   UserDataProcessingModel
 } from "io-functions-commons/dist/src/models/user_data_processing";
@@ -7,9 +7,9 @@ import * as documentDbUtils from "io-functions-commons/dist/src/utils/documentdb
 
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 
-import { documentClient } from "../../utils/cosmosdb";
+import { documentClient } from "../utils/cosmosdb";
 
-import { createGetUserDataProcessingHandler } from "./handler";
+import { createSetUserDataProcessingStatusActivityHandler } from "./handler";
 
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 
@@ -24,8 +24,8 @@ const userDataProcessingModel = new UserDataProcessingModel(
   userDataProcessingsCollectionUrl
 );
 
-const functionHandler = createGetUserDataProcessingHandler(
+const activityFunctionHandler = createSetUserDataProcessingStatusActivityHandler(
   userDataProcessingModel
 );
 
-export default functionHandler;
+export default activityFunctionHandler;

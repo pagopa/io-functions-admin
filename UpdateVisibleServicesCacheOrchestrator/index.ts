@@ -4,15 +4,18 @@
  * one JSON into the blob storage for each visible service found.
  */
 
-import { IFunctionContext, Task } from "durable-functions/lib/src/classes";
+import {
+  IOrchestrationFunctionContext,
+  Task
+} from "durable-functions/lib/src/classes";
 
 import * as df from "durable-functions";
 import { isLeft } from "fp-ts/lib/Either";
 import { VisibleServices } from "../UpdateVisibleServicesCache";
 
 const UpdateVisibleServicesCacheOrchestrator = df.orchestrator(function*(
-  context: IFunctionContext
-): IterableIterator<Task> {
+  context: IOrchestrationFunctionContext
+): Generator<Task> {
   const visibleServicesJson = context.df.getInput();
   const errorOrVisibleServices = VisibleServices.decode(visibleServicesJson);
 

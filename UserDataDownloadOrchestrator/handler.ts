@@ -1,8 +1,8 @@
 import {
-  IFunctionContext,
+  IOrchestrationFunctionContext,
   RetryOptions
 } from "durable-functions/lib/src/classes";
-import { isLeft } from "fp-ts/lib/Either";
+import { isLeft, toError } from "fp-ts/lib/Either";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
@@ -10,7 +10,10 @@ import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from ".
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../SendUserDataDownloadMessageActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import { ProcessableUserDataDownload } from "../UserDataProcessingTrigger";
-import { trackEvent, trackException } from "../utils/appinsights";
+import {
+  trackUserDataDownloadEvent,
+  trackUserDataDownloadException
+} from "../utils/appinsightsEvents";
 
 const logPrefix = "UserDataDownloadOrchestrator";
 
@@ -73,8 +76,8 @@ const toActivityFailure = (
   });
 
 export const handler = function*(
-  context: IFunctionContext
-): IterableIterator<unknown> {
+  context: IOrchestrationFunctionContext
+): Generator<unknown> {
   const document = context.df.getInput();
   // This check has been done on the trigger, so it should never fail.
   // However, it's worth the effort to check it twice
@@ -144,44 +147,28 @@ export const handler = function*(
       });
     });
 
-    trackEvent({
-      // tslint:disable-next-line: no-duplicate-string
-      name: "user.data.download",
-      properties: {
-        userDataProcessingId: currentUserDataProcessing.userDataProcessingId
-      },
-      tagOverrides: {
-        "ai.operation.id": currentUserDataProcessing.userDataProcessingId,
-        "ai.operation.parentId": currentUserDataProcessing.userDataProcessingId
-      }
-    });
+    trackUserDataDownloadEvent("done", currentUserDataProcessing);
 
     return OrchestratorSuccess.encode({ kind: "SUCCESS" });
   } catch (error) {
-    trackException({
-      exception: new Error(error),
-      properties: {
-        name: "user.data.download",
-        userDataProcessingId: currentUserDataProcessing.userDataProcessingId
-      }
-    });
-    context.log.error(
-      `${logPrefix}|ERROR|Failed processing user data for download: ${error.message}`
+    trackUserDataDownloadException(
+      "failed",
+      toError(error),
+      currentUserDataProcessing
     );
+    context.log.error(`${logPrefix}|ERROR|${JSON.stringify(error)}`);
     SetUserDataProcessingStatusActivityResultSuccess.decode(
       yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
         currentRecord: currentUserDataProcessing,
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
     ).getOrElseL(err => {
-      trackException({
-        exception: new Error(readableReport(err)),
-        properties: {
-          name: "user.data.download",
-          type: "unhandled exception when trying to set document as FAILED",
-          userDataProcessingId: currentUserDataProcessing.userDataProcessingId
-        }
-      });
+      trackUserDataDownloadException(
+        "unhandled_failed_status",
+        new Error(readableReport(err)),
+        currentUserDataProcessing
+      );
+
       throw new Error(
         `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
           err

@@ -4,29 +4,31 @@
 
 import * as t from "io-ts";
 
-import { Either } from "fp-ts/lib/Either";
-import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { fromEither, fromLeft, taskEither } from "fp-ts/lib/TaskEither";
 
 import { Context } from "@azure/functions";
 
-import { QueryError } from "documentdb";
-import { UserDataProcessingStatus } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingChoice } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import {
+  makeUserDataProcessingId,
   UserDataProcessing,
   UserDataProcessingModel
 } from "io-functions-commons/dist/src/models/user_data_processing";
+import { fromQueryEither } from "io-functions-commons/dist/src/utils/documentdb";
 import { readableReport } from "italia-ts-commons/lib/reporters";
+import { FiscalCode } from "italia-ts-commons/lib/strings";
 
 // Activity input
 export const ActivityInput = t.interface({
-  currentRecord: UserDataProcessing,
-  nextStatus: UserDataProcessingStatus
+  choice: UserDataProcessingChoice,
+  fiscalCode: FiscalCode
 });
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity result
 export const ActivityResultSuccess = t.interface({
-  kind: t.literal("SUCCESS")
+  kind: t.literal("SUCCESS"),
+  value: UserDataProcessing
 });
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
@@ -37,6 +39,14 @@ export const ActivityResultInvalidInputFailure = t.interface({
 });
 export type ActivityResultInvalidInputFailure = t.TypeOf<
   typeof ActivityResultInvalidInputFailure
+>;
+
+// Activity failed because of invalid input
+export const ActivityResultNotFoundFailure = t.interface({
+  kind: t.literal("NOT_FOUND_FAILURE")
+});
+export type ActivityResultNotFoundFailure = t.TypeOf<
+  typeof ActivityResultNotFoundFailure
 >;
 
 // Activity failed because of an error on a query
@@ -53,7 +63,8 @@ export type ActivityResultQueryFailure = t.TypeOf<
 
 export const ActivityResultFailure = t.taggedUnion("kind", [
   ActivityResultQueryFailure,
-  ActivityResultInvalidInputFailure
+  ActivityResultInvalidInputFailure,
+  ActivityResultNotFoundFailure
 ]);
 export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
@@ -64,41 +75,11 @@ export const ActivityResult = t.taggedUnion("kind", [
 
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
-const logPrefix = `SetUserDataProcessingStatusActivity`;
+const logPrefix = `GetUserDataProcessingActivity`;
 
 function assertNever(_: never): void {
   throw new Error("should not have executed this");
 }
-
-/**
- * Converts a Promise<Either> into a TaskEither
- * This is needed because our models return unconvenient type. Both left and rejection cases are handled as a TaskEither left
- * @param lazyPromise a lazy promise to convert
- * @param queryName an optional name for the query, for logging purpose
- *
- * @returns either the query result or a query failure
- */
-const fromQueryEither = <R>(
-  lazyPromise: () => Promise<Either<QueryError, R>>,
-  queryName: string = ""
-) =>
-  tryCatch(lazyPromise, (err: Error) =>
-    ActivityResultQueryFailure.encode({
-      kind: "QUERY_FAILURE",
-      query: queryName,
-      reason: err.message
-    })
-  ).chain((queryErrorOrRecord: Either<QueryError, R>) =>
-    fromEither(
-      queryErrorOrRecord.mapLeft(queryError =>
-        ActivityResultQueryFailure.encode({
-          kind: "QUERY_FAILURE",
-          query: queryName,
-          reason: JSON.stringify(queryError)
-        })
-      )
-    )
-  );
 
 /**
  * Logs depending on failure type
@@ -119,6 +100,10 @@ const logFailure = (context: Context) => (
         `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
       );
       break;
+    case "NOT_FOUND_FAILURE":
+      // it might not be a failure
+      context.log.warn(`${logPrefix}|Error UserDataProcessing not found`);
+      break;
     default:
       assertNever(failure);
   }
@@ -127,30 +112,6 @@ const logFailure = (context: Context) => (
 export const createSetUserDataProcessingStatusActivityHandler = (
   userDataProcessingModel: UserDataProcessingModel
 ) => (context: Context, input: unknown) => {
-  /**
-   * Updates a UserDataProcessing record by creating a new version of it with a chenged status
-   * @param param0.currentRecord the record to be modified
-   * @param param0.nextStatus: the status to assign the record to
-   *
-   * @returns either an Error or the new created record
-   */
-  const saveNewStatusOnDb = ({
-    currentRecord,
-    nextStatus
-  }: {
-    currentRecord: UserDataProcessing;
-    nextStatus: UserDataProcessingStatus;
-  }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
-    fromQueryEither(
-      () =>
-        userDataProcessingModel.createOrUpdateByNewOne({
-          ...currentRecord,
-          status: nextStatus,
-          updatedAt: new Date()
-        }),
-      "userDataProcessingModel.createOrUpdateByNewOne"
-    );
-
   // the actual handler
   return fromEither(ActivityInput.decode(input))
     .mapLeft<ActivityResultFailure>((reason: t.Errors) =>
@@ -159,10 +120,36 @@ export const createSetUserDataProcessingStatusActivityHandler = (
         reason: readableReport(reason)
       })
     )
-    .chain(saveNewStatusOnDb)
-    .map(newRecord =>
+    .chain(({ fiscalCode, choice }) =>
+      fromQueryEither(() =>
+        userDataProcessingModel.findOneUserDataProcessingById(
+          fiscalCode,
+          makeUserDataProcessingId(choice, fiscalCode)
+        )
+      ).foldTaskEither<ActivityResultFailure, UserDataProcessing>(
+        error =>
+          fromLeft(
+            ActivityResultQueryFailure.encode({
+              kind: "QUERY_FAILURE",
+              query: "findOneUserDataProcessingById",
+              reason: JSON.stringify(error)
+            })
+          ),
+        maybeRecord =>
+          maybeRecord.fold(
+            fromLeft(
+              ActivityResultNotFoundFailure.encode({
+                kind: "NOT_FOUND_FAILURE"
+              })
+            ),
+            _ => taskEither.of(_)
+          )
+      )
+    )
+    .map(record =>
       ActivityResultSuccess.encode({
-        kind: "SUCCESS"
+        kind: "SUCCESS",
+        value: record
       })
     )
     .mapLeft(failure => {

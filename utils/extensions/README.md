@@ -1,0 +1,1 @@
+This folder contains modules that extend functionalities of `io-ts-commons` package. They are developed locally but they might better be included in the common package.
