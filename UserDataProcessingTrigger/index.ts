@@ -1,5 +1,6 @@
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
+import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
 import { fromNullable } from "fp-ts/lib/Either";
 import { Lazy } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
@@ -65,6 +66,20 @@ export const ProcessableUserDataDeleteAbort = t.intersection([
 const CosmosDbDocumentCollection = t.readonlyArray(t.readonly(t.UnknownRecord));
 type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
+const startOrchestrator = async (
+  dfClient: DurableOrchestrationClient,
+  orchestratorName:
+    | "UserDataDownloadOrchestrator"
+    | "UserDataDeleteOrchestrator",
+  orchestratorId: string,
+  orchestratorInput: unknown
+) => {
+  const existingInstance = await dfClient.getStatus(orchestratorId);
+  return !existingInstance
+    ? dfClient.startNew(orchestratorName, orchestratorId, orchestratorInput)
+    : null;
+};
+
 export function index(
   context: Context,
   input: unknown
@@ -92,9 +107,13 @@ export function index(
                       `${logPrefix}: starting UserDataDownloadOrchestrator with ${processable.fiscalCode}`
                     );
                     trackUserDataDownloadEvent("started", processable);
-                    return dfClient.startNew(
+                    const orchestratorId = makeDownloadOrchestratorId(
+                      processable.fiscalCode
+                    );
+                    return startOrchestrator(
+                      dfClient,
                       "UserDataDownloadOrchestrator",
-                      makeDownloadOrchestratorId(processable.fiscalCode),
+                      orchestratorId,
                       processable
                     );
                   }
@@ -105,9 +124,13 @@ export function index(
                       `${logPrefix}: starting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
                     );
                     trackUserDataDeleteEvent("started", processable);
-                    return dfClient.startNew(
+                    const orchestratorId = makeDeleteOrchestratorId(
+                      processable.fiscalCode
+                    );
+                    return startOrchestrator(
+                      dfClient,
                       "UserDataDeleteOrchestrator",
-                      makeDeleteOrchestratorId(processable.fiscalCode),
+                      orchestratorId,
                       processable
                     );
                   }
@@ -117,8 +140,11 @@ export function index(
                       `${logPrefix}: aborting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
                     );
                     trackUserDataDeleteEvent("abort_requested", processable);
+                    const orchestratorId = makeDeleteOrchestratorId(
+                      processable.fiscalCode
+                    );
                     return dfClient.raiseEvent(
-                      makeDeleteOrchestratorId(processable.fiscalCode),
+                      orchestratorId,
                       ABORT_DELETE_EVENT,
                       {}
                     );

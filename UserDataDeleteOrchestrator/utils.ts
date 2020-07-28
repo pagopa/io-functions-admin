@@ -4,7 +4,7 @@ import { Day, Hour } from "italia-ts-commons/lib/units";
 export const ABORT_EVENT = "user-data-processing-delete-abort";
 
 export const makeOrchestratorId = (fiscalCode: FiscalCode): string =>
-  `user-data-delete-${fiscalCode}`;
+  `${fiscalCode}-USER-DATA-DELETE`;
 
 const aHourInMilliseconds = 60 * 60 * 1000;
 export const addHours = (now: Date, hours: Hour) =>
