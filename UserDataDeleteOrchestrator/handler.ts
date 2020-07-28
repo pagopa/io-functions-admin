@@ -70,7 +70,8 @@ export const OrchestratorFailure = t.taggedUnion("kind", [
 
 export type OrchestratorSuccess = t.TypeOf<typeof OrchestratorSuccess>;
 export const OrchestratorSuccess = t.interface({
-  kind: t.literal("SUCCESS")
+  kind: t.literal("SUCCESS"),
+  type: t.keyof({ ABORTED: null, DELETED: null })
 });
 
 export type SkippedDocument = t.TypeOf<typeof SkippedDocument>;
@@ -327,7 +328,8 @@ export const createUserDataDeleteOrchestratorHandler = (
           fiscalCode: currentUserDataProcessing.fiscalCode
         });
 
-        trackUserDataDeleteEvent("closed", currentUserDataProcessing);
+        trackUserDataDeleteEvent("deleted", currentUserDataProcessing);
+        return OrchestratorSuccess.encode({ kind: "SUCCESS", type: "DELETED" });
       } else {
         // stop the timer to let the orchestrator end
         intervalExpiredEvent.cancel();
@@ -344,10 +346,8 @@ export const createUserDataDeleteOrchestratorHandler = (
         );
 
         trackUserDataDeleteEvent("aborted", currentUserDataProcessing);
+        return OrchestratorSuccess.encode({ kind: "SUCCESS", type: "ABORTED" });
       }
-
-      trackUserDataDeleteEvent("done", currentUserDataProcessing);
-      return OrchestratorSuccess.encode({ kind: "SUCCESS" });
     } catch (error) {
       context.log.error(
         `${logPrefix}|ERROR|Failed processing user data for download: ${printableError(
