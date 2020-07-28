@@ -26,8 +26,7 @@ export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity result
 export const ActivityResultSuccess = t.interface({
-  kind: t.literal("SUCCESS"),
-  value: UserDataProcessing
+  kind: t.literal("SUCCESS")
 });
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
@@ -163,8 +162,7 @@ export const createSetUserDataProcessingStatusActivityHandler = (
     .chain(saveNewStatusOnDb)
     .map(newRecord =>
       ActivityResultSuccess.encode({
-        kind: "SUCCESS",
-        value: newRecord
+        kind: "SUCCESS"
       })
     )
     .mapLeft(failure => {

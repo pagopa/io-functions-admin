@@ -58,8 +58,7 @@ const aUserDataDownloadClosed = {
 
 const setUserDataProcessingStatusActivity = jest.fn().mockImplementation(() =>
   SetUserDataProcessingStatusActivityResultSuccess.encode({
-    kind: "SUCCESS",
-    value: aProcessableUserDataDelete
+    kind: "SUCCESS"
   })
 );
 
@@ -246,8 +245,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
     setUserDataProcessingStatusActivity.mockImplementationOnce(() =>
       SetUserDataProcessingStatusActivityResultSuccess.encode({
-        kind: "SUCCESS",
-        value: aProcessableUserDataDelete
+        kind: "SUCCESS"
       })
     );
     setUserDataProcessingStatusActivity.mockImplementationOnce(
