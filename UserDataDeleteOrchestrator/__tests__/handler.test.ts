@@ -4,6 +4,7 @@ import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
+  mockOrchestratorCancelTimer,
   mockOrchestratorContext,
   mockOrchestratorGetInput,
   mockOrchestratorTaskAny
@@ -323,6 +324,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(mockOrchestratorCancelTimer).toHaveBeenCalledTimes(1);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),

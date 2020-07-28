@@ -74,9 +74,10 @@ export const mockCallSubOrchestrator = jest
     name
   }));
 export const mockOrchestratorSetCustomStatus = jest.fn();
-export const mockOrchestratorCreateTimer = jest
-  .fn()
-  .mockReturnValue("mockOrchestratorCreateTimer");
+export const mockOrchestratorCancelTimer = jest.fn();
+export const mockOrchestratorCreateTimer = () => ({
+  cancel: mockOrchestratorCancelTimer
+});
 export const mockWaitForExternalEvent = jest
   .fn()
   .mockReturnValue("mockWaitForExternalEvent");

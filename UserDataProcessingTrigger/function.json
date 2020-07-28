@@ -5,7 +5,7 @@
         "name": "documents",
         "direction": "in",
         "leaseCollectionName": "change-feed-leases",
-        "leaseCollectionPrefix": "userDataDownload",
+        "leaseCollectionPrefix": "userDataProcessing",
         "connectionStringSetting": "COSMOSDB_CONNECTION_STRING",
         "databaseName": "%COSMOSDB_NAME%",
         "collectionName": "user-data-processing",
