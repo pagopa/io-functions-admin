@@ -156,9 +156,7 @@ export const handler = function*(
       toError(error),
       currentUserDataProcessing
     );
-    context.log.error(
-      `${logPrefix}|ERROR|Failed processing user data for download: ${error.message}`
-    );
+    context.log.error(`${logPrefix}|ERROR|${JSON.stringify(error)}`);
     SetUserDataProcessingStatusActivityResultSuccess.decode(
       yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
         currentRecord: currentUserDataProcessing,

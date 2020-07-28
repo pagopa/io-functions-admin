@@ -98,19 +98,15 @@ async function sendMessage(
   apiKey: string,
   newMessage: NewMessage,
   timeoutFetch: typeof fetch
-): Promise<number> {
-  const response = await timeoutFetch(
-    `${apiUrl}/api/v1/messages/${fiscalCode}`,
-    {
-      body: JSON.stringify(newMessage),
-      headers: {
-        "Content-Type": "application/json",
-        "Ocp-Apim-Subscription-Key": apiKey
-      },
-      method: "POST"
-    }
-  );
-  return response.status;
+): Promise<Response> {
+  return timeoutFetch(`${apiUrl}/api/v1/messages/${fiscalCode}`, {
+    body: JSON.stringify(newMessage),
+    headers: {
+      "Content-Type": "application/json",
+      "Ocp-Apim-Subscription-Key": apiKey
+    },
+    method: "POST"
+  });
 }
 
 // Activity result
@@ -172,7 +168,7 @@ export const getActivityFunction = (
 
       // throws in case of timeout so
       // the orchestrator can schedule a retry
-      const status = await sendMessage(
+      const response = await sendMessage(
         fiscalCode,
         publicApiUrl,
         publicApiKey,
@@ -180,8 +176,10 @@ export const getActivityFunction = (
         timeoutFetch
       );
 
+      const status = response.status;
+
       if (status !== 201) {
-        const msg = `${logPrefix}|ERROR=${status}`;
+        const msg = `${logPrefix}|ERROR=${status},${await response.text()}`;
         if (status >= 500) {
           throw new Error(msg);
         } else {
