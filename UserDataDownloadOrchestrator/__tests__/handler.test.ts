@@ -24,8 +24,7 @@ const aNonSuccess = "any non-success value";
 
 const setUserDataProcessingStatusActivity = jest.fn().mockImplementation(() =>
   SetUserDataProcessingStatusActivityResultSuccess.encode({
-    kind: "SUCCESS",
-    value: aUserDataProcessing
+    kind: "SUCCESS"
   })
 );
 const extractUserDataActivity = jest.fn().mockImplementation(() =>
@@ -264,8 +263,7 @@ describe("UserDataDownloadOrchestrator", () => {
     // the first time is called is for WIP
     setUserDataProcessingStatusActivity.mockImplementationOnce(() =>
       SetUserDataProcessingStatusActivityResultSuccess.encode({
-        kind: "SUCCESS",
-        value: aUserDataProcessing
+        kind: "SUCCESS"
       })
     );
 
