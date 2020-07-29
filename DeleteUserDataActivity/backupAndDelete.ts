@@ -363,7 +363,7 @@ const backupAndDeleteAllMessagesData = ({
   notificationStatusModel: NotificationStatusDeletableModel;
   userDataBackup: IBlobServiceInfo;
   fiscalCode: FiscalCode;
-}) =>
+}): TaskEither<DataFailure, unknown> =>
   messageModel
     .findMessages(fiscalCode)
     .bimap(toQueryFailure, iter =>

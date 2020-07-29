@@ -1,17 +1,11 @@
 import { Container } from "@azure/cosmos";
-import * as DocumentDb from "documentdb";
-import { Either, left, right } from "fp-ts/lib/Either";
-import { Option } from "fp-ts/lib/Option";
 import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import { mapAsyncIterable } from "io-functions-commons/dist/src/utils/async";
 import {
   CosmosErrors,
   toCosmosErrorResponse
 } from "io-functions-commons/dist/src/utils/cosmosdb_model";
-import * as DocumentDbUtilsBase from "io-functions-commons/dist/src/utils/documentdb";
 import * as t from "io-ts";
-
-export * from "io-functions-commons/dist/src/utils/documentdb";
 
 export const deleteDocument = (
   container: Container,
@@ -58,54 +52,4 @@ export function findAllVersionsByModelId<TR>(
   return mapAsyncIterable(iterator, feedResponse =>
     feedResponse.resources.map(retrievedItemType.decode)
   );
-}
-
-export function deleteAllDocuments<T extends DocumentDb.RetrievedDocument>(
-  client: DocumentDb.DocumentClient,
-  collectionUri: DocumentDbUtilsBase.IDocumentDbCollectionUri,
-  documentIterator: DocumentDbUtilsBase.IResultIterator<T>
-): DocumentDbUtilsBase.IFoldableResultIterator<
-  Promise<ReadonlyArray<Either<DocumentDb.QueryError, string>>>
-> {
-  return DocumentDbUtilsBase.reduceResultIterator(
-    documentIterator,
-    (
-      prev: Promise<ReadonlyArray<Either<DocumentDb.QueryError, string>>>,
-      curr: T
-    ) =>
-      Promise.all([prev, deleteDocument(client, collectionUri, curr.id)]).then(
-        ([prevResult, currResult]) => [...prevResult, currResult]
-      )
-  );
-}
-
-export function deleteAllDocumentVersions<T>(
-  client: DocumentDb.DocumentClient,
-  collectionUri: DocumentDbUtilsBase.IDocumentDbCollectionUri,
-  modelIdField: string,
-  modelIdValue: string,
-  partitionKeyField: string,
-  partitionKeyValue: string
-): Promise<
-  Either<
-    DocumentDb.QueryError,
-    Option<Promise<ReadonlyArray<Either<DocumentDb.QueryError, string>>>>
-  >
-> {
-  // find all docs to delete
-  const documentIterator = findAllVersionsByModelId<T>(
-    client,
-    collectionUri,
-    modelIdField,
-    modelIdValue,
-    partitionKeyField,
-    partitionKeyValue
-  );
-
-  // then delete
-  return deleteAllDocuments(
-    client,
-    collectionUri,
-    documentIterator
-  ).executeNext(Promise.resolve([]));
 }
