@@ -41,9 +41,6 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
     const result = await handler(contextMock, input);
 
     expect(result.kind).toEqual("SUCCESS");
-    if (result.kind === "SUCCESS") {
-      expect(result.value.status === UserDataProcessingStatusEnum.WIP);
-    }
   });
 
   it("should handle a query error", async () => {

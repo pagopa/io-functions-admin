@@ -1,6 +1,6 @@
 // tslint:disable: no-any
 
-import { IFunctionContext } from "durable-functions/lib/src/classes";
+import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   mockOrchestratorCallActivity,
@@ -24,8 +24,7 @@ const aNonSuccess = "any non-success value";
 
 const setUserDataProcessingStatusActivity = jest.fn().mockImplementation(() =>
   SetUserDataProcessingStatusActivityResultSuccess.encode({
-    kind: "SUCCESS",
-    value: aUserDataProcessing
+    kind: "SUCCESS"
   })
 );
 const extractUserDataActivity = jest.fn().mockImplementation(() =>
@@ -77,7 +76,7 @@ const consumeOrchestrator = (orch: any) => {
 };
 
 // just a convenient cast, good for every test case
-const context = (mockOrchestratorContext as unknown) as IFunctionContext;
+const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
 
 // tslint:disable-next-line: no-big-function
 describe("UserDataDownloadOrchestrator", () => {
@@ -264,8 +263,7 @@ describe("UserDataDownloadOrchestrator", () => {
     // the first time is called is for WIP
     setUserDataProcessingStatusActivity.mockImplementationOnce(() =>
       SetUserDataProcessingStatusActivityResultSuccess.encode({
-        kind: "SUCCESS",
-        value: aUserDataProcessing
+        kind: "SUCCESS"
       })
     );
 

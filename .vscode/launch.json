@@ -2,16 +2,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Current TS File",
-      "type": "node",
-      "request": "launch",
-      "args": ["${relativeFile}"],
-      "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
-      "sourceMaps": true,
-      "cwd": "${workspaceRoot}",
-      "protocol": "inspector",
-    },    
-    {
       "type": "node",
       "request": "launch",
       "name": "Jest All",
@@ -23,7 +13,7 @@
       "internalConsoleOptions": "neverOpen",
       "disableOptimisticBPs": true,
       "windows": {
-        "program": "${workspaceFolder}/node_modules/jest/bin/jest",
+        "program": "${workspaceFolder}/node_modules/jest/bin/jest"
       }
     },
     {
@@ -40,15 +30,24 @@
       "internalConsoleOptions": "neverOpen",
       "disableOptimisticBPs": true,
       "windows": {
-        "program": "${workspaceFolder}/node_modules/jest/bin/jest",
+        "program": "${workspaceFolder}/node_modules/jest/bin/jest"
       }
     },
     {
       "type": "node",
       "request": "attach",
-      "name": "Attach to Node Functions",
-      "port": 9229,
-      "preLaunchTask": "func: host start"
+      "name": "Docker: Attach to Node",
+      "protocol": "auto",
+      "port": 5861,
+      "restart": true,
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "${workspaceFolder}",
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "skipFiles": [
+        "<node_internals>/**/*.js"
+      ]
     }
   ]
 }
