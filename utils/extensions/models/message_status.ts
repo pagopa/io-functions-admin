@@ -1,5 +1,7 @@
 import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
+  MESSAGE_STATUS_MODEL_ID_FIELD,
+  MESSAGE_STATUS_MODEL_PK_FIELD,
   MessageStatusModel as MessageStatusModelBase,
   RetrievedMessageStatus
 } from "io-functions-commons/dist/src/models/message_status";
@@ -9,6 +11,7 @@ import {
 } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as t from "io-ts";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import * as DocumentDbUtils from "../documentdb";
 
 /**
  * Extends MessageStatusModel with deleting operations
@@ -31,9 +34,13 @@ export class MessageStatusDeletableModel extends MessageStatusModelBase {
   public findAllVersionsByModelId(
     modelId: NonEmptyString
   ): AsyncIterator<ReadonlyArray<t.Validation<RetrievedMessageStatus>>> {
-    return this.getQueryIterator({
-      parameters: [{ name: "@messageId", value: modelId }],
-      query: "SELECT * FROM m WHERE m.messageId = @messageId"
-    })[Symbol.asyncIterator]();
+    return DocumentDbUtils.findAllVersionsByModelId(
+      this.container,
+      this.retrievedItemT,
+      MESSAGE_STATUS_MODEL_ID_FIELD,
+      modelId,
+      MESSAGE_STATUS_MODEL_PK_FIELD,
+      modelId
+    )[Symbol.asyncIterator]();
   }
 }

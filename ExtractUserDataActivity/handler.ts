@@ -222,7 +222,6 @@ export const getAllMessageContents = (
 > =>
   array.sequence(taskEither)(
     messages.map(({ id: messageId }) =>
-      // FIXME: make getContentFromBlob return TaskEither
       messageModel
         .getContentFromBlob(messageContentBlobService, messageId)
         .foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
@@ -256,13 +255,11 @@ export const getAllMessagesStatuses = (
         .findLastVersionByModelId(messageId)
         .foldTaskEither<ActivityResultQueryFailure, MessageStatus>(
           failure =>
-            fromEither(
-              left(
-                ActivityResultQueryFailure.encode({
-                  kind: "QUERY_FAILURE",
-                  reason: `messageStatusModel|${failure.kind}` // FIXME: better mapping from CosmosErrors to ActivityResultQueryFailure?
-                })
-              )
+            fromLeft(
+              ActivityResultQueryFailure.encode({
+                kind: "QUERY_FAILURE",
+                reason: `messageStatusModel|${failure.kind}` // FIXME: better mapping from CosmosErrors to ActivityResultQueryFailure?
+              })
             ),
           maybeContent =>
             fromEither(
@@ -411,7 +408,10 @@ export const queryAllUserData = (
               reason: _.kind
             })
           )
-          .foldTaskEither(
+          .foldTaskEither<
+            ActivityResultQueryFailure,
+            readonly RetrievedMessageWithoutContent[]
+          >(
             _ => fromLeft(_),
             maybeMessages =>
               maybeMessages.foldL(
@@ -431,23 +431,17 @@ export const queryAllUserData = (
     )
     // step 2: queries notifications and message contents, which need message data to be queried first
     .chain(({ profile, messages }) => {
-      // this cast is needed because messageModel.findMessages is erroneously marked as RetrievedMessageWithContent, although content isn't included
-      // tslint:disable-next-line: no-useless-cast no-any
-      const asRetrievedMessages = (messages as any) as readonly RetrievedMessageWithoutContent[];
       return sequenceS(taskEither)({
         messageContents: getAllMessageContents(
           messageContentBlobService,
           messageModel,
-          asRetrievedMessages
+          messages
         ),
-        messageStatuses: getAllMessagesStatuses(
-          messageStatusModel,
-          asRetrievedMessages
-        ),
+        messageStatuses: getAllMessagesStatuses(messageStatusModel, messages),
         messages: taskEither.of(messages),
         notifications: findNotificationsForAllMessages(
           notificationModel,
-          asRetrievedMessages
+          messages
         ),
         profile: taskEither.of(profile)
       });
