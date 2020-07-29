@@ -1,7 +1,7 @@
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
-import { fromNullable, toError } from "fp-ts/lib/Either";
+import { fromNullable } from "fp-ts/lib/Either";
 import { Lazy } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";

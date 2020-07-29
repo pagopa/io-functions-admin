@@ -160,7 +160,7 @@ export const createSetUserDataProcessingStatusActivityHandler = (
       })
     )
     .chain(saveNewStatusOnDb)
-    .map(newRecord =>
+    .map(_ =>
       ActivityResultSuccess.encode({
         kind: "SUCCESS"
       })
