@@ -1,7 +1,6 @@
 import { Either } from "fp-ts/lib/Either";
 import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
-  NOTIFICATION_STATUS_MODEL_ID_FIELD,
   NOTIFICATION_STATUS_MODEL_PK_FIELD,
   NotificationStatusModel as NotificationStatusModelBase,
   RetrievedNotificationStatus
@@ -26,24 +25,6 @@ export class NotificationStatusDeletableModel extends NotificationStatusModelBas
       () => this.container.item(documentId, notificationId).delete(),
       toCosmosErrorResponse
     ).map(_ => _.item.id);
-  }
-
-  /**
-   * Retrieves a list of every version of the requested model
-   * @param modelId
-   */
-  public findAllVersionsByModelId(
-    notificationId: NonEmptyString,
-    modelId: NonEmptyString
-  ): AsyncIterator<ReadonlyArray<Either<Errors, RetrievedNotificationStatus>>> {
-    return DocumentDbUtils.findAllVersionsByModelId(
-      this.container,
-      this.retrievedItemT,
-      NOTIFICATION_STATUS_MODEL_ID_FIELD,
-      modelId,
-      NOTIFICATION_STATUS_MODEL_PK_FIELD,
-      notificationId
-    )[Symbol.asyncIterator]();
   }
 
   /**
