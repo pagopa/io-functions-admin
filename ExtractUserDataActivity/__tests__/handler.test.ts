@@ -105,6 +105,9 @@ const profileModelMock = ({
 } as any) as ProfileModel;
 
 const notificationModelMock = ({
+  findNotificationForMessage: jest.fn(() =>
+    fromEither(right(some(aRetrievedNotification)))
+  ),
   getQueryIterator: jest.fn(() => notificationIteratorMock)
 } as any) as NotificationModel;
 
@@ -175,6 +178,9 @@ describe("createExtractUserDataActivityHandler", () => {
     const appendSpy = jest.spyOn(aZipStream, "append");
 
     const notificationWebhookModelMock = ({
+      findNotificationForMessage: jest.fn(() =>
+        fromEither(right(some(aRetrievedNotification)))
+      ),
       getQueryIterator: jest.fn(() => notificationIteratorMock)
     } as any) as NotificationModel;
 
@@ -234,15 +240,9 @@ describe("createExtractUserDataActivityHandler", () => {
     expect(
       messageStatusModelMock.findLastVersionByModelId
     ).toHaveBeenCalledWith(aRetrievedMessageWithoutContent.id);
-    expect(notificationModelMock.getQueryIterator).toHaveBeenCalledWith(
-      {
-        parameters: [
-          { name: "@messageId", value: aRetrievedMessageWithoutContent.id }
-        ],
-        query: "SELECT * FROM m WHERE m.messageId = @messageId"
-      },
-      { partitionKey: aRetrievedMessageWithoutContent.id }
-    );
+    expect(
+      notificationModelMock.findNotificationForMessage
+    ).toHaveBeenCalledWith(aRetrievedMessageWithoutContent.id);
     expect(
       notificationStatusModelMock.findOneNotificationStatusByNotificationChannel
     ).toHaveBeenCalledWith(aRetrievedNotification.id, "WEBHOOK");

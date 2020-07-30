@@ -112,7 +112,8 @@ export const createSetUserDataProcessingStatusActivityHandler = (
     userDataProcessingModel
       .createOrUpdateByNewOne({
         ...currentRecord,
-        status: nextStatus
+        status: nextStatus,
+        updatedAt: new Date()
       })
       .mapLeft(err =>
         ActivityResultQueryFailure.encode({

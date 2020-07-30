@@ -229,11 +229,6 @@ const backupAndDeleteMessageContent = ({
 }): TaskEither<DataFailure, Option<MessageContent>> =>
   messageModel
     .getContentFromBlob(messageContentBlobService, message.id)
-
-    // type lift
-    // from TaskEither of Either of Option of X
-    // to TaskEither of X
-    // this way we collaps every left/none case into the same path
     .chain(e => fromEither(fromOption(undefined)(e)))
     .foldTaskEither<DataFailure, Option<MessageContent>>(
       _ => {
@@ -301,41 +296,38 @@ const backupAndDeleteAllNotificationsData = ({
   notificationStatusModel: NotificationStatusDeletableModel;
   userDataBackup: IBlobServiceInfo;
 }) =>
-  tryCatch(
-    () =>
-      asyncIteratorToArray(
-        flattenAsyncIterator(
-          notificationModel.findNotificationsForMessage(message.id)
-        )
-      ),
-    toQueryFailure
-  ).foldTaskEither(
-    e => fromLeft(e),
-    maybeNotifications =>
-      lefts([...maybeNotifications]).length > 0
-        ? fromLeft(
+  notificationModel
+    .findNotificationForMessage(message.id)
+    .mapLeft(toQueryFailure)
+    .chain(maybeNotification =>
+      maybeNotification.foldL(
+        () =>
+          fromLeft(
             toQueryFailure(
-              new Error("Cannot decode some element due to decoding errors")
+              new Error(
+                `notificationModel.findNotificationForMessage| No notification found for messageId ${message.id}`
+              )
             )
-          )
-        : array.sequence(taskEitherSeq)(
-            rights([...maybeNotifications]).map(
-              (notification: RetrievedNotification) =>
-                sequenceT(taskEitherSeq)(
-                  backupAndDeleteNotificationStatus({
-                    notification,
-                    notificationStatusModel,
-                    userDataBackup
-                  }),
-                  backupAndDeleteNotification({
-                    notification,
-                    notificationModel,
-                    userDataBackup
-                  })
-                )
-            )
-          )
-  );
+          ),
+        notification =>
+          array
+            .sequence(taskEitherSeq)([
+              sequenceT(taskEitherSeq)(
+                backupAndDeleteNotificationStatus({
+                  notification,
+                  notificationStatusModel,
+                  userDataBackup
+                }),
+                backupAndDeleteNotification({
+                  notification,
+                  notificationModel,
+                  userDataBackup
+                })
+              )
+            ])
+            .mapLeft(e => toQueryFailure(new Error(e.reason)))
+      )
+    );
 
 /**
  * For a given user, search all its messages and backup&delete each one including its own child models (messagestatus, notifications, message content)

@@ -8,7 +8,7 @@ import * as stream from "stream";
 import { DeferredPromise } from "italia-ts-commons/lib/promises";
 
 import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
-import { array, flatten, rights } from "fp-ts/lib/Array";
+import { array } from "fp-ts/lib/Array";
 import { Either, fromOption, left, right, toError } from "fp-ts/lib/Either";
 import {
   fromEither,
@@ -41,7 +41,6 @@ import {
   Profile,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
-import { asyncIterableToArray } from "io-functions-commons/dist/src/utils/async";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
@@ -272,41 +271,6 @@ export const getAllMessagesStatuses = (
     )
   );
 
-export const findNotificationsForMessage = (
-  notificationModel: NotificationModel,
-  messageId: RetrievedMessageWithoutContent["id"]
-): TaskEither<
-  ActivityResultQueryFailure,
-  ReadonlyArray<RetrievedNotification>
-> =>
-  tryCatch(
-    () =>
-      asyncIterableToArray(
-        notificationModel.getQueryIterator(
-          {
-            parameters: [
-              {
-                name: "@messageId",
-                value: messageId
-              }
-            ],
-            query: `SELECT * FROM m WHERE m.messageId = @messageId`
-          },
-          { partitionKey: messageId }
-        )
-      ),
-    toError
-  )
-    .map(flatten)
-    .map(rights)
-    .mapLeft(e =>
-      // FIXME: better mapping
-      ActivityResultQueryFailure.encode({
-        kind: "QUERY_FAILURE",
-        reason: `notificationModel.getQueryIterator|${String(e)}`
-      })
-    );
-
 /**
  * Given a list of messages, get the relative notifications
  * @param messages
@@ -318,11 +282,32 @@ export const findNotificationsForAllMessages = (
   ActivityResultQueryFailure,
   ReadonlyArray<RetrievedNotification>
 > =>
-  array
-    .sequence(taskEither)(
-      messages.map(m => findNotificationsForMessage(notificationModel, m.id))
+  array.sequence(taskEither)(
+    messages.map(m =>
+      notificationModel.findNotificationForMessage(m.id).foldTaskEither(
+        e =>
+          fromLeft(
+            ActivityResultQueryFailure.encode({
+              kind: "QUERY_FAILURE",
+              reason: `notificationModel.findNotificationForMessage|${String(
+                e
+              )}`
+            })
+          ),
+        maybeNotification =>
+          maybeNotification.foldL(
+            () =>
+              fromLeft(
+                ActivityResultQueryFailure.encode({
+                  kind: "QUERY_FAILURE",
+                  reason: `notificationModel.findNotificationForMessage| No notifications found for messageId ${m.id}`
+                })
+              ),
+            notification => fromEither(right(notification))
+          )
+      )
     )
-    .map(flatten);
+  );
 
 export const findAllNotificationStatuses = (
   notificationStatusModel: NotificationStatusModel,
