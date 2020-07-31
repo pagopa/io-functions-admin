@@ -1,11 +1,14 @@
 import { Either } from "fp-ts/lib/Either";
-import { TaskEither } from "fp-ts/lib/TaskEither";
+import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
   PROFILE_MODEL_PK_FIELD,
   ProfileModel as ProfileModelBase,
   RetrievedProfile
 } from "io-functions-commons/dist/src/models/profile";
-import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import {
+  CosmosErrors,
+  toCosmosErrorResponse
+} from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as DocumentDbUtils from "../documentdb";
@@ -18,11 +21,10 @@ export class ProfileDeletableModel extends ProfileModelBase {
     fiscalCode: FiscalCode,
     documentId: NonEmptyString
   ): TaskEither<CosmosErrors, string> {
-    return DocumentDbUtils.deleteDocument(
-      this.container,
-      documentId,
-      fiscalCode
-    );
+    return tryCatch(
+      () => this.container.item(documentId, fiscalCode).delete(),
+      toCosmosErrorResponse
+    ).map(_ => _.item.id);
   }
 
   /**

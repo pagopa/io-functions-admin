@@ -13,6 +13,7 @@ import {
   toAuthorizedRecipients
 } from "io-functions-commons/dist/src/models/service";
 import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
+import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";
 import { errorsToReadableMessages } from "italia-ts-commons/lib/reporters";
 import { CIDR, EmailString, FiscalCode } from "italia-ts-commons/lib/strings";
@@ -210,4 +211,15 @@ function removeNullProperties<T>(obj: T): unknown {
 
 function errorsToError(errors: Errors): Error {
   return new Error(errorsToReadableMessages(errors).join(" / "));
+}
+
+export function getMessageFromCosmosErrors(err: CosmosErrors): string {
+  switch (err.kind) {
+    case "COSMOS_ERROR_RESPONSE":
+      return err.error.message;
+    case "COSMOS_DECODING_ERROR":
+      return errorsToReadableMessages(err.error).join(" / ");
+    default:
+      return String(err);
+  }
 }

@@ -1,22 +1,6 @@
 import { Container } from "@azure/cosmos";
-import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import { mapAsyncIterable } from "io-functions-commons/dist/src/utils/async";
-import {
-  CosmosErrors,
-  toCosmosErrorResponse
-} from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as t from "io-ts";
-
-export const deleteDocument = (
-  container: Container,
-  documentId: string,
-  partitionKey?: string
-): TaskEither<CosmosErrors, string> => {
-  return tryCatch(
-    () => container.item(documentId, partitionKey).delete(),
-    toCosmosErrorResponse
-  ).map(_ => _.item.id);
-};
 
 /**
  *  Find all versions of a document.

@@ -53,7 +53,7 @@ export function GetServicesHandler(
         // tslint:disable-next-line: no-inferred-empty-object-type
         arr.reduce((prev, maybeCurr) => {
           if (isLeft(maybeCurr)) {
-            return { ...prev, ...{} };
+            return prev;
           }
           const curr = maybeCurr.value;
           // keep only the latest version
@@ -69,11 +69,8 @@ export function GetServicesHandler(
         }, {})
     );
 
-    const result = tryCatch(
-      () => allServicesIterator.next(),
-      toCosmosErrorResponse
-    )
-      .bimap(
+    return tryCatch(() => allServicesIterator.next(), toCosmosErrorResponse)
+      .fold<IGetServicesHandlerResult>(
         error => ResponseErrorQuery("Cannot get services", error),
         iteratorResults => {
           const items = collect(
@@ -88,7 +85,6 @@ export function GetServicesHandler(
         }
       )
       .run();
-    return (await result).value;
   };
 }
 

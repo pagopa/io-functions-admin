@@ -16,6 +16,7 @@ import {
 } from "io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -131,7 +132,7 @@ export const createSetUserDataProcessingStatusActivityHandler = (
               ActivityResultQueryFailure.encode({
                 kind: "QUERY_FAILURE",
                 query: "findOneUserDataProcessingById",
-                reason: JSON.stringify(error)
+                reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
               })
             ),
           maybeRecord =>

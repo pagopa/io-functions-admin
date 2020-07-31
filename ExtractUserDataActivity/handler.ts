@@ -49,6 +49,7 @@ import { getEncryptedZipStream } from "../utils/zip";
 
 import { fromLeft } from "fp-ts/lib/TaskEither";
 import * as yaml from "yaml";
+import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 export const ArchiveInfo = t.interface({
   blobName: NonEmptyString,
@@ -194,7 +195,7 @@ export const getProfile = (
           left(
             ActivityResultQueryFailure.encode({
               kind: "QUERY_FAILURE",
-              reason: failure.kind // FIXME: better mapping from CosmosErrors to ActivityResultQueryFailure?
+              reason: `${failure.kind}, ${getMessageFromCosmosErrors(failure)}`
             })
           )
         ),
@@ -257,7 +258,9 @@ export const getAllMessagesStatuses = (
             fromLeft(
               ActivityResultQueryFailure.encode({
                 kind: "QUERY_FAILURE",
-                reason: `messageStatusModel|${failure.kind}` // FIXME: better mapping from CosmosErrors to ActivityResultQueryFailure?
+                reason: `messageStatusModel|${
+                  failure.kind
+                }, ${getMessageFromCosmosErrors(failure)}`
               })
             ),
           maybeContent =>
@@ -289,9 +292,9 @@ export const findNotificationsForAllMessages = (
           fromLeft(
             ActivityResultQueryFailure.encode({
               kind: "QUERY_FAILURE",
-              reason: `notificationModel.findNotificationForMessage|${String(
-                e
-              )}`
+              reason: `notificationModel.findNotificationForMessage| ${
+                e.kind
+              }, ${getMessageFromCosmosErrors(e)}`
             })
           ),
         maybeNotification =>
@@ -337,8 +340,8 @@ export const findAllNotificationStatuses = (
               ActivityResultQueryFailure.encode({
                 kind: "QUERY_FAILURE",
                 reason: `notificationStatusModel.findOneNotificationStatusByNotificationChannel|${
-                  toError(e).message
-                }`
+                  e.kind
+                }, ${getMessageFromCosmosErrors(e)}`
               })
             )
         )
@@ -390,7 +393,7 @@ export const queryAllUserData = (
             ActivityResultQueryFailure.encode({
               kind: "QUERY_FAILURE",
               query: "findMessages",
-              reason: _.kind
+              reason: `${_.kind}, ${getMessageFromCosmosErrors(_)}`
             })
           )
           .foldTaskEither<

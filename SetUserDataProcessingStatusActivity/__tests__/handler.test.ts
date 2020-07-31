@@ -11,7 +11,6 @@ import {
   createSetUserDataProcessingStatusActivityHandler
 } from "../handler";
 
-import { QueryError } from "documentdb";
 import { fromEither } from "fp-ts/lib/TaskEither";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessingModel } from "io-functions-commons/dist/src/models/user_data_processing";
@@ -69,33 +68,6 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       }
     );
   });
-
-  // createOrUpdateByNewOne shouldn' t throw any error
-  // it("should handle a rejection", async () => {
-  //   const mockModel = ({
-  //     createOrUpdateByNewOne: jest.fn(async () => {
-  //       throw new Error("my unhandled rejection");
-  //     })
-  //   } as any) as UserDataProcessingModel;
-
-  // tslint:disable-next-line: no-commented-code
-  //   const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
-  //   const input: ActivityInput = {
-  //     currentRecord: {
-  //       ...aUserDataProcessing,
-  //       status: UserDataProcessingStatusEnum.PENDING
-  //     },
-  //     nextStatus: UserDataProcessingStatusEnum.WIP
-  //   };
-  //   const result = await handler(contextMock, input);
-
-  //   ActivityResultFailure.decode(result).fold(
-  //     err => fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
-  //     failure => {
-  //       expect(failure.kind).toEqual(expect.any(String));
-  //     }
-  //   );
-  // });
 
   it("should handle an invalid input", async () => {
     const mockModel = ({} as any) as UserDataProcessingModel;
