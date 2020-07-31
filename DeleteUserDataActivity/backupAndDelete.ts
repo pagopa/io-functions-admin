@@ -25,10 +25,13 @@ import { NotificationDeletableModel } from "../utils/extensions/models/notificat
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 import { DataFailure, IBlobServiceInfo } from "./types";
-import { flattenAsyncIterator, saveDataToBlob } from "./utils";
+import { saveDataToBlob } from "./utils";
 import { toDocumentDeleteFailure, toQueryFailure } from "./utils";
 
-import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
+import {
+  asyncIteratorToArray,
+  flattenAsyncIterator
+} from "io-functions-commons/dist/src/utils/async";
 import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";
 

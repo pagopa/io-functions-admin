@@ -106,28 +106,3 @@ export const saveDataToBlob = <T>(
     _ => data
   );
 };
-
-export function flattenAsyncIterator<T>(
-  iter: AsyncIterator<ReadonlyArray<T>>
-): AsyncIterator<T> {
-  // tslint:disable-next-line: no-let
-  let index = 0;
-  // tslint:disable-next-line: no-let
-  let flattenArray: ReadonlyArray<T> = [];
-  return {
-    next: async () => {
-      while (true) {
-        if (flattenArray.length === index) {
-          const { done, value } = await iter.next();
-          if (done) {
-            return { done, value: undefined };
-          }
-          flattenArray = value;
-          index = 0;
-          continue;
-        }
-        return { done: false, value: flattenArray[index++] };
-      }
-    }
-  };
-}
