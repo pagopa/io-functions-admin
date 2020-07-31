@@ -19,14 +19,11 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
-import { rights } from "fp-ts/lib/Array";
-import { Either, left, right } from "fp-ts/lib/Either";
+import { isLeft } from "fp-ts/lib/Either";
 import { collect, StrMap } from "fp-ts/lib/StrMap";
-import {
-  CosmosErrors,
-  toCosmosErrorResponse
-} from "io-functions-commons/dist/src/utils/cosmosdb_model";
-import { Errors } from "io-ts";
+import { tryCatch } from "fp-ts/lib/TaskEither";
+import { mapAsyncIterator } from "io-functions-commons/dist/src/utils/async";
+import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   IResponseSuccessJson,
   ResponseSuccessJson
@@ -43,39 +40,6 @@ type IGetServicesHandler = (
   auth: IAzureApiAuthorization
 ) => Promise<IGetServicesHandlerResult>;
 
-interface IFoldableResultIterator<T> {
-  readonly executeNext: (init: T) => Promise<Either<CosmosErrors, T>>;
-}
-
-function reduceResultIterator<A, B>(
-  i: AsyncIterator<ReadonlyArray<Either<Errors, A>>>,
-  f: (prev: B, curr: A) => B
-): IFoldableResultIterator<B> {
-  return {
-    executeNext: (init: B) =>
-      new Promise((resolve, reject) =>
-        i.next().then(arrayOfMaybeDocs => {
-          const docs: ReadonlyArray<A> = rights(arrayOfMaybeDocs.value());
-          if (docs.length !== arrayOfMaybeDocs.value().length) {
-            return resolve(
-              left<CosmosErrors, B>(
-                toCosmosErrorResponse(
-                  new Error("Some service cannot be decoded correctly")
-                )
-              )
-            );
-          } else {
-            if (docs && docs.length > 0) {
-              return resolve(right<CosmosErrors, B>(docs.reduce(f, init)));
-            } else {
-              return resolve(right<CosmosErrors, B>(init));
-            }
-          }
-        }, reject)
-      )
-  };
-}
-
 export function GetServicesHandler(
   serviceModel: ServiceModel
 ): IGetServicesHandler {
@@ -83,31 +47,48 @@ export function GetServicesHandler(
     const allRetrievedServicesIterator = serviceModel
       .getCollectionIterator()
       [Symbol.asyncIterator]();
-    const allServicesIterator: IFoldableResultIterator<
-      Record<string, ApiService>
-    > = reduceResultIterator(allRetrievedServicesIterator, (prev, curr) => {
-      // keep only the latest version
-      const isNewer =
-        !prev[curr.serviceId] || curr.version > prev[curr.serviceId].version;
-      return {
-        ...prev,
-        ...(isNewer
-          ? { [curr.serviceId]: retrievedServiceToApiService(curr) }
-          : {})
-      };
-    });
-    const results = await allServicesIterator.executeNext({});
-    return results.fold<IGetServicesHandlerResult>(
-      error =>
-        ResponseErrorQuery("Cannot get services", toCosmosErrorResponse(error)),
-      services => {
-        const items = collect(new StrMap(services), (_____, v) => v);
-        return ResponseSuccessJson({
-          items,
-          page_size: items.length
-        });
-      }
+    const allServicesIterator = mapAsyncIterator(
+      allRetrievedServicesIterator,
+      arr =>
+        // tslint:disable-next-line: no-inferred-empty-object-type
+        arr.reduce((prev, maybeCurr) => {
+          if (isLeft(maybeCurr)) {
+            return { ...prev, ...{} };
+          }
+          const curr = maybeCurr.value;
+          // keep only the latest version
+          const isNewer =
+            !prev[curr.serviceId] ||
+            curr.version > prev[curr.serviceId].version;
+          return {
+            ...prev,
+            ...(isNewer
+              ? { [curr.serviceId]: retrievedServiceToApiService(curr) }
+              : {})
+          };
+        }, {})
     );
+
+    const result = tryCatch(
+      () => allServicesIterator.next(),
+      toCosmosErrorResponse
+    )
+      .bimap(
+        error => ResponseErrorQuery("Cannot get services", error),
+        iteratorResults => {
+          const items = collect(
+            new StrMap(iteratorResults.value),
+            (_____, v: ApiService) => v
+          );
+          // FIXME: make response iterable over results pages
+          return ResponseSuccessJson({
+            items,
+            page_size: items.length
+          });
+        }
+      )
+      .run();
+    return (await result).value;
   };
 }
 

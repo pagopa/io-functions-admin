@@ -6,27 +6,15 @@ import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmo
 import { aRetrievedService, aSeralizedService } from "../../__mocks__/mocks";
 import { GetServicesHandler } from "../handler";
 
-const serviceIteratorMock = {
-  next: jest.fn(() =>
-    Promise.resolve({
-      value: jest.fn(() => [
-        right(aRetrievedService),
-        right({
-          ...aRetrievedService,
-          version: 3
-        }),
-        right({
-          ...aRetrievedService,
-          version: 2
-        })
-      ])
-    })
-  )
+const mockNext = jest.fn();
+const serviceAsyncIterator = {
+  next: mockNext
 };
 
 const serviceIteratorErrorMock = {
   next: jest.fn(() =>
     Promise.resolve({
+      done: false,
       value: jest.fn(() => [
         left(toCosmosErrorResponse(new Error("Query Error")))
       ])
@@ -36,7 +24,7 @@ const serviceIteratorErrorMock = {
 
 const symbolAsyncIterator = jest.fn(() => {
   return {
-    [Symbol.asyncIterator]: () => serviceIteratorMock
+    [Symbol.asyncIterator]: () => serviceAsyncIterator
   };
 });
 
@@ -72,6 +60,24 @@ describe("GetServices", () => {
       .spyOn(asyncI, "mapAsyncIterable")
       .mockImplementationOnce(symbolAsyncIterator);
 
+    mockNext.mockImplementationOnce(async () => ({
+      done: false,
+      value: [
+        right(aRetrievedService),
+        right({
+          ...aRetrievedService,
+          version: 3
+        }),
+        right({
+          ...aRetrievedService,
+          version: 2
+        })
+      ]
+    }));
+    mockNext.mockImplementationOnce(async () => ({
+      done: true,
+      value: undefined
+    }));
     const mockServiceModel = {
       getCollectionIterator: symbolAsyncIterator
     };
