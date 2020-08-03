@@ -35,6 +35,7 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
+import { NonNegativeInteger } from "italia-ts-commons/lib/numbers";
 import {
   apiServiceToService,
   retrievedServiceToApiService
@@ -94,7 +95,7 @@ export function UpdateServiceHandler(
         ...existingService,
         ...apiServiceToService(servicePayload),
         kind: "INewService",
-        serviceId
+        version: (Number(existingService.version) + 1) as NonNegativeInteger
       })
       .run();
 
