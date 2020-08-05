@@ -71,6 +71,13 @@ export const anOrganizationFiscalCode = "12345678901" as OrganizationFiscalCode;
 
 export const aNewDate = new Date();
 
+export const retrievedMetadata = {
+  _etag: "_etag",
+  _rid: "_rid",
+  _self: "_self",
+  _ts: 123
+};
+
 export const aServicePayload: ApiService = {
   authorized_cidrs: [],
   authorized_recipients: [],
@@ -105,6 +112,7 @@ export const aNewService: NewService = {
 
 export const aRetrievedService: RetrievedService = {
   ...aNewService,
+  ...retrievedMetadata,
   id: "MySubscriptionId" as NonEmptyString,
   kind: "IRetrievedService",
   version: 1 as NonNegativeInteger
@@ -154,7 +162,8 @@ export const aRetrievedProfile: RetrievedProfile = {
   id: "123" as NonEmptyString,
   kind: "IRetrievedProfile",
   version: 0 as NonNegativeInteger,
-  ...aProfile
+  ...aProfile,
+  ...retrievedMetadata
 };
 
 const aMessageBodyMarkdown = "test".repeat(80) as MessageBodyMarkdown;
@@ -182,6 +191,7 @@ const aMessageWithoutContent: MessageWithoutContent = {
 
 export const aRetrievedMessageWithoutContent: RetrievedMessageWithoutContent = {
   ...aMessageWithoutContent,
+  ...retrievedMetadata,
   id: "A_MESSAGE_ID" as NonEmptyString,
   kind: "IRetrievedMessageWithoutContent"
 };
@@ -215,11 +225,13 @@ export const aNewWebhookNotification: NewNotification = {
 
 export const aRetrievedWebhookNotification: RetrievedNotification = {
   ...aNewWebhookNotification,
+  ...retrievedMetadata,
   kind: "IRetrievedNotification"
 };
 
 export const aRetrievedNotification: RetrievedNotification = {
   ...aNewEmailNotification,
+  ...retrievedMetadata,
   kind: "IRetrievedNotification"
 };
 
@@ -267,9 +279,10 @@ export const aSerializedRetrievedMessageStatus = {
   version: 0 as NonNegativeInteger
 };
 
-export const aRetrievedMessageStatus = RetrievedMessageStatus.decode(
-  aSerializedRetrievedMessageStatus
-).getOrElseL(errs => {
+export const aRetrievedMessageStatus = RetrievedMessageStatus.decode({
+  ...aSerializedRetrievedMessageStatus,
+  ...retrievedMetadata
+}).getOrElseL(errs => {
   const error = readableReport(errs);
   throw new Error("Fix MessageStatus mock: " + error);
 });

@@ -8,8 +8,15 @@ import * as stream from "stream";
 import { DeferredPromise } from "italia-ts-commons/lib/promises";
 
 import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
-import { array } from "fp-ts/lib/Array";
-import { Either, fromOption, left, right, toError } from "fp-ts/lib/Either";
+import { array, flatten, rights } from "fp-ts/lib/Array";
+import {
+  Either,
+  fromOption,
+  isLeft,
+  left,
+  right,
+  toError
+} from "fp-ts/lib/Either";
 import {
   fromEither,
   TaskEither,
@@ -48,6 +55,8 @@ import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { getEncryptedZipStream } from "../utils/zip";
 
 import { fromLeft } from "fp-ts/lib/TaskEither";
+import { asyncIterableToArray } from "io-functions-commons/dist/src/utils/async";
+import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as yaml from "yaml";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
@@ -183,8 +192,8 @@ export const getProfile = (
 ): TaskEither<
   ActivityResultUserNotFound | ActivityResultQueryFailure,
   Profile
-> =>
-  profileModel
+> => {
+  return profileModel
     .findLastVersionByModelId(fiscalCode)
     .foldTaskEither<
       ActivityResultUserNotFound | ActivityResultQueryFailure,
@@ -208,7 +217,7 @@ export const getProfile = (
           )(maybeProfile)
         )
     );
-
+};
 /**
  * Retrieves all contents for provided messages
  */
@@ -379,16 +388,22 @@ export const queryAllUserData = (
     .chain(profile =>
       sequenceS(taskEither)({
         // queries all messages for the user
-        messages: messageModel
-          .findAllByQuery({
-            parameters: [
-              {
-                name: "@fiscaCode",
-                value: fiscalCode
-              }
-            ],
-            query: `SELECT * FROM m WHERE m.fiscalCode = @fiscalCode`
-          })
+        messages: tryCatch(
+          () =>
+            asyncIterableToArray(
+              messageModel.getQueryIterator({
+                parameters: [
+                  {
+                    name: "@fiscalCode",
+                    value: fiscalCode
+                  }
+                ],
+                query: `SELECT * FROM m WHERE m.fiscalCode = @fiscalCode`
+              })
+            ),
+          toCosmosErrorResponse
+        )
+          .map(flatten)
           .mapLeft(_ =>
             ActivityResultQueryFailure.encode({
               kind: "QUERY_FAILURE",
@@ -396,23 +411,26 @@ export const queryAllUserData = (
               reason: `${_.kind}, ${getMessageFromCosmosErrors(_)}`
             })
           )
-          .foldTaskEither<
-            ActivityResultQueryFailure,
-            readonly RetrievedMessageWithoutContent[]
-          >(
+          .foldTaskEither(
             _ => fromLeft(_),
             maybeMessages =>
-              maybeMessages.foldL(
-                () =>
-                  fromLeft(
+              maybeMessages.some(isLeft)
+                ? fromLeft(
+                    ActivityResultQueryFailure.encode({
+                      kind: "QUERY_FAILURE",
+                      query: "findMessages",
+                      reason: "Some messages cannot be decoded"
+                    })
+                  )
+                : rights(maybeMessages).length > 0
+                ? fromEither(right(rights(maybeMessages)))
+                : fromLeft(
                     ActivityResultQueryFailure.encode({
                       kind: "QUERY_FAILURE",
                       query: "findMessages",
                       reason: "No messages found"
                     })
-                  ),
-                _ => fromEither(right(_))
-              )
+                  )
           ),
         profile: taskEither.of(profile)
       })

@@ -80,18 +80,29 @@ jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
 
 jest
   .spyOn(asyncI, "asyncIterableToArray")
-  .mockImplementation(() =>
+  .mockImplementationOnce(() =>
     Promise.resolve([
       [right(aRetrievedNotification)],
       [right(anotherRetrievedNotification)]
     ])
   );
 
+// tslint:disable-next-line: no-identical-functions
+jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
+  return {
+    [Symbol.asyncIterator]: () => messageIteratorMock
+  };
+});
+
+jest
+  .spyOn(asyncI, "asyncIterableToArray")
+  .mockImplementationOnce(() =>
+    Promise.resolve([[right(aRetrievedMessageWithoutContent)]])
+  );
+
 const messageModelMock = ({
-  findAllByQuery: jest.fn(() =>
-    fromEither(right(some([aRetrievedMessageWithoutContent])))
-  ),
-  getContentFromBlob: jest.fn(() => fromEither(right(some(aMessageContent))))
+  getContentFromBlob: jest.fn(() => fromEither(right(some(aMessageContent)))),
+  getQueryIterator: jest.fn(() => messageIteratorMock)
 } as any) as MessageModel;
 
 const messageStatusModelMock = ({
@@ -213,6 +224,19 @@ describe("createExtractUserDataActivityHandler", () => {
     const { blobServiceMock, aZipStream } = setupStreamMocks();
     const appendSpy = jest.spyOn(aZipStream, "append");
 
+    // tslint:disable-next-line: no-identical-functions
+    jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
+      return {
+        [Symbol.asyncIterator]: () => messageIteratorMock
+      };
+    });
+
+    jest
+      .spyOn(asyncI, "asyncIterableToArray")
+      .mockImplementationOnce(() =>
+        Promise.resolve([[right(aRetrievedMessageWithoutContent)]])
+      );
+
     const handler = createExtractUserDataActivityHandler({
       messageContentBlobService: blobServiceMock,
       messageModel: messageModelMock,
@@ -233,7 +257,7 @@ describe("createExtractUserDataActivityHandler", () => {
       blobServiceMock,
       aRetrievedMessageWithoutContent.id
     );
-    expect(messageModelMock.findAllByQuery).toHaveBeenCalledWith({
+    expect(messageModelMock.getQueryIterator).toHaveBeenCalledWith({
       parameters: [{ name: "@fiscaCode", value: aFiscalCode }],
       query: "SELECT * FROM m WHERE m.fiscalCode = @fiscalCode"
     });

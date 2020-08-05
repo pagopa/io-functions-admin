@@ -117,9 +117,17 @@ export function retrievedServiceToVisibleService(
     serviceId,
     serviceMetadata,
     serviceName,
-    version
+    version,
+    _etag,
+    _rid,
+    _self,
+    _ts
   } = retrievedService;
   return {
+    _etag,
+    _rid,
+    _self,
+    _ts,
     departmentName,
     id,
     organizationFiscalCode,

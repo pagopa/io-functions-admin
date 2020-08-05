@@ -52,18 +52,18 @@ const executeRecursiveBackupAndDelete = <T>(
   DataFailure,
   readonly T[]
 > =>
-  tryCatch(iterator.next, toError)
+  tryCatch(() => iterator.next(), toError)
     // this is just type lifting
     // tslint:disable-next-line: readonly-array
     .foldTaskEither<DataFailure, readonly T[]>(
       e => fromLeft(toQueryFailure(e)),
       e =>
-        e.value.any(isLeft)
+        e.done
+          ? taskEither.of([])
+          : e.value.some(isLeft)
           ? fromLeft(
               toQueryFailure(new Error("Some elements are not typed correctly"))
             )
-          : e.done
-          ? taskEither.of([])
           : taskEither.of(rights(e.value))
     )
     .chain(items =>
