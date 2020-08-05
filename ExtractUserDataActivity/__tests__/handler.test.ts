@@ -95,14 +95,14 @@ jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
 });
 
 jest
-  .spyOn(asyncI, "asyncIterableToArray")
-  .mockImplementationOnce(() =>
+  .spyOn(asyncI, "asyncIteratorToArray")
+  .mockImplementation(() =>
     Promise.resolve([[right(aRetrievedMessageWithoutContent)]])
   );
 
 const messageModelMock = ({
-  getContentFromBlob: jest.fn(() => fromEither(right(some(aMessageContent)))),
-  getQueryIterator: jest.fn(() => messageIteratorMock)
+  findMessages: jest.fn(() => fromEither(right(messageIteratorMock))),
+  getContentFromBlob: jest.fn(() => fromEither(right(some(aMessageContent))))
 } as any) as MessageModel;
 
 const messageStatusModelMock = ({
@@ -224,19 +224,6 @@ describe("createExtractUserDataActivityHandler", () => {
     const { blobServiceMock, aZipStream } = setupStreamMocks();
     const appendSpy = jest.spyOn(aZipStream, "append");
 
-    // tslint:disable-next-line: no-identical-functions
-    jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
-      return {
-        [Symbol.asyncIterator]: () => messageIteratorMock
-      };
-    });
-
-    jest
-      .spyOn(asyncI, "asyncIterableToArray")
-      .mockImplementationOnce(() =>
-        Promise.resolve([[right(aRetrievedMessageWithoutContent)]])
-      );
-
     const handler = createExtractUserDataActivityHandler({
       messageContentBlobService: blobServiceMock,
       messageModel: messageModelMock,
@@ -257,10 +244,7 @@ describe("createExtractUserDataActivityHandler", () => {
       blobServiceMock,
       aRetrievedMessageWithoutContent.id
     );
-    expect(messageModelMock.getQueryIterator).toHaveBeenCalledWith({
-      parameters: [{ name: "@fiscalCode", value: aFiscalCode }],
-      query: "SELECT * FROM m WHERE m.fiscalCode = @fiscalCode"
-    });
+    expect(messageModelMock.findMessages).toHaveBeenCalledWith(aFiscalCode);
     expect(
       messageStatusModelMock.findLastVersionByModelId
     ).toHaveBeenCalledWith(aRetrievedMessageWithoutContent.id);

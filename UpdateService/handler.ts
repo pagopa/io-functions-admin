@@ -35,7 +35,7 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
-import { NonNegativeInteger } from "italia-ts-commons/lib/numbers";
+import { incVersion } from "io-functions-commons/dist/src/utils/cosmosdb_model_versioned";
 import {
   apiServiceToService,
   retrievedServiceToApiService
@@ -95,7 +95,7 @@ export function UpdateServiceHandler(
         ...existingService,
         ...apiServiceToService(servicePayload),
         kind: "INewService",
-        version: (Number(existingService.version) + 1) as NonNegativeInteger
+        version: incVersion(existingService.version)
       })
       .run();
 

@@ -11,7 +11,7 @@ import {
   tryCatch
 } from "fp-ts/lib/TaskEither";
 
-import { array, flatten, lefts, rights } from "fp-ts/lib/Array";
+import { array, flatten, rights } from "fp-ts/lib/Array";
 import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
 import { RetrievedMessageWithoutContent } from "io-functions-commons/dist/src/models/message";
 import { RetrievedMessageStatus } from "io-functions-commons/dist/src/models/message_status";
@@ -28,10 +28,7 @@ import { DataFailure, IBlobServiceInfo } from "./types";
 import { saveDataToBlob } from "./utils";
 import { toDocumentDeleteFailure, toQueryFailure } from "./utils";
 
-import {
-  asyncIteratorToArray,
-  flattenAsyncIterator
-} from "io-functions-commons/dist/src/utils/async";
+import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
 import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";
 
@@ -361,55 +358,50 @@ const backupAndDeleteAllMessagesData = ({
 }): TaskEither<DataFailure, unknown> =>
   messageModel
     .findMessages(fiscalCode)
-    .bimap(toQueryFailure, iter =>
-      tryCatch(
-        () => asyncIteratorToArray(flattenAsyncIterator(iter)),
-        toQueryFailure
-      )
-    )
+    .mapLeft(toQueryFailure)
+    .chain(iter => tryCatch(() => asyncIteratorToArray(iter), toQueryFailure))
+    .map(flatten)
     .foldTaskEither(
       e => fromLeft(e),
-      _ =>
-        _.map(maybeMessages =>
-          lefts([...maybeMessages]).length > 0
-            ? fromLeft(
-                toQueryFailure(
-                  new Error("Cannot decode some element due to decoding errors")
-                )
+      errorsOrMessages =>
+        errorsOrMessages.some(isLeft)
+          ? fromLeft(
+              toQueryFailure(
+                new Error("Cannot decode some element due to decoding errors")
               )
-            : array.sequence(taskEitherSeq)(
-                rights([...maybeMessages]).map(message => {
-                  // cast needed because findMessages has a wrong signature
-                  // tslint:disable-next-line: no-any
-                  const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
-                  return sequenceT(taskEitherSeq)(
-                    backupAndDeleteMessageContent({
-                      message: retrievedMessage,
-                      messageContentBlobService,
-                      messageModel,
-                      userDataBackup
-                    }),
-                    backupAndDeleteMessageStatus({
-                      message: retrievedMessage,
-                      messageStatusModel,
-                      userDataBackup
-                    }),
-                    backupAndDeleteAllNotificationsData({
-                      message: retrievedMessage,
-                      notificationModel,
-                      notificationStatusModel,
-                      userDataBackup
-                    })
-                  ).chain(() =>
-                    backupAndDeleteMessage({
-                      message: retrievedMessage,
-                      messageModel,
-                      userDataBackup
-                    })
-                  );
-                })
-              )
-        )
+            )
+          : array.sequence(taskEitherSeq)(
+              rights(errorsOrMessages).map(message => {
+                // cast needed because findMessages has a wrong signature
+                // tslint:disable-next-line: no-any
+                const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
+                return sequenceT(taskEitherSeq)(
+                  backupAndDeleteMessageContent({
+                    message: retrievedMessage,
+                    messageContentBlobService,
+                    messageModel,
+                    userDataBackup
+                  }),
+                  backupAndDeleteMessageStatus({
+                    message: retrievedMessage,
+                    messageStatusModel,
+                    userDataBackup
+                  }),
+                  backupAndDeleteAllNotificationsData({
+                    message: retrievedMessage,
+                    notificationModel,
+                    notificationStatusModel,
+                    userDataBackup
+                  })
+                ).chain(() =>
+                  backupAndDeleteMessage({
+                    message: retrievedMessage,
+                    messageModel,
+                    userDataBackup
+                  })
+                );
+              })
+            )
     );
 
 /**

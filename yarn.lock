@@ -4412,7 +4412,7 @@ invert-kv@^2.0.0:
   resolved "https://registry.yarnpkg.com/invert-kv/-/invert-kv-2.0.0.tgz#7393f5afa59ec9ff5f67a27620d11c226e3eec02"
   integrity sha512-wPVv/y/QQ/Uiirj/vh3oP+1Ww+AWehmi1g5fFWGPF6IpCBCDVrhgHRMvrLfdYcwDh3QJbGXDW4JAuzxElLSqKA==
 
-io-functions-commons@^12.5.0-0:
+io-functions-commons@^12.5.0:
   version "12.5.0"
   resolved "https://registry.yarnpkg.com/io-functions-commons/-/io-functions-commons-12.5.0.tgz#e9d59195ee3f61d8989eb8422539d051a6f8d21a"
   integrity sha512-VsqsRpy68Na0dNjc7kCaMIOIWBlLqexedf2elf3pWoLXarJkY5vZY5Wm8Vg5Uw+MP54xW+J2fLNaE6V9Uz6hcw==

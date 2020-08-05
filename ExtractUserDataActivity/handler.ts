@@ -55,7 +55,7 @@ import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { getEncryptedZipStream } from "../utils/zip";
 
 import { fromLeft } from "fp-ts/lib/TaskEither";
-import { asyncIterableToArray } from "io-functions-commons/dist/src/utils/async";
+import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as yaml from "yaml";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
@@ -388,21 +388,14 @@ export const queryAllUserData = (
     .chain(profile =>
       sequenceS(taskEither)({
         // queries all messages for the user
-        messages: tryCatch(
-          () =>
-            asyncIterableToArray(
-              messageModel.getQueryIterator({
-                parameters: [
-                  {
-                    name: "@fiscalCode",
-                    value: fiscalCode
-                  }
-                ],
-                query: `SELECT * FROM m WHERE m.fiscalCode = @fiscalCode`
-              })
-            ),
-          toCosmosErrorResponse
-        )
+        messages: messageModel
+          .findMessages(fiscalCode)
+          .chain(iterator =>
+            tryCatch(
+              () => asyncIteratorToArray(iterator),
+              toCosmosErrorResponse
+            )
+          )
           .map(flatten)
           .mapLeft(_ =>
             ActivityResultQueryFailure.encode({
@@ -413,8 +406,8 @@ export const queryAllUserData = (
           )
           .foldTaskEither(
             _ => fromLeft(_),
-            maybeMessages =>
-              maybeMessages.some(isLeft)
+            errorsOrMessages =>
+              errorsOrMessages.some(isLeft)
                 ? fromLeft(
                     ActivityResultQueryFailure.encode({
                       kind: "QUERY_FAILURE",
@@ -422,8 +415,8 @@ export const queryAllUserData = (
                       reason: "Some messages cannot be decoded"
                     })
                   )
-                : rights(maybeMessages).length > 0
-                ? fromEither(right(rights(maybeMessages)))
+                : rights(errorsOrMessages).length > 0
+                ? fromEither(right(rights(errorsOrMessages)))
                 : fromLeft(
                     ActivityResultQueryFailure.encode({
                       kind: "QUERY_FAILURE",
