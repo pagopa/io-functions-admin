@@ -406,8 +406,8 @@ export const queryAllUserData = (
           )
           .foldTaskEither(
             _ => fromLeft(_),
-            errorsOrMessages =>
-              errorsOrMessages.some(isLeft)
+            results =>
+              results.some(isLeft)
                 ? fromLeft(
                     ActivityResultQueryFailure.encode({
                       kind: "QUERY_FAILURE",
@@ -415,8 +415,8 @@ export const queryAllUserData = (
                       reason: "Some messages cannot be decoded"
                     })
                   )
-                : rights(errorsOrMessages).length > 0
-                ? fromEither(right(rights(errorsOrMessages)))
+                : results.length > 0
+                ? fromEither(right(rights(results)))
                 : fromLeft(
                     ActivityResultQueryFailure.encode({
                       kind: "QUERY_FAILURE",

@@ -363,15 +363,15 @@ const backupAndDeleteAllMessagesData = ({
     .map(flatten)
     .foldTaskEither(
       e => fromLeft(e),
-      errorsOrMessages =>
-        errorsOrMessages.some(isLeft)
+      results =>
+        results.some(isLeft)
           ? fromLeft(
               toQueryFailure(
                 new Error("Cannot decode some element due to decoding errors")
               )
             )
           : array.sequence(taskEitherSeq)(
-              rights(errorsOrMessages).map(message => {
+              rights(results).map(message => {
                 // cast needed because findMessages has a wrong signature
                 // tslint:disable-next-line: no-any
                 const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
