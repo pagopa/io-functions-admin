@@ -258,7 +258,7 @@ describe("createExtractUserDataActivityHandler", () => {
       aRetrievedMessageWithoutContent.id
     );
     expect(messageModelMock.getQueryIterator).toHaveBeenCalledWith({
-      parameters: [{ name: "@fiscaCode", value: aFiscalCode }],
+      parameters: [{ name: "@fiscalCode", value: aFiscalCode }],
       query: "SELECT * FROM m WHERE m.fiscalCode = @fiscalCode"
     });
     expect(
