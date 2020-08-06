@@ -415,15 +415,7 @@ export const queryAllUserData = (
                       reason: "Some messages cannot be decoded"
                     })
                   )
-                : results.length > 0
-                ? fromEither(right(rights(results)))
-                : fromLeft(
-                    ActivityResultQueryFailure.encode({
-                      kind: "QUERY_FAILURE",
-                      query: "findMessages",
-                      reason: "No messages found"
-                    })
-                  )
+                : fromEither(right(rights(results)))
           ),
         profile: taskEither.of(profile)
       })
