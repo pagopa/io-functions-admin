@@ -194,7 +194,7 @@ export const getProfile = (
   Profile
 > => {
   return profileModel
-    .findLastVersionByModelId(fiscalCode)
+    .findLastVersionByModelId([fiscalCode])
     .foldTaskEither<
       ActivityResultUserNotFound | ActivityResultQueryFailure,
       Profile
@@ -261,7 +261,7 @@ export const getAllMessagesStatuses = (
   array.sequence(taskEither)(
     messages.map(({ id: messageId }) =>
       messageStatusModel
-        .findLastVersionByModelId(messageId)
+        .findLastVersionByModelId([messageId])
         .foldTaskEither<ActivityResultQueryFailure, MessageStatus>(
           failure =>
             fromLeft(

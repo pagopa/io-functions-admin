@@ -122,10 +122,10 @@ export const createSetUserDataProcessingStatusActivityHandler = (
     )
     .chain(({ fiscalCode, choice }) =>
       userDataProcessingModel
-        .findLastVersionByModelId(
+        .findLastVersionByModelId([
           makeUserDataProcessingId(choice, fiscalCode),
           fiscalCode
-        )
+        ])
         .foldTaskEither<ActivityResultFailure, UserDataProcessing>(
           error =>
             fromLeft(

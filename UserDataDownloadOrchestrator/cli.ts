@@ -52,13 +52,13 @@ async function run(): Promise<any> {
   });
 
   const errorOrMaybeRetrievedUserDataProcessing = await userDataProcessingModel
-    .findLastVersionByModelId(
+    .findLastVersionByModelId([
       makeUserDataProcessingId(
         UserDataProcessingChoiceEnum.DOWNLOAD,
         fiscalCode
       ),
       fiscalCode
-    )
+    ])
     .run();
 
   if (isLeft(errorOrMaybeRetrievedUserDataProcessing)) {

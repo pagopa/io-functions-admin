@@ -247,7 +247,7 @@ describe("createExtractUserDataActivityHandler", () => {
     expect(messageModelMock.findMessages).toHaveBeenCalledWith(aFiscalCode);
     expect(
       messageStatusModelMock.findLastVersionByModelId
-    ).toHaveBeenCalledWith(aRetrievedMessageWithoutContent.id);
+    ).toHaveBeenCalledWith([aRetrievedMessageWithoutContent.id]);
     expect(
       notificationModelMock.findNotificationForMessage
     ).toHaveBeenCalledWith(aRetrievedMessageWithoutContent.id);
