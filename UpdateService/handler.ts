@@ -35,7 +35,6 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
-import { incVersion } from "io-functions-commons/dist/src/utils/cosmosdb_model_versioned";
 import {
   apiServiceToService,
   retrievedServiceToApiService
