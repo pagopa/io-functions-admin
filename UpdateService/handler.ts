@@ -94,8 +94,7 @@ export function UpdateServiceHandler(
       .upsert({
         ...existingService,
         ...apiServiceToService(servicePayload),
-        kind: "INewService",
-        version: incVersion(existingService.version)
+        kind: "INewService"
       })
       .run();
 
