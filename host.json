@@ -9,12 +9,25 @@
     "http": {
       "routePrefix": ""
     },
+
     "durableTask": {
-      "hubName": "FunctionsAdminHub"
+      "hubName": "%SLOT_TASK_HUBNAME%",
+      "storageProvider": {
+        "connectionStringName": "AzureWebJobsStorage"
+      },
+      "tracing": {
+        "traceInputsAndOutputs": false,
+        "traceReplayEvents": false
+      }
+    },
+
+    "queues": {
+      "maxPollingInterval": "00:00:02",
+      "visibilityTimeout" : "00:00:30",
+      "batchSize": 16,
+      "maxDequeueCount": 5,
+      "newBatchThreshold": 8
     }
-  },
-  "extensionBundle": {
-    "id": "Microsoft.Azure.Functions.ExtensionBundle",
-    "version": "[1.*, 2.0.0)"
+
   }
 }
