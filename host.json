@@ -9,12 +9,17 @@
     "http": {
       "routePrefix": ""
     },
+
     "durableTask": {
-      "hubName": "FunctionsAdminHub"
+      "hubName": "%SLOT_TASK_HUBNAME%",
+      "storageProvider": {
+        "connectionStringName": "AzureWebJobsStorage"
+      },
+      "tracing": {
+        "traceInputsAndOutputs": false,
+        "traceReplayEvents": false
+      }
     }
-  },
-  "extensionBundle": {
-    "id": "Microsoft.Azure.Functions.ExtensionBundle",
-    "version": "[1.*, 2.0.0)"
+
   }
 }
