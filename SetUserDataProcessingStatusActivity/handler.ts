@@ -4,18 +4,17 @@
 
 import * as t from "io-ts";
 
-import { Either } from "fp-ts/lib/Either";
-import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { fromEither, TaskEither } from "fp-ts/lib/TaskEither";
 
 import { Context } from "@azure/functions";
 
-import { QueryError } from "documentdb";
 import { UserDataProcessingStatus } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
   UserDataProcessingModel
 } from "io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "italia-ts-commons/lib/reporters";
+import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -71,36 +70,6 @@ function assertNever(_: never): void {
 }
 
 /**
- * Converts a Promise<Either> into a TaskEither
- * This is needed because our models return unconvenient type. Both left and rejection cases are handled as a TaskEither left
- * @param lazyPromise a lazy promise to convert
- * @param queryName an optional name for the query, for logging purpose
- *
- * @returns either the query result or a query failure
- */
-const fromQueryEither = <R>(
-  lazyPromise: () => Promise<Either<QueryError, R>>,
-  queryName: string = ""
-) =>
-  tryCatch(lazyPromise, (err: Error) =>
-    ActivityResultQueryFailure.encode({
-      kind: "QUERY_FAILURE",
-      query: queryName,
-      reason: err.message
-    })
-  ).chain((queryErrorOrRecord: Either<QueryError, R>) =>
-    fromEither(
-      queryErrorOrRecord.mapLeft(queryError =>
-        ActivityResultQueryFailure.encode({
-          kind: "QUERY_FAILURE",
-          query: queryName,
-          reason: JSON.stringify(queryError)
-        })
-      )
-    )
-  );
-
-/**
  * Logs depending on failure type
  * @param context the Azure functions context
  * @param failure the failure to log
@@ -141,15 +110,19 @@ export const createSetUserDataProcessingStatusActivityHandler = (
     currentRecord: UserDataProcessing;
     nextStatus: UserDataProcessingStatus;
   }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
-    fromQueryEither(
-      () =>
-        userDataProcessingModel.createOrUpdateByNewOne({
-          ...currentRecord,
-          status: nextStatus,
-          updatedAt: new Date()
-        }),
-      "userDataProcessingModel.createOrUpdateByNewOne"
-    );
+    userDataProcessingModel
+      .createOrUpdateByNewOne({
+        ...currentRecord,
+        status: nextStatus,
+        updatedAt: new Date()
+      })
+      .mapLeft(err =>
+        ActivityResultQueryFailure.encode({
+          kind: "QUERY_FAILURE",
+          query: "userDataProcessingModel.createOrUpdateByNewOne",
+          reason: `${err.kind}, ${getMessageFromCosmosErrors(err)}`
+        })
+      );
 
   // the actual handler
   return fromEither(ActivityInput.decode(input))

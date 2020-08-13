@@ -3,7 +3,7 @@
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { GroupContract } from "@azure/arm-apimanagement/esm/models";
 import { left, right } from "fp-ts/lib/Either";
-import { fromEither } from "fp-ts/lib/TaskEither";
+import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
 import { UserGroup } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { EmailAddress } from "../../generated/definitions/EmailAddress";
 import * as ApimUtils from "../../utils/apim";
@@ -97,7 +97,7 @@ const mockedContext = { log: { error: mockLog } };
 describe("UpdateUserGroups", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
-      fromEither(left(Error("Error from ApiManagementClient constructor")))
+      fromLeft(Error("Error from ApiManagementClient constructor"))
     );
 
     const updateUserGroupHandler = UpdateUserGroupHandler(

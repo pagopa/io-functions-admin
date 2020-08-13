@@ -1,8 +1,6 @@
-import * as documentDbUtils from "io-functions-commons/dist/src/utils/documentdb";
-
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 
-import { documentClient } from "../utils/cosmosdb";
+import { cosmosdbClient } from "../utils/cosmosdb";
 
 import { createDeleteUserDataActivityHandler } from "./handler";
 
@@ -20,48 +18,44 @@ import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
 
-const documentDbDatabaseUrl = documentDbUtils.getDatabaseUri(cosmosDbName);
+const messagesContainer = cosmosdbClient
+  .database(cosmosDbName)
+  .container(MESSAGE_COLLECTION_NAME);
 
 const messageModel = new MessageDeletableModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    MESSAGE_COLLECTION_NAME
-  ),
+  messagesContainer,
   getRequiredStringEnv("MESSAGE_CONTAINER_NAME")
 );
 
+const messageStatusesContainer = cosmosdbClient
+  .database(cosmosDbName)
+  .container(MESSAGE_STATUS_COLLECTION_NAME);
+
 const messageStatusModel = new MessageStatusDeletableModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    MESSAGE_STATUS_COLLECTION_NAME
-  )
+  messageStatusesContainer
 );
+
+const notificationsContainer = cosmosdbClient
+  .database(cosmosDbName)
+  .container(NOTIFICATION_COLLECTION_NAME);
 
 const notificationModel = new NotificationDeletableModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    NOTIFICATION_COLLECTION_NAME
-  )
+  notificationsContainer
 );
+
+const notificationStatusesContainer = cosmosdbClient
+  .database(cosmosDbName)
+  .container(NOTIFICATION_STATUS_COLLECTION_NAME);
 
 const notificationStatusModel = new NotificationStatusDeletableModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    NOTIFICATION_STATUS_COLLECTION_NAME
-  )
+  notificationStatusesContainer
 );
 
-const profileModel = new ProfileDeletableModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    PROFILE_COLLECTION_NAME
-  )
-);
+const profilesContainer = cosmosdbClient
+  .database(cosmosDbName)
+  .container(PROFILE_COLLECTION_NAME);
+
+const profileModel = new ProfileDeletableModel(profilesContainer);
 
 const userDataBackupBlobService = createBlobService(
   getRequiredStringEnv("UserDataBackupStorageConnection")

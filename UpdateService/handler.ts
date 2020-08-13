@@ -12,7 +12,6 @@ import {
   IResponseErrorNotFound,
   IResponseErrorValidation,
   IResponseSuccessJson,
-  ResponseErrorInternal,
   ResponseErrorNotFound,
   ResponseErrorValidation,
   ResponseSuccessJson
@@ -70,9 +69,9 @@ export function UpdateServiceHandler(
       );
     }
 
-    const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
-      serviceId
-    );
+    const errorOrMaybeRetrievedService = await serviceModel
+      .findOneByServiceId(serviceId)
+      .run();
     if (isLeft(errorOrMaybeRetrievedService)) {
       return ResponseErrorQuery(
         "Error trying to retrieve existing service",
@@ -90,31 +89,21 @@ export function UpdateServiceHandler(
 
     const existingService = maybeService.value;
 
-    const errorOrMaybeUpdatedService = await serviceModel.update(
-      existingService.id,
-      existingService.serviceId,
-      currentService => {
-        return {
-          ...currentService,
-          ...apiServiceToService(servicePayload),
-          serviceId
-        };
-      }
-    );
+    const errorOrUpdatedService = await serviceModel
+      .update({
+        ...existingService,
+        ...apiServiceToService(servicePayload)
+      })
+      .run();
 
-    if (isLeft(errorOrMaybeUpdatedService)) {
+    if (isLeft(errorOrUpdatedService)) {
       return ResponseErrorQuery(
         "Error while updating the existing service",
-        errorOrMaybeUpdatedService.value
+        errorOrUpdatedService.value
       );
     }
 
-    const maybeUpdatedService = errorOrMaybeUpdatedService.value;
-    if (isNone(maybeUpdatedService)) {
-      return ResponseErrorInternal("Error while updating the existing service");
-    }
-
-    const updatedService = maybeUpdatedService.value;
+    const updatedService = errorOrUpdatedService.value;
 
     const upsertServiceEvent = UpsertServiceEvent.encode({
       newService: updatedService,

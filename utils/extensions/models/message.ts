@@ -1,10 +1,14 @@
 import { BlobService } from "azure-storage";
-import * as DocumentDb from "documentdb";
-import { Either } from "fp-ts/lib/Either";
+import { toError } from "fp-ts/lib/Either";
+import { fromEither, TaskEither } from "fp-ts/lib/TaskEither";
+import { tryCatch } from "fp-ts/lib/TaskEither";
 import { MessageModel as MessageModelBase } from "io-functions-commons/dist/src/models/message";
+import {
+  CosmosErrors,
+  toCosmosErrorResponse
+} from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { deleteBlob } from "../azure_storage";
-import * as DocumentDbUtils from "../documentdb";
 
 // duplicated from base calss module, as it is not exposed
 const MESSAGE_BLOB_STORAGE_SUFFIX = ".json";
@@ -16,26 +20,28 @@ function blobIdFromMessageId(messageId: string): string {
  * Extends MessageModel with deleting operations
  */
 export class MessageDeletableModel extends MessageModelBase {
-  public async deleteMessage(
+  public deleteMessage(
     fiscalCode: FiscalCode,
     messageId: NonEmptyString
-  ): Promise<Either<DocumentDb.QueryError, string>> {
-    return DocumentDbUtils.deleteDocument(
-      this.dbClient,
-      this.collectionUri,
-      messageId,
-      fiscalCode
-    );
+  ): TaskEither<CosmosErrors, string> {
+    return tryCatch(
+      () => this.container.item(messageId, fiscalCode).delete(),
+      toCosmosErrorResponse
+    ).map(_ => _.item.id);
   }
 
-  public async deleteContentFromBlob(
+  public deleteContentFromBlob(
     blobService: BlobService,
     messageId: string
-  ): Promise<Either<Error, true>> {
-    return deleteBlob(
-      blobService,
-      this.containerName,
-      blobIdFromMessageId(messageId)
-    );
+  ): TaskEither<Error, true> {
+    return tryCatch(
+      () =>
+        deleteBlob(
+          blobService,
+          this.containerName,
+          blobIdFromMessageId(messageId)
+        ),
+      toError
+    ).chain(fromEither);
   }
 }

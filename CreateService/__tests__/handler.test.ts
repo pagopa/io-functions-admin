@@ -5,12 +5,13 @@ import * as df from "durable-functions";
 import * as lolex from "lolex";
 
 import { left, right } from "fp-ts/lib/Either";
-import { none } from "fp-ts/lib/Option";
 
+import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
+  aNewService,
   aRetrievedService,
   aSeralizedService,
-  aService,
   aServicePayload
 } from "../../__mocks__/mocks";
 import { UpsertServiceEvent } from "../../utils/UpsertServiceEvent";
@@ -31,8 +32,10 @@ afterEach(() => {
 describe("CreateServiceHandler", () => {
   it("should return a query error if the service fails to be created", async () => {
     const mockServiceModel = {
-      create: jest.fn(() => {
-        return Promise.resolve(left({}));
+      create: jest.fn(_ => {
+        return fromLeft(
+          toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" })
+        );
       })
     };
 
@@ -44,20 +47,14 @@ describe("CreateServiceHandler", () => {
       aServicePayload
     );
 
-    expect(mockServiceModel.create).toHaveBeenCalledWith(
-      aService,
-      aServicePayload.service_id
-    );
+    expect(mockServiceModel.create).toHaveBeenCalledWith(aNewService);
     expect(response.kind).toBe("IResponseErrorQuery");
   });
 
   it("should create a new service using the payload and return the created service", async () => {
     const mockServiceModel = {
-      create: jest.fn(() => {
-        return Promise.resolve(right(aRetrievedService));
-      }),
-      findOneByServiceId: jest.fn(() => {
-        return Promise.resolve(right(none));
+      create: jest.fn(_ => {
+        return fromEither(right(aRetrievedService));
       })
     };
 
@@ -69,10 +66,7 @@ describe("CreateServiceHandler", () => {
       aServicePayload
     );
 
-    expect(mockServiceModel.create).toHaveBeenCalledWith(
-      aService,
-      aServicePayload.service_id
-    );
+    expect(mockServiceModel.create).toHaveBeenCalledWith(aNewService);
     expect(response.kind).toBe("IResponseSuccessJson");
     if (response.kind === "IResponseSuccessJson") {
       expect(response.value).toEqual(aSeralizedService);
@@ -81,11 +75,8 @@ describe("CreateServiceHandler", () => {
 
   it("should start the orchestrator with an appropriate event after the service is created", async () => {
     const mockServiceModel = {
-      create: jest.fn(() => {
-        return Promise.resolve(right(aRetrievedService));
-      }),
-      findOneByServiceId: jest.fn(() => {
-        return Promise.resolve(right(none));
+      create: jest.fn(_ => {
+        return fromEither(right(aRetrievedService));
       })
     };
 

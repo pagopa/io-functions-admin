@@ -1,6 +1,6 @@
 /* tslint:disable: no-any */
-import { Either, right } from "fp-ts/lib/Either";
-import { fromNullable, Option, some } from "fp-ts/lib/Option";
+import { right } from "fp-ts/lib/Either";
+import { some } from "fp-ts/lib/Option";
 
 import * as stream from "stream";
 import * as yaml from "yaml";
@@ -11,8 +11,7 @@ import {
   aFiscalCode,
   aProfile,
   aRetrievedMessageStatus,
-  aRetrievedNotificationStatus,
-  aRetrievedWebhookNotification
+  aRetrievedNotificationStatus
 } from "../../__mocks__/mocks";
 
 import {
@@ -23,11 +22,16 @@ import {
 
 import archiver = require("archiver");
 import { BlobService } from "azure-storage";
-import { QueryError } from "documentdb";
+import { fromEither } from "fp-ts/lib/TaskEither";
 import { MessageModel } from "io-functions-commons/dist/src/models/message";
 import { MessageStatusModel } from "io-functions-commons/dist/src/models/message_status";
+import {
+  NotificationModel,
+  RetrievedNotification
+} from "io-functions-commons/dist/src/models/notification";
 import { NotificationStatusModel } from "io-functions-commons/dist/src/models/notification_status";
 import { ProfileModel } from "io-functions-commons/dist/src/models/profile";
+import * as asyncI from "io-functions-commons/dist/src/utils/async";
 import { DeferredPromise } from "italia-ts-commons/lib/promises";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
@@ -37,42 +41,90 @@ import {
   aRetrievedNotification
 } from "../../__mocks__/mocks";
 import { AllUserData } from "../../utils/userData";
-import { NotificationModel } from "../notification"; // we use the local-defined model
 
-const createMockIterator = <T>(a: ReadonlyArray<T>) => {
-  const data = Array.from(a);
-  return {
-    async executeNext(): Promise<Either<QueryError, Option<readonly T[]>>> {
-      const next = data.shift();
-      return right(fromNullable(next ? [next] : undefined));
-    }
-  };
+const anotherRetrievedNotification: RetrievedNotification = {
+  ...aRetrievedNotification,
+  id: "ANOTHER_NOTIFICATION_ID" as NonEmptyString
 };
 
+const messageIteratorMock = {
+  next: jest.fn(() =>
+    Promise.resolve({
+      value: jest.fn(() => [right(aRetrievedMessageWithoutContent)])
+    })
+  )
+};
+
+jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
+  return {
+    [Symbol.asyncIterator]: () => messageIteratorMock
+  };
+});
+
+const notificationIteratorMock = {
+  next: jest.fn(() =>
+    Promise.resolve({
+      value: jest.fn(() => [
+        right(aRetrievedNotification),
+        right(anotherRetrievedNotification)
+      ])
+    })
+  )
+};
+
+jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
+  return {
+    [Symbol.asyncIterator]: () => notificationIteratorMock
+  };
+});
+
+jest
+  .spyOn(asyncI, "asyncIterableToArray")
+  .mockImplementationOnce(() =>
+    Promise.resolve([
+      [right(aRetrievedNotification)],
+      [right(anotherRetrievedNotification)]
+    ])
+  );
+
+// tslint:disable-next-line: no-identical-functions
+jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
+  return {
+    [Symbol.asyncIterator]: () => messageIteratorMock
+  };
+});
+
+jest
+  .spyOn(asyncI, "asyncIteratorToArray")
+  .mockImplementation(() =>
+    Promise.resolve([[right(aRetrievedMessageWithoutContent)]])
+  );
+
 const messageModelMock = ({
-  findMessages: jest.fn(() =>
-    createMockIterator([aRetrievedMessageWithoutContent])
-  ),
-  getContentFromBlob: jest.fn(async () => right(some(aMessageContent)))
+  findMessages: jest.fn(() => fromEither(right(messageIteratorMock))),
+  getContentFromBlob: jest.fn(() => fromEither(right(some(aMessageContent))))
 } as any) as MessageModel;
 
 const messageStatusModelMock = ({
-  findOneByMessageId: jest.fn(async () => right(some(aRetrievedMessageStatus)))
+  findLastVersionByModelId: jest.fn(() =>
+    fromEither(right(some(aRetrievedMessageStatus)))
+  )
 } as any) as MessageStatusModel;
 
 const profileModelMock = ({
-  findOneProfileByFiscalCode: jest.fn(async () => right(some(aProfile)))
+  findLastVersionByModelId: jest.fn(() => fromEither(right(some(aProfile))))
 } as any) as ProfileModel;
 
 const notificationModelMock = ({
-  findNotificationsForMessage: jest.fn(() =>
-    createMockIterator([aRetrievedNotification])
-  )
+  findNotificationForMessage: jest.fn(() =>
+    fromEither(right(some(aRetrievedNotification)))
+  ),
+  getQueryIterator: jest.fn(() => notificationIteratorMock)
 } as any) as NotificationModel;
 
 const notificationStatusModelMock = ({
-  findOneNotificationStatusByNotificationChannel: jest.fn(async () =>
-    right(some(aRetrievedNotificationStatus))
+  findOneNotificationStatusByNotificationChannel: jest.fn(() =>
+    fromEither(right(some(aRetrievedNotificationStatus)))
   )
 } as any) as NotificationStatusModel;
 
@@ -137,9 +189,10 @@ describe("createExtractUserDataActivityHandler", () => {
     const appendSpy = jest.spyOn(aZipStream, "append");
 
     const notificationWebhookModelMock = ({
-      findNotificationsForMessage: jest.fn(() =>
-        createMockIterator([aRetrievedWebhookNotification])
-      )
+      findNotificationForMessage: jest.fn(() =>
+        fromEither(right(some(aRetrievedNotification)))
+      ),
+      getQueryIterator: jest.fn(() => notificationIteratorMock)
     } as any) as NotificationModel;
 
     const handler = createExtractUserDataActivityHandler({
@@ -192,11 +245,11 @@ describe("createExtractUserDataActivityHandler", () => {
       aRetrievedMessageWithoutContent.id
     );
     expect(messageModelMock.findMessages).toHaveBeenCalledWith(aFiscalCode);
-    expect(messageStatusModelMock.findOneByMessageId).toHaveBeenCalledWith(
-      aRetrievedMessageWithoutContent.id
-    );
     expect(
-      notificationModelMock.findNotificationsForMessage
+      messageStatusModelMock.findLastVersionByModelId
+    ).toHaveBeenCalledWith([aRetrievedMessageWithoutContent.id]);
+    expect(
+      notificationModelMock.findNotificationForMessage
     ).toHaveBeenCalledWith(aRetrievedMessageWithoutContent.id);
     expect(
       notificationStatusModelMock.findOneNotificationStatusByNotificationChannel

@@ -30,7 +30,10 @@ import {
   UserDataProcessing,
   UserDataProcessingId
 } from "io-functions-commons/dist/src/models/user_data_processing";
-import { NonNegativeNumber } from "italia-ts-commons/lib/numbers";
+import {
+  NonNegativeInteger,
+  NonNegativeNumber
+} from "italia-ts-commons/lib/numbers";
 import {
   EmailString,
   FiscalCode,
@@ -68,6 +71,13 @@ export const anOrganizationFiscalCode = "12345678901" as OrganizationFiscalCode;
 
 export const aNewDate = new Date();
 
+export const retrievedMetadata = {
+  _etag: "_etag",
+  _rid: "_rid",
+  _self: "_self",
+  _ts: 123
+};
+
 export const aServicePayload: ApiService = {
   authorized_cidrs: [],
   authorized_recipients: [],
@@ -96,21 +106,21 @@ export const aService: Service = {
 
 export const aNewService: NewService = {
   ...aService,
-  id: "123" as NonEmptyString,
   kind: "INewService",
-  version: 1 as NonNegativeNumber
+  serviceMetadata: undefined
 };
 
 export const aRetrievedService: RetrievedService = {
   ...aNewService,
-  _self: "123",
-  _ts: 123,
-  kind: "IRetrievedService"
+  ...retrievedMetadata,
+  id: "MySubscriptionId" as NonEmptyString,
+  kind: "IRetrievedService",
+  version: 1 as NonNegativeInteger
 };
 
 export const aSeralizedService: ApiService = {
   ...aServicePayload,
-  id: "123" as NonEmptyString,
+  id: "MySubscriptionId" as NonEmptyString,
   version: 1 as NonNegativeNumber
 };
 
@@ -149,12 +159,11 @@ export const aProfile: Profile = {
 };
 
 export const aRetrievedProfile: RetrievedProfile = {
-  _self: "123",
-  _ts: 123,
   id: "123" as NonEmptyString,
   kind: "IRetrievedProfile",
-  version: 0 as NonNegativeNumber,
-  ...aProfile
+  version: 0 as NonNegativeInteger,
+  ...aProfile,
+  ...retrievedMetadata
 };
 
 const aMessageBodyMarkdown = "test".repeat(80) as MessageBodyMarkdown;
@@ -182,8 +191,7 @@ const aMessageWithoutContent: MessageWithoutContent = {
 
 export const aRetrievedMessageWithoutContent: RetrievedMessageWithoutContent = {
   ...aMessageWithoutContent,
-  _self: "xyz",
-  _ts: 123,
+  ...retrievedMetadata,
   id: "A_MESSAGE_ID" as NonEmptyString,
   kind: "IRetrievedMessageWithoutContent"
 };
@@ -217,15 +225,13 @@ export const aNewWebhookNotification: NewNotification = {
 
 export const aRetrievedWebhookNotification: RetrievedNotification = {
   ...aNewWebhookNotification,
-  _self: "xyz",
-  _ts: 123,
+  ...retrievedMetadata,
   kind: "IRetrievedNotification"
 };
 
 export const aRetrievedNotification: RetrievedNotification = {
   ...aNewEmailNotification,
-  _self: "xyz",
-  _ts: 123,
+  ...retrievedMetadata,
   kind: "IRetrievedNotification"
 };
 
@@ -267,17 +273,16 @@ export const aMessageStatus = MessageStatus.decode(
 });
 
 export const aSerializedRetrievedMessageStatus = {
-  _self: "_self",
-  _ts: 1,
   ...aSerializedMessageStatus,
   id: `${aMessageId}-${"0".repeat(16)}` as NonEmptyString,
   kind: "IRetrievedMessageStatus",
-  version: 0 as NonNegativeNumber
+  version: 0 as NonNegativeInteger
 };
 
-export const aRetrievedMessageStatus = RetrievedMessageStatus.decode(
-  aSerializedRetrievedMessageStatus
-).getOrElseL(errs => {
+export const aRetrievedMessageStatus = RetrievedMessageStatus.decode({
+  ...aSerializedRetrievedMessageStatus,
+  ...retrievedMetadata
+}).getOrElseL(errs => {
   const error = readableReport(errs);
   throw new Error("Fix MessageStatus mock: " + error);
 });

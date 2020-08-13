@@ -1,11 +1,15 @@
-import * as DocumentDb from "documentdb";
 import { Either } from "fp-ts/lib/Either";
+import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
-  NOTIFICATION_STATUS_MODEL_ID_FIELD,
   NOTIFICATION_STATUS_MODEL_PK_FIELD,
   NotificationStatusModel as NotificationStatusModelBase,
   RetrievedNotificationStatus
 } from "io-functions-commons/dist/src/models/notification_status";
+import {
+  CosmosErrors,
+  toCosmosErrorResponse
+} from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { Errors } from "io-ts";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as DocumentDbUtils from "../documentdb";
 
@@ -13,34 +17,14 @@ import * as DocumentDbUtils from "../documentdb";
  * Extends NotificationStatusModel with deleting operations
  */
 export class NotificationStatusDeletableModel extends NotificationStatusModelBase {
-  public async deleteNotificationStatusVersion(
+  public deleteNotificationStatusVersion(
     notificationId: NonEmptyString,
     documentId: NonEmptyString
-  ): Promise<Either<DocumentDb.QueryError, string>> {
-    return DocumentDbUtils.deleteDocument(
-      this.dbClient,
-      this.collectionUri,
-      documentId,
-      notificationId
-    );
-  }
-
-  /**
-   * Retrieves a list of every version of the requested model
-   * @param modelId
-   */
-  public findAllVersionsByModelId(
-    notificationId: NonEmptyString,
-    modelId: NonEmptyString
-  ): DocumentDbUtils.IResultIterator<RetrievedNotificationStatus> {
-    return DocumentDbUtils.findAllVersionsByModelId(
-      this.dbClient,
-      this.collectionUri,
-      NOTIFICATION_STATUS_MODEL_ID_FIELD,
-      modelId,
-      NOTIFICATION_STATUS_MODEL_PK_FIELD,
-      notificationId
-    );
+  ): TaskEither<CosmosErrors, string> {
+    return tryCatch(
+      () => this.container.item(documentId, notificationId).delete(),
+      toCosmosErrorResponse
+    ).map(_ => _.item.id);
   }
 
   /**
@@ -49,14 +33,14 @@ export class NotificationStatusDeletableModel extends NotificationStatusModelBas
    */
   public findAllVersionsByNotificationId(
     notificationId: NonEmptyString
-  ): DocumentDbUtils.IResultIterator<RetrievedNotificationStatus> {
+  ): AsyncIterator<ReadonlyArray<Either<Errors, RetrievedNotificationStatus>>> {
     return DocumentDbUtils.findAllVersionsByModelId(
-      this.dbClient,
-      this.collectionUri,
+      this.container,
+      this.retrievedItemT,
       NOTIFICATION_STATUS_MODEL_PK_FIELD,
       notificationId,
       NOTIFICATION_STATUS_MODEL_PK_FIELD,
       notificationId
-    );
+    )[Symbol.asyncIterator]();
   }
 }

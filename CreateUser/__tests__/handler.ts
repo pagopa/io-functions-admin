@@ -4,7 +4,7 @@ import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { left } from "fp-ts/lib/Either";
-import { fromEither } from "fp-ts/lib/TaskEither";
+import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
 import { User } from "../../generated/definitions/User";
 import { UserPayload } from "../../generated/definitions/UserPayload";
 import { UserStateEnum } from "../../generated/definitions/UserState";
@@ -109,7 +109,7 @@ describe("CreateUser", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
     spyOnGetApiClient.mockImplementationOnce(() =>
-      fromEither(left(Error("Error on APIM client creation")))
+      fromLeft(Error("Error on APIM client creation"))
     );
 
     mockUsersCreate.mockImplementationOnce(() =>

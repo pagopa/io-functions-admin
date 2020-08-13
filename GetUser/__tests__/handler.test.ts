@@ -6,7 +6,7 @@ import {
   SubscriptionContract
 } from "@azure/arm-apimanagement/esm/models";
 import { isRight, left, right } from "fp-ts/lib/Either";
-import { fromEither } from "fp-ts/lib/TaskEither";
+import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
 import { UserInfo } from "../../generated/definitions/UserInfo";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
@@ -65,7 +65,7 @@ const mockedContext = { log: { error: mockLog } };
 describe("GetUser", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
-      fromEither(left(Error("Error from ApiManagementClient constructor")))
+      fromLeft(Error("Error from ApiManagementClient constructor"))
     );
 
     const getUserHandler = GetUserHandler(

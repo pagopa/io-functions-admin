@@ -3,11 +3,7 @@ import { Context } from "@azure/functions";
 import * as express from "express";
 
 import { ServiceModel } from "io-functions-commons/dist/src/models/service";
-import {
-  IFoldableResultIterator,
-  iteratorToValue,
-  reduceResultIterator
-} from "io-functions-commons/dist/src/utils/documentdb";
+
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -23,7 +19,11 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
+import { isLeft } from "fp-ts/lib/Either";
 import { collect, StrMap } from "fp-ts/lib/StrMap";
+import { tryCatch } from "fp-ts/lib/TaskEither";
+import { mapAsyncIterator } from "io-functions-commons/dist/src/utils/async";
+import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   IResponseSuccessJson,
   ResponseSuccessJson
@@ -44,32 +44,47 @@ export function GetServicesHandler(
   serviceModel: ServiceModel
 ): IGetServicesHandler {
   return async (_, __) => {
-    const allRetrievedServicesIterator = await serviceModel.getCollectionIterator();
-    const allServicesIterator: IFoldableResultIterator<
-      Record<string, ApiService>
-    > = reduceResultIterator(allRetrievedServicesIterator, (prev, curr) => {
-      // keep only the latest version
-      const isNewer =
-        !prev[curr.serviceId] || curr.version > prev[curr.serviceId].version;
-      return {
-        ...prev,
-        ...(isNewer
-          ? { [curr.serviceId]: retrievedServiceToApiService(curr) }
-          : {})
-      };
-    });
-    return (await iteratorToValue(allServicesIterator, {})).fold<
-      IGetServicesHandlerResult
-    >(
-      error => ResponseErrorQuery("Cannot get services", error),
-      services => {
-        const items = collect(new StrMap(services), (_____, v) => v);
-        return ResponseSuccessJson({
-          items,
-          page_size: items.length
-        });
-      }
+    const allRetrievedServicesIterator = serviceModel
+      .getCollectionIterator()
+      [Symbol.asyncIterator]();
+    const allServicesIterator = mapAsyncIterator(
+      allRetrievedServicesIterator,
+      arr =>
+        // tslint:disable-next-line: no-inferred-empty-object-type
+        arr.reduce((prev, maybeCurr) => {
+          if (isLeft(maybeCurr)) {
+            return prev;
+          }
+          const curr = maybeCurr.value;
+          // keep only the latest version
+          const isNewer =
+            !prev[curr.serviceId] ||
+            curr.version > prev[curr.serviceId].version;
+          return {
+            ...prev,
+            ...(isNewer
+              ? { [curr.serviceId]: retrievedServiceToApiService(curr) }
+              : {})
+          };
+        }, {})
     );
+
+    return tryCatch(() => allServicesIterator.next(), toCosmosErrorResponse)
+      .fold<IGetServicesHandlerResult>(
+        error => ResponseErrorQuery("Cannot get services", error),
+        iteratorResults => {
+          const items = collect(
+            new StrMap(iteratorResults.value),
+            (_____, v: ApiService) => v
+          );
+          // FIXME: make response iterable over results pages
+          return ResponseSuccessJson({
+            items,
+            page_size: items.length
+          });
+        }
+      )
+      .run();
   };
 }
 

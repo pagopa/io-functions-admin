@@ -3,70 +3,30 @@
  * Ideally they will be integrated in the common module
  */
 
-import * as DocumentDb from "documentdb";
-import { Either } from "fp-ts/lib/Either";
+import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { NotificationModel as NotificationModelBase } from "io-functions-commons/dist/src/models/notification";
 import {
-  NotificationModel as NotificationModelBase,
-  RetrievedNotification
-} from "io-functions-commons/dist/src/models/notification";
+  CosmosErrors,
+  toCosmosErrorResponse
+} from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
-import * as DocumentDbUtils from "../documentdb";
 
 /**
  * Extends NotificationModel with deleting operations
  */
 export class NotificationDeletableModel extends NotificationModelBase {
   /**
-   * Creates a new Notification model
-   *
-   * @param dbClient the DocumentDB client
-   * @param collectionUrl the collection URL
-   */
-  constructor(
-    dbClient: DocumentDb.DocumentClient,
-    collectionUrl: DocumentDbUtils.IDocumentDbCollectionUri
-  ) {
-    super(dbClient, collectionUrl);
-  }
-
-  /**
-   * Returns the notifications for the provided message id
-   *
-   * @param messageId The message the notifications refer to
-   */
-  public findNotificationsForMessage(
-    messageId: string
-  ): DocumentDbUtils.IResultIterator<RetrievedNotification> {
-    return DocumentDbUtils.queryDocuments(
-      this.dbClient,
-      this.collectionUri,
-      {
-        parameters: [
-          {
-            name: "@messageId",
-            value: messageId
-          }
-        ],
-        query: `SELECT * FROM m WHERE m.messageId = @messageId`
-      },
-      messageId
-    );
-  }
-
-  /**
    * Deletes a single notification
    * @param messageId message identifier of the notification (is partition key)
    * @param notificationId notification identifier
    */
-  public async deleteNotification(
+  public deleteNotification(
     messageId: NonEmptyString,
     notificationId: NonEmptyString
-  ): Promise<Either<DocumentDb.QueryError, string>> {
-    return DocumentDbUtils.deleteDocument(
-      this.dbClient,
-      this.collectionUri,
-      notificationId,
-      messageId
-    );
+  ): TaskEither<CosmosErrors, string> {
+    return tryCatch(
+      () => this.container.item(notificationId, messageId).delete(),
+      toCosmosErrorResponse
+    ).map(_ => _.item.id);
   }
 }

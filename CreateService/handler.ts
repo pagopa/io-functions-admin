@@ -50,11 +50,11 @@ export function CreateServiceHandler(
   serviceModel: ServiceModel
 ): ICreateServiceHandler {
   return async (context, _, servicePayload) => {
-    const service = apiServiceToService(servicePayload);
-    const errorOrCreatedService = await serviceModel.create(
-      service,
-      service.serviceId
-    );
+    const newService = {
+      ...apiServiceToService(servicePayload),
+      kind: "INewService" as const
+    };
+    const errorOrCreatedService = await serviceModel.create(newService).run();
 
     if (isLeft(errorOrCreatedService)) {
       return ResponseErrorQuery(

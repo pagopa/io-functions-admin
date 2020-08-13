@@ -1,10 +1,15 @@
-import * as DocumentDb from "documentdb";
 import { Either } from "fp-ts/lib/Either";
+import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
   PROFILE_MODEL_PK_FIELD,
   ProfileModel as ProfileModelBase,
   RetrievedProfile
 } from "io-functions-commons/dist/src/models/profile";
+import {
+  CosmosErrors,
+  toCosmosErrorResponse
+} from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { Errors } from "io-ts";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as DocumentDbUtils from "../documentdb";
 
@@ -12,16 +17,14 @@ import * as DocumentDbUtils from "../documentdb";
  * Extends ProfileModel with deleting operations
  */
 export class ProfileDeletableModel extends ProfileModelBase {
-  public async deleteProfileVersion(
+  public deleteProfileVersion(
     fiscalCode: FiscalCode,
     documentId: NonEmptyString
-  ): Promise<Either<DocumentDb.QueryError, string>> {
-    return DocumentDbUtils.deleteDocument(
-      this.dbClient,
-      this.collectionUri,
-      documentId,
-      fiscalCode
-    );
+  ): TaskEither<CosmosErrors, string> {
+    return tryCatch(
+      () => this.container.item(documentId, fiscalCode).delete(),
+      toCosmosErrorResponse
+    ).map(_ => _.item.id);
   }
 
   /**
@@ -30,14 +33,14 @@ export class ProfileDeletableModel extends ProfileModelBase {
    */
   public findAllVersionsByModelId(
     fiscalCode: FiscalCode
-  ): DocumentDbUtils.IResultIterator<RetrievedProfile> {
+  ): AsyncIterator<ReadonlyArray<Either<Errors, RetrievedProfile>>> {
     return DocumentDbUtils.findAllVersionsByModelId(
-      this.dbClient,
-      this.collectionUri,
+      this.container,
+      this.retrievedItemT,
       PROFILE_MODEL_PK_FIELD,
       fiscalCode,
       PROFILE_MODEL_PK_FIELD,
       fiscalCode
-    );
+    )[Symbol.asyncIterator]();
   }
 }

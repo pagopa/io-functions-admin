@@ -14,9 +14,9 @@ import {
   UserDataProcessing,
   UserDataProcessingModel
 } from "io-functions-commons/dist/src/models/user_data_processing";
-import { fromQueryEither } from "io-functions-commons/dist/src/utils/documentdb";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -121,30 +121,30 @@ export const createSetUserDataProcessingStatusActivityHandler = (
       })
     )
     .chain(({ fiscalCode, choice }) =>
-      fromQueryEither(() =>
-        userDataProcessingModel.findOneUserDataProcessingById(
-          fiscalCode,
-          makeUserDataProcessingId(choice, fiscalCode)
-        )
-      ).foldTaskEither<ActivityResultFailure, UserDataProcessing>(
-        error =>
-          fromLeft(
-            ActivityResultQueryFailure.encode({
-              kind: "QUERY_FAILURE",
-              query: "findOneUserDataProcessingById",
-              reason: JSON.stringify(error)
-            })
-          ),
-        maybeRecord =>
-          maybeRecord.fold(
+      userDataProcessingModel
+        .findLastVersionByModelId([
+          makeUserDataProcessingId(choice, fiscalCode),
+          fiscalCode
+        ])
+        .foldTaskEither<ActivityResultFailure, UserDataProcessing>(
+          error =>
             fromLeft(
-              ActivityResultNotFoundFailure.encode({
-                kind: "NOT_FOUND_FAILURE"
+              ActivityResultQueryFailure.encode({
+                kind: "QUERY_FAILURE",
+                query: "findOneUserDataProcessingById",
+                reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
               })
             ),
-            _ => taskEither.of(_)
-          )
-      )
+          maybeRecord =>
+            maybeRecord.fold(
+              fromLeft(
+                ActivityResultNotFoundFailure.encode({
+                  kind: "NOT_FOUND_FAILURE"
+                })
+              ),
+              _ => taskEither.of(_)
+            )
+        )
     )
     .map(record =>
       ActivityResultSuccess.encode({

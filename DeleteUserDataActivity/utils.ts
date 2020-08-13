@@ -2,7 +2,7 @@ import { Context } from "@azure/functions";
 import { BlobService } from "azure-storage";
 import { toString } from "fp-ts/lib/function";
 import { TaskEither, taskify } from "fp-ts/lib/TaskEither";
-import { QueryError } from "io-functions-commons/dist/src/utils/documentdb";
+import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   ActivityResultFailure,
   BlobCreationFailure,
@@ -22,10 +22,10 @@ export function assertNever(_: never): never {
  * to cast an error to QueryFailure
  * @param err
  */
-export const toQueryFailure = (err: Error | QueryError): QueryFailure =>
+export const toQueryFailure = (err: Error | CosmosErrors): QueryFailure =>
   QueryFailure.encode({
     kind: "QUERY_FAILURE",
-    reason: err instanceof Error ? err.message : `QueryError: ${toString(err)}`
+    reason: err instanceof Error ? err.message : `CosmosError: ${toString(err)}`
   });
 
 /**
@@ -33,7 +33,7 @@ export const toQueryFailure = (err: Error | QueryError): QueryFailure =>
  * @param err
  */
 export const toDocumentDeleteFailure = (
-  err: Error | QueryError
+  err: Error | CosmosErrors
 ): DocumentDeleteFailure =>
   DocumentDeleteFailure.encode({
     kind: "DELETE_FAILURE",

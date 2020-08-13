@@ -1,8 +1,6 @@
-﻿import * as documentDbUtils from "io-functions-commons/dist/src/utils/documentdb";
+﻿import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
-
-import { documentClient } from "../utils/cosmosdb";
+import { cosmosdbClient } from "../utils/cosmosdb";
 
 import { createExtractUserDataActivityHandler } from "./handler";
 
@@ -16,8 +14,8 @@ import {
   MessageStatusModel
 } from "io-functions-commons/dist/src/models/message_status";
 import {
-  NOTIFICATION_COLLECTION_NAME
-  /* NotificationModel // we use the extended, local-defined model */
+  NOTIFICATION_COLLECTION_NAME,
+  NotificationModel
 } from "io-functions-commons/dist/src/models/notification";
 import {
   NOTIFICATION_STATUS_COLLECTION_NAME,
@@ -27,51 +25,29 @@ import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
-import { NotificationModel } from "./notification";
 
 const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
-
-const documentDbDatabaseUrl = documentDbUtils.getDatabaseUri(cosmosDbName);
+const database = cosmosdbClient.database(cosmosDbName);
 
 const messageModel = new MessageModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    MESSAGE_COLLECTION_NAME
-  ),
+  database.container(MESSAGE_COLLECTION_NAME),
   getRequiredStringEnv("MESSAGE_CONTAINER_NAME")
 );
 
 const messageStatusModel = new MessageStatusModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    MESSAGE_STATUS_COLLECTION_NAME
-  )
+  database.container(MESSAGE_STATUS_COLLECTION_NAME)
 );
 
 const notificationModel = new NotificationModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    NOTIFICATION_COLLECTION_NAME
-  )
+  database.container(NOTIFICATION_COLLECTION_NAME)
 );
 
 const notificationStatusModel = new NotificationStatusModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    NOTIFICATION_STATUS_COLLECTION_NAME
-  )
+  database.container(NOTIFICATION_STATUS_COLLECTION_NAME)
 );
 
 const profileModel = new ProfileModel(
-  documentClient,
-  documentDbUtils.getCollectionUri(
-    documentDbDatabaseUrl,
-    PROFILE_COLLECTION_NAME
-  )
+  database.container(PROFILE_COLLECTION_NAME)
 );
 
 const userDataBlobService = createBlobService(
