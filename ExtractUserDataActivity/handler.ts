@@ -200,13 +200,11 @@ export const getProfile = (
       Profile
     >(
       failure =>
-        fromEither(
-          left(
-            ActivityResultQueryFailure.encode({
-              kind: "QUERY_FAILURE",
-              reason: `${failure.kind}, ${getMessageFromCosmosErrors(failure)}`
-            })
-          )
+        fromLeft(
+          ActivityResultQueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            reason: `${failure.kind}, ${getMessageFromCosmosErrors(failure)}`
+          })
         ),
       maybeProfile =>
         fromEither<ActivityResultUserNotFound, Profile>(

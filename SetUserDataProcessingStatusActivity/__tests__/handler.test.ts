@@ -11,7 +11,7 @@ import {
   createSetUserDataProcessingStatusActivityHandler
 } from "../handler";
 
-import { fromEither } from "fp-ts/lib/TaskEither";
+import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessingModel } from "io-functions-commons/dist/src/models/user_data_processing";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
@@ -45,9 +45,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
   it("should handle a query error", async () => {
     const mockModel = ({
       createOrUpdateByNewOne: jest.fn(() =>
-        fromEither(
-          left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
-        )
+        fromLeft(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
     } as any) as UserDataProcessingModel;
 

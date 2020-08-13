@@ -1,11 +1,11 @@
 /* tslint:disable: no-any */
 
-import { left, right } from "fp-ts/lib/Either";
+import { right } from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
 
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
-import { fromEither } from "fp-ts/lib/TaskEither";
+import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Logo } from "../../generated/definitions/Logo";
 import { UpdateServiceLogoHandler } from "../handler";
@@ -40,8 +40,8 @@ describe("UpdateServiceLogoHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const mockServiceModel = {
       findOneByServiceId: jest.fn(() => {
-        return fromEither(
-          left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
+        return fromLeft(
+          toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" })
         );
       })
     };

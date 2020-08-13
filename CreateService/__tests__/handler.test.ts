@@ -6,7 +6,7 @@ import * as lolex from "lolex";
 
 import { left, right } from "fp-ts/lib/Either";
 
-import { fromEither } from "fp-ts/lib/TaskEither";
+import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   aNewService,
@@ -33,8 +33,8 @@ describe("CreateServiceHandler", () => {
   it("should return a query error if the service fails to be created", async () => {
     const mockServiceModel = {
       create: jest.fn(_ => {
-        return fromEither(
-          left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
+        return fromLeft(
+          toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" })
         );
       })
     };
