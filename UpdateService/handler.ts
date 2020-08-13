@@ -90,10 +90,9 @@ export function UpdateServiceHandler(
     const existingService = maybeService.value;
 
     const errorOrUpdatedService = await serviceModel
-      .upsert({
+      .update({
         ...existingService,
-        ...apiServiceToService(servicePayload),
-        kind: "INewService"
+        ...apiServiceToService(servicePayload)
       })
       .run();
 

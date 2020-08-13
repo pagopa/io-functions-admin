@@ -132,7 +132,7 @@ describe("UpdateServiceHandler", () => {
       findOneByServiceId: jest.fn(() => {
         return fromEither(right(some(aRetrievedService)));
       }),
-      upsert: leftErrorFn
+      update: leftErrorFn
     };
 
     const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
@@ -150,7 +150,7 @@ describe("UpdateServiceHandler", () => {
     expect(serviceModelMock.findOneByServiceId).toHaveBeenCalledWith(
       aRetrievedService.serviceId
     );
-    expect(serviceModelMock.upsert).toHaveBeenCalledTimes(1);
+    expect(serviceModelMock.update).toHaveBeenCalledTimes(1);
     expect(response.kind).toBe("IResponseErrorQuery");
   });
 
@@ -159,7 +159,7 @@ describe("UpdateServiceHandler", () => {
       findOneByServiceId: jest.fn(() => {
         return fromEither(right(some(aRetrievedService)));
       }),
-      upsert: jest.fn(() =>
+      update: jest.fn(() =>
         fromEither(
           right({
             ...aRetrievedService,
@@ -184,7 +184,7 @@ describe("UpdateServiceHandler", () => {
     expect(serviceModelMock.findOneByServiceId).toHaveBeenCalledWith(
       aRetrievedService.serviceId
     );
-    expect(serviceModelMock.upsert).toHaveBeenCalledTimes(1);
+    expect(serviceModelMock.update).toHaveBeenCalledTimes(1);
     expect(response.kind).toBe("IResponseSuccessJson");
     if (response.kind === "IResponseSuccessJson") {
       expect(response.value).toEqual({
@@ -199,7 +199,7 @@ describe("UpdateServiceHandler", () => {
       findOneByServiceId: jest.fn(() => {
         return fromEither(right(some(aRetrievedService)));
       }),
-      upsert: jest.fn(() =>
+      update: jest.fn(() =>
         fromEither(
           right({
             ...aRetrievedService,
