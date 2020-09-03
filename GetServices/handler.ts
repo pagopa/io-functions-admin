@@ -19,10 +19,14 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
+import { flatten } from "fp-ts/lib/Array";
 import { isLeft } from "fp-ts/lib/Either";
 import { collect, StrMap } from "fp-ts/lib/StrMap";
 import { tryCatch } from "fp-ts/lib/TaskEither";
-import { mapAsyncIterator } from "io-functions-commons/dist/src/utils/async";
+import {
+  asyncIteratorToArray,
+  mapAsyncIterator
+} from "io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   IResponseSuccessJson,
@@ -69,12 +73,22 @@ export function GetServicesHandler(
         }, {})
     );
 
-    return tryCatch(() => allServicesIterator.next(), toCosmosErrorResponse)
+    return tryCatch(
+      () => asyncIteratorToArray(allServicesIterator),
+      toCosmosErrorResponse
+    )
       .fold<IGetServicesHandlerResult>(
         error => ResponseErrorQuery("Cannot get services", error),
-        iteratorResults => {
+        results => {
+          // tslint:disable-next-line: no-inferred-empty-object-type
+          const reducedResults = results.reduce((prev, curr) => {
+            return {
+              ...prev,
+              ...curr
+            };
+          }, {});
           const items = collect(
-            new StrMap(iteratorResults.value),
+            new StrMap(reducedResults),
             (_____, v: ApiService) => v
           );
           // FIXME: make response iterable over results pages
