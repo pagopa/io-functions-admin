@@ -19,7 +19,6 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
-import { flatten } from "fp-ts/lib/Array";
 import { isLeft } from "fp-ts/lib/Either";
 import { collect, StrMap } from "fp-ts/lib/StrMap";
 import { tryCatch } from "fp-ts/lib/TaskEither";
