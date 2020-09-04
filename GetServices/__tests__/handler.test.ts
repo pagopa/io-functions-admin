@@ -42,7 +42,7 @@ describe("GetServices", () => {
 
     jest
       .spyOn(asyncI, "asyncIteratorToArray")
-      .mockImplementation(() => Promise.reject(new Error("Query Error")));
+      .mockImplementationOnce(() => Promise.reject(new Error("Query Error")));
     const mockServiceModel = {
       getCollectionIterator: symbolAsyncErrorIterator
     };
