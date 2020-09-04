@@ -32,11 +32,15 @@ import {
   ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
 import { Service as ApiService } from "../generated/definitions/Service";
+import { ServiceIdWithVersion } from "../generated/definitions/ServiceIdWithVersion";
 import { retrievedServiceToApiService } from "../utils/conversions";
 
 type IGetServicesHandlerResult =
   | IResponseErrorQuery
-  | IResponseSuccessJson<{ items: readonly ApiService[]; page_size: number }>;
+  | IResponseSuccessJson<{
+      items: readonly ServiceIdWithVersion[];
+      page_size: number;
+    }>;
 
 type IGetServicesHandler = (
   context: Context,
@@ -88,7 +92,7 @@ export function GetServicesHandler(
           }, {});
           const items = collect(
             new StrMap(reducedResults),
-            (_____, v: ApiService) => v
+            (_____, v: ApiService) => ({ id: _____, version: v.version })
           );
           // FIXME: make response iterable over results pages
           return ResponseSuccessJson({

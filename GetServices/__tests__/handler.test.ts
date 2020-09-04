@@ -95,8 +95,7 @@ describe("GetServices", () => {
       expect(response.value).toEqual({
         items: [
           {
-            ...aSeralizedService,
-            service_metadata: undefined,
+            id: aSeralizedService.service_id,
             version: 3
           }
         ],
