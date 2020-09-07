@@ -14,7 +14,7 @@ const serviceAsyncIterator = {
 const serviceIteratorErrorMock = {
   next: jest.fn(() =>
     Promise.resolve({
-      done: false,
+      done: true,
       value: jest.fn(() => [
         left(toCosmosErrorResponse(new Error("Query Error")))
       ])
@@ -40,6 +40,9 @@ describe("GetServices", () => {
       .spyOn(asyncI, "mapAsyncIterable")
       .mockImplementationOnce(symbolAsyncErrorIterator);
 
+    jest
+      .spyOn(asyncI, "asyncIteratorToArray")
+      .mockImplementationOnce(() => Promise.reject(new Error("Query Error")));
     const mockServiceModel = {
       getCollectionIterator: symbolAsyncErrorIterator
     };
@@ -95,8 +98,7 @@ describe("GetServices", () => {
       expect(response.value).toEqual({
         items: [
           {
-            ...aSeralizedService,
-            service_metadata: undefined,
+            id: aSeralizedService.service_id,
             version: 3
           }
         ],

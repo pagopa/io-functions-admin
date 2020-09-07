@@ -24,19 +24,22 @@ import { collect, StrMap } from "fp-ts/lib/StrMap";
 import { tryCatch } from "fp-ts/lib/TaskEither";
 import {
   asyncIteratorToArray,
-  mapAsyncIterator
+  flattenAsyncIterator
 } from "io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { NonNegativeInteger } from "italia-ts-commons/lib/numbers";
 import {
   IResponseSuccessJson,
   ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
-import { Service as ApiService } from "../generated/definitions/Service";
-import { retrievedServiceToApiService } from "../utils/conversions";
+import { ServiceIdWithVersion } from "../generated/definitions/ServiceIdWithVersion";
 
 type IGetServicesHandlerResult =
   | IResponseErrorQuery
-  | IResponseSuccessJson<{ items: readonly ApiService[]; page_size: number }>;
+  | IResponseSuccessJson<{
+      items: readonly ServiceIdWithVersion[];
+      page_size: number;
+    }>;
 
 type IGetServicesHandler = (
   context: Context,
@@ -50,45 +53,37 @@ export function GetServicesHandler(
     const allRetrievedServicesIterator = serviceModel
       .getCollectionIterator()
       [Symbol.asyncIterator]();
-    const allServicesIterator = mapAsyncIterator(
-      allRetrievedServicesIterator,
-      arr =>
-        // tslint:disable-next-line: no-inferred-empty-object-type
-        arr.reduce((prev, maybeCurr) => {
-          if (isLeft(maybeCurr)) {
-            return prev;
-          }
-          const curr = maybeCurr.value;
-          // keep only the latest version
-          const isNewer =
-            !prev[curr.serviceId] ||
-            curr.version > prev[curr.serviceId].version;
-          return {
-            ...prev,
-            ...(isNewer
-              ? { [curr.serviceId]: retrievedServiceToApiService(curr) }
-              : {})
-          };
-        }, {})
-    );
 
     return tryCatch(
-      () => asyncIteratorToArray(allServicesIterator),
+      () =>
+        asyncIteratorToArray(
+          flattenAsyncIterator(allRetrievedServicesIterator)
+        ),
       toCosmosErrorResponse
     )
       .fold<IGetServicesHandlerResult>(
         error => ResponseErrorQuery("Cannot get services", error),
         results => {
           // tslint:disable-next-line: no-inferred-empty-object-type
-          const reducedResults = results.reduce((prev, curr) => {
+          const reducedResults = results.reduce((prev, maybeCurr) => {
+            if (isLeft(maybeCurr)) {
+              return prev;
+            }
+            const curr = maybeCurr.value;
+            // keep only the latest version
+            const isNewer =
+              !prev[curr.serviceId] || curr.version > prev[curr.serviceId];
             return {
               ...prev,
-              ...curr
+              ...(isNewer ? { [curr.serviceId]: curr.version } : {})
             };
           }, {});
           const items = collect(
             new StrMap(reducedResults),
-            (_____, v: ApiService) => v
+            (serviceId, v: NonNegativeInteger) => ({
+              id: serviceId,
+              version: v
+            })
           );
           // FIXME: make response iterable over results pages
           return ResponseSuccessJson({

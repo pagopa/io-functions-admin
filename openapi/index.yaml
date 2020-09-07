@@ -225,7 +225,7 @@ paths:
   "/services/{service_id}/keys":
     get:
       summary: Gets the subscription keys for the Service identified by the provided service_id
-      operationId:  getSubscriptionKeys
+      operationId: getSubscriptionKeys
       parameters:
         - name: service_id
           in: path
@@ -247,7 +247,7 @@ paths:
           description: Internal server error
     put:
       summary: Regenerate a subscription key for the Service identified by the provided service_id
-      operationId:  RegenerateSubscriptionKeys
+      operationId: RegenerateSubscriptionKeys
       parameters:
         - name: service_id
           in: path
@@ -415,7 +415,7 @@ definitions:
       items:
         type: array
         items:
-          $ref: "#/definitions/Service"
+          $ref: "#/definitions/ServiceIdWithVersion"
       page_size:
         type: number
     required:
@@ -550,7 +550,7 @@ definitions:
       first_name:
         type: string
       last_name:
-         type: string
+        type: string
       name:
         type: string
       note:
@@ -657,6 +657,13 @@ definitions:
       - blocked
       - pending
       - deleted
+  ServiceIdWithVersion:
+    type: object
+    properties:
+      id:
+        type: string
+      version:
+        type: integer
 responses: {}
 parameters:
   SandboxFiscalCode:
