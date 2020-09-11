@@ -238,6 +238,11 @@ function* sendUserDataDeleteEmail(
   );
   return SendUserDataDeleteEmailActivityResultSuccess.decode(result).getOrElseL(
     _ => {
+      context.log.error(
+        `${logPrefix}|ERROR|SendUserDataDeleteEmailActivity fail|${readableReport(
+          _
+        )}`
+      );
       throw toActivityFailure(
         { kind: "SEND_USER_DELETE_EMAIL_ACTIVITY_RESULT" },
         "SetUserDataProcessingStatusActivity"
@@ -257,6 +262,9 @@ function* getProfile(
     })
   );
   return GetProfileActivityResultSuccess.decode(result).getOrElseL(_ => {
+    context.log.error(
+      `${logPrefix}|ERROR|GetProfileActivity fail|${readableReport(_)}`
+    );
     throw toActivityFailure(
       { kind: "GET_PROFILE_ACTIVITY_RESULT" },
       "GetProfileActivity"

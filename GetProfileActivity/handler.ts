@@ -8,7 +8,10 @@ import { fromEither, fromLeft, taskEither } from "fp-ts/lib/TaskEither";
 
 import { Context } from "@azure/functions";
 
-import { Profile, ProfileModel } from "io-functions-commons/dist/src/models/profile";
+import {
+  Profile,
+  ProfileModel
+} from "io-functions-commons/dist/src/models/profile";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
