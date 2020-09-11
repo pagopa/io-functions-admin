@@ -16,12 +16,21 @@ import {
   ActivityInput as DeleteUserDataActivityInput,
   ActivityResultSuccess as DeleteUserDataActivityResultSuccess
 } from "../DeleteUserDataActivity/types";
+import { EmailAddress } from "../generated/definitions/EmailAddress";
+import {
+  ActivityInput as GetProfileActivityInput,
+  ActivityResultSuccess as GetProfileActivityResultSuccess
+} from "../GetProfileActivity/handler";
 import {
   ActivityInput as GetUserDataProcessingStatusActivityInput,
   ActivityResult as GetUserDataProcessingStatusActivityResult,
   ActivityResultNotFoundFailure as GetUserDataProcessingStatusActivityResultNotFoundFailure,
   ActivityResultSuccess as GetUserDataProcessingStatusActivityResultSuccess
 } from "../GetUserDataProcessingActivity/handler";
+import {
+  ActivityInput as SendUserDataDeleteEmailActivityInput,
+  ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess
+} from "../SendUserDataDeleteEmailActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import {
   ActivityInput as SetUserSessionLockActivityInput,
@@ -215,6 +224,46 @@ function* deleteUserData(
   });
 }
 
+function* sendUserDataDeleteEmail(
+  context: IOrchestrationFunctionContext,
+  toAddress: EmailAddress,
+  fiscalCode: FiscalCode
+): Generator<Task> {
+  const result = yield context.df.callActivity(
+    "SendUserDataDeleteEmailActivity",
+    SendUserDataDeleteEmailActivityInput.encode({
+      fiscalCode,
+      toAddress
+    })
+  );
+  return SendUserDataDeleteEmailActivityResultSuccess.decode(result).getOrElseL(
+    _ => {
+      throw toActivityFailure(
+        { kind: "SEND_USER_DELETE_EMAIL_ACTIVITY_RESULT" },
+        "SetUserDataProcessingStatusActivity"
+      );
+    }
+  );
+}
+
+function* getProfile(
+  context: IOrchestrationFunctionContext,
+  fiscalCode: FiscalCode
+): Generator<Task> {
+  const result = yield context.df.callActivity(
+    "GetProfileActivity",
+    GetProfileActivityInput.encode({
+      fiscalCode
+    })
+  );
+  return GetProfileActivityResultSuccess.decode(result).getOrElseL(_ => {
+    throw toActivityFailure(
+      { kind: "GET_PROFILE_ACTIVITY_RESULT" },
+      "GetProfileActivity"
+    );
+  });
+}
+
 /**
  * Create a handler for the orchestrator
  *
@@ -312,8 +361,21 @@ export const createUserDataDeleteOrchestratorHandler = (
           yield waitForDownloadEvent;
         }
 
+        // we need user email to send email later
+        const profile: GetProfileActivityResultSuccess = yield* getProfile(
+          context,
+          currentUserDataProcessing.fiscalCode
+        );
+
         // backup&delete data
         yield* deleteUserData(context, currentUserDataProcessing);
+
+        // send confirm email
+        yield* sendUserDataDeleteEmail(
+          context,
+          profile.value.email,
+          profile.value.fiscalCode
+        );
 
         // set as closed
         yield* setUserDataProcessingStatus(
