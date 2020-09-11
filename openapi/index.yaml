@@ -589,42 +589,44 @@ definitions:
     required:
       - display_name
   Subscription:
-    type: object
-    properties:
-      allow_tracing:
-        type: boolean
-      created_date:
-        type: string
-        format: "date-time"
-      display_name:
-        type: string
-      end_date:
-        type: string
-        format: "date-time"
-      expiration_date:
-        type: string
-        format: "date-time"
-      id:
-        type: string
-      name:
-        type: string
-      notification_date:
-        type: string
-      owner_id:
-        type: string
-      scope:
-        type: string
-      start_date:
-        type: string
-        format: "date-time"
-      state:
-        $ref: "#/definitions/SubscriptionState"
-      state_comment:
-        type: string
-      type:
-        type: string
-    required:
-      - scope
+    allOf:
+      - $ref: "#/definitions/SubscriptionKeys"
+      - type: object
+        properties:
+          allow_tracing:
+            type: boolean
+          created_date:
+            type: string
+            format: "date-time"
+          display_name:
+            type: string
+          end_date:
+            type: string
+            format: "date-time"
+          expiration_date:
+            type: string
+            format: "date-time"
+          id:
+            type: string
+          name:
+            type: string
+          notification_date:
+            type: string
+          owner_id:
+            type: string
+          scope:
+            type: string
+          start_date:
+            type: string
+            format: "date-time"
+          state:
+            $ref: "#/definitions/SubscriptionState"
+          state_comment:
+            type: string
+          type:
+            type: string
+        required:
+          - scope
   SubscriptionState:
     type: string
     x-extensible-enum:
