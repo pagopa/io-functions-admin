@@ -19,7 +19,7 @@ import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generate
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { Day, Hour } from "italia-ts-commons/lib/units";
-import { aUserDataProcessing } from "../../__mocks__/mocks";
+import { aUserDataProcessing, aProfile } from "../../__mocks__/mocks";
 import { ActivityResultSuccess as DeleteUserDataActivityResultSuccess } from "../../DeleteUserDataActivity/types";
 import {
   ActivityResultNotFoundFailure as GetUserDataProcessingActivityResultNotFoundFailure,
@@ -29,6 +29,8 @@ import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSucce
 import { ActivityResultSuccess as SetUserSessionLockActivityResultSuccess } from "../../SetUserSessionLockActivity/handler";
 import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler";
 import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger";
+import { ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess } from "../../SendUserDataDeleteEmailActivity/handler";
+import { ActivityResultSuccess as GetProfileActivityResultSuccess } from "../../GetProfileActivity/handler";
 
 const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
   ...aUserDataProcessing,
@@ -80,6 +82,19 @@ const deleteUserDataActivity = jest.fn().mockImplementation(() =>
   })
 );
 
+const sendUserDataDeleteEmailActivity = jest.fn().mockImplementation(() =>
+  SendUserDataDeleteEmailActivityResultSuccess.encode({
+    kind: "SUCCESS"
+  })
+);
+
+const getProfileActivity = jest.fn().mockImplementation(() =>
+  GetProfileActivityResultSuccess.encode({
+    kind: "SUCCESS",
+    value: aProfile
+  })
+);
+
 // A mock implementation proxy for df.callActivity/df.df.callActivityWithRetry that routes each call to the correct mock implentation
 const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
   (name === "SetUserDataProcessingStatusActivity"
@@ -90,6 +105,10 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
     ? setUserSessionLockActivity
     : name === "DeleteUserDataActivity"
     ? deleteUserDataActivity
+    : name === "SendUserDataDeleteEmailActivity"
+    ? sendUserDataDeleteEmailActivity
+    : name === "GetProfileActivity"
+    ? getProfileActivity
     : jest.fn())(name, ...args);
 
 // I assign switchMockImplementation to both because
@@ -233,6 +252,10 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    // data has been deletes
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+    // the email has been sent
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
@@ -370,5 +393,26 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
     expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(3);
+  });
+
+  it("should send a confirmation email if the operation succeeded", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
+    );
+
+    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        toAddress: aProfile.email,
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      })
+    );
   });
 });
