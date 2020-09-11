@@ -38,6 +38,12 @@ they may be customized as needed.
 | USER_DATA_BACKUP_CONTAINER_NAME  | Name of the storage container in which user data is backuped before being permanently deleted    | string |
 | USER_DATA_DELETE_DELAY_DAYS      | How many days to wait when a user asks for cancellation before effectively delete her data       | number |
 | UserDataBackupStorageConnection  | Storage connection string for GDPR user data storage                                             | string |
+| MAIL_FROM                        | Address from which email are sent                                                                | string |
+| SENDGRID_API_KEY                 | If provided, SendGrid will be used                                                               | string |
+| MAILUP_USERNAME                  | If using MailUp, the username                                                                    | string |
+| MAILUP_SECRET                    | If using MailUp, the secret                                                                      | string |
+| MAILHOG_HOSTNAME                 | Required on development, the host name of the MailHog SMTP server                                | string |
+
 
 
 #### Feature flags
