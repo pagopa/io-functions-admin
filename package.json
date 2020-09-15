@@ -22,7 +22,9 @@
     "predeploy": "npm-run-all generate build dist:modules",
     "generate:definitions": "rimraf ./generated/definitions && shx mkdir -p ./generated/definitions && gen-api-models --api-spec ./openapi/index.yaml --out-dir ./generated/definitions",
     "generate:session-api": "rimraf ./generated/session-api && shx mkdir -p ./generated/session-api && gen-api-models --api-spec https://raw.githubusercontent.com/pagopa/io-backend/master/api_session.yaml --out-dir ./generated/session-api --request-types --response-decoders",
-    "generate": "npm-run-all generate:*"
+    "generate": "npm-run-all generate:*",
+    "snyk-protect": "snyk protect",
+    "prepare": "yarn run snyk-protect"
   },
   "description": "",
   "devDependencies": {
@@ -75,10 +77,12 @@
     "redis-clustr": "^1.7.0",
     "ulid": "^2.3.0",
     "winston": "^3.2.1",
-    "yaml": "^1.10.0"
+    "yaml": "^1.10.0",
+    "snyk": "^1.395.0"
   },
   "resolutions": {
     "handlebars": "~4.5.3",
     "fp-ts": "1.17.0"
-  }
+  },
+  "snyk": true
 }
