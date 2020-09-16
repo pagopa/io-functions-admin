@@ -24,7 +24,7 @@ import { MessageStatusDeletableModel } from "../utils/extensions/models/message_
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
-import { DataFailure, IBlobServiceInfo } from "./types";
+import { DataFailure, IBlobServiceInfo, QueryFailure } from "./types";
 import { saveDataToBlob } from "./utils";
 import { toDocumentDeleteFailure, toQueryFailure } from "./utils";
 
@@ -295,39 +295,36 @@ const backupAndDeleteAllNotificationsData = ({
   notificationModel: NotificationDeletableModel;
   notificationStatusModel: NotificationStatusDeletableModel;
   userDataBackup: IBlobServiceInfo;
-}) =>
-  notificationModel
-    .findNotificationForMessage(message.id)
-    .mapLeft(toQueryFailure)
-    .chain(maybeNotification =>
-      maybeNotification.foldL(
-        () =>
-          fromLeft(
-            toQueryFailure(
-              new Error(
-                `notificationModel.findNotificationForMessage| No notification found for messageId ${message.id}`
-              )
-            )
-          ),
+}): TaskEither<QueryFailure, true> =>
+  notificationModel.findNotificationForMessage(message.id).foldTaskEither(
+    failure =>
+      // There are cases in which a message has no notification.
+      // We just consider the notification to be deleted
+      failure.kind === "COSMOS_ERROR_RESPONSE" && failure.error.code === 404
+        ? taskEither.of(true)
+        : fromLeft(toQueryFailure(failure)),
+    maybeNotification =>
+      maybeNotification.fold(
+        // There are cases in which a message has no notification.
+        // We just consider the notification to be deleted
+        taskEither.of(true),
+        // For the found notification, we delete its statuses before deleting the notification itself
         notification =>
-          array
-            .sequence(taskEitherSeq)([
-              sequenceT(taskEitherSeq)(
-                backupAndDeleteNotificationStatus({
-                  notification,
-                  notificationStatusModel,
-                  userDataBackup
-                }),
-                backupAndDeleteNotification({
-                  notification,
-                  notificationModel,
-                  userDataBackup
-                })
-              )
-            ])
-            .mapLeft(e => toQueryFailure(new Error(e.reason)))
+          backupAndDeleteNotificationStatus({
+            notification,
+            notificationStatusModel,
+            userDataBackup
+          })
+            .chain(() =>
+              backupAndDeleteNotification({
+                notification,
+                notificationModel,
+                userDataBackup
+              })
+            )
+            .bimap(e => toQueryFailure(new Error(e.reason)), () => true)
       )
-    );
+  );
 
 /**
  * For a given user, search all its messages and backup&delete each one including its own child models (messagestatus, notifications, message content)
