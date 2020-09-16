@@ -182,7 +182,9 @@ export function subscriptionContractToApiSubscription(
       display_name: subscription.displayName,
       end_date: subscription.endDate,
       expiration_date: subscription.expirationDate,
-      id: subscription.id,
+      id: subscription.id
+        ? subscription.id.substr(subscription.id.lastIndexOf("/") + 1)
+        : subscription.id,
       name: subscription.name,
       notification_date: subscription.notificationDate,
       owner_id: subscription.ownerId,
