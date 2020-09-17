@@ -19,7 +19,7 @@ import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generate
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { Day, Hour } from "italia-ts-commons/lib/units";
-import { aUserDataProcessing } from "../../__mocks__/mocks";
+import { aRetrievedProfile, aUserDataProcessing } from "../../__mocks__/mocks";
 import { ActivityResultSuccess as DeleteUserDataActivityResultSuccess } from "../../DeleteUserDataActivity/types";
 import {
   ActivityResultNotFoundFailure as GetUserDataProcessingActivityResultNotFoundFailure,
@@ -28,6 +28,7 @@ import {
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import { ActivityResultSuccess as SetUserSessionLockActivityResultSuccess } from "../../SetUserSessionLockActivity/handler";
 import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler";
+import { ActivityResultSuccess as GetProfileActivityResultSuccess } from "../../GetProfileActivity/handler";
 import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger";
 
 const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
@@ -80,6 +81,15 @@ const deleteUserDataActivity = jest.fn().mockImplementation(() =>
   })
 );
 
+const getProfile = jest.fn().mockImplementation(() =>
+  GetProfileActivityResultSuccess.encode({
+    kind: "SUCCESS",
+    value: aRetrievedProfile
+  })
+);
+
+const updateSubscriptionFeed = jest.fn().mockImplementation(() => "SUCCESS");
+
 // A mock implementation proxy for df.callActivity/df.df.callActivityWithRetry that routes each call to the correct mock implentation
 const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
   (name === "SetUserDataProcessingStatusActivity"
@@ -90,6 +100,10 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
     ? setUserSessionLockActivity
     : name === "DeleteUserDataActivity"
     ? deleteUserDataActivity
+    : name === "UpdateSubscriptionsFeedActivity"
+    ? updateSubscriptionFeed
+    : name === "GetProfileActivity"
+    ? getProfile
     : jest.fn())(name, ...args);
 
 // I assign switchMockImplementation to both because
@@ -367,6 +381,8 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         waitForDownloadInterval
       )(context)
     );
+
+    console.log("-->", result);
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
     expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(3);

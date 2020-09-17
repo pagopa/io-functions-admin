@@ -1,13 +1,14 @@
+import * as df from "durable-functions";
 import {
   IOrchestrationFunctionContext,
   Task,
   TaskSet
 } from "durable-functions/lib/src/classes";
-import * as df from "durable-functions";
 import { isLeft, toError } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { RetrievedProfile } from "io-functions-commons/dist/src/models/profile";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
@@ -17,6 +18,10 @@ import {
   ActivityInput as DeleteUserDataActivityInput,
   ActivityResultSuccess as DeleteUserDataActivityResultSuccess
 } from "../DeleteUserDataActivity/types";
+import {
+  ActivityInput as GetProfileActivityInput,
+  ActivityResultSuccess as GetProfileActivityResultSuccess
+} from "../GetProfileActivity/handler";
 import {
   ActivityInput as GetUserDataProcessingStatusActivityInput,
   ActivityResult as GetUserDataProcessingStatusActivityResult,
@@ -28,21 +33,13 @@ import {
   ActivityInput as SetUserSessionLockActivityInput,
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
-import {
-  ActivityInput as GetProfileActivityInput,
-  ActivityResultSuccess as GetProfileActivityResultSuccess
-} from "../GetProfileActivity/handler";
-import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
 import { Input as UpdateServiceSubscriptionFeedActivityInput } from "../UpdateSubscriptionsFeedActivity/index";
+import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
 import {
   trackUserDataDeleteEvent,
   trackUserDataDeleteException
 } from "../utils/appinsightsEvents";
 import { ABORT_EVENT, addDays, addHours } from "./utils";
-import {
-  Profile,
-  RetrievedProfile
-} from "io-functions-commons/dist/src/models/profile";
 
 const logPrefix = "UserDataDeleteOrchestrator";
 
@@ -251,7 +248,7 @@ function* getProfile(
 function* updateSubscriptionFeed(
   context: IOrchestrationFunctionContext,
   { fiscalCode, version }: RetrievedProfile
-) {
+): Generator<Task, "SUCCESS"> {
   const input = UpdateServiceSubscriptionFeedActivityInput.encode({
     fiscalCode,
     operation: "UNSUBSCRIBED",
