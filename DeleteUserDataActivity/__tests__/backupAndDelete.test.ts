@@ -152,4 +152,40 @@ describe(`backupAndDeleteAllUserData`, () => {
 
     expect(result.isRight()).toBe(true);
   });
+
+  it("should not stop if a notification is not found for a message (none)", async () => {
+    mockFindNotificationForMessage.mockImplementationOnce(() =>
+      taskEither.of(none)
+    );
+    const result = await backupAndDeleteAllUserData({
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      notificationModel,
+      notificationStatusModel,
+      profileModel,
+      userDataBackup,
+      fiscalCode: aFiscalCode
+    }).run();
+
+    expect(result.isRight()).toBe(true);
+  });
+
+  it("should stop if there is an error while looking for a notification (404)", async () => {
+    mockFindNotificationForMessage.mockImplementationOnce(() =>
+      fromLeft({ kind: "COSMOS_ERROR_RESPONSE", error: { code: 404 } })
+    );
+    const result = await backupAndDeleteAllUserData({
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      notificationModel,
+      notificationStatusModel,
+      profileModel,
+      userDataBackup,
+      fiscalCode: aFiscalCode
+    }).run();
+
+    expect(result.isRight()).toBe(true);
+  });
 });

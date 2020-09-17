@@ -177,22 +177,12 @@ export function subscriptionContractToApiSubscription(
 ): Either<Error, ApiSubscription> {
   return Subscription.decode(
     removeNullProperties({
-      allow_tracing: subscription.allowTracing,
-      created_date: subscription.createdDate,
-      display_name: subscription.displayName,
-      end_date: subscription.endDate,
-      expiration_date: subscription.expirationDate,
-      id: subscription.id,
-      name: subscription.name,
-      notification_date: subscription.notificationDate,
-      owner_id: subscription.ownerId,
+      id: subscription.id
+        ? subscription.id.substr(subscription.id.lastIndexOf("/") + 1)
+        : subscription.id,
       primary_key: subscription.primaryKey,
       scope: subscription.scope,
-      secondary_key: subscription.secondaryKey,
-      start_date: subscription.startDate,
-      state: subscription.state,
-      state_comment: subscription.stateComment,
-      type: subscription.type
+      secondary_key: subscription.secondaryKey
     })
   ).mapLeft(errorsToError);
 }
