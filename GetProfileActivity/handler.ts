@@ -1,5 +1,5 @@
 /**
- * Updates the status of a Profile record
+ * Get a profile record
  */
 
 import * as t from "io-ts";
@@ -9,8 +9,8 @@ import { fromEither, fromLeft, taskEither } from "fp-ts/lib/TaskEither";
 import { Context } from "@azure/functions";
 
 import {
-  Profile,
-  ProfileModel
+  ProfileModel,
+  RetrievedProfile
 } from "io-functions-commons/dist/src/models/profile";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
@@ -25,7 +25,7 @@ export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 // Activity result
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS"),
-  value: Profile
+  value: RetrievedProfile
 });
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
@@ -121,7 +121,7 @@ export const createGetProfileActivityHandler = (profileModel: ProfileModel) => (
     .chain(({ fiscalCode }) =>
       profileModel
         .findLastVersionByModelId([fiscalCode])
-        .foldTaskEither<ActivityResultFailure, Profile>(
+        .foldTaskEither<ActivityResultFailure, RetrievedProfile>(
           error =>
             fromLeft(
               ActivityResultQueryFailure.encode({
