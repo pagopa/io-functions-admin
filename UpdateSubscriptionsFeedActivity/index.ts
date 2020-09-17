@@ -21,10 +21,6 @@ const deleteEntity = deleteTableEntity(tableService, subscriptionsFeedTable);
 
 const eg = TableUtilities.entityGenerator;
 
-// When the function starts, attempt to create the table if it does not exist
-// Note that we cannot log anything just yet since we don't have a Context
-tableService.createTableIfNotExists(subscriptionsFeedTable, () => 0);
-
 /**
  * Updates the subscrption status of a user.
  *
