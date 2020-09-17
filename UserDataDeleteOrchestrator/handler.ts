@@ -39,7 +39,7 @@ import {
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
 
-import { Input as UpdateServiceSubscriptionFeedActivityInput } from "../UpdateSubscriptionsFeedActivity/index";
+import { ActivityInput as UpdateServiceSubscriptionFeedActivityInput } from "../UpdateSubscriptionsFeedActivity/types";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
 import {
   trackUserDataDeleteEvent,
