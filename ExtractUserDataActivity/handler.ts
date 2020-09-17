@@ -21,6 +21,7 @@ import {
   fromEither,
   TaskEither,
   taskEither,
+  taskEitherSeq,
   taskify,
   tryCatch
 } from "fp-ts/lib/TaskEither";
@@ -54,6 +55,7 @@ import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { getEncryptedZipStream } from "../utils/zip";
 
+import { Some } from "fp-ts/lib/Option";
 import { fromLeft } from "fp-ts/lib/TaskEither";
 import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
@@ -292,32 +294,27 @@ export const findNotificationsForAllMessages = (
   ActivityResultQueryFailure,
   ReadonlyArray<RetrievedNotification>
 > =>
-  array.sequence(taskEither)(
-    messages.map(m =>
-      notificationModel.findNotificationForMessage(m.id).foldTaskEither(
-        e =>
-          fromLeft(
-            ActivityResultQueryFailure.encode({
-              kind: "QUERY_FAILURE",
-              reason: `notificationModel.findNotificationForMessage| ${
-                e.kind
-              }, ${getMessageFromCosmosErrors(e)}`
-            })
-          ),
-        maybeNotification =>
-          maybeNotification.foldL(
-            () =>
-              fromLeft(
-                ActivityResultQueryFailure.encode({
-                  kind: "QUERY_FAILURE",
-                  reason: `notificationModel.findNotificationForMessage| No notifications found for messageId ${m.id}`
-                })
-              ),
-            notification => fromEither(right(notification))
-          )
+  array
+    .sequence(taskEitherSeq)(
+      messages.map(m =>
+        notificationModel.findNotificationForMessage(m.id).mapLeft(e =>
+          ActivityResultQueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            reason: `notificationModel.findNotificationForMessage| ${
+              e.kind
+            }, ${getMessageFromCosmosErrors(e)}`
+          })
+        )
       )
     )
-  );
+    .map(arrayOfMabeNotifications =>
+      arrayOfMabeNotifications
+        // There are cases in which a message has no notification.
+        // We just filter none elements
+        .filter((x): x is Some<RetrievedNotification> => x.isSome())
+        // unwrap values
+        .map(x => x.value)
+    );
 
 export const findAllNotificationStatuses = (
   notificationStatusModel: NotificationStatusModel,
