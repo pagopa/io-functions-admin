@@ -1,19 +1,15 @@
 ﻿import * as crypto from "crypto";
 
-import * as t from "io-ts";
-
 import { AzureFunction, Context } from "@azure/functions";
 import { createTableService, TableUtilities } from "azure-storage";
 
 import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
 
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 
-import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
-
 import { isNone } from "fp-ts/lib/Option";
 import { deleteTableEntity, insertTableEntity } from "../utils/storage";
+import { ActivityInput, ActivityResult } from "./types";
 
 const storageConnectionString = getRequiredStringEnv("QueueStorageConnection");
 const tableService = createTableService(storageConnectionString);
@@ -24,37 +20,6 @@ const insertEntity = insertTableEntity(tableService, subscriptionsFeedTable);
 const deleteEntity = deleteTableEntity(tableService, subscriptionsFeedTable);
 
 const eg = TableUtilities.entityGenerator;
-
-/**
- * Input data for this activity function, we need information about the kind
- * of subscription event and the affected user profile.
- */
-export const Input = t.intersection([
-  t.interface({
-    // fiscal code of the user affected by this update
-    fiscalCode: FiscalCode,
-    // whether the service has been subscribed or unsubscribed
-    operation: t.union([t.literal("SUBSCRIBED"), t.literal("UNSUBSCRIBED")]),
-    // the time (millis epoch) of the update
-    updatedAt: t.number,
-    // updated version of the profile
-    version: t.number
-  }),
-  t.union([
-    t.interface({
-      // a profile subscription event
-      subscriptionKind: t.literal("PROFILE")
-    }),
-    t.interface({
-      // the updated service
-      serviceId: ServiceId,
-      // a service subscription event
-      subscriptionKind: t.literal("SERVICE")
-    })
-  ])
-]);
-
-export type Input = t.TypeOf<typeof Input>;
 
 // When the function starts, attempt to create the table if it does not exist
 // Note that we cannot log anything just yet since we don't have a Context
@@ -132,8 +97,8 @@ async function updateSubscriptionStatus(
 export const index: AzureFunction = async (
   context: Context,
   rawInput: unknown
-): Promise<string> => {
-  const decodedInputOrError = Input.decode(rawInput);
+): Promise<ActivityResult> => {
+  const decodedInputOrError = ActivityInput.decode(rawInput);
   if (decodedInputOrError.isLeft()) {
     context.log.error(
       `UpdateServiceSubscriptionFeedActivity|Cannot parse input|ERROR=${readableReport(
