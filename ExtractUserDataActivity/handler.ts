@@ -8,7 +8,7 @@ import * as stream from "stream";
 import { DeferredPromise } from "italia-ts-commons/lib/promises";
 
 import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
-import { array, flatten, rights } from "fp-ts/lib/Array";
+import { array, catOptions, flatten, rights } from "fp-ts/lib/Array";
 import {
   Either,
   fromOption,
@@ -55,7 +55,6 @@ import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { getEncryptedZipStream } from "../utils/zip";
 
-import { Some } from "fp-ts/lib/Option";
 import { fromLeft } from "fp-ts/lib/TaskEither";
 import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
@@ -296,24 +295,20 @@ export const findNotificationsForAllMessages = (
 > =>
   array
     .sequence(taskEitherSeq)(
-      messages.map(m =>
-        notificationModel.findNotificationForMessage(m.id).mapLeft(e =>
-          ActivityResultQueryFailure.encode({
-            kind: "QUERY_FAILURE",
-            reason: `notificationModel.findNotificationForMessage| ${
-              e.kind
-            }, ${getMessageFromCosmosErrors(e)}`
-          })
-        )
-      )
+      messages.map(m => notificationModel.findNotificationForMessage(m.id))
     )
-    .map(arrayOfMabeNotifications =>
-      arrayOfMabeNotifications
-        // There are cases in which a message has no notification.
-        // We just filter none elements
-        .filter((x): x is Some<RetrievedNotification> => x.isSome())
-        // unwrap values
-        .map(x => x.value)
+
+    .bimap(
+      e =>
+        ActivityResultQueryFailure.encode({
+          kind: "QUERY_FAILURE",
+          reason: `notificationModel.findNotificationForMessage| ${
+            e.kind
+          }, ${getMessageFromCosmosErrors(e)}`
+        }),
+      // There are cases in which a message has no notification and that's fine
+      // We just filter "none" elements
+      catOptions
     );
 
 export const findAllNotificationStatuses = (
