@@ -32,9 +32,9 @@ import {
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import { ActivityResultSuccess as SetUserSessionLockActivityResultSuccess } from "../../SetUserSessionLockActivity/handler";
 import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler";
+import { ActivityResultSuccess as GetProfileActivityResultSuccess } from "../../GetProfileActivity/handler";
 import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger";
 import { ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess } from "../../SendUserDataDeleteEmailActivity/handler";
-import { ActivityResultSuccess as GetProfileActivityResultSuccess } from "../../GetProfileActivity/handler";
 
 const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
   ...aUserDataProcessing,
@@ -99,6 +99,8 @@ const getProfileActivity = jest.fn().mockImplementation(() =>
   })
 );
 
+const updateSubscriptionFeed = jest.fn().mockImplementation(() => "SUCCESS");
+
 // A mock implementation proxy for df.callActivity/df.df.callActivityWithRetry that routes each call to the correct mock implentation
 const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
   (name === "SetUserDataProcessingStatusActivity"
@@ -113,6 +115,8 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
     ? sendUserDataDeleteEmailActivity
     : name === "GetProfileActivity"
     ? getProfileActivity
+    : name === "UpdateSubscriptionsFeedActivity"
+    ? updateSubscriptionFeed
     : jest.fn())(name, ...args);
 
 // I assign switchMockImplementation to both because
@@ -394,6 +398,8 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         waitForDownloadInterval
       )(context)
     );
+
+    console.log("-->", result);
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
     expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(3);
