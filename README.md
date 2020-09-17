@@ -38,6 +38,8 @@ they may be customized as needed.
 | USER_DATA_BACKUP_CONTAINER_NAME  | Name of the storage container in which user data is backuped before being permanently deleted    | string |
 | USER_DATA_DELETE_DELAY_DAYS      | How many days to wait when a user asks for cancellation before effectively delete her data       | number |
 | UserDataBackupStorageConnection  | Storage connection string for GDPR user data storage                                             | string |
+| QueueStorageConnection           | Storage connection string for subscription feed                                                  | string |
+| SUBSCRIPTIONS_FEED_TABLE         | Table name for the Subscriptions Feed in the storage                                             | string |  
 
 
 #### Feature flags
