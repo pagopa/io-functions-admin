@@ -399,22 +399,18 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    console.log("-->", result);
-
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
     expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(3);
   });
 
   it("should send a confirmation email if the operation succeeded", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
-
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
         waitForDownloadInterval
       )(context)
     );
-
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
     expect(deleteUserDataActivity).toHaveBeenCalled();
     expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledWith(
@@ -464,5 +460,22 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
     expect(deleteUserDataActivity).toHaveBeenCalled();
     expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+  });
+  it("should set processing ad FAILED if subscription feed fails to update", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+    updateSubscriptionFeed.mockImplementationOnce(() => "FAILURE");
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
+    );
+    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.FAILED
+      })
+    );
   });
 });
