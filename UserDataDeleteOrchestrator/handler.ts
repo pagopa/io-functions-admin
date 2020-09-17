@@ -3,6 +3,7 @@ import {
   Task,
   TaskSet
 } from "durable-functions/lib/src/classes";
+import * as df from "durable-functions";
 import { isLeft, toError } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
@@ -27,12 +28,21 @@ import {
   ActivityInput as SetUserSessionLockActivityInput,
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
+import {
+  ActivityInput as GetProfileActivityInput,
+  ActivityResultSuccess as GetProfileActivityResultSuccess
+} from "../GetProfileActivity/handler";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
+import { Input as UpdateServiceSubscriptionFeedActivityInput } from "../UpdateSubscriptionsFeedActivity/index";
 import {
   trackUserDataDeleteEvent,
   trackUserDataDeleteException
 } from "../utils/appinsightsEvents";
 import { ABORT_EVENT, addDays, addHours } from "./utils";
+import {
+  Profile,
+  RetrievedProfile
+} from "io-functions-commons/dist/src/models/profile";
 
 const logPrefix = "UserDataDeleteOrchestrator";
 
@@ -215,6 +225,58 @@ function* deleteUserData(
   });
 }
 
+function* getProfile(
+  context: IOrchestrationFunctionContext,
+  fiscalCode: FiscalCode
+): Generator<Task, RetrievedProfile> {
+  const result = yield context.df.callActivity(
+    "GetProfileActivity",
+    GetProfileActivityInput.encode({
+      fiscalCode
+    })
+  );
+  return GetProfileActivityResultSuccess.decode(result).getOrElseL(_ => {
+    context.log.error(
+      `${logPrefix}|ERROR|GetProfileActivity fail|${readableReport(
+        _
+      )}|result=${JSON.stringify(result)}`
+    );
+    throw toActivityFailure(
+      { kind: "GET_PROFILE_ACTIVITY_RESULT" },
+      "GetProfileActivity"
+    );
+  }).value;
+}
+
+function* updateSubscriptionFeed(
+  context: IOrchestrationFunctionContext,
+  { fiscalCode, version }: RetrievedProfile
+) {
+  const input = UpdateServiceSubscriptionFeedActivityInput.encode({
+    fiscalCode,
+    operation: "UNSUBSCRIBED",
+    subscriptionKind: "PROFILE",
+    updatedAt: context.df.currentUtcDateTime.getTime(),
+    version
+  });
+  const retryOptions = new df.RetryOptions(5000, 10);
+  const result = yield context.df.callActivityWithRetry(
+    "UpdateSubscriptionsFeedActivity",
+    retryOptions,
+    input
+  );
+  if (result === "FAILURE") {
+    context.log.error(
+      `${logPrefix}|ERROR|UpdateSubscriptionsFeedActivity fail`
+    );
+    throw toActivityFailure(
+      { kind: "UPDATE_SUBSCRIPTIONS_FEED" },
+      "UpdateSubscriptionsFeedActivity"
+    );
+  }
+  return "SUCCESS";
+}
+
 /**
  * Create a handler for the orchestrator
  *
@@ -312,8 +374,17 @@ export const createUserDataDeleteOrchestratorHandler = (
           yield waitForDownloadEvent;
         }
 
+        // retrieve user profile
+        const profile = yield* getProfile(
+          context,
+          currentUserDataProcessing.fiscalCode
+        );
+
         // backup&delete data
         yield* deleteUserData(context, currentUserDataProcessing);
+
+        // update subscription feed
+        yield* updateSubscriptionFeed(context, profile);
 
         // set as closed
         yield* setUserDataProcessingStatus(
