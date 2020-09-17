@@ -1,5 +1,5 @@
 /**
- * Updates the status of a Profile record
+ * Get a Profile record
  */
 
 import * as t from "io-ts";
