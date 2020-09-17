@@ -1,5 +1,5 @@
 /**
- * Get a profile record
+ * Get a Profile record
  */
 
 import * as t from "io-ts";
