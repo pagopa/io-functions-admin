@@ -19,7 +19,11 @@ import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generate
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { Day, Hour } from "italia-ts-commons/lib/units";
-import { aUserDataProcessing, aProfile } from "../../__mocks__/mocks";
+import {
+  aUserDataProcessing,
+  aProfile,
+  aRetrievedProfile
+} from "../../__mocks__/mocks";
 import { ActivityResultSuccess as DeleteUserDataActivityResultSuccess } from "../../DeleteUserDataActivity/types";
 import {
   ActivityResultNotFoundFailure as GetUserDataProcessingActivityResultNotFoundFailure,
@@ -91,7 +95,7 @@ const sendUserDataDeleteEmailActivity = jest.fn().mockImplementation(() =>
 const getProfileActivity = jest.fn().mockImplementation(() =>
   GetProfileActivityResultSuccess.encode({
     kind: "SUCCESS",
-    value: aProfile
+    value: aRetrievedProfile
   })
 );
 
@@ -414,5 +418,45 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         fiscalCode: aProcessableUserDataDelete.fiscalCode
       })
     );
+  });
+
+  it("should not send a confirmation email if the email is not present", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+    getProfileActivity.mockImplementationOnce(() =>
+      GetProfileActivityResultSuccess.encode({
+        kind: "SUCCESS",
+        value: { ...aRetrievedProfile, email: undefined }
+      })
+    );
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
+    );
+
+    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+  });
+
+  it("should not send a confirmation email if the email is not enabled", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+    getProfileActivity.mockImplementationOnce(() =>
+      GetProfileActivityResultSuccess.encode({
+        kind: "SUCCESS",
+        value: { ...aRetrievedProfile, isEmailEnabled: false }
+      })
+    );
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
+    );
+
+    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
   });
 });

@@ -3,7 +3,7 @@
 import { right } from "fp-ts/lib/Either";
 
 import { context as contextMock } from "../../__mocks__/durable-functions";
-import { aFiscalCode, aUserDataProcessing } from "../../__mocks__/mocks";
+import { aFiscalCode, aRetrievedProfile } from "../../__mocks__/mocks";
 
 import {
   ActivityInput,
@@ -16,17 +16,14 @@ import {
 
 import { none, some } from "fp-ts/lib/Option";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
-import { UserDataProcessingModel } from "io-functions-commons/dist/src/models/user_data_processing";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { ProfileModel } from "io-functions-commons/dist/src/models/profile";
-
-const aChoice = aUserDataProcessing.choice;
 
 describe("GetProfileActivityHandler", () => {
   it("should handle a result", async () => {
     const mockModel = ({
       findLastVersionByModelId: jest.fn(() =>
-        fromEither(right(some(aUserDataProcessing)))
+        fromEither(right(some(aRetrievedProfile)))
       )
     } as any) as ProfileModel;
 

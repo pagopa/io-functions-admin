@@ -7,6 +7,7 @@ import { isLeft, toError } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { RetrievedProfile } from "io-functions-commons/dist/src/models/profile";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
@@ -254,7 +255,7 @@ function* sendUserDataDeleteEmail(
 function* getProfile(
   context: IOrchestrationFunctionContext,
   fiscalCode: FiscalCode
-): Generator<Task> {
+): Generator<Task, RetrievedProfile> {
   const result = yield context.df.callActivity(
     "GetProfileActivity",
     GetProfileActivityInput.encode({
@@ -269,7 +270,7 @@ function* getProfile(
       { kind: "GET_PROFILE_ACTIVITY_RESULT" },
       "GetProfileActivity"
     );
-  });
+  }).value;
 }
 
 /**
@@ -370,7 +371,7 @@ export const createUserDataDeleteOrchestratorHandler = (
         }
 
         // we need user email to send email later
-        const profile: GetProfileActivityResultSuccess = yield* getProfile(
+        const profile = yield* getProfile(
           context,
           currentUserDataProcessing.fiscalCode
         );
@@ -378,12 +379,18 @@ export const createUserDataDeleteOrchestratorHandler = (
         // backup&delete data
         yield* deleteUserData(context, currentUserDataProcessing);
 
-        // send confirm email
-        yield* sendUserDataDeleteEmail(
-          context,
-          profile.value.email,
-          profile.value.fiscalCode
-        );
+        if (
+          profile.email &&
+          profile.isEmailValidated &&
+          profile.isEmailEnabled
+        ) {
+          // send confirm email
+          yield* sendUserDataDeleteEmail(
+            context,
+            profile.email,
+            profile.fiscalCode
+          );
+        }
 
         // set as closed
         yield* setUserDataProcessingStatus(
