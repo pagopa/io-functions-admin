@@ -28,6 +28,10 @@ const azureApimConfig = {
   subscriptionId: getRequiredStringEnv("AZURE_SUBSCRIPTION_ID")
 };
 
+const adb2cExtensionAppClientId = getRequiredStringEnv(
+  "ADB2C_EXTENSION_APP_CLIENT_ID"
+);
+
 // tslint:disable-next-line: no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
@@ -42,7 +46,12 @@ secureExpressApp(app);
 // Add express route
 app.get(
   "/adm/users/:email",
-  GetUser(adb2cCreds, servicePrincipalCreds, azureApimConfig)
+  GetUser(
+    adb2cCreds,
+    servicePrincipalCreds,
+    azureApimConfig,
+    adb2cExtensionAppClientId
+  )
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
