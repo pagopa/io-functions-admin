@@ -1,9 +1,7 @@
 import { Context } from "@azure/functions";
-import { GraphRbacManagementClient } from "@azure/graph";
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import * as express from "express";
 import { toError } from "fp-ts/lib/Either";
-import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { fromEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
