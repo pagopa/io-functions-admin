@@ -7,6 +7,7 @@ import {
 import { GraphRbacManagementClient } from "@azure/graph";
 import { isRight, left, right } from "fp-ts/lib/Either";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { UserInfo } from "../../generated/definitions/UserInfo";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
@@ -83,6 +84,8 @@ spyOnGetAdb2cClient.mockImplementation(() =>
 const mockLog = jest.fn();
 const mockedContext = { log: { error: mockLog } };
 
+const fakeAdb2cExtensionAppClientId = "extension-client-id" as NonEmptyString;
+
 // tslint:disable-next-line:no-big-function
 describe("GetUser", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
@@ -93,7 +96,8 @@ describe("GetUser", () => {
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -112,7 +116,8 @@ describe("GetUser", () => {
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -129,7 +134,8 @@ describe("GetUser", () => {
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -148,7 +154,8 @@ describe("GetUser", () => {
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -171,7 +178,8 @@ describe("GetUser", () => {
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -194,7 +202,8 @@ describe("GetUser", () => {
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -217,7 +226,8 @@ describe("GetUser", () => {
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -240,7 +250,8 @@ describe("GetUser", () => {
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -340,7 +351,8 @@ describe("GetUser", () => {
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
