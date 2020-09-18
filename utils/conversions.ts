@@ -14,6 +14,7 @@ import {
 } from "io-functions-commons/dist/src/models/service";
 import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
 import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { toApiServiceMetadata as toServiceMetadata } from "io-functions-commons/dist/src/utils/service_metadata";
 import { Errors } from "io-ts";
 import { errorsToReadableMessages } from "italia-ts-commons/lib/reporters";
 import { CIDR, EmailString, FiscalCode } from "italia-ts-commons/lib/strings";
@@ -44,12 +45,15 @@ export function apiServiceToService(service: ApiService): Service {
       address: service.service_metadata.address,
       appAndroid: service.service_metadata.app_android,
       appIos: service.service_metadata.app_ios,
+      cta: service.service_metadata.cta,
       description: service.service_metadata.description,
       email: service.service_metadata.email,
       pec: service.service_metadata.pec,
       phone: service.service_metadata.phone,
       privacyUrl: service.service_metadata.privacy_url,
       scope: service.service_metadata.scope,
+      supportUrl: service.service_metadata.support_url,
+      tokenName: service.service_metadata.token_name,
       tosUrl: service.service_metadata.tos_url,
       webUrl: service.service_metadata.web_url
     },
@@ -62,19 +66,7 @@ export function toApiServiceMetadata(
   service: RetrievedService
 ): ApiServiceMetadata {
   return service.serviceMetadata
-    ? {
-        address: service.serviceMetadata.address,
-        app_android: service.serviceMetadata.appAndroid,
-        app_ios: service.serviceMetadata.appIos,
-        description: service.serviceMetadata.description,
-        email: service.serviceMetadata.email,
-        pec: service.serviceMetadata.pec,
-        phone: service.serviceMetadata.phone,
-        privacy_url: service.serviceMetadata.privacyUrl,
-        scope: service.serviceMetadata.scope,
-        tos_url: service.serviceMetadata.tosUrl,
-        web_url: service.serviceMetadata.webUrl
-      }
+    ? toServiceMetadata(service.serviceMetadata)
     : undefined;
 }
 
