@@ -22,7 +22,7 @@ import {
 
 import archiver = require("archiver");
 import { BlobService } from "azure-storage";
-import { fromEither } from "fp-ts/lib/TaskEither";
+import { fromEither, taskEither } from "fp-ts/lib/TaskEither";
 import { MessageModel } from "io-functions-commons/dist/src/models/message";
 import { MessageStatusModel } from "io-functions-commons/dist/src/models/message_status";
 import {
@@ -41,6 +41,7 @@ import {
   aRetrievedNotification
 } from "../../__mocks__/mocks";
 import { AllUserData } from "../../utils/userData";
+import { none } from "fp-ts/lib/Option";
 
 const anotherRetrievedNotification: RetrievedNotification = {
   ...aRetrievedNotification,
@@ -100,9 +101,12 @@ jest
     Promise.resolve([[right(aRetrievedMessageWithoutContent)]])
   );
 
+const mockGetContentFromBlob = jest.fn(() =>
+  taskEither.of(some(aMessageContent))
+);
 const messageModelMock = ({
   findMessages: jest.fn(() => fromEither(right(messageIteratorMock))),
-  getContentFromBlob: jest.fn(() => fromEither(right(some(aMessageContent))))
+  getContentFromBlob: mockGetContentFromBlob
 } as any) as MessageModel;
 
 const messageStatusModelMock = ({
@@ -115,10 +119,11 @@ const profileModelMock = ({
   findLastVersionByModelId: jest.fn(() => fromEither(right(some(aProfile))))
 } as any) as ProfileModel;
 
+const mockFindNotificationForMessage = jest.fn(() =>
+  taskEither.of(some(aRetrievedNotification))
+);
 const notificationModelMock = ({
-  findNotificationForMessage: jest.fn(() =>
-    fromEither(right(some(aRetrievedNotification)))
-  ),
+  findNotificationForMessage: mockFindNotificationForMessage,
   getQueryIterator: jest.fn(() => notificationIteratorMock)
 } as any) as NotificationModel;
 
@@ -262,5 +267,51 @@ describe("createExtractUserDataActivityHandler", () => {
       expect.any(String),
       expect.any(Object)
     );
+  });
+
+  it("should handle export when some messages have no notification", async () => {
+    const { blobServiceMock } = setupStreamMocks();
+    mockFindNotificationForMessage.mockImplementationOnce(() =>
+      taskEither.of(none)
+    );
+    const handler = createExtractUserDataActivityHandler({
+      messageContentBlobService: blobServiceMock,
+      messageModel: messageModelMock,
+      messageStatusModel: messageStatusModelMock,
+      notificationModel: notificationModelMock,
+      notificationStatusModel: notificationStatusModelMock,
+      profileModel: profileModelMock,
+      userDataBlobService: blobServiceMock,
+      userDataContainerName: aUserDataContainerName
+    });
+    const input: ActivityInput = {
+      fiscalCode: aFiscalCode
+    };
+
+    const result = await handler(contextMock, input);
+
+    expect(ActivityResultSuccess.decode(result).isRight()).toBe(true);
+  });
+
+  it("should handle export when some messages have no message content", async () => {
+    const { blobServiceMock } = setupStreamMocks();
+    mockGetContentFromBlob.mockImplementationOnce(() => taskEither.of(none));
+    const handler = createExtractUserDataActivityHandler({
+      messageContentBlobService: blobServiceMock,
+      messageModel: messageModelMock,
+      messageStatusModel: messageStatusModelMock,
+      notificationModel: notificationModelMock,
+      notificationStatusModel: notificationStatusModelMock,
+      profileModel: profileModelMock,
+      userDataBlobService: blobServiceMock,
+      userDataContainerName: aUserDataContainerName
+    });
+    const input: ActivityInput = {
+      fiscalCode: aFiscalCode
+    };
+
+    const result = await handler(contextMock, input);
+
+    expect(ActivityResultSuccess.decode(result).isRight()).toBe(true);
   });
 });
