@@ -619,6 +619,9 @@ definitions:
         type: array
         items:
           $ref: "#/definitions/Subscription"
+      token_name:
+        type: string
+        minLength: 1
   UserIdentityContract:
     type: object
     properties:

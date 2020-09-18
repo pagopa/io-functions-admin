@@ -35,6 +35,7 @@ import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { UserInfo } from "../generated/definitions/UserInfo";
 import {
   getApiClient,
+  getGraphRbacManagementClient,
   getUserGroups,
   IAzureApimConfig,
   IServicePrincipalCreds
@@ -87,6 +88,7 @@ function getUserSubscriptions(
 }
 
 export function GetUserHandler(
+  adb2cCredentials: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
@@ -193,6 +195,34 @@ export function GetUserHandler(
         );
         return { errorOrGroups, errorOrSubscriptions };
       })
+      .chain(taskResults =>
+        getGraphRbacManagementClient(adb2cCredentials)
+          .mapLeft(error =>
+            internalErrorHandler("Could not get the ADB2C client", error)
+          )
+          .chain(client =>
+            tryCatch(
+              () =>
+                client.users.list({
+                  filter: `signInNames/any(x:x/value eq '${email}')`
+                }),
+              error =>
+                internalErrorHandler(
+                  "Could not get user by email.",
+                  error as Error
+                )
+            ).map(userList => userList[0])
+          )
+          .map(adb2User => {
+            return {
+              ...taskResults,
+              token_name:
+                adb2User[
+                  `adb2User.extension_${adb2cCredentials.clientId}_token_name`
+                ]
+            };
+          })
+      )
       .chain(
         fromPredicate(
           userInfo => isRight(userInfo.errorOrGroups),
@@ -217,7 +247,8 @@ export function GetUserHandler(
         fromEither(
           UserInfo.decode({
             groups: userInfo.errorOrGroups.value,
-            subscriptions: userInfo.errorOrSubscriptions.value
+            subscriptions: userInfo.errorOrSubscriptions.value,
+            token_name: userInfo.token_name
           })
             .mapLeft(errors =>
               internalValidationErrorHandler(
@@ -237,10 +268,15 @@ export function GetUserHandler(
  * Wraps a GetUsers handler inside an Express request handler.
  */
 export function GetUser(
+  adb2cCredentials: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {
-  const handler = GetUserHandler(servicePrincipalCreds, azureApimConfig);
+  const handler = GetUserHandler(
+    adb2cCredentials,
+    servicePrincipalCreds,
+    azureApimConfig
+  );
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings

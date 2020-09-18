@@ -1,9 +1,7 @@
 import { Context } from "@azure/functions";
-import { GraphRbacManagementClient } from "@azure/graph";
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import * as express from "express";
 import { toError } from "fp-ts/lib/Either";
-import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { fromEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -24,6 +22,7 @@ import { UserCreated } from "../generated/definitions/UserCreated";
 import { UserPayload } from "../generated/definitions/UserPayload";
 import {
   getApiClient,
+  getGraphRbacManagementClient,
   IAzureApimConfig,
   IServicePrincipalCreds
 } from "../utils/apim";
@@ -35,26 +34,6 @@ type ICreateUserHandler = (
   auth: IAzureApiAuthorization,
   userPayload: UserPayload
 ) => Promise<IResponseSuccessJson<UserCreated> | IResponseErrorInternal>;
-
-function getGraphRbacManagementClient(
-  adb2cCreds: IServicePrincipalCreds
-): TaskEither<Error, GraphRbacManagementClient> {
-  return tryCatch(
-    () =>
-      msRestNodeAuth.loginWithServicePrincipalSecret(
-        adb2cCreds.clientId,
-        adb2cCreds.secret,
-        adb2cCreds.tenantId,
-        { tokenAudience: "graph" }
-      ),
-    toError
-  ).map(
-    credentials =>
-      new GraphRbacManagementClient(credentials, adb2cCreds.tenantId, {
-        baseUri: "https://graph.windows.net"
-      })
-  );
-}
 
 export function CreateUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
