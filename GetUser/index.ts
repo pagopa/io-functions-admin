@@ -12,6 +12,11 @@ import createAzureFunctionHandler from "io-functions-express/dist/src/createAzur
 
 import { GetUser } from "./handler";
 
+const adb2cCreds = {
+  clientId: getRequiredStringEnv("ADB2C_CLIENT_ID"),
+  secret: getRequiredStringEnv("ADB2C_CLIENT_KEY"),
+  tenantId: getRequiredStringEnv("ADB2C_TENANT_ID")
+};
 const servicePrincipalCreds = {
   clientId: getRequiredStringEnv("SERVICE_PRINCIPAL_CLIENT_ID"),
   secret: getRequiredStringEnv("SERVICE_PRINCIPAL_SECRET"),
@@ -22,6 +27,10 @@ const azureApimConfig = {
   apimResourceGroup: getRequiredStringEnv("AZURE_APIM_RESOURCE_GROUP"),
   subscriptionId: getRequiredStringEnv("AZURE_SUBSCRIPTION_ID")
 };
+
+const adb2cExtensionAppClientId = getRequiredStringEnv(
+  "ADB2C_EXTENSION_APP_CLIENT_ID"
+);
 
 // tslint:disable-next-line: no-let
 let logger: Context["log"] | undefined;
@@ -35,7 +44,15 @@ const app = express();
 secureExpressApp(app);
 
 // Add express route
-app.get("/adm/users/:email", GetUser(servicePrincipalCreds, azureApimConfig));
+app.get(
+  "/adm/users/:email",
+  GetUser(
+    adb2cCreds,
+    servicePrincipalCreds,
+    azureApimConfig,
+    adb2cExtensionAppClientId
+  )
+);
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
 

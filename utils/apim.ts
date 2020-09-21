@@ -1,5 +1,6 @@
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { GroupContract } from "@azure/arm-apimanagement/esm/models";
+import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { toError } from "fp-ts/lib/Either";
 import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
@@ -29,6 +30,26 @@ export function getApiClient(
       ),
     toError
   ).map(credentials => new ApiManagementClient(credentials, subscriptionId));
+}
+
+export function getGraphRbacManagementClient(
+  adb2cCreds: IServicePrincipalCreds
+): TaskEither<Error, GraphRbacManagementClient> {
+  return tryCatch(
+    () =>
+      msRestNodeAuth.loginWithServicePrincipalSecret(
+        adb2cCreds.clientId,
+        adb2cCreds.secret,
+        adb2cCreds.tenantId,
+        { tokenAudience: "graph" }
+      ),
+    toError
+  ).map(
+    credentials =>
+      new GraphRbacManagementClient(credentials, adb2cCreds.tenantId, {
+        baseUri: "https://graph.windows.net"
+      })
+  );
 }
 
 export function getUserGroups(
