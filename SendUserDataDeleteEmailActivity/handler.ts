@@ -12,15 +12,15 @@ import * as NodeMailer from "nodemailer";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 
 // TODO: switch text based on user's preferred_language
-const userDataDeleteMessage = () =>
-  NewMessage.decode({
-    content: {
-      markdown: `+++ here goes the message +++ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam imperdiet elementum tincidunt. Sed congue elementum neque id fermentum. Proin ex lectus, volutpat sit amet nisi tincidunt, feugiat consectetur mauris. Morbi commodo condimentum fringilla. Nam vestibulum mauris vel nulla ullamcorper, ut suscipit nisl dapibus. Mauris orci quam, convallis vitae sagittis vel.`,
-      subject: `IO App - conferma eliminazione dati`
-    }
-  }).getOrElseL(errs => {
-    throw new Error("Invalid MessageContent: " + readableReport(errs));
-  });
+const userDataDeleteMessage = NewMessage.decode({
+  content: {
+    markdown: `Ciao, come da te richiesto abbiamo eseguito la tua richiesta di cancellazione.
+Potrai iscriverti nuovamente all’App IO in ogni momento effettuando una nuova procedura di registrazione. Grazie per aver utilizzato IO`,
+    subject: `Eliminazione del tuo profilo su IO`
+  }
+}).getOrElseL(errs => {
+  throw new Error("Invalid MessageContent: " + readableReport(errs));
+});
 
 // Activity result
 export const ActivityResultSuccess = t.interface({
@@ -81,7 +81,7 @@ export const getActivityFunction = (
       const logPrefix = `SendUserDataDeleteEmailActivity|PROFILE=${fiscalCode}`;
       context.log.verbose(`${logPrefix}|Sending user data delete email`);
 
-      const { content } = userDataDeleteMessage();
+      const { content } = userDataDeleteMessage;
 
       const documentHtml = await markdownToHtml
         .process(content.markdown)
