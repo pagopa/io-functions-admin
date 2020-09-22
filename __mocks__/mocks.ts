@@ -50,7 +50,9 @@ import { NotificationChannelStatusValueEnum } from "io-functions-commons/dist/ge
 import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
 import { TimeToLiveSeconds } from "io-functions-commons/dist/generated/definitions/TimeToLiveSeconds";
 import {
+  MessageWithContent,
   MessageWithoutContent,
+  RetrievedMessageWithContent,
   RetrievedMessageWithoutContent
 } from "io-functions-commons/dist/src/models/message";
 import {
@@ -194,6 +196,19 @@ export const aRetrievedMessageWithoutContent: RetrievedMessageWithoutContent = {
   ...retrievedMetadata,
   id: "A_MESSAGE_ID" as NonEmptyString,
   kind: "IRetrievedMessageWithoutContent"
+};
+
+const aMessageWithContent: MessageWithContent = {
+  ...aSerializedMessageWithoutContent,
+  content: aMessageContent,
+  createdAt: new Date()
+};
+
+export const aRetrievedMessageWithContent: RetrievedMessageWithContent = {
+  ...aMessageWithContent,
+  ...retrievedMetadata,
+  id: "A_MESSAGE_ID" as NonEmptyString,
+  kind: "IRetrievedMessageWithContent"
 };
 
 export const aServiceId = "s123" as ServiceId;

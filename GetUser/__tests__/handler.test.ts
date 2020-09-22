@@ -1,12 +1,13 @@
 // tslint:disable:no-any
-
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import {
   GroupContract,
   SubscriptionContract
 } from "@azure/arm-apimanagement/esm/models";
+import { GraphRbacManagementClient } from "@azure/graph";
 import { isRight, left, right } from "fp-ts/lib/Either";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { UserInfo } from "../../generated/definitions/UserInfo";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
@@ -17,6 +18,13 @@ import {
 import { GetUserHandler } from "../handler";
 
 jest.mock("@azure/arm-apimanagement");
+jest.mock("@azure/graph");
+
+const fakeAdb2cCreds = {
+  clientId: "client-id",
+  secret: "secret",
+  tenantId: "tenant-id"
+};
 
 const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
   clientId: "client-id",
@@ -53,13 +61,30 @@ mockApiManagementClient.mockImplementation(() => ({
   }
 }));
 
+const mockAdb2cManagementClient = GraphRbacManagementClient as jest.Mock;
+mockAdb2cManagementClient.mockImplementation(() => ({
+  users: {
+    list: mockUserListByService
+  }
+}));
+
 const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
 spyOnGetApiClient.mockImplementation(() =>
   fromEither(right(new mockApiManagementClient()))
 );
 
+const spyOnGetAdb2cClient = jest.spyOn(
+  ApimUtils,
+  "getGraphRbacManagementClient"
+);
+spyOnGetAdb2cClient.mockImplementation(() =>
+  fromEither(right(new mockAdb2cManagementClient()))
+);
+
 const mockLog = jest.fn();
 const mockedContext = { log: { error: mockLog } };
+
+const fakeAdb2cExtensionAppClientId = "extension-client-id" as NonEmptyString;
 
 // tslint:disable-next-line:no-big-function
 describe("GetUser", () => {
@@ -69,8 +94,10 @@ describe("GetUser", () => {
     );
 
     const getUserHandler = GetUserHandler(
+      fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -87,8 +114,10 @@ describe("GetUser", () => {
       Promise.reject("Error on users list")
     );
     const getUserHandler = GetUserHandler(
+      fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -103,8 +132,10 @@ describe("GetUser", () => {
   it("should return a not found error response if the API management client returns no user", async () => {
     mockUserListByService.mockImplementation(() => Promise.resolve([]));
     const getUserHandler = GetUserHandler(
+      fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -121,8 +152,10 @@ describe("GetUser", () => {
       Promise.resolve([{ name: "" }])
     );
     const getUserHandler = GetUserHandler(
+      fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -143,8 +176,10 @@ describe("GetUser", () => {
     );
     mockUserSubscriptionList.mockImplementation(() => Promise.resolve([]));
     const getUserHandler = GetUserHandler(
+      fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -165,8 +200,10 @@ describe("GetUser", () => {
       Promise.reject(Error("Error on user subscription list"))
     );
     const getUserHandler = GetUserHandler(
+      fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -187,8 +224,10 @@ describe("GetUser", () => {
     );
     mockUserSubscriptionList.mockImplementation(() => Promise.resolve([]));
     const getUserHandler = GetUserHandler(
+      fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -209,8 +248,10 @@ describe("GetUser", () => {
       Promise.resolve([{ groupContractType: "invalid" }])
     );
     const getUserHandler = GetUserHandler(
+      fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
@@ -308,8 +349,10 @@ describe("GetUser", () => {
     );
 
     const getUserHandler = GetUserHandler(
+      fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await getUserHandler(
