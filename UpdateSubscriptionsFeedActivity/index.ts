@@ -11,7 +11,9 @@ import { isNone } from "fp-ts/lib/Option";
 import { deleteTableEntity, insertTableEntity } from "../utils/storage";
 import { ActivityInput, ActivityResult } from "./types";
 
-const storageConnectionString = getRequiredStringEnv("QueueStorageConnection");
+const storageConnectionString = getRequiredStringEnv(
+  "SubscriptionFeedStorageConnection"
+);
 const tableService = createTableService(storageConnectionString);
 
 const subscriptionsFeedTable = getRequiredStringEnv("SUBSCRIPTIONS_FEED_TABLE");
