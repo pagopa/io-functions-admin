@@ -43,7 +43,6 @@ they may be customized as needed.
 | MAILUP_USERNAME                  | If using MailUp, the username                                                                    | string |
 | MAILUP_SECRET                    | If using MailUp, the secret                                                                      | string |
 | MAILHOG_HOSTNAME                 | Required on development, the host name of the MailHog SMTP server                                | string |
-
 | QueueStorageConnection           | Storage connection string for subscription feed                                                  | string |
 | SUBSCRIPTIONS_FEED_TABLE         | Table name for the Subscriptions Feed in the storage                                             | string |  
 

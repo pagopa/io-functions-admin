@@ -413,7 +413,7 @@ export const createUserDataDeleteOrchestratorHandler = (
         // backup&delete data
         yield* deleteUserData(context, currentUserDataProcessing);
 
-        // we need user email to send email later
+        // we need user email to send email
         if (
           profile.email &&
           profile.isEmailValidated &&
