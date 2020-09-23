@@ -1,3 +1,4 @@
+import * as df from "durable-functions";
 import {
   IOrchestrationFunctionContext,
   Task,
@@ -37,6 +38,8 @@ import {
   ActivityInput as SetUserSessionLockActivityInput,
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
+
+import { ActivityInput as UpdateServiceSubscriptionFeedActivityInput } from "../UpdateSubscriptionsFeedActivity/types";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
 import {
   trackUserDataDeleteEvent,
@@ -264,13 +267,44 @@ function* getProfile(
   );
   return GetProfileActivityResultSuccess.decode(result).getOrElseL(_ => {
     context.log.error(
-      `${logPrefix}|ERROR|GetProfileActivity fail|${readableReport(_)}`
+      `${logPrefix}|ERROR|GetProfileActivity fail|${readableReport(
+        _
+      )}|result=${JSON.stringify(result)}`
     );
     throw toActivityFailure(
       { kind: "GET_PROFILE_ACTIVITY_RESULT" },
       "GetProfileActivity"
     );
   }).value;
+}
+
+function* updateSubscriptionFeed(
+  context: IOrchestrationFunctionContext,
+  { fiscalCode, version }: RetrievedProfile
+): Generator<Task, "SUCCESS"> {
+  const input = UpdateServiceSubscriptionFeedActivityInput.encode({
+    fiscalCode,
+    operation: "UNSUBSCRIBED",
+    subscriptionKind: "PROFILE",
+    updatedAt: context.df.currentUtcDateTime.getTime(),
+    version
+  });
+  const retryOptions = new df.RetryOptions(5000, 10);
+  const result = yield context.df.callActivityWithRetry(
+    "UpdateSubscriptionsFeedActivity",
+    retryOptions,
+    input
+  );
+  if (result === "FAILURE") {
+    context.log.error(
+      `${logPrefix}|ERROR|UpdateSubscriptionsFeedActivity fail`
+    );
+    throw toActivityFailure(
+      { kind: "UPDATE_SUBSCRIPTIONS_FEED" },
+      "UpdateSubscriptionsFeedActivity"
+    );
+  }
+  return "SUCCESS";
 }
 
 /**
@@ -370,7 +404,7 @@ export const createUserDataDeleteOrchestratorHandler = (
           yield waitForDownloadEvent;
         }
 
-        // we need user email to send email later
+        // retrieve user profile
         const profile = yield* getProfile(
           context,
           currentUserDataProcessing.fiscalCode
@@ -379,6 +413,7 @@ export const createUserDataDeleteOrchestratorHandler = (
         // backup&delete data
         yield* deleteUserData(context, currentUserDataProcessing);
 
+        // we need user email to send email
         if (
           profile.email &&
           profile.isEmailValidated &&
@@ -391,6 +426,9 @@ export const createUserDataDeleteOrchestratorHandler = (
             profile.fiscalCode
           );
         }
+
+        // update subscription feed
+        yield* updateSubscriptionFeed(context, profile);
 
         // set as closed
         yield* setUserDataProcessingStatus(
