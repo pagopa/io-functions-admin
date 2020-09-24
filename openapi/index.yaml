@@ -652,7 +652,7 @@ parameters:
     maxLength: 16
     minLength: 16
     required: true
-    description: The sandbox fiscal code of the user, all upper case.
+    description: The user's sandbox fiscal code, all upper case.
     pattern: "[A-Z]{6}[0-9]{2}A[0-9]{2}Y[0-9]{3}X"
     x-example: SPNDNL80A13Y555X
 consumes:
