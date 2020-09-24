@@ -91,7 +91,7 @@ export function GetUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
-  adb2cExtensionAppClientId: NonEmptyString
+  adb2cTokenAttributeName: NonEmptyString
 ): IGetSubscriptionKeysHandler {
   return async (context, _, email) => {
     const internalErrorHandler = (errorMessage: string, error: Error) =>
@@ -217,8 +217,7 @@ export function GetUserHandler(
           .map(adb2User => {
             return {
               ...taskResults,
-              token_name:
-                adb2User[`extension_${adb2cExtensionAppClientId}_token_name`]
+              token_name: adb2User[`${adb2cTokenAttributeName}`]
             };
           })
       )
@@ -270,13 +269,13 @@ export function GetUser(
   adb2cCredentials: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
-  adb2cExtensionAppClientId: NonEmptyString
+  adb2cTokenAttributeName: NonEmptyString
 ): express.RequestHandler {
   const handler = GetUserHandler(
     adb2cCredentials,
     servicePrincipalCreds,
     azureApimConfig,
-    adb2cExtensionAppClientId
+    adb2cTokenAttributeName
   );
 
   const middlewaresWrap = withRequestMiddlewares(

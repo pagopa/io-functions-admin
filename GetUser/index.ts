@@ -28,8 +28,8 @@ const azureApimConfig = {
   subscriptionId: getRequiredStringEnv("AZURE_SUBSCRIPTION_ID")
 };
 
-const adb2cExtensionAppClientId = getRequiredStringEnv(
-  "ADB2C_EXTENSION_APP_CLIENT_ID"
+const adb2cTokenAttributeName = getRequiredStringEnv(
+  "ADB2C_TOKEN_ATTRIBUTE_NAME"
 );
 
 // tslint:disable-next-line: no-let
@@ -50,7 +50,7 @@ app.get(
     adb2cCreds,
     servicePrincipalCreds,
     azureApimConfig,
-    adb2cExtensionAppClientId
+    adb2cTokenAttributeName
   )
 );
 
