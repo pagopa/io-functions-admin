@@ -9,10 +9,10 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 import { GetSubscriptionKeys } from "./handler";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 
 const servicePrincipalCreds = {
   clientId: config.SERVICE_PRINCIPAL_CLIENT_ID,

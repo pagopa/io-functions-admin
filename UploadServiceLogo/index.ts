@@ -15,10 +15,10 @@ import createAzureFunctionHandler from "io-functions-express/dist/src/createAzur
 
 import { UploadServiceLogo } from "./handler";
 
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 
 const cosmosDbName = config.COSMOSDB_NAME;
 const database = cosmosdbClient.database(cosmosDbName);

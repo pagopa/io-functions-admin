@@ -26,10 +26,10 @@ import {
 import { isLeft } from "fp-ts/lib/Either";
 import { isNone } from "fp-ts/lib/Option";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 
 const context = ({
   log: {

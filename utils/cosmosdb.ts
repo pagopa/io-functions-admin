@@ -2,9 +2,9 @@
  * Use a singleton CosmosDB client across functions.
  */
 import { CosmosClient } from "@azure/cosmos";
-import { getConfig } from "./config";
+import { getConfigOrThrow } from "./config";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 const cosmosDbUri = config.COSMOSDB_URI;
 const masterKey = config.COSMOSDB_KEY;
 

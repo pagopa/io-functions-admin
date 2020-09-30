@@ -5,10 +5,10 @@ import {
 
 import { cosmosdbClient } from "../utils/cosmosdb";
 
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 import { createSetUserDataProcessingStatusActivityHandler } from "./handler";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 
 const cosmosDbName = config.COSMOSDB_NAME;
 const database = cosmosdbClient.database(cosmosDbName);

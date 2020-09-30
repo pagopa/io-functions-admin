@@ -1,8 +1,8 @@
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 import { timeoutFetch } from "../utils/fetch";
 import { getActivityFunction } from "./handler";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 
 // Needed to call notifications API
 const publicApiUrl = config.PUBLIC_API_URL;

@@ -14,7 +14,7 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 import { CreateDevelopmentProfile } from "./handler";
 
@@ -22,7 +22,7 @@ import { CreateDevelopmentProfile } from "./handler";
 const app = express();
 secureExpressApp(app);
 
-const config = getConfig();
+const config = getConfigOrThrow();
 
 const cosmosDbName = config.COSMOSDB_NAME;
 

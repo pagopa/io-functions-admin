@@ -17,7 +17,7 @@ import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as NodeMailer from "nodemailer";
 import nodemailerSendgrid = require("nodemailer-sendgrid");
 import Mail = require("nodemailer/lib/mailer");
-import { getConfig } from "./config";
+import { getConfigOrThrow } from "./config";
 
 // 5 seconds timeout by default
 const DEFAULT_EMAIL_REQUEST_TIMEOUT_MS = 5000;
@@ -43,7 +43,7 @@ type MailTransportOptions = (IMailUpOptions | ISendGridOptions) & {
 };
 
 export function getMailerTransporter(opts: MailTransportOptions): Mail {
-  const config = getConfig();
+  const config = getConfigOrThrow();
   return opts.isProduction
     ? NodeMailer.createTransport(
         "sendgridApiKey" in opts

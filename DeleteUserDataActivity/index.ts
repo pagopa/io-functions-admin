@@ -8,14 +8,14 @@ import { MESSAGE_STATUS_COLLECTION_NAME } from "io-functions-commons/dist/src/mo
 import { NOTIFICATION_COLLECTION_NAME } from "io-functions-commons/dist/src/models/notification";
 import { NOTIFICATION_STATUS_COLLECTION_NAME } from "io-functions-commons/dist/src/models/notification_status";
 import { PROFILE_COLLECTION_NAME } from "io-functions-commons/dist/src/models/profile";
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 const cosmosDbName = config.COSMOSDB_NAME;
 
 const messagesContainer = cosmosdbClient

@@ -6,11 +6,11 @@ import { createTableService, TableUtilities } from "azure-storage";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 
 import { isNone } from "fp-ts/lib/Option";
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 import { deleteTableEntity, insertTableEntity } from "../utils/storage";
 import { ActivityInput, ActivityResult } from "./types";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 
 const storageConnectionString = config.SubscriptionFeedStorageConnection;
 const tableService = createTableService(storageConnectionString);

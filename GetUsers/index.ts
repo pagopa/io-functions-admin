@@ -11,9 +11,9 @@ import createAzureFunctionHandler from "io-functions-express/dist/src/createAzur
 
 import { GetUsers } from "./handler";
 
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 
 const servicePrincipalCreds = {
   clientId: config.SERVICE_PRINCIPAL_CLIENT_ID,

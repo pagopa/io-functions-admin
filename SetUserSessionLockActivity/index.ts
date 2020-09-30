@@ -1,4 +1,4 @@
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 import { timeoutFetch } from "../utils/fetch";
 import {
   ApiOperation,
@@ -8,7 +8,7 @@ import {
 } from "../utils/sessionApiClient";
 import { createSetUserSessionLockActivityHandler } from "./handler";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 
 const sessionApiUrl = config.SESSION_API_URL;
 const sessionApiKey = config.SESSION_API_KEY;

@@ -23,9 +23,9 @@ import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 const cosmosDbName = config.COSMOSDB_NAME;
 const database = cosmosdbClient.database(cosmosDbName);
 

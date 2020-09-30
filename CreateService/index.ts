@@ -16,10 +16,10 @@ import createAzureFunctionHandler from "io-functions-express/dist/src/createAzur
 
 import { cosmosdbClient } from "../utils/cosmosdb";
 
-import { getConfig } from "../utils/config";
+import { getConfigOrThrow } from "../utils/config";
 import { CreateService } from "./handler";
 
-const config = getConfig();
+const config = getConfigOrThrow();
 
 const cosmosDbName = config.COSMOSDB_NAME;
 
