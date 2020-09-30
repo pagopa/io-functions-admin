@@ -23,6 +23,22 @@ schemes:
 security:
   - SubscriptionKey: []
 paths:
+  "/info":
+    get:
+      operationId: getServerInfo
+      summary: Runtime server info
+      description: >
+        Returns runtime information about the server.
+      security: []
+      responses:
+        "200":
+          description: Runtime server info.
+          schema:
+            $ref: "#/definitions/ServerInfo"
+        "500":
+          description: The server is misconfigured
+          schema:
+            $ref: "#/definitions/ProblemJson"
   "/services/{service_id}":
     parameters:
       - name: service_id
@@ -643,6 +659,14 @@ definitions:
         type: string
       version:
         type: integer
+  ServerInfo:
+    type: object
+    title: Server information
+    properties:
+      version:
+        type: string
+    required:
+     - version
 responses: {}
 parameters:
   SandboxFiscalCode:
