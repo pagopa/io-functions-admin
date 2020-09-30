@@ -2,7 +2,12 @@ import { CosmosClient } from "@azure/cosmos";
 import { common as azurestorageCommon, createBlobService } from "azure-storage";
 import { sequenceT } from "fp-ts/lib/Apply";
 import { toError } from "fp-ts/lib/Either";
-import { taskEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import {
+  fromEither,
+  taskEither,
+  TaskEither,
+  tryCatch
+} from "fp-ts/lib/TaskEither";
 import { getConfig, IConfig } from "./config";
 
 export type HealthProblem = string;
@@ -19,7 +24,7 @@ const toHealthProblems = (e: unknown): readonly HealthProblem[] => [
  * @returns either true or an array of error messages
  */
 export const checkConfigHealth = (): HealthCheck<IConfig> =>
-  tryCatch(async () => getConfig(), e => [toError(e).message]);
+  fromEither(getConfig()).mapLeft(error => [error.message]);
 
 /**
  * Check the application can connect to an Azure CosmosDb instances
