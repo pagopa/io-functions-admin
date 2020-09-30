@@ -62,7 +62,6 @@ const getEnv = () => ({
   ),
 
   // FIXME: email configuration values may be required or not depending on their values
-  // We
   MAIL_FROM: getRequiredStringEnv("MAIL_FROM"),
   MAIL_TRANSPORTS: process.env.MAIL_TRANSPORTS,
 
