@@ -1,11 +1,13 @@
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
+import { getConfig } from "../utils/config";
 import { timeoutFetch } from "../utils/fetch";
 import { getActivityFunction } from "./handler";
 
+const config = getConfig();
+
 // Needed to call notifications API
-const publicApiUrl = getRequiredStringEnv("PUBLIC_API_URL");
-const publicApiKey = getRequiredStringEnv("PUBLIC_API_KEY");
-const publicDownloadBaseUrl = getRequiredStringEnv("PUBLIC_DOWNLOAD_BASE_URL");
+const publicApiUrl = config.PUBLIC_API_URL;
+const publicApiKey = config.PUBLIC_API_KEY;
+const publicDownloadBaseUrl = config.PUBLIC_DOWNLOAD_BASE_URL;
 
 const index = getActivityFunction(
   publicApiUrl,

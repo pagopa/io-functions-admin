@@ -8,7 +8,6 @@ import {
   ServiceModel
 } from "io-functions-commons/dist/src/models/service";
 
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { secureExpressApp } from "io-functions-commons/dist/src/utils/express";
 import { AzureContextTransport } from "io-functions-commons/dist/src/utils/logging";
 import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
@@ -17,9 +16,12 @@ import createAzureFunctionHandler from "io-functions-express/dist/src/createAzur
 
 import { cosmosdbClient } from "../utils/cosmosdb";
 
+import { getConfig } from "../utils/config";
 import { CreateService } from "./handler";
 
-const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
+const config = getConfig();
+
+const cosmosDbName = config.COSMOSDB_NAME;
 
 const servicesContainer = cosmosdbClient
   .database(cosmosDbName)

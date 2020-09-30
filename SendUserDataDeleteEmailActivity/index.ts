@@ -1,25 +1,24 @@
 import * as HtmlToText from "html-to-text";
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { MailMultiTransportConnectionsFromString } from "io-functions-commons/dist/src/utils/multi_transport_connection";
 import { MultiTransport } from "io-functions-commons/dist/src/utils/nodemailer";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as NodeMailer from "nodemailer";
+import { getConfig } from "../utils/config";
 import {
   getMailerTransporter,
   getTransportsForConnections
 } from "../utils/email";
 import { getActivityFunction } from "./handler";
 
-// Whether we're in a production environment
-const isProduction = process.env.NODE_ENV === "production";
+const config = getConfig();
 
 // Optional SendGrid key
-const sendgridApiKey = NonEmptyString.decode(
-  process.env.SENDGRID_API_KEY
-).getOrElse(undefined);
+const sendgridApiKey = NonEmptyString.decode(config.SENDGRID_API_KEY).getOrElse(
+  undefined
+);
 
 // default sender for email
-const MAIL_FROM = getRequiredStringEnv("MAIL_FROM");
+const MAIL_FROM = config.MAIL_FROM;
 
 const HTML_TO_TEXT_OPTIONS: HtmlToText.HtmlToTextOptions = {
   ignoreImage: true, // ignore all document images
@@ -31,7 +30,7 @@ const HTML_TO_TEXT_OPTIONS: HtmlToText.HtmlToTextOptions = {
 //   [mailup:username:password;][sendgrid:apikey:;]
 // Note that multiple instances of the same provider can be provided.
 const transports = MailMultiTransportConnectionsFromString.decode(
-  process.env.MAIL_TRANSPORTS
+  config.MAIL_TRANSPORTS
 )
   .map(getTransportsForConnections)
   .getOrElse([]);
@@ -46,12 +45,23 @@ const mailerTransporter =
         })
       )
     : getMailerTransporter({
-        isProduction,
+        isProduction: config.isProduction,
         ...(sendgridApiKey
           ? { sendgridApiKey }
           : {
-              mailupSecret: getRequiredStringEnv("MAILUP_SECRET"),
-              mailupUsername: getRequiredStringEnv("MAILUP_USERNAME")
+              // FIXME: handle non empty values in global config
+              mailupSecret: NonEmptyString.decode(
+                config.MAILUP_SECRET
+              ).getOrElseL(_ => {
+                throw new Error("env variable MAILUP_SECRET must not be empty");
+              }),
+              mailupUsername: NonEmptyString.decode(
+                config.MAILUP_USERNAME
+              ).getOrElseL(_ => {
+                throw new Error(
+                  "env variable MAILUP_USERNAME must not be empty"
+                );
+              })
             })
       });
 

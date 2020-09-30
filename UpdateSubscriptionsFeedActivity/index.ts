@@ -1,22 +1,21 @@
-﻿import * as crypto from "crypto";
+import * as crypto from "crypto";
 
 import { AzureFunction, Context } from "@azure/functions";
 import { createTableService, TableUtilities } from "azure-storage";
 
 import { readableReport } from "italia-ts-commons/lib/reporters";
 
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
-
 import { isNone } from "fp-ts/lib/Option";
+import { getConfig } from "../utils/config";
 import { deleteTableEntity, insertTableEntity } from "../utils/storage";
 import { ActivityInput, ActivityResult } from "./types";
 
-const storageConnectionString = getRequiredStringEnv(
-  "SubscriptionFeedStorageConnection"
-);
+const config = getConfig();
+
+const storageConnectionString = config.SubscriptionFeedStorageConnection;
 const tableService = createTableService(storageConnectionString);
 
-const subscriptionsFeedTable = getRequiredStringEnv("SUBSCRIPTIONS_FEED_TABLE");
+const subscriptionsFeedTable = config.SUBSCRIPTIONS_FEED_TABLE;
 
 const insertEntity = insertTableEntity(tableService, subscriptionsFeedTable);
 const deleteEntity = deleteTableEntity(tableService, subscriptionsFeedTable);
