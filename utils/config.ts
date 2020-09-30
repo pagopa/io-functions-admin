@@ -1,8 +1,13 @@
+/**
+ * Config module
+ *
+ * Single point of access for the application confguration. Handles validation on required environment variables.
+ * The configuration is evaluate eagerly at the first access to the module. The module exposes convenient methods to access such value.
+ */
+
 import { tryCatch2v } from "fp-ts/lib/Either";
 import { toError } from "fp-ts/lib/Either";
 import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
-
-export type IConfig = ReturnType<typeof getEnv>;
 
 // base read function
 // tslint:disable typedef
@@ -76,6 +81,8 @@ const getEnv = () => ({
 
 // No need to re-evaluate this object for each call
 const errorOrConfig = tryCatch2v(getEnv, toError);
+
+export type IConfig = ReturnType<typeof getEnv>;
 
 // tslint:disable typedef
 export function getConfig() {
