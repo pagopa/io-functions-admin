@@ -1,10 +1,10 @@
 import * as express from "express";
 import { wrapRequestHandler } from "io-functions-commons/dist/src/utils/request_middleware";
 import {
-  IResponseSuccessJson,
-  ResponseSuccessJson,
   IResponseErrorInternal,
-  ResponseErrorInternal
+  IResponseSuccessJson,
+  ResponseErrorInternal,
+  ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
 import * as packageJson from "../package.json";
 import { checkApplicationHealth, HealthCheck } from "../utils/healthcheck";
@@ -17,9 +17,9 @@ type InfoHandler = () => Promise<
   IResponseSuccessJson<IInfo> | IResponseErrorInternal
 >;
 
-export function InfoHandler(healthCheck: () => HealthCheck): InfoHandler {
+export function InfoHandler<T>(healthCheck: HealthCheck<T>): InfoHandler {
   return () =>
-    healthCheck()
+    healthCheck
       .fold<IResponseSuccessJson<IInfo> | IResponseErrorInternal>(
         problems => ResponseErrorInternal(problems.join("\n")),
         _ =>
@@ -31,7 +31,7 @@ export function InfoHandler(healthCheck: () => HealthCheck): InfoHandler {
 }
 
 export function Info(): express.RequestHandler {
-  const handler = InfoHandler(checkApplicationHealth);
+  const handler = InfoHandler(checkApplicationHealth());
 
   return wrapRequestHandler(handler);
 }

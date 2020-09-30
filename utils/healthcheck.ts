@@ -1,16 +1,17 @@
 import { CosmosClient } from "@azure/cosmos";
-import { Either, left, right, toError } from "fp-ts/lib/Either";
-import { taskEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
-import { createBlobService, common as azurestorageCommon } from "azure-storage";
-import { getConfig, IConfig } from "./config";
+import { common as azurestorageCommon, createBlobService } from "azure-storage";
 import { sequenceT } from "fp-ts/lib/Apply";
-import { Task } from "fp-ts/lib/Task";
+import { toError } from "fp-ts/lib/Either";
+import { taskEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { getConfig, IConfig } from "./config";
 
 export type HealthProblem = string;
-export type HealthCheck<T = true> = TaskEither<HealthProblem[], T>;
+export type HealthCheck<T = true> = TaskEither<readonly HealthProblem[], T>;
 
 // utility to format an unknown error to an arry of HealthProblem
-const toHealthProblems = (e: unknown): HealthProblem[] => [toError(e).message];
+const toHealthProblems = (e: unknown): readonly HealthProblem[] => [
+  toError(e).message
+];
 
 /**
  * Check application's configuration is correct
@@ -65,7 +66,7 @@ export const checkAzureStorageHealth = (connStr: string): HealthCheck =>
  *
  * @returns either true or an array of error messages
  */
-export const checkUrlHealth = (_url: string): HealthCheck =>
+export const checkUrlHealth = (_: string): HealthCheck =>
   // TODO: implement this check
   taskEither.of(true);
 
