@@ -24,7 +24,7 @@ const toHealthProblems = (e: unknown): readonly HealthProblem[] => [
  * @returns either true or an array of error messages
  */
 export const checkConfigHealth = (): HealthCheck<IConfig> =>
-  fromEither(getConfig()).mapLeft(error => [error.message]);
+  fromEither(getConfig()).mapLeft(errors => errors.map(e => e.message));
 
 /**
  * Check the application can connect to an Azure CosmosDb instances
