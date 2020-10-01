@@ -5,93 +5,89 @@
  * The configuration is evaluate eagerly at the first access to the module. The module exposes convenient methods to access such value.
  */
 
-import { tryCatch2v } from "fp-ts/lib/Either";
-import { toError } from "fp-ts/lib/Either";
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
+import * as t from "io-ts";
+import { readableReport } from "italia-ts-commons/lib/reporters";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
-// base read function
-// tslint:disable typedef
-const getEnv = () => ({
-  COSMOSDB_KEY: getRequiredStringEnv("COSMOSDB_KEY"),
-  COSMOSDB_NAME: getRequiredStringEnv("COSMOSDB_NAME"),
-  COSMOSDB_URI: getRequiredStringEnv("COSMOSDB_URI"),
+export type IConfig = t.TypeOf<typeof IConfig>;
+export const IConfig = t.interface({
+  COSMOSDB_KEY: NonEmptyString,
+  COSMOSDB_NAME: NonEmptyString,
+  COSMOSDB_URI: NonEmptyString,
 
-  SERVICE_PRINCIPAL_CLIENT_ID: getRequiredStringEnv(
-    "SERVICE_PRINCIPAL_CLIENT_ID"
-  ),
-  SERVICE_PRINCIPAL_SECRET: getRequiredStringEnv("SERVICE_PRINCIPAL_SECRET"),
-  SERVICE_PRINCIPAL_TENANT_ID: getRequiredStringEnv(
-    "SERVICE_PRINCIPAL_TENANT_ID"
-  ),
+  SERVICE_PRINCIPAL_CLIENT_ID: NonEmptyString,
+  SERVICE_PRINCIPAL_SECRET: NonEmptyString,
+  SERVICE_PRINCIPAL_TENANT_ID: NonEmptyString,
 
-  AZURE_APIM: getRequiredStringEnv("AZURE_APIM"),
-  AZURE_APIM_HOST: getRequiredStringEnv("AZURE_APIM_HOST"),
-  AZURE_APIM_RESOURCE_GROUP: getRequiredStringEnv("AZURE_APIM_RESOURCE_GROUP"),
-  AZURE_SUBSCRIPTION_ID: getRequiredStringEnv("AZURE_SUBSCRIPTION_ID"),
+  AZURE_APIM: NonEmptyString,
+  AZURE_APIM_HOST: NonEmptyString,
+  AZURE_APIM_RESOURCE_GROUP: NonEmptyString,
+  AZURE_SUBSCRIPTION_ID: NonEmptyString,
 
-  ADB2C_CLIENT_ID: getRequiredStringEnv("ADB2C_CLIENT_ID"),
-  ADB2C_CLIENT_KEY: getRequiredStringEnv("ADB2C_CLIENT_KEY"),
-  ADB2C_TENANT_ID: getRequiredStringEnv("ADB2C_TENANT_ID"),
+  ADB2C_CLIENT_ID: NonEmptyString,
+  ADB2C_CLIENT_KEY: NonEmptyString,
+  ADB2C_TENANT_ID: NonEmptyString,
 
-  UserDataBackupStorageConnection: getRequiredStringEnv(
-    "UserDataBackupStorageConnection"
-  ),
+  UserDataBackupStorageConnection: NonEmptyString,
 
-  MESSAGE_CONTAINER_NAME: getRequiredStringEnv("MESSAGE_CONTAINER_NAME"),
-  USER_DATA_BACKUP_CONTAINER_NAME: getRequiredStringEnv(
-    "USER_DATA_BACKUP_CONTAINER_NAME"
-  ),
-  USER_DATA_CONTAINER_NAME: getRequiredStringEnv("USER_DATA_CONTAINER_NAME"),
+  MESSAGE_CONTAINER_NAME: NonEmptyString,
+  USER_DATA_BACKUP_CONTAINER_NAME: NonEmptyString,
+  USER_DATA_CONTAINER_NAME: NonEmptyString,
 
-  StorageConnection: getRequiredStringEnv("StorageConnection"),
-  SubscriptionFeedStorageConnection: getRequiredStringEnv(
-    "SubscriptionFeedStorageConnection"
-  ),
-  UserDataArchiveStorageConnection: getRequiredStringEnv(
-    "UserDataArchiveStorageConnection"
-  ),
+  StorageConnection: NonEmptyString,
+  SubscriptionFeedStorageConnection: NonEmptyString,
+  UserDataArchiveStorageConnection: NonEmptyString,
 
-  PUBLIC_API_KEY: getRequiredStringEnv("PUBLIC_API_KEY"),
-  PUBLIC_API_URL: getRequiredStringEnv("PUBLIC_API_URL"),
+  PUBLIC_API_KEY: NonEmptyString,
+  PUBLIC_API_URL: NonEmptyString,
 
-  PUBLIC_DOWNLOAD_BASE_URL: getRequiredStringEnv("PUBLIC_DOWNLOAD_BASE_URL"),
+  PUBLIC_DOWNLOAD_BASE_URL: NonEmptyString,
 
-  SESSION_API_KEY: getRequiredStringEnv("SESSION_API_KEY"),
-  SESSION_API_URL: getRequiredStringEnv("SESSION_API_URL"),
+  SESSION_API_KEY: NonEmptyString,
+  SESSION_API_URL: NonEmptyString,
 
-  LOGOS_URL: getRequiredStringEnv("LOGOS_URL"),
+  LOGOS_URL: NonEmptyString,
 
-  SUBSCRIPTIONS_FEED_TABLE: getRequiredStringEnv("SUBSCRIPTIONS_FEED_TABLE"),
-  USER_DATA_DELETE_DELAY_DAYS: getRequiredStringEnv(
-    "USER_DATA_DELETE_DELAY_DAYS"
-  ),
+  SUBSCRIPTIONS_FEED_TABLE: NonEmptyString,
+  USER_DATA_DELETE_DELAY_DAYS: NonEmptyString,
 
   // FIXME: email configuration values may be required or not depending on their values
-  MAIL_FROM: getRequiredStringEnv("MAIL_FROM"),
-  MAIL_TRANSPORTS: process.env.MAIL_TRANSPORTS,
+  MAIL_FROM: NonEmptyString,
+  MAIL_TRANSPORTS: t.string,
 
-  MAILHOG_HOSTNAME: process.env.MAILHOG_HOSTNAME,
-  MAILUP_SECRET: process.env.MAILUP_SECRET,
-  MAILUP_USERNAME: process.env.MAILUP_USERNAME,
-  SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
+  MAILHOG_HOSTNAME: t.string,
+  MAILUP_SECRET: t.string,
+  MAILUP_USERNAME: t.string,
+  SENDGRID_API_KEY: t.string,
 
-  // Whether we're in a production environment
-  isProduction: process.env.NODE_ENV === "production"
+  isProduction: t.boolean
 });
 
 // No need to re-evaluate this object for each call
-const errorOrConfig = tryCatch2v(getEnv, toError);
+const errorOrConfig: t.Validation<IConfig> = IConfig.decode({
+  ...process.env,
+  isProduction: process.env.NODE_ENV === "production"
+});
 
-export type IConfig = ReturnType<typeof getEnv>;
-
-// tslint:disable typedef
-export function getConfig() {
+/**
+ * Read the application configuration and check for invalid values.
+ * Configuration is eagerly evalued when the application starts.
+ *
+ * @returns either the configuration values or a list of validation errors
+ */
+export function getConfig(): t.Validation<IConfig> {
   return errorOrConfig;
 }
 
-// tslint:disable typedef
-export function getConfigOrThrow() {
-  return errorOrConfig.getOrElseL(error => {
-    throw new Error(`Invalid configuration: ${error.message}`);
+/**
+ * Read the application configuration and check for invalid values.
+ * If the application is not valid, raises an exception.
+ *
+ * @returns the configuration values
+ * @throws validation errors found while parsing the application configuration
+ */
+export function getConfigOrThrow(): IConfig {
+  return errorOrConfig.getOrElseL(errors => {
+    throw new Error(`Invalid configuration: ${readableReport(errors)}`);
   });
 }
