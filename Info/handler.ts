@@ -17,11 +17,11 @@ type InfoHandler = () => Promise<
   IResponseSuccessJson<IInfo> | IResponseErrorInternal
 >;
 
-export function InfoHandler<T>(healthCheck: HealthCheck<T>): InfoHandler {
+export function InfoHandler(healthCheck: HealthCheck): InfoHandler {
   return () =>
     healthCheck
       .fold<IResponseSuccessJson<IInfo> | IResponseErrorInternal>(
-        problems => ResponseErrorInternal(problems.join("\n")),
+        problems => ResponseErrorInternal(problems.join("\n\n")),
         _ =>
           ResponseSuccessJson({
             version: packageJson.version

@@ -9,6 +9,8 @@ import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
+const NullableString = t.union([t.string, t.undefined]);
+
 export type IConfig = t.TypeOf<typeof IConfig>;
 export const IConfig = t.interface({
   COSMOSDB_KEY: NonEmptyString,
@@ -53,12 +55,12 @@ export const IConfig = t.interface({
 
   // FIXME: email configuration values may be required or not depending on their values
   MAIL_FROM: NonEmptyString,
-  MAIL_TRANSPORTS: t.string,
+  MAIL_TRANSPORTS: NullableString,
 
-  MAILHOG_HOSTNAME: t.string,
-  MAILUP_SECRET: t.string,
-  MAILUP_USERNAME: t.string,
-  SENDGRID_API_KEY: t.string,
+  MAILHOG_HOSTNAME: NullableString,
+  MAILUP_SECRET: NullableString,
+  MAILUP_USERNAME: NullableString,
+  SENDGRID_API_KEY: NullableString,
 
   isProduction: t.boolean
 });
