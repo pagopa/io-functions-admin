@@ -1,6 +1,5 @@
 import { CosmosClient } from "@azure/cosmos";
 import { common as azurestorageCommon, createBlobService } from "azure-storage";
-import e = require("express");
 import { sequenceT } from "fp-ts/lib/Apply";
 import { toError } from "fp-ts/lib/Either";
 import {
@@ -10,6 +9,7 @@ import {
   tryCatch
 } from "fp-ts/lib/TaskEither";
 import { readableReport } from "italia-ts-commons/lib/reporters";
+import fetch from "node-fetch";
 import { getConfig, IConfig } from "./config";
 
 type ProblemSource = "AzureCosmosDB" | "AzureStorage" | "Config" | "Url";
@@ -17,7 +17,7 @@ export type HealthProblem<S extends ProblemSource> = string & { __source: S };
 export type HealthCheck<
   S extends ProblemSource = ProblemSource,
   T = true
-> = TaskEither<readonly HealthProblem<S>[], T>;
+> = TaskEither<ReadonlyArray<HealthProblem<S>>, T>;
 
 // format and cast a problem message with its source
 const formatProblem = <S extends ProblemSource>(
@@ -28,7 +28,9 @@ const formatProblem = <S extends ProblemSource>(
 // utility to format an unknown error to an arry of HealthProblem
 const toHealthProblems = <S extends ProblemSource>(source: S) => (
   e: unknown
-): readonly HealthProblem<S>[] => [formatProblem(source, toError(e).message)];
+): ReadonlyArray<HealthProblem<S>> => [
+  formatProblem(source, toError(e).message)
+];
 
 /**
  * Check application's configuration is correct
@@ -60,7 +62,7 @@ export const checkAzureCosmosDbHealth = (
       endpoint: dbUri,
       key: dbKey
     });
-    return client.getDatabaseAccount().then(e => console.log("--->db", e));
+    return client.getDatabaseAccount();
   }, toHealthProblems("AzureCosmosDB")).map(_ => true);
 
 /**
@@ -81,7 +83,6 @@ export const checkAzureStorageHealth = (
             "",
             "",
             (err, result) => {
-              console.log("---> storage", { connStr, err, result });
               err ? reject(err.message.replace(/\n/gim, " ")) : resolve(result);
             }
           )
@@ -96,9 +97,10 @@ export const checkAzureStorageHealth = (
  *
  * @returns either true or an array of error messages
  */
-export const checkUrlHealth = (_: string): HealthCheck<"Url", true> =>
-  // TODO: implement this check
-  taskEither.of(true);
+export const checkUrlHealth = (url: string): HealthCheck<"Url", true> =>
+  tryCatch(() => fetch(url, { method: "HEAD" }), toHealthProblems("Url")).map(
+    _ => true
+  );
 
 /**
  * Execute all the health checks for the application
@@ -107,11 +109,15 @@ export const checkUrlHealth = (_: string): HealthCheck<"Url", true> =>
  */
 export const checkApplicationHealth = (): HealthCheck<ProblemSource, true> =>
   taskEither
-    .of<readonly HealthProblem<ProblemSource>[], void>(void 0)
+    .of<ReadonlyArray<HealthProblem<ProblemSource>>, void>(void 0)
     .chain(_ => checkConfigHealth())
     .chain(config =>
       // TODO: once we upgrade to fp-ts >= 1.19 we can use Validation to collect all errors, not just the first to happen
-      sequenceT(taskEither)<readonly HealthProblem<ProblemSource>[], any[]>(
+      sequenceT(taskEither)<
+        ReadonlyArray<HealthProblem<ProblemSource>>,
+        // tslint:disable readonly-array beacuse the following is actually mutable
+        Array<TaskEither<ReadonlyArray<HealthProblem<ProblemSource>>, true>>
+      >(
         checkAzureCosmosDbHealth(config.COSMOSDB_URI, config.COSMOSDB_KEY),
         checkAzureStorageHealth(config.StorageConnection),
         checkAzureStorageHealth(config.UserDataBackupStorageConnection),
