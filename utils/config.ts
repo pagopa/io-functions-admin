@@ -58,17 +58,16 @@ export const IConfig = t.interface({
   MAILHOG_HOSTNAME: t.string,
   MAILUP_SECRET: t.string,
   MAILUP_USERNAME: t.string,
-  SENDGRID_API_KEY: t.string
+  SENDGRID_API_KEY: t.string,
+
+  isProduction: t.boolean
 });
 
 // No need to re-evaluate this object for each call
-const errorOrConfig: t.Validation<IConfig> = IConfig.decode(process.env).map(
-  c => ({
-    ...c,
-    // Whether we're in a production environment
-    isProduction: process.env.NODE_ENV === "production"
-  })
-);
+const errorOrConfig: t.Validation<IConfig> = IConfig.decode({
+  ...process.env,
+  isProduction: process.env.NODE_ENV === "production"
+});
 
 /**
  * Read the application configuration and check for invalid values.
