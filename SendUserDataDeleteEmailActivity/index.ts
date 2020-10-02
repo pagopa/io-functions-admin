@@ -25,43 +25,24 @@ const HTML_TO_TEXT_OPTIONS: HtmlToText.HtmlToTextOptions = {
   tables: true
 };
 
-// Optional multi provider connection string
-// The connection string must be in the format:
-//   [mailup:username:password;][sendgrid:apikey:;]
-// Note that multiple instances of the same provider can be provided.
-const transports = MailMultiTransportConnectionsFromString.decode(
-  config.MAIL_TRANSPORTS
-)
-  .map(getTransportsForConnections)
-  .getOrElse([]);
-
 // if we have a valid multi transport configuration, configure a
 // Multi transport, or else fall back to the default logic
 const mailerTransporter =
-  transports.length > 0
+  typeof config.MAIL_TRANSPORTS !== "undefined"
     ? NodeMailer.createTransport(
         MultiTransport({
-          transports
+          transports: getTransportsForConnections(config.MAIL_TRANSPORTS)
         })
       )
     : getMailerTransporter({
         isProduction: config.isProduction,
-        ...(sendgridApiKey
-          ? { sendgridApiKey }
+        ...(typeof config.SENDGRID_API_KEY !== "undefined"
+          ? {
+              sendgridApiKey: config.SENDGRID_API_KEY,  
+            }
           : {
-              // FIXME: handle non empty values in global config
-              mailupSecret: NonEmptyString.decode(
-                config.MAILUP_SECRET
-              ).getOrElseL(_ => {
-                throw new Error("env variable MAILUP_SECRET must not be empty");
-              }),
-              mailupUsername: NonEmptyString.decode(
-                config.MAILUP_USERNAME
-              ).getOrElseL(_ => {
-                throw new Error(
-                  "env variable MAILUP_USERNAME must not be empty"
-                );
-              })
+              mailupSecret: config.MAILUP_SECRET,
+              mailupUsername: config.MAILUP_USERNAME
             })
       });
 
