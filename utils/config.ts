@@ -38,21 +38,21 @@ export const MailerConfig = t.intersection([
   t.union([
     // Using sendgrid
     t.interface({
-      NODE_ENV: t.literal("production"),
-      MAIL_TRANSPORTS: t.undefined,
-      SENDGRID_API_KEY: NonEmptyString,
-      MAILUP_USERNAME: t.undefined,
+      MAILHOG_HOSTNAME: t.undefined,
       MAILUP_SECRET: t.undefined,
-      MAILHOG_HOSTNAME: t.undefined
+      MAILUP_USERNAME: t.undefined,
+      MAIL_TRANSPORTS: t.undefined,
+      NODE_ENV: t.literal("production"),
+      SENDGRID_API_KEY: NonEmptyString
     }),
     // using mailup
     t.interface({
-      NODE_ENV: t.literal("production"),
-      MAIL_TRANSPORTS: t.undefined,
-      SENDGRID_API_KEY: t.undefined,
-      MAILUP_USERNAME: NonEmptyString,
+      MAILHOG_HOSTNAME: t.undefined,
       MAILUP_SECRET: NonEmptyString,
-      MAILHOG_HOSTNAME: t.undefined
+      MAILUP_USERNAME: NonEmptyString,
+      MAIL_TRANSPORTS: t.undefined,
+      NODE_ENV: t.literal("production"),
+      SENDGRID_API_KEY: t.undefined
     }),
     // Using multi-transport definition
     // Optional multi provider connection string
@@ -60,21 +60,21 @@ export const MailerConfig = t.intersection([
     //   [mailup:username:password;][sendgrid:apikey:;]
     // Note that multiple instances of the same provider can be provided.
     t.interface({
-      NODE_ENV: t.literal("production"),
-      MAIL_TRANSPORTS: MailMultiTransportConnectionsFromString,
-      SENDGRID_API_KEY: t.undefined,
-      MAILUP_USERNAME: t.undefined,
+      MAILHOG_HOSTNAME: t.undefined,
       MAILUP_SECRET: t.undefined,
-      MAILHOG_HOSTNAME: t.undefined
+      MAILUP_USERNAME: t.undefined,
+      MAIL_TRANSPORTS: MailMultiTransportConnectionsFromString,
+      NODE_ENV: t.literal("production"),
+      SENDGRID_API_KEY: t.undefined
     }),
     t.interface({
       // the following states that a mailhog configuration is optional and can be provided only if not in prod
-      NODE_ENV: AnyBut("production", NullableString),
       MAILHOG_HOSTNAME: NonEmptyString,
-      MAIL_TRANSPORTS: t.undefined,
-      SENDGRID_API_KEY: t.undefined,
+      MAILUP_SECRET: t.undefined,
       MAILUP_USERNAME: t.undefined,
-      MAILUP_SECRET: t.undefined
+      MAIL_TRANSPORTS: t.undefined,
+      NODE_ENV: AnyBut("production", NullableString),
+      SENDGRID_API_KEY: t.undefined
     })
   ])
 ]);

@@ -1,7 +1,5 @@
 import * as HtmlToText from "html-to-text";
-import { MailMultiTransportConnectionsFromString } from "io-functions-commons/dist/src/utils/multi_transport_connection";
 import { MultiTransport } from "io-functions-commons/dist/src/utils/nodemailer";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as NodeMailer from "nodemailer";
 import { getConfigOrThrow } from "../utils/config";
 import {
@@ -11,11 +9,6 @@ import {
 import { getActivityFunction } from "./handler";
 
 const config = getConfigOrThrow();
-
-// Optional SendGrid key
-const sendgridApiKey = NonEmptyString.decode(config.SENDGRID_API_KEY).getOrElse(
-  undefined
-);
 
 // default sender for email
 const MAIL_FROM = config.MAIL_FROM;
@@ -38,7 +31,7 @@ const mailerTransporter =
         isProduction: config.isProduction,
         ...(typeof config.SENDGRID_API_KEY !== "undefined"
           ? {
-              sendgridApiKey: config.SENDGRID_API_KEY,  
+              sendgridApiKey: config.SENDGRID_API_KEY
             }
           : {
               mailupSecret: config.MAILUP_SECRET,
