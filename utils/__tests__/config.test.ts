@@ -1,4 +1,5 @@
-import { Either, Right } from "fp-ts/lib/Either";
+import { Either } from "fp-ts/lib/Either";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { MailerConfig } from "../config";
 
 const aMailFrom = "example@test.com";
@@ -47,6 +48,21 @@ describe("MailerConfig", () => {
     });
   });
 
+  it("should decode configuration for sendgrid even if mailup conf is passed", () => {
+    const rawConf = {
+      MAIL_FROM: aMailFrom,
+      NODE_ENV: "production",
+      SENDGRID_API_KEY: "a-sg-key",
+      MAILUP_USERNAME: "a-mu-username",
+      MAILUP_SECRET: "a-mu-secret"
+    };
+    const result = MailerConfig.decode(rawConf);
+
+    expectRight(result, value => {
+      expect(value.SENDGRID_API_KEY).toBe("a-sg-key");
+    });
+  });
+
   it("should decode configuration for mailup", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
@@ -59,6 +75,9 @@ describe("MailerConfig", () => {
     expectRight(result, value => {
       expect(value.MAILUP_USERNAME).toBe("a-mu-username");
       expect(value.MAILUP_SECRET).toBe("a-mu-secret");
+      // check types
+      const _: NonEmptyString = value.MAILUP_SECRET;
+      const __: NonEmptyString = value.MAILUP_USERNAME;
     });
   });
 
@@ -167,7 +186,9 @@ describe("MailerConfig", () => {
     };
 
     const examples = [
-      { ...base, ...withMailUp, ...withSendGrid },
+      // the following configuration is not ambiguos as sendgrid would override mailup anyway
+      // see here for the rationale: https://github.com/pagopa/io-functions-admin/pull/89#commitcomment-42917672
+      // { ...base, ...withMailUp, ...withSendGrid },
       { ...base, ...withMultiTransport, ...withSendGrid },
       { ...base, ...withMailUp, ...withMultiTransport },
       { ...base, ...withMailUp, ...withSendGrid, ...withMultiTransport }

@@ -1,4 +1,3 @@
-import { MailMultiTransportConnectionsFromString } from "io-functions-commons/dist/src/utils/multi_transport_connection";
 /**
  * Config module
  *
@@ -6,15 +5,18 @@ import { MailMultiTransportConnectionsFromString } from "io-functions-commons/di
  * The configuration is evaluate eagerly at the first access to the module. The module exposes convenient methods to access such value.
  */
 
+import { MailMultiTransportConnectionsFromString } from "io-functions-commons/dist/src/utils/multi_transport_connection";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
-export type NullableString = t.TypeOf<typeof NullableString>;
-const NullableString = t.union([t.string, t.undefined]);
-
-// explude a specific value from a type
-const AnyBut = <A, O = A>(but: A, base: t.Type<A, O> = t.any) =>
+// exclude a specific value from a type
+// as strict equality is performed, allowed input types are constrained to be values not references (object, arrays, etc)
+// tslint:disable-next-line max-union-size
+const AnyBut = <A extends string | number | boolean | symbol, O = A>(
+  but: A,
+  base: t.Type<A, O> = t.any
+) =>
   t.brand(
     base,
     (
@@ -29,22 +31,28 @@ const AnyBut = <A, O = A>(but: A, base: t.Type<A, O> = t.any) =>
 // configuration to send email
 export type MailerConfig = t.TypeOf<typeof MailerConfig>;
 export const MailerConfig = t.intersection([
-  // common fields
+  // common required fields
   t.interface({
     MAIL_FROM: NonEmptyString
   }),
-  // the following union includes the possible configuration variants for different mail transport we use in prod
+  // the following union includes the possible configuration variants for different mail transports we use in prod
   // undefined values are kept for easy usage
   t.union([
     // Using sendgrid
-    t.interface({
-      MAILHOG_HOSTNAME: t.undefined,
-      MAILUP_SECRET: t.undefined,
-      MAILUP_USERNAME: t.undefined,
-      MAIL_TRANSPORTS: t.undefined,
-      NODE_ENV: t.literal("production"),
-      SENDGRID_API_KEY: NonEmptyString
-    }),
+    // we allow mailup values as well, as sendgrid would be selected first if present
+    // see here for the rationale: https://github.com/pagopa/io-functions-admin/pull/89#commitcomment-42917672
+    t.intersection([
+      t.interface({
+        MAILHOG_HOSTNAME: t.undefined,
+        MAIL_TRANSPORTS: t.undefined,
+        NODE_ENV: t.literal("production"),
+        SENDGRID_API_KEY: NonEmptyString
+      }),
+      t.partial({
+        MAILUP_SECRET: NonEmptyString,
+        MAILUP_USERNAME: NonEmptyString
+      })
+    ]),
     // using mailup
     t.interface({
       MAILHOG_HOSTNAME: t.undefined,
@@ -67,13 +75,13 @@ export const MailerConfig = t.intersection([
       NODE_ENV: t.literal("production"),
       SENDGRID_API_KEY: t.undefined
     }),
+    // the following states that a mailhog configuration is optional and can be provided only if not in prod
     t.interface({
-      // the following states that a mailhog configuration is optional and can be provided only if not in prod
       MAILHOG_HOSTNAME: NonEmptyString,
       MAILUP_SECRET: t.undefined,
       MAILUP_USERNAME: t.undefined,
       MAIL_TRANSPORTS: t.undefined,
-      NODE_ENV: AnyBut("production", NullableString),
+      NODE_ENV: AnyBut("production", t.string),
       SENDGRID_API_KEY: t.undefined
     })
   ])
