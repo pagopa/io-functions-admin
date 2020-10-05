@@ -10,6 +10,7 @@ import * as packageJson from "../package.json";
 import { checkApplicationHealth, HealthCheck } from "../utils/healthcheck";
 
 interface IInfo {
+  name: string;
   version: string;
 }
 
@@ -24,6 +25,7 @@ export function InfoHandler(healthCheck: HealthCheck): InfoHandler {
         problems => ResponseErrorInternal(problems.join("\n\n")),
         _ =>
           ResponseSuccessJson({
+            name: packageJson.name,
             version: packageJson.version
           })
       )
