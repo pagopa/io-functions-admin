@@ -1,6 +1,13 @@
 import { CosmosClient } from "@azure/cosmos";
-import { common as azurestorageCommon, createBlobService } from "azure-storage";
+import {
+  common as azurestorageCommon,
+  createBlobService,
+  createFileService,
+  createQueueService,
+  createTableService
+} from "azure-storage";
 import { sequenceT } from "fp-ts/lib/Apply";
+import { array } from "fp-ts/lib/Array";
 import { toError } from "fp-ts/lib/Either";
 import {
   fromEither,
@@ -75,20 +82,33 @@ export const checkAzureCosmosDbHealth = (
 export const checkAzureStorageHealth = (
   connStr: string
 ): HealthCheck<"AzureStorage"> =>
-  tryCatch(
-    () =>
-      new Promise<azurestorageCommon.models.AccountProperties>(
-        (resolve, reject) =>
-          createBlobService(connStr).getAccountProperties(
-            "",
-            "",
-            (err, result) => {
-              err ? reject(err.message.replace(/\n/gim, " ")) : resolve(result);
-            }
+  array
+    .sequence(taskEither)(
+      // try to instantiate a client for each product of azure storage
+      [
+        createBlobService,
+        createFileService,
+        createQueueService,
+        createTableService
+      ]
+        // for each, create a task that wraps getServiceProperties
+        .map(createService =>
+          tryCatch(
+            () =>
+              new Promise<
+                azurestorageCommon.models.ServicePropertiesResult.ServiceProperties
+              >((resolve, reject) =>
+                createService(connStr).getServiceProperties((err, result) => {
+                  err
+                    ? reject(err.message.replace(/\n/gim, " ")) // avoid newlines
+                    : resolve(result);
+                })
+              ),
+            toHealthProblems("AzureStorage")
           )
-      ),
-    toHealthProblems("AzureStorage")
-  ).map(_ => true);
+        )
+    )
+    .map(_ => true);
 
 /**
  * Check a url is reachable
