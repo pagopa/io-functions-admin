@@ -34,20 +34,6 @@ describe("MailerConfig", () => {
     });
   });
 
-  it("should decode configuration for sendgrid", () => {
-    const rawConf = {
-      MAIL_FROM: aMailFrom,
-      NODE_ENV: "production",
-      SENDGRID_API_KEY: "a-sg-key"
-    };
-    const result = MailerConfig.decode(rawConf);
-
-    expectRight(result, value => {
-      expect(value.SENDGRID_API_KEY).toBe("a-sg-key");
-      expect(typeof value.MAILUP_USERNAME).toBe("undefined");
-    });
-  });
-
   it("should decode configuration for sendgrid even if mailup conf is passed", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
