@@ -61,9 +61,6 @@ describe("MailerConfig", () => {
     expectRight(result, value => {
       expect(value.MAILUP_USERNAME).toBe("a-mu-username");
       expect(value.MAILUP_SECRET).toBe("a-mu-secret");
-      // check types
-      const _: NonEmptyString = value.MAILUP_SECRET;
-      const __: NonEmptyString = value.MAILUP_USERNAME;
     });
   });
 
