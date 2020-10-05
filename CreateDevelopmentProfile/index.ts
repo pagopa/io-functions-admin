@@ -24,10 +24,8 @@ secureExpressApp(app);
 
 const config = getConfigOrThrow();
 
-const cosmosDbName = config.COSMOSDB_NAME;
-
 const profilesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(PROFILE_COLLECTION_NAME);
 
 const profileModel = new ProfileModel(profilesContainer);

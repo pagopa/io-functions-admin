@@ -8,8 +8,8 @@ import { getConfigOrThrow } from "../utils/config";
 import { createGetProfileActivityHandler } from "./handler";
 
 const config = getConfigOrThrow();
-const cosmosDbName = config.COSMOSDB_NAME;
-const database = cosmosdbClient.database(cosmosDbName);
+
+const database = cosmosdbClient.database(config.COSMOSDB_NAME);
 
 const profileModel = new ProfileModel(
   database.container(PROFILE_COLLECTION_NAME)

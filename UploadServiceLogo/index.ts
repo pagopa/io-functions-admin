@@ -20,8 +20,7 @@ import { cosmosdbClient } from "../utils/cosmosdb";
 
 const config = getConfigOrThrow();
 
-const cosmosDbName = config.COSMOSDB_NAME;
-const database = cosmosdbClient.database(cosmosDbName);
+const database = cosmosdbClient.database(config.COSMOSDB_NAME);
 const logosUrl = config.LOGOS_URL;
 
 const servicesContainer = database.container(SERVICE_COLLECTION_NAME);

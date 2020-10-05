@@ -16,10 +16,9 @@ import { NotificationStatusDeletableModel } from "../utils/extensions/models/not
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 
 const config = getConfigOrThrow();
-const cosmosDbName = config.COSMOSDB_NAME;
 
 const messagesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(MESSAGE_COLLECTION_NAME);
 
 const messageModel = new MessageDeletableModel(
@@ -28,7 +27,7 @@ const messageModel = new MessageDeletableModel(
 );
 
 const messageStatusesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(MESSAGE_STATUS_COLLECTION_NAME);
 
 const messageStatusModel = new MessageStatusDeletableModel(
@@ -36,7 +35,7 @@ const messageStatusModel = new MessageStatusDeletableModel(
 );
 
 const notificationsContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(NOTIFICATION_COLLECTION_NAME);
 
 const notificationModel = new NotificationDeletableModel(
@@ -44,7 +43,7 @@ const notificationModel = new NotificationDeletableModel(
 );
 
 const notificationStatusesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(NOTIFICATION_STATUS_COLLECTION_NAME);
 
 const notificationStatusModel = new NotificationStatusDeletableModel(
@@ -52,7 +51,7 @@ const notificationStatusModel = new NotificationStatusDeletableModel(
 );
 
 const profilesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(PROFILE_COLLECTION_NAME);
 
 const profileModel = new ProfileDeletableModel(profilesContainer);

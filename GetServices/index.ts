@@ -21,10 +21,8 @@ import { GetServices } from "./handler";
 
 const config = getConfigOrThrow();
 
-const cosmosDbName = config.COSMOSDB_NAME;
-
 const servicesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(SERVICE_COLLECTION_NAME);
 
 const serviceModel = new ServiceModel(servicesContainer);

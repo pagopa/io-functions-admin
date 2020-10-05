@@ -26,8 +26,8 @@ import {
 import { getConfigOrThrow } from "../utils/config";
 
 const config = getConfigOrThrow();
-const cosmosDbName = config.COSMOSDB_NAME;
-const database = cosmosdbClient.database(cosmosDbName);
+
+const database = cosmosdbClient.database(config.COSMOSDB_NAME);
 
 const messageModel = new MessageModel(
   database.container(MESSAGE_COLLECTION_NAME),
