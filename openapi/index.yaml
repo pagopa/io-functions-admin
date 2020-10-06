@@ -643,6 +643,14 @@ definitions:
         type: string
       version:
         type: integer
+  ServerInfo:
+    type: object
+    title: Server information
+    properties:
+      version:
+        type: string
+    required:
+     - version
 responses: {}
 parameters:
   SandboxFiscalCode:
