@@ -10,7 +10,10 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
+import { getConfigOrThrow } from "../utils/config";
 import { GetUser } from "./handler";
+
+const config = getConfigOrThrow();
 
 const adb2cCreds = {
   clientId: getRequiredStringEnv("ADB2C_CLIENT_ID"),
@@ -18,14 +21,14 @@ const adb2cCreds = {
   tenantId: getRequiredStringEnv("ADB2C_TENANT_ID")
 };
 const servicePrincipalCreds = {
-  clientId: getRequiredStringEnv("SERVICE_PRINCIPAL_CLIENT_ID"),
-  secret: getRequiredStringEnv("SERVICE_PRINCIPAL_SECRET"),
-  tenantId: getRequiredStringEnv("SERVICE_PRINCIPAL_TENANT_ID")
+  clientId: config.SERVICE_PRINCIPAL_CLIENT_ID,
+  secret: config.SERVICE_PRINCIPAL_SECRET,
+  tenantId: config.SERVICE_PRINCIPAL_TENANT_ID
 };
 const azureApimConfig = {
-  apim: getRequiredStringEnv("AZURE_APIM"),
-  apimResourceGroup: getRequiredStringEnv("AZURE_APIM_RESOURCE_GROUP"),
-  subscriptionId: getRequiredStringEnv("AZURE_SUBSCRIPTION_ID")
+  apim: config.AZURE_APIM,
+  apimResourceGroup: config.AZURE_APIM_RESOURCE_GROUP,
+  subscriptionId: config.AZURE_SUBSCRIPTION_ID
 };
 
 const adb2cTokenAttributeName = getRequiredStringEnv(

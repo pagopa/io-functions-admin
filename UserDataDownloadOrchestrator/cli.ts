@@ -26,8 +26,10 @@ import {
 import { isLeft } from "fp-ts/lib/Either";
 import { isNone } from "fp-ts/lib/Option";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
+import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
+
+const config = getConfigOrThrow();
 
 const context = ({
   log: {
@@ -38,8 +40,7 @@ const context = ({
   // tslint:disable-next-line: no-any
 } as any) as Context;
 
-const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
-const database = cosmosdbClient.database(cosmosDbName);
+const database = cosmosdbClient.database(config.COSMOSDB_NAME);
 
 const userDataProcessingModel = new UserDataProcessingModel(
   database.container(USER_DATA_PROCESSING_COLLECTION_NAME)

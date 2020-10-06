@@ -1,5 +1,3 @@
-﻿import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
-
 import { cosmosdbClient } from "../utils/cosmosdb";
 
 import { createExtractUserDataActivityHandler } from "./handler";
@@ -25,13 +23,15 @@ import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
+import { getConfigOrThrow } from "../utils/config";
 
-const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
-const database = cosmosdbClient.database(cosmosDbName);
+const config = getConfigOrThrow();
+
+const database = cosmosdbClient.database(config.COSMOSDB_NAME);
 
 const messageModel = new MessageModel(
   database.container(MESSAGE_COLLECTION_NAME),
-  getRequiredStringEnv("MESSAGE_CONTAINER_NAME")
+  config.MESSAGE_CONTAINER_NAME
 );
 
 const messageStatusModel = new MessageStatusModel(
@@ -51,14 +51,12 @@ const profileModel = new ProfileModel(
 );
 
 const userDataBlobService = createBlobService(
-  getRequiredStringEnv("UserDataArchiveStorageConnection")
+  config.UserDataArchiveStorageConnection
 );
 
-const messageContentBlobService = createBlobService(
-  getRequiredStringEnv("StorageConnection")
-);
+const messageContentBlobService = createBlobService(config.StorageConnection);
 
-const userDataContainerName = getRequiredStringEnv("USER_DATA_CONTAINER_NAME");
+const userDataContainerName = config.USER_DATA_CONTAINER_NAME;
 
 const activityFunctionHandler = createExtractUserDataActivityHandler({
   messageContentBlobService,

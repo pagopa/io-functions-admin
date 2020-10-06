@@ -7,19 +7,21 @@ import {
   SERVICE_COLLECTION_NAME,
   ServiceModel
 } from "io-functions-commons/dist/src/models/service";
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { secureExpressApp } from "io-functions-commons/dist/src/utils/express";
 import { AzureContextTransport } from "io-functions-commons/dist/src/utils/logging";
 import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { cosmosdbClient } from "../utils/cosmosdb";
 import { UploadServiceLogo } from "./handler";
 
-const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
-const database = cosmosdbClient.database(cosmosDbName);
-const logosUrl = getRequiredStringEnv("LOGOS_URL");
+import { getConfigOrThrow } from "../utils/config";
+import { cosmosdbClient } from "../utils/cosmosdb";
+
+const config = getConfigOrThrow();
+
+const database = cosmosdbClient.database(config.COSMOSDB_NAME);
+const logosUrl = config.LOGOS_URL;
 
 const servicesContainer = database.container(SERVICE_COLLECTION_NAME);
 
