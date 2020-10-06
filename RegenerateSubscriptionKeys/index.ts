@@ -3,24 +3,26 @@ import { Context } from "@azure/functions";
 import * as express from "express";
 import * as winston from "winston";
 
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { secureExpressApp } from "io-functions-commons/dist/src/utils/express";
 import { AzureContextTransport } from "io-functions-commons/dist/src/utils/logging";
 import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
+import { getConfigOrThrow } from "../utils/config";
 import { RegenerateSubscriptionKeys } from "./handler";
 
+const config = getConfigOrThrow();
+
 const servicePrincipalCreds = {
-  clientId: getRequiredStringEnv("SERVICE_PRINCIPAL_CLIENT_ID"),
-  secret: getRequiredStringEnv("SERVICE_PRINCIPAL_SECRET"),
-  tenantId: getRequiredStringEnv("SERVICE_PRINCIPAL_TENANT_ID")
+  clientId: config.SERVICE_PRINCIPAL_CLIENT_ID,
+  secret: config.SERVICE_PRINCIPAL_SECRET,
+  tenantId: config.SERVICE_PRINCIPAL_TENANT_ID
 };
 const azureApimConfig = {
-  apim: getRequiredStringEnv("AZURE_APIM"),
-  apimResourceGroup: getRequiredStringEnv("AZURE_APIM_RESOURCE_GROUP"),
-  subscriptionId: getRequiredStringEnv("AZURE_SUBSCRIPTION_ID")
+  apim: config.AZURE_APIM,
+  apimResourceGroup: config.AZURE_APIM_RESOURCE_GROUP,
+  subscriptionId: config.AZURE_SUBSCRIPTION_ID
 };
 // tslint:disable-next-line: no-let
 let logger: Context["log"] | undefined;

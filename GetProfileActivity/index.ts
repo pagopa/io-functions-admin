@@ -1,15 +1,15 @@
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
-
 import { cosmosdbClient } from "../utils/cosmosdb";
 
 import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
+import { getConfigOrThrow } from "../utils/config";
 import { createGetProfileActivityHandler } from "./handler";
 
-const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
-const database = cosmosdbClient.database(cosmosDbName);
+const config = getConfigOrThrow();
+
+const database = cosmosdbClient.database(config.COSMOSDB_NAME);
 
 const profileModel = new ProfileModel(
   database.container(PROFILE_COLLECTION_NAME)

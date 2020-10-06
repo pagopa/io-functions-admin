@@ -1,10 +1,9 @@
 ﻿import { createBlobService } from "azure-storage";
-
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
-
+import { getConfigOrThrow } from "../utils/config";
 import { getUpdateVisibleServicesActivityHandler } from "./handler";
 
-const storageConnectionString = getRequiredStringEnv("StorageConnection");
+const config = getConfigOrThrow();
+const storageConnectionString = config.StorageConnection;
 const blobService = createBlobService(storageConnectionString);
 
 const activityFunctionHandler = getUpdateVisibleServicesActivityHandler(

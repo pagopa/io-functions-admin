@@ -8,13 +8,13 @@ import {
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
 
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
 import { secureExpressApp } from "io-functions-commons/dist/src/utils/express";
 import { AzureContextTransport } from "io-functions-commons/dist/src/utils/logging";
 import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
+import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 import { CreateDevelopmentProfile } from "./handler";
 
@@ -22,10 +22,10 @@ import { CreateDevelopmentProfile } from "./handler";
 const app = express();
 secureExpressApp(app);
 
-const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
+const config = getConfigOrThrow();
 
 const profilesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(PROFILE_COLLECTION_NAME);
 
 const profileModel = new ProfileModel(profilesContainer);

@@ -17,6 +17,7 @@ import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as NodeMailer from "nodemailer";
 import nodemailerSendgrid = require("nodemailer-sendgrid");
 import Mail = require("nodemailer/lib/mailer");
+import { getConfigOrThrow } from "./config";
 
 // 5 seconds timeout by default
 const DEFAULT_EMAIL_REQUEST_TIMEOUT_MS = 5000;
@@ -42,6 +43,7 @@ type MailTransportOptions = (IMailUpOptions | ISendGridOptions) & {
 };
 
 export function getMailerTransporter(opts: MailTransportOptions): Mail {
+  const config = getConfigOrThrow();
   return opts.isProduction
     ? NodeMailer.createTransport(
         "sendgridApiKey" in opts
@@ -60,7 +62,7 @@ export function getMailerTransporter(opts: MailTransportOptions): Mail {
     : // For development we use mailhog to intercept emails
       // Use the `docker-compose.yml` file to run the mailhog server
       NodeMailer.createTransport({
-        host: process.env.MAILHOG_HOSTNAME || "localhost",
+        host: config.MAILHOG_HOSTNAME || "localhost",
         port: 1025,
         secure: false
       });

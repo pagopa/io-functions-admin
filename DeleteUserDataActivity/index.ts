@@ -1,5 +1,3 @@
-import { getRequiredStringEnv } from "io-functions-commons/dist/src/utils/env";
-
 import { cosmosdbClient } from "../utils/cosmosdb";
 
 import { createDeleteUserDataActivityHandler } from "./handler";
@@ -10,25 +8,26 @@ import { MESSAGE_STATUS_COLLECTION_NAME } from "io-functions-commons/dist/src/mo
 import { NOTIFICATION_COLLECTION_NAME } from "io-functions-commons/dist/src/models/notification";
 import { NOTIFICATION_STATUS_COLLECTION_NAME } from "io-functions-commons/dist/src/models/notification_status";
 import { PROFILE_COLLECTION_NAME } from "io-functions-commons/dist/src/models/profile";
+import { getConfigOrThrow } from "../utils/config";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 
-const cosmosDbName = getRequiredStringEnv("COSMOSDB_NAME");
+const config = getConfigOrThrow();
 
 const messagesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(MESSAGE_COLLECTION_NAME);
 
 const messageModel = new MessageDeletableModel(
   messagesContainer,
-  getRequiredStringEnv("MESSAGE_CONTAINER_NAME")
+  config.MESSAGE_CONTAINER_NAME
 );
 
 const messageStatusesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(MESSAGE_STATUS_COLLECTION_NAME);
 
 const messageStatusModel = new MessageStatusDeletableModel(
@@ -36,7 +35,7 @@ const messageStatusModel = new MessageStatusDeletableModel(
 );
 
 const notificationsContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(NOTIFICATION_COLLECTION_NAME);
 
 const notificationModel = new NotificationDeletableModel(
@@ -44,7 +43,7 @@ const notificationModel = new NotificationDeletableModel(
 );
 
 const notificationStatusesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(NOTIFICATION_STATUS_COLLECTION_NAME);
 
 const notificationStatusModel = new NotificationStatusDeletableModel(
@@ -52,22 +51,18 @@ const notificationStatusModel = new NotificationStatusDeletableModel(
 );
 
 const profilesContainer = cosmosdbClient
-  .database(cosmosDbName)
+  .database(config.COSMOSDB_NAME)
   .container(PROFILE_COLLECTION_NAME);
 
 const profileModel = new ProfileDeletableModel(profilesContainer);
 
 const userDataBackupBlobService = createBlobService(
-  getRequiredStringEnv("UserDataBackupStorageConnection")
+  config.UserDataBackupStorageConnection
 );
 
-const messageContentBlobService = createBlobService(
-  getRequiredStringEnv("StorageConnection")
-);
+const messageContentBlobService = createBlobService(config.StorageConnection);
 
-const userDataBackupContainerName = getRequiredStringEnv(
-  "USER_DATA_BACKUP_CONTAINER_NAME"
-);
+const userDataBackupContainerName = config.USER_DATA_BACKUP_CONTAINER_NAME;
 
 const activityFunctionHandler = createDeleteUserDataActivityHandler({
   messageContentBlobService,
