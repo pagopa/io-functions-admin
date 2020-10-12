@@ -10,10 +10,8 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { getConfigOrThrow } from "../utils/config";
 import { UpdateUser } from "./handler";
 
-const config = getConfigOrThrow();
 const adb2cCreds = {
   clientId: getRequiredStringEnv("ADB2C_CLIENT_ID"),
   secret: getRequiredStringEnv("ADB2C_CLIENT_KEY"),
