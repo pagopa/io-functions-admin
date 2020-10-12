@@ -309,6 +309,27 @@ paths:
           description: Forbidden
         "500":
           description: Internal server error
+    put:
+      summary: Update user
+      description: Update an existing ADB2C User.
+      operationId: updateUser
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/UserPayload"
+      responses:
+        "200":
+          description: The updated User
+          schema:
+            $ref: "#/definitions/UserCreated"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal server error
   /users/{email}:
     get:
       summary: Get user
@@ -481,6 +502,9 @@ definitions:
         type: string
         minLength: 1
       last_name:
+        type: string
+        minLength: 1
+      token_name:
         type: string
         minLength: 1
     required:

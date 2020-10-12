@@ -5,6 +5,7 @@ import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { left } from "fp-ts/lib/Either";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { User } from "../../generated/definitions/User";
 import { UserPayload } from "../../generated/definitions/UserPayload";
 import { UserStateEnum } from "../../generated/definitions/UserState";
@@ -64,7 +65,9 @@ mockApiManagementClient.mockImplementation(() => ({
   }
 }));
 
+const fakeAdb2cExtensionAppClientId = "extension-client-id" as NonEmptyString;
 const mockedContext = { log: { error: mockLog } };
+
 describe("CreateUser", () => {
   it("should return an internal error response if the ADB2C client can not be got", async () => {
     mockLoginWithServicePrincipalSecret.mockImplementationOnce(() =>
@@ -74,7 +77,8 @@ describe("CreateUser", () => {
     const createUserHandler = CreateUserHandler(
       fakeServicePrincipalCredentials,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await createUserHandler(
@@ -94,7 +98,8 @@ describe("CreateUser", () => {
     const createUserHandler = CreateUserHandler(
       fakeServicePrincipalCredentials,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await createUserHandler(
@@ -119,7 +124,8 @@ describe("CreateUser", () => {
     const createUserHandler = CreateUserHandler(
       fakeServicePrincipalCredentials,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await createUserHandler(
@@ -142,7 +148,8 @@ describe("CreateUser", () => {
     const createUserHandler = CreateUserHandler(
       fakeServicePrincipalCredentials,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await createUserHandler(
@@ -187,7 +194,8 @@ describe("CreateUser", () => {
     const createUserHandler = CreateUserHandler(
       fakeServicePrincipalCredentials,
       fakeServicePrincipalCredentials,
-      fakeApimConfig
+      fakeApimConfig,
+      fakeAdb2cExtensionAppClientId
     );
 
     const response = await createUserHandler(
