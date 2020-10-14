@@ -4,7 +4,8 @@ import { User } from "@azure/graph/esm/models";
 import * as express from "express";
 import { toError } from "fp-ts/lib/Either";
 import { identity } from "fp-ts/lib/function";
-import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { fromLeft } from "fp-ts/lib/TaskEither";
+import { taskEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -69,17 +70,14 @@ const updateUser = (
         })
       ),
     toError
-  ).map(
-    updateUserResponse =>
-      ({
-        email,
-        first_name: userPayload.first_name
-          ? userPayload.first_name
-          : user.givenName,
-        id: updateUserResponse.objectId,
-        last_name: userPayload.last_name ? userPayload.last_name : user.surname,
-        token_name: userPayload.token_name
-      } as UserCreated)
+  ).chain(updateUserResponse =>
+    UserCreated.decode({
+      email,
+      first_name: userPayload.first_name || user.givenName,
+      id: updateUserResponse.objectId,
+      last_name: userPayload.last_name || user.surname,
+      token_name: userPayload.token_name
+    }).fold(errs => fromLeft(toError(errs)), usr => taskEither.of(usr))
   );
 
 export function UpdateUserHandler(
