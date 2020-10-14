@@ -5,6 +5,7 @@ import * as express from "express";
 import { toError } from "fp-ts/lib/Either";
 import { identity } from "fp-ts/lib/function";
 import { fromLeft } from "fp-ts/lib/TaskEither";
+import { fromEither } from "fp-ts/lib/TaskEither";
 import { taskEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
@@ -71,13 +72,15 @@ const updateUser = (
       ),
     toError
   ).chain(updateUserResponse =>
-    UserCreated.decode({
-      email,
-      first_name: userPayload.first_name || user.givenName,
-      id: updateUserResponse.objectId,
-      last_name: userPayload.last_name || user.surname,
-      token_name: userPayload.token_name
-    }).fold(errs => fromLeft(toError(errs)), usr => taskEither.of(usr))
+    fromEither(
+      UserCreated.decode({
+        email,
+        first_name: userPayload.first_name || user.givenName,
+        id: updateUserResponse.objectId,
+        last_name: userPayload.last_name || user.surname,
+        token_name: userPayload.token_name
+      }).mapLeft(toError)
+    )
   );
 
 export function UpdateUserHandler(
