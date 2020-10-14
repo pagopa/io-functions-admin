@@ -1,5 +1,6 @@
 import { Context } from "@azure/functions";
 import { GraphRbacManagementClient } from "@azure/graph";
+import { User } from "@azure/graph/esm/models";
 import * as express from "express";
 import { toError } from "fp-ts/lib/Either";
 import { identity } from "fp-ts/lib/function";
@@ -11,6 +12,7 @@ import {
 } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredBodyPayloadMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_body_payload";
+import { RequiredParamMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_param";
 import { withRequestMiddlewares } from "io-functions-commons/dist/src/utils/request_middleware";
 import { wrapRequestHandler } from "italia-ts-commons/lib/request_middleware";
 import {
@@ -20,8 +22,9 @@ import {
 } from "italia-ts-commons/lib/responses";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { withoutUndefinedValues } from "italia-ts-commons/lib/types";
+import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { UserCreated } from "../generated/definitions/UserCreated";
-import { UserPayload } from "../generated/definitions/UserPayload";
+import { UserUpdatePayload } from "../generated/definitions/UserUpdatePayload";
 import {
   getGraphRbacManagementClient,
   IServicePrincipalCreds
@@ -31,7 +34,8 @@ import { genericInternalErrorHandler } from "../utils/errorHandler";
 type IUpdateUserHandler = (
   context: Context,
   auth: IAzureApiAuthorization,
-  userPayload: UserPayload
+  email: EmailAddress,
+  userPayload: UserUpdatePayload
 ) => Promise<IResponseSuccessJson<UserCreated> | IResponseErrorInternal>;
 
 const getUserFromList = (client: GraphRbacManagementClient, email: string) =>
@@ -45,18 +49,21 @@ const getUserFromList = (client: GraphRbacManagementClient, email: string) =>
 
 const updateUser = (
   client: GraphRbacManagementClient,
-  userPrincipalName: string,
+  email: EmailAddress,
+  user: User,
   adb2cTokenAttributeName: string,
-  userPayload: UserPayload
+  userPayload: UserUpdatePayload
 ): TaskEither<Error, UserCreated> =>
   tryCatch(
     () =>
       client.users.update(
-        userPrincipalName,
+        user.userPrincipalName,
         withoutUndefinedValues({
-          displayName: `${userPayload.first_name} ${userPayload.last_name}`,
+          displayName:
+            userPayload.first_name && userPayload.last_name
+              ? `${userPayload.first_name} ${userPayload.last_name}`
+              : undefined,
           givenName: userPayload.first_name,
-          mailNickname: userPayload.email.split("@")[0],
           surname: userPayload.last_name,
           [adb2cTokenAttributeName]: userPayload.token_name
         })
@@ -65,8 +72,13 @@ const updateUser = (
   ).map(
     updateUserResponse =>
       ({
-        ...userPayload,
-        id: updateUserResponse.objectId
+        email,
+        first_name: userPayload.first_name
+          ? userPayload.first_name
+          : user.givenName,
+        id: updateUserResponse.objectId,
+        last_name: userPayload.last_name ? userPayload.last_name : user.surname,
+        token_name: userPayload.token_name
       } as UserCreated)
   );
 
@@ -74,7 +86,7 @@ export function UpdateUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
   adb2cTokenAttributeName: NonEmptyString
 ): IUpdateUserHandler {
-  return async (context, _, userPayload) => {
+  return async (context, _, email, userPayload) => {
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
@@ -87,11 +99,12 @@ export function UpdateUserHandler(
         internalErrorHandler("Could not get the ADB2C client", error)
       )
       .chain(graphRbacManagementClient =>
-        getUserFromList(graphRbacManagementClient, userPayload.email)
+        getUserFromList(graphRbacManagementClient, email)
           .chain(user =>
             updateUser(
               graphRbacManagementClient,
-              user.userPrincipalName,
+              email,
+              user,
               adb2cTokenAttributeName,
               userPayload
             )
@@ -125,8 +138,10 @@ export function UpdateUser(
     ContextMiddleware(),
     // Allow only users in the ApiUserAdmin group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
+    // Extract the email value from the request
+    RequiredParamMiddleware("email", EmailAddress),
     // Extract the body payload from the request
-    RequiredBodyPayloadMiddleware(UserPayload)
+    RequiredBodyPayloadMiddleware(UserUpdatePayload)
   );
 
   return wrapRequestHandler(middlewaresWrap(handler));

@@ -3,9 +3,11 @@
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { EmailAddress } from "../../generated/definitions/EmailAddress";
 import { UserCreated } from "../../generated/definitions/UserCreated";
 import { UserPayload } from "../../generated/definitions/UserPayload";
 import { UserStateEnum } from "../../generated/definitions/UserState";
+import { UserUpdatePayload } from "../../generated/definitions/UserUpdatePayload";
 import { IServicePrincipalCreds } from "../../utils/apim";
 import { UpdateUserHandler } from "../handler";
 
@@ -16,12 +18,12 @@ const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
   tenantId: "tenant-id"
 };
 
+const aUserEmail = "user@example.com" as EmailAddress;
 const fakeRequestPayload = {
-  email: "user@example.com",
   first_name: "first-name",
   last_name: "family-name",
   token_name: aTokenName
-} as UserPayload;
+} as UserUpdatePayload;
 
 const fakeObjectId = "ADB2C-user";
 
@@ -75,6 +77,7 @@ describe("UpdateUser", () => {
     const response = await updateUserHandler(
       mockedContext as any,
       undefined as any,
+      undefined as any,
       undefined as any
     );
 
@@ -94,6 +97,7 @@ describe("UpdateUser", () => {
     const response = await updateUserHandler(
       mockedContext as any,
       undefined as any,
+      aUserEmail,
       fakeRequestPayload
     );
 
@@ -102,7 +106,7 @@ describe("UpdateUser", () => {
 
   it("should return the user updated", async () => {
     const fakeApimUser = {
-      email: fakeRequestPayload.email,
+      email: aUserEmail,
       firstName: fakeRequestPayload.first_name,
       id: "user-id",
       identities: [
@@ -136,6 +140,7 @@ describe("UpdateUser", () => {
     const response = await updateUserHandler(
       mockedContext as any,
       undefined as any,
+      aUserEmail,
       fakeRequestPayload
     );
     expect(response).toEqual({

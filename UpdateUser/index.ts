@@ -34,7 +34,7 @@ const app = express();
 secureExpressApp(app);
 
 // Add express route
-app.put("/adm/users", UpdateUser(adb2cCreds, adb2cTokenAttributeName));
+app.put("/adm/users/:email", UpdateUser(adb2cCreds, adb2cTokenAttributeName));
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
