@@ -538,6 +538,18 @@ definitions:
             type: string
         required:
           - id
+  UserUpdated:
+    allOf:
+      - $ref: "#/definitions/UserUpdatePayload"
+      - type: object
+        properties:
+          email:
+            $ref: "#/definitions/EmailAddress"
+          id:
+            type: string
+        required:
+          - id
+          - email
   GroupCollection:
     type: object
     properties:

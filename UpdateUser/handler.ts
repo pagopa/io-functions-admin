@@ -4,9 +4,8 @@ import { User } from "@azure/graph/esm/models";
 import * as express from "express";
 import { toError } from "fp-ts/lib/Either";
 import { identity } from "fp-ts/lib/function";
-import { fromLeft } from "fp-ts/lib/TaskEither";
 import { fromEither } from "fp-ts/lib/TaskEither";
-import { taskEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -25,7 +24,7 @@ import {
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { withoutUndefinedValues } from "italia-ts-commons/lib/types";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
-import { UserCreated } from "../generated/definitions/UserCreated";
+import { UserUpdated } from "../generated/definitions/UserUpdated";
 import { UserUpdatePayload } from "../generated/definitions/UserUpdatePayload";
 import {
   getGraphRbacManagementClient,
@@ -38,7 +37,7 @@ type IUpdateUserHandler = (
   auth: IAzureApiAuthorization,
   email: EmailAddress,
   userPayload: UserUpdatePayload
-) => Promise<IResponseSuccessJson<UserCreated> | IResponseErrorInternal>;
+) => Promise<IResponseSuccessJson<UserUpdated> | IResponseErrorInternal>;
 
 const getUserFromList = (client: GraphRbacManagementClient, email: string) =>
   tryCatch(
@@ -55,7 +54,7 @@ const updateUser = (
   user: User,
   adb2cTokenAttributeName: string,
   userPayload: UserUpdatePayload
-): TaskEither<Error, UserCreated> =>
+): TaskEither<Error, UserUpdated> =>
   tryCatch(
     () =>
       client.users.update(
@@ -73,11 +72,11 @@ const updateUser = (
     toError
   ).chain(updateUserResponse =>
     fromEither(
-      UserCreated.decode({
+      UserUpdated.decode({
         email,
-        first_name: userPayload.first_name || user.givenName,
+        first_name: userPayload.first_name,
         id: updateUserResponse.objectId,
-        last_name: userPayload.last_name || user.surname,
+        last_name: userPayload.last_name,
         token_name: userPayload.token_name
       }).mapLeft(toError)
     )
@@ -117,7 +116,7 @@ export function UpdateUserHandler(
             )
           )
       )
-      .fold<IResponseSuccessJson<UserCreated> | IResponseErrorInternal>(
+      .fold<IResponseSuccessJson<UserUpdated> | IResponseErrorInternal>(
         identity,
         updatedUser => ResponseSuccessJson(updatedUser)
       )

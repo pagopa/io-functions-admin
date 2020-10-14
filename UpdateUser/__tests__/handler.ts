@@ -5,7 +5,6 @@ import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { EmailAddress } from "../../generated/definitions/EmailAddress";
 import { UserCreated } from "../../generated/definitions/UserCreated";
-import { UserPayload } from "../../generated/definitions/UserPayload";
 import { UserStateEnum } from "../../generated/definitions/UserState";
 import { UserUpdatePayload } from "../../generated/definitions/UserUpdatePayload";
 import { IServicePrincipalCreds } from "../../utils/apim";
