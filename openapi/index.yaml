@@ -356,7 +356,7 @@ paths:
         "200":
           description: The updated User
           schema:
-            $ref: "#/definitions/UserCreated"
+            $ref: "#/definitions/UserUpdated"
         "400":
           description: Bad request
         "403":
