@@ -59,6 +59,7 @@
     "@azure/ms-rest-nodeauth": "^2.0.5",
     "@types/archiver": "^3.1.0",
     "@types/randomstring": "^1.1.6",
+    "@types/upng-js": "^2.1.1",
     "archiver": "^4.0.1",
     "archiver-zip-encrypted": "^1.0.8",
     "azure-storage": "^2.10.3",
@@ -78,7 +79,8 @@
     "redis-clustr": "^1.7.0",
     "ulid": "^2.3.0",
     "winston": "^3.2.1",
-    "yaml": "^1.10.0"
+    "yaml": "^1.10.0",
+    "upng-js": "^2.1.0"
   },
   "resolutions": {
     "handlebars": "~4.5.3",

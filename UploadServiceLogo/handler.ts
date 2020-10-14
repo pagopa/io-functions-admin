@@ -11,6 +11,7 @@ import {
   IResponseErrorValidation,
   IResponseSuccessRedirectToResource,
   ResponseErrorNotFound,
+  ResponseErrorValidation,
   ResponseSuccessRedirectToResource
 } from "italia-ts-commons/lib/responses";
 
@@ -30,6 +31,7 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
+import * as UPNG from "upng-js";
 import { Logo as ApiLogo } from "../generated/definitions/Logo";
 import { ServiceId } from "../generated/definitions/ServiceId";
 import { LogoPayloadMiddleware } from "../utils/middlewares/service";
@@ -72,14 +74,24 @@ export function UpdateServiceLogoHandler(
       );
     }
 
-    // tslint:disable-next-line:no-object-mutation
-    context.bindings.logo = Buffer.from(logoPayload.logo, "base64");
+    const bufferImage = Buffer.from(logoPayload.logo, "base64");
+    const image = UPNG.decode(bufferImage);
 
-    return ResponseSuccessRedirectToResource(
-      {},
-      `${logosUrl}/services/${serviceId}.png`,
-      {}
-    );
+    if (image.width > 0 && image.height > 0) {
+      // tslint:disable-next-line:no-object-mutation
+      context.bindings.logo = bufferImage;
+
+      return ResponseSuccessRedirectToResource(
+        {},
+        `${logosUrl}/services/${serviceId}.png`,
+        {}
+      );
+    } else {
+      return ResponseErrorValidation(
+        "Image not valid",
+        "The base64 representation of the logo is invalid"
+      );
+    }
   };
 }
 
