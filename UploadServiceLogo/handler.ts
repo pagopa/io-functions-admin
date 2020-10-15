@@ -3,7 +3,7 @@ import { Context } from "@azure/functions";
 import * as express from "express";
 
 import { isLeft } from "fp-ts/lib/Either";
-import { isNone } from "fp-ts/lib/Option";
+import { fromPredicate, isNone } from "fp-ts/lib/Option";
 
 import {
   IResponseErrorInternal,
@@ -31,6 +31,7 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
+import { tryCatch } from "fp-ts/lib/Option";
 import * as UPNG from "upng-js";
 import { Logo as ApiLogo } from "../generated/definitions/Logo";
 import { ServiceId } from "../generated/definitions/ServiceId";
@@ -50,6 +51,12 @@ type IUpdateServiceHandler = (
   | IResponseErrorNotFound
   | IResponseErrorInternal
 >;
+
+const imageValidationErrorResponse = () =>
+  ResponseErrorValidation(
+    "Image not valid",
+    "The base64 representation of the logo is invalid"
+  );
 
 export function UpdateServiceLogoHandler(
   serviceModel: ServiceModel,
@@ -75,23 +82,27 @@ export function UpdateServiceLogoHandler(
     }
 
     const bufferImage = Buffer.from(logoPayload.logo, "base64");
-    const image = UPNG.decode(bufferImage);
+    return tryCatch(() => UPNG.decode(bufferImage)).foldL(
+      () => imageValidationErrorResponse(),
+      image =>
+        fromPredicate((img: UPNG.Image) => img.width > 0 && img.height > 0)(
+          image
+        ).foldL<
+          IResponseErrorValidation | IResponseSuccessRedirectToResource<{}, {}>
+        >(
+          () => imageValidationErrorResponse(),
+          () => {
+            // tslint:disable-next-line:no-object-mutation
+            context.bindings.logo = bufferImage;
 
-    if (image.width > 0 && image.height > 0) {
-      // tslint:disable-next-line:no-object-mutation
-      context.bindings.logo = bufferImage;
-
-      return ResponseSuccessRedirectToResource(
-        {},
-        `${logosUrl}/services/${serviceId}.png`,
-        {}
-      );
-    } else {
-      return ResponseErrorValidation(
-        "Image not valid",
-        "The base64 representation of the logo is invalid"
-      );
-    }
+            return ResponseSuccessRedirectToResource(
+              {},
+              `${logosUrl}/services/${serviceId}.png`,
+              {}
+            );
+          }
+        )
+    );
   };
 }
 
