@@ -31,6 +31,8 @@ const mockLoginWithServicePrincipalSecret = jest.spyOn(
   "loginWithServicePrincipalSecret"
 );
 
+const updateErrorDetail =
+  "Internal server error: Could not update the user on the ADB2C";
 jest.mock("@azure/graph");
 jest.mock("@azure/arm-apimanagement");
 const mockGraphRbacManagementClient = GraphRbacManagementClient as jest.Mock;
@@ -43,7 +45,7 @@ mockLoginWithServicePrincipalSecret.mockImplementation(() => {
 mockGetToken.mockImplementation(() => {
   return Promise.resolve(undefined);
 });
-const mockUsersCreate = jest.fn();
+const mockUsersUpdate = jest.fn();
 
 mockGraphRbacManagementClient.mockImplementation(() => ({
   users: {
@@ -54,7 +56,7 @@ mockGraphRbacManagementClient.mockImplementation(() => ({
         }
       ])
     ),
-    update: mockUsersCreate
+    update: mockUsersUpdate
   }
 }));
 
@@ -84,7 +86,7 @@ describe("UpdateUser", () => {
   });
 
   it("should return an internal error response if the ADB2C client can not update the user", async () => {
-    mockUsersCreate.mockImplementationOnce(() =>
+    mockUsersUpdate.mockImplementationOnce(() =>
       Promise.reject("Users update error")
     );
 
@@ -99,8 +101,12 @@ describe("UpdateUser", () => {
       aUserEmail,
       fakeRequestPayload
     );
-
-    expect(response.kind).toEqual("IResponseErrorInternal");
+    expect(mockUsersUpdate).toBeCalledTimes(1);
+    expect(response).toEqual({
+      apply: expect.any(Function),
+      detail: updateErrorDetail,
+      kind: "IResponseErrorInternal"
+    });
   });
 
   it("should return the user updated", async () => {
@@ -127,7 +133,7 @@ describe("UpdateUser", () => {
       last_name: fakeApimUser.lastName,
       token_name: aTokenName
     };
-    mockUsersCreate.mockImplementationOnce(() =>
+    mockUsersUpdate.mockImplementationOnce(() =>
       Promise.resolve({ objectId: fakeObjectId })
     );
 
