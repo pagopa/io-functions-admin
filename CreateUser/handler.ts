@@ -16,6 +16,8 @@ import {
   IResponseSuccessJson,
   ResponseSuccessJson
 } from "italia-ts-commons/lib/responses";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { withoutUndefinedValues } from "italia-ts-commons/lib/types";
 import * as randomString from "randomstring";
 import { ulid } from "ulid";
 import { UserCreated } from "../generated/definitions/UserCreated";
@@ -38,7 +40,8 @@ type ICreateUserHandler = (
 export function CreateUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
   apimCredentials: IServicePrincipalCreds,
-  azureApimConfig: IAzureApimConfig
+  azureApimConfig: IAzureApimConfig,
+  adb2cTokenAttributeName: NonEmptyString
 ): ICreateUserHandler {
   return async (context, _, userPayload) => {
     const internalErrorHandler = (errorMessage: string, error: Error) =>
@@ -55,26 +58,29 @@ export function CreateUserHandler(
       .chain(graphRbacManagementClient =>
         tryCatch(
           () =>
-            graphRbacManagementClient.users.create({
-              accountEnabled: true,
-              creationType: "LocalAccount",
-              displayName: `${userPayload.first_name} ${userPayload.last_name}`,
-              givenName: userPayload.first_name,
-              mailNickname: userPayload.email.split("@")[0],
-              passwordProfile: {
-                forceChangePasswordNextLogin: true,
-                password: randomString.generate({ length: 24 })
-              },
-              signInNames: [
-                {
-                  type: "emailAddress",
-                  value: userPayload.email
-                }
-              ],
-              surname: userPayload.last_name,
-              userPrincipalName: `${ulid()}@${adb2cCredentials.tenantId}`,
-              userType: "Member"
-            }),
+            graphRbacManagementClient.users.create(
+              withoutUndefinedValues({
+                accountEnabled: true,
+                creationType: "LocalAccount",
+                displayName: `${userPayload.first_name} ${userPayload.last_name}`,
+                givenName: userPayload.first_name,
+                mailNickname: userPayload.email.split("@")[0],
+                passwordProfile: {
+                  forceChangePasswordNextLogin: true,
+                  password: randomString.generate({ length: 24 })
+                },
+                signInNames: [
+                  {
+                    type: "emailAddress",
+                    value: userPayload.email
+                  }
+                ],
+                surname: userPayload.last_name,
+                userPrincipalName: `${ulid()}@${adb2cCredentials.tenantId}`,
+                userType: "Member",
+                [adb2cTokenAttributeName]: userPayload.token_name
+              })
+            ),
           toError
         ).mapLeft(error =>
           internalErrorHandler("Could not create the user on the ADB2C", error)
@@ -136,12 +142,14 @@ export function CreateUserHandler(
 export function CreateUser(
   adb2cCreds: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,
-  azureApimConfig: IAzureApimConfig
+  azureApimConfig: IAzureApimConfig,
+  adb2cTokenAttributeName: NonEmptyString
 ): express.RequestHandler {
   const handler = CreateUserHandler(
     adb2cCreds,
     servicePrincipalCreds,
-    azureApimConfig
+    azureApimConfig,
+    adb2cTokenAttributeName
   );
 
   const middlewaresWrap = withRequestMiddlewares(

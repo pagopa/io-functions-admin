@@ -336,6 +336,33 @@ paths:
           description: User not found
         "500":
           description: Internal server error
+    put:
+      summary: Update user
+      description: Update an existing ADB2C User.
+      operationId: updateUser
+      parameters:
+        - name: email
+          in: path
+          type: string
+          format: email
+          required: true
+          description: The email of the User
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/UserUpdatePayload"
+      responses:
+        "200":
+          description: The updated User
+          schema:
+            $ref: "#/definitions/UserUpdated"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal server error
   /users/{email}/groups:
     put:
       summary: Update user groups
@@ -483,10 +510,25 @@ definitions:
       last_name:
         type: string
         minLength: 1
+      token_name:
+        type: string
+        minLength: 1
     required:
       - email
       - first_name
       - last_name
+  UserUpdatePayload:
+    type: object
+    properties:
+      first_name:
+        type: string
+        minLength: 1
+      last_name:
+        type: string
+        minLength: 1
+      token_name:
+        type: string
+        minLength: 1
   UserCreated:
     allOf:
       - $ref: "#/definitions/UserPayload"
@@ -496,6 +538,18 @@ definitions:
             type: string
         required:
           - id
+  UserUpdated:
+    allOf:
+      - $ref: "#/definitions/UserUpdatePayload"
+      - type: object
+        properties:
+          email:
+            $ref: "#/definitions/EmailAddress"
+          id:
+            type: string
+        required:
+          - id
+          - email
   GroupCollection:
     type: object
     properties:
