@@ -7,8 +7,9 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 import { WithinRangeString } from "italia-ts-commons/lib/strings";
 import * as randomstring from "randomstring";
 
+/* printable 7 bit ASCII, some special char removed */
 const RANDOM_CHARSET =
-  "ABCDEFGHIJKLMNOPQRSTUVWYZabcdefghijklmnopqrstuvwyz0123456789!£$%&()?+@=€";
+  "ABCDEFGHIJKLMNOPQRSTUVWYZabcdefghijklmnopqrstuvwyz0123456789!#$%&()*+-/=?@";
 
 export const StrongPassword = WithinRangeString(18, 19);
 export type StrongPassword = t.TypeOf<typeof StrongPassword>;
