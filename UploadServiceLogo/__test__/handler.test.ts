@@ -65,6 +65,41 @@ describe("UpdateServiceLogoHandler", () => {
 
   it("should return a validation error response if the request payload is invalid", async () => {
     const requestPayload = {
+      logo: "AAAAAAAA"
+    } as Logo;
+    const mockedContext = {
+      bindings: {
+        logo: undefined
+      }
+    };
+    const aServiceId = "1" as NonEmptyString;
+    const logosUrl = "LOGOS_URL";
+    const mockServiceModel = {
+      findOneByServiceId: jest.fn(() => {
+        return fromEither(right(some({})));
+      })
+    };
+
+    const updateServiceLogoHandler = UpdateServiceLogoHandler(
+      mockServiceModel as any,
+      logosUrl
+    );
+    const response = await updateServiceLogoHandler(
+      mockedContext as any,
+      undefined as any, // Not used
+      aServiceId,
+      requestPayload
+    );
+
+    expect(mockServiceModel.findOneByServiceId).toHaveBeenCalledWith(
+      aServiceId
+    );
+    expect(mockedContext.bindings.logo).toBeUndefined();
+    expect(response.kind).toBe("IResponseErrorValidation");
+  });
+
+  it("should return a success response if the request payload is valid", async () => {
+    const requestPayload = {
       logo:
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
     } as Logo;
