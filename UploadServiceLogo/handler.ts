@@ -2,14 +2,15 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import { isLeft } from "fp-ts/lib/Either";
-import { fromPredicate, isNone } from "fp-ts/lib/Option";
+import { isLeft, left, right, toError } from "fp-ts/lib/Either";
+import { isNone } from "fp-ts/lib/Option";
 
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
   IResponseErrorValidation,
   IResponseSuccessRedirectToResource,
+  ResponseErrorInternal,
   ResponseErrorNotFound,
   ResponseErrorValidation,
   ResponseSuccessRedirectToResource
@@ -31,7 +32,18 @@ import {
   ResponseErrorQuery
 } from "io-functions-commons/dist/src/utils/response";
 
-import { tryCatch } from "fp-ts/lib/Option";
+import { BlobService } from "azure-storage";
+import { identity } from "fp-ts/lib/function";
+import { Option, tryCatch } from "fp-ts/lib/Option";
+import {
+  fromLeft,
+  fromPredicate as fromPredicateT,
+  taskEither,
+  TaskEither,
+  tryCatch as tryCatchT
+} from "fp-ts/lib/TaskEither";
+import { fromEither } from "fp-ts/lib/TaskEither";
+import { upsertBlobFromObject } from "io-functions-commons/dist/src/utils/azure_storage";
 import * as UPNG from "upng-js";
 import { Logo as ApiLogo } from "../generated/definitions/Logo";
 import { ServiceId } from "../generated/definitions/ServiceId";
@@ -58,8 +70,20 @@ const imageValidationErrorResponse = () =>
     "The base64 representation of the logo is invalid"
   );
 
+const tUpsertBlobFromObject = (
+  blobService: BlobService,
+  containerName: string,
+  blobName: string,
+  content: string
+): TaskEither<Error, Option<BlobService.BlobResult>> =>
+  tryCatchT(
+    () => upsertBlobFromObject(blobService, containerName, blobName, content),
+    toError
+  ).chain(_ => _.fold(err => fromLeft(err), opt => taskEither.of(opt)));
+
 export function UpdateServiceLogoHandler(
   serviceModel: ServiceModel,
+  blobService: BlobService,
   logosUrl: string
 ): IUpdateServiceHandler {
   return async (context, _, serviceId, logoPayload) => {
@@ -82,27 +106,63 @@ export function UpdateServiceLogoHandler(
     }
 
     const bufferImage = Buffer.from(logoPayload.logo, "base64");
-    return tryCatch(() => UPNG.decode(bufferImage)).foldL(
-      () => imageValidationErrorResponse(),
-      image =>
-        fromPredicate((img: UPNG.Image) => img.width > 0 && img.height > 0)(
-          image
-        ).foldL<
-          IResponseErrorValidation | IResponseSuccessRedirectToResource<{}, {}>
-        >(
-          () => imageValidationErrorResponse(),
-          () => {
-            // tslint:disable-next-line:no-object-mutation
-            context.bindings.logo = bufferImage;
-
-            return ResponseSuccessRedirectToResource(
-              {},
-              `${logosUrl}/services/${serviceId}.png`,
-              {}
-            );
-          }
-        )
-    );
+    return fromEither(
+      tryCatch(() => UPNG.decode(bufferImage)).foldL(
+        () =>
+          left<IResponseErrorValidation, UPNG.Image>(
+            imageValidationErrorResponse()
+          ),
+        img => right<IResponseErrorValidation, UPNG.Image>(img)
+      )
+    )
+      .chain(image =>
+        fromPredicateT(
+          (img: UPNG.Image) => img.width > 0 && img.height > 0,
+          () => imageValidationErrorResponse()
+        )(image)
+      )
+      .foldTaskEither<
+        IResponseErrorValidation | IResponseErrorInternal,
+        IResponseSuccessRedirectToResource<{}, {}>
+      >(
+        imageValidationError => fromLeft(imageValidationError),
+        () =>
+          tUpsertBlobFromObject(
+            blobService,
+            "services",
+            `${serviceId.toLowerCase()}.png`,
+            bufferImage.toString()
+          )
+            .mapLeft(err =>
+              ResponseErrorInternal(
+                `Error trying to connect to storage ${err.message}`
+              )
+            )
+            .chain(maybeResult =>
+              maybeResult.foldL(
+                () =>
+                  fromLeft(
+                    ResponseErrorInternal(
+                      "Error trying to upload image logo on storage"
+                    )
+                  ),
+                () =>
+                  taskEither.of(
+                    ResponseSuccessRedirectToResource(
+                      {},
+                      `${logosUrl}/services/${serviceId.toLowerCase()}.png`,
+                      {}
+                    )
+                  )
+              )
+            )
+      )
+      .fold<
+        | IResponseErrorValidation
+        | IResponseErrorInternal
+        | IResponseSuccessRedirectToResource<{}, {}>
+      >(identity, identity)
+      .run();
   };
 }
 
@@ -111,9 +171,10 @@ export function UpdateServiceLogoHandler(
  */
 export function UploadServiceLogo(
   serviceModel: ServiceModel,
+  blobService: BlobService,
   logosUrl: string
 ): express.RequestHandler {
-  const handler = UpdateServiceLogoHandler(serviceModel, logosUrl);
+  const handler = UpdateServiceLogoHandler(serviceModel, blobService, logosUrl);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings

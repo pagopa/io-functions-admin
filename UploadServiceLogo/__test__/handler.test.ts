@@ -5,6 +5,7 @@ import { none, some } from "fp-ts/lib/Option";
 
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
+import { BlobService } from "azure-storage";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Logo } from "../../generated/definitions/Logo";
@@ -21,6 +22,7 @@ describe("UpdateServiceLogoHandler", () => {
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
+      undefined as any,
       undefined as any
     );
     const response = await updateServiceLogoHandler(
@@ -48,6 +50,7 @@ describe("UpdateServiceLogoHandler", () => {
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
+      undefined as any,
       undefined as any
     );
     const response = await updateServiceLogoHandler(
@@ -72,6 +75,12 @@ describe("UpdateServiceLogoHandler", () => {
         logo: undefined
       }
     };
+
+    const blobServiceMock = ({
+      createBlockBlobFromText: jest.fn((_, __, ___, cb) => {
+        return Promise.resolve(some({}));
+      })
+    } as any) as BlobService;
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
@@ -82,6 +91,7 @@ describe("UpdateServiceLogoHandler", () => {
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
+      blobServiceMock,
       logosUrl
     );
     const response = await updateServiceLogoHandler(
@@ -103,11 +113,7 @@ describe("UpdateServiceLogoHandler", () => {
       logo:
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
     } as Logo;
-    const mockedContext = {
-      bindings: {
-        logo: undefined
-      }
-    };
+    const mockedContext = {};
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
@@ -115,9 +121,14 @@ describe("UpdateServiceLogoHandler", () => {
         return fromEither(right(some({})));
       })
     };
-
+    const blobServiceMock = ({
+      createBlockBlobFromText: jest.fn((_, __, ___, ____, cb) =>
+        cb(null, "any")
+      )
+    } as any) as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
+      blobServiceMock,
       logosUrl
     );
     const response = await updateServiceLogoHandler(
@@ -130,10 +141,44 @@ describe("UpdateServiceLogoHandler", () => {
     expect(mockServiceModel.findOneByServiceId).toHaveBeenCalledWith(
       aServiceId
     );
-    expect(mockedContext.bindings.logo).toBeDefined();
-    expect(mockedContext.bindings.logo.toString("base64")).toEqual(
-      requestPayload.logo
-    );
+
     expect(response.kind).toBe("IResponseSuccessRedirectToResource");
+  });
+
+  it("should return an internal error response if blob write fails", async () => {
+    const requestPayload = {
+      logo:
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    } as Logo;
+    const mockedContext = {};
+    const aServiceId = "1" as NonEmptyString;
+    const logosUrl = "LOGOS_URL";
+    const mockServiceModel = {
+      findOneByServiceId: jest.fn(() => {
+        return fromEither(right(some({})));
+      })
+    };
+    const blobServiceMock = ({
+      createBlockBlobFromText: jest.fn((_, __, ___, ____, cb) =>
+        cb("any", null)
+      )
+    } as any) as BlobService;
+    const updateServiceLogoHandler = UpdateServiceLogoHandler(
+      mockServiceModel as any,
+      blobServiceMock,
+      logosUrl
+    );
+    const response = await updateServiceLogoHandler(
+      mockedContext as any,
+      undefined as any, // Not used
+      aServiceId,
+      requestPayload
+    );
+
+    expect(mockServiceModel.findOneByServiceId).toHaveBeenCalledWith(
+      aServiceId
+    );
+
+    expect(response.kind).toBe("IResponseErrorInternal");
   });
 });

@@ -15,6 +15,7 @@ import createAzureFunctionHandler from "io-functions-express/dist/src/createAzur
 
 import { UploadServiceLogo } from "./handler";
 
+import { createBlobService } from "azure-storage";
 import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 
@@ -26,6 +27,8 @@ const logosUrl = config.LOGOS_URL;
 const servicesContainer = database.container(SERVICE_COLLECTION_NAME);
 
 const serviceModel = new ServiceModel(servicesContainer);
+
+const blobService = createBlobService(config.StorageConnection);
 
 // tslint:disable-next-line: no-let
 let logger: Context["log"] | undefined;
@@ -41,7 +44,7 @@ secureExpressApp(app);
 // Add express route
 app.put(
   "/adm/services/:serviceid/logo",
-  UploadServiceLogo(serviceModel, logosUrl)
+  UploadServiceLogo(serviceModel, blobService, logosUrl)
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
