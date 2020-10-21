@@ -106,6 +106,7 @@ export function UpdateServiceLogoHandler(
     }
 
     const bufferImage = Buffer.from(logoPayload.logo, "base64");
+    const lowerCaseServiceId = serviceId.toLowerCase();
     return fromEither(
       tryCatch(() => UPNG.decode(bufferImage)).foldL(
         () =>
@@ -130,7 +131,7 @@ export function UpdateServiceLogoHandler(
           tUpsertBlobFromObject(
             blobService,
             "services",
-            `${serviceId.toLowerCase()}.png`,
+            `${lowerCaseServiceId}.png`,
             bufferImage.toString()
           )
             .mapLeft(err =>
@@ -150,7 +151,7 @@ export function UpdateServiceLogoHandler(
                   taskEither.of(
                     ResponseSuccessRedirectToResource(
                       {},
-                      `${logosUrl}/services/${serviceId.toLowerCase()}.png`,
+                      `${logosUrl}/services/${lowerCaseServiceId}.png`,
                       {}
                     )
                   )
