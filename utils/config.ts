@@ -114,6 +114,7 @@ export const IConfig = t.intersection([
     USER_DATA_BACKUP_CONTAINER_NAME: NonEmptyString,
     USER_DATA_CONTAINER_NAME: NonEmptyString,
 
+    AssetsStorageConnection: NonEmptyString,
     StorageConnection: NonEmptyString,
     SubscriptionFeedStorageConnection: NonEmptyString,
     UserDataArchiveStorageConnection: NonEmptyString,

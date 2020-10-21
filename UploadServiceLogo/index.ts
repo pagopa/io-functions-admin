@@ -28,7 +28,7 @@ const servicesContainer = database.container(SERVICE_COLLECTION_NAME);
 
 const serviceModel = new ServiceModel(servicesContainer);
 
-const blobService = createBlobService(config.StorageConnection);
+const blobService = createBlobService(config.AssetsStorageConnection);
 
 // tslint:disable-next-line: no-let
 let logger: Context["log"] | undefined;
