@@ -86,7 +86,7 @@ export function UpdateServiceLogoHandler(
   blobService: BlobService,
   logosUrl: string
 ): IUpdateServiceHandler {
-  return async (context, _, serviceId, logoPayload) => {
+  return async (_, __, serviceId, logoPayload) => {
     const errorOrMaybeRetrievedService = await serviceModel
       .findOneByServiceId(serviceId)
       .run();

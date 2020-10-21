@@ -78,7 +78,7 @@ describe("UpdateServiceLogoHandler", () => {
 
     const blobServiceMock = ({
       createBlockBlobFromText: jest.fn((_, __, ___, cb) => {
-        return Promise.resolve(some({}));
+        return cb(null, "any");
       })
     } as any) as BlobService;
     const aServiceId = "1" as NonEmptyString;
