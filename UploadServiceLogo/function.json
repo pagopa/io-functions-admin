@@ -14,13 +14,6 @@
       "type": "http",
       "direction": "out",
       "name": "res"
-    },
-    {
-      "type": "blob",
-      "name": "logo",
-      "path": "services/{serviceId}.png",
-      "connection": "AssetsStorageConnection",
-      "direction": "out"
     }
   ],
   "scriptFile": "../dist/UploadServiceLogo/index.js"
