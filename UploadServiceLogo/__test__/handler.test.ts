@@ -122,9 +122,7 @@ describe("UpdateServiceLogoHandler", () => {
       })
     };
     const blobServiceMock = ({
-      createBlockBlobFromText: jest.fn((_, __, ___, ____, cb) =>
-        cb(null, "any")
-      )
+      createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb(null, "any"))
     } as any) as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
@@ -159,9 +157,7 @@ describe("UpdateServiceLogoHandler", () => {
       })
     };
     const blobServiceMock = ({
-      createBlockBlobFromText: jest.fn((_, __, ___, ____, cb) =>
-        cb("any", null)
-      )
+      createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb("any", null))
     } as any) as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,

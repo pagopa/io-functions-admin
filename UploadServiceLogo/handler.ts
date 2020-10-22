@@ -2,8 +2,8 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import { isLeft, left, right, toError } from "fp-ts/lib/Either";
-import { isNone } from "fp-ts/lib/Option";
+import { isLeft, left, right } from "fp-ts/lib/Either";
+import { fromNullable, isNone } from "fp-ts/lib/Option";
 
 import {
   IResponseErrorInternal,
@@ -40,10 +40,9 @@ import {
   fromPredicate as fromPredicateT,
   taskEither,
   TaskEither,
-  tryCatch as tryCatchT
+  taskify
 } from "fp-ts/lib/TaskEither";
 import { fromEither } from "fp-ts/lib/TaskEither";
-import { upsertBlobFromObject } from "io-functions-commons/dist/src/utils/azure_storage";
 import * as UPNG from "upng-js";
 import { Logo as ApiLogo } from "../generated/definitions/Logo";
 import { ServiceId } from "../generated/definitions/ServiceId";
@@ -70,16 +69,16 @@ const imageValidationErrorResponse = () =>
     "The base64 representation of the logo is invalid"
   );
 
-const tUpsertBlobFromObject = (
+const upsertBlobFromImageBuffer = (
   blobService: BlobService,
   containerName: string,
   blobName: string,
-  content: string
-): TaskEither<Error, Option<BlobService.BlobResult>> =>
-  tryCatchT(
-    () => upsertBlobFromObject(blobService, containerName, blobName, content),
-    toError
-  ).chain(_ => _.fold(err => fromLeft(err), opt => taskEither.of(opt)));
+  content: Buffer
+): TaskEither<Error, Option<BlobService.BlobResult>> => {
+  return taskify<Error, BlobService.BlobResult>(cb =>
+    blobService.createBlockBlobFromText(containerName, blobName, content, cb)
+  )().map(fromNullable);
+};
 
 export function UpdateServiceLogoHandler(
   serviceModel: ServiceModel,
@@ -128,11 +127,11 @@ export function UpdateServiceLogoHandler(
       >(
         imageValidationError => fromLeft(imageValidationError),
         () =>
-          tUpsertBlobFromObject(
+          upsertBlobFromImageBuffer(
             blobService,
             "services",
             `${lowerCaseServiceId}.png`,
-            bufferImage.toString()
+            bufferImage
           )
             .mapLeft(err =>
               ResponseErrorInternal(
