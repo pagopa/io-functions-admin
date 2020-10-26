@@ -14,6 +14,7 @@ import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewar
 import { RequiredBodyPayloadMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_body_payload";
 import { RequiredParamMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_param";
 import { withRequestMiddlewares } from "io-functions-commons/dist/src/utils/request_middleware";
+import { readableReport } from "italia-ts-commons/lib/reporters";
 import { wrapRequestHandler } from "italia-ts-commons/lib/request_middleware";
 import {
   IResponseErrorInternal,
@@ -77,7 +78,10 @@ const updateUser = (
         id: updateUserResponse.objectId,
         last_name: userPayload.last_name,
         token_name: userPayload.token_name
-      }).mapLeft(toError)
+      }).mapLeft(
+        errs =>
+          new Error(`Error decoding UserUpdated ERROR=${readableReport(errs)}`)
+      )
     )
   );
 
@@ -89,7 +93,7 @@ export function UpdateUserHandler(
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
-        "UpdateUser | " + errorMessage,
+        "UpdateUser| " + errorMessage,
         error,
         errorMessage
       );
@@ -111,7 +115,7 @@ export function UpdateUserHandler(
           .mapLeft(error =>
             internalErrorHandler(
               "Could not update the user on the ADB2C",
-              error
+              new Error(JSON.stringify(error))
             )
           )
       )
