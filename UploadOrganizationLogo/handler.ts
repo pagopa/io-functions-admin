@@ -77,6 +77,10 @@ export function UploadOrganizationLogoHandler(
 ): IUploadOrganizationLogoHandler {
   return async (_, __, organizationFiscalCode, logoPayload) => {
     const bufferImage = Buffer.from(logoPayload.logo, "base64");
+    const cleanedOrganizationFiscalCode = organizationFiscalCode.replace(
+      /^0+/,
+      ""
+    );
     return fromEither(
       tryCatch(() => UPNG.decode(bufferImage)).foldL(
         () =>
@@ -101,7 +105,7 @@ export function UploadOrganizationLogoHandler(
           upsertBlobFromImageBuffer(
             blobService,
             "services",
-            `${organizationFiscalCode}.png`,
+            `${cleanedOrganizationFiscalCode}.png`,
             bufferImage
           )
             .mapLeft(err =>
@@ -121,7 +125,7 @@ export function UploadOrganizationLogoHandler(
                   taskEither.of(
                     ResponseSuccessRedirectToResource(
                       {},
-                      `${logosUrl}/services/${organizationFiscalCode}.png`,
+                      `${logosUrl}/services/${cleanedOrganizationFiscalCode}.png`,
                       {}
                     )
                   )
