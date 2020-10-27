@@ -70,17 +70,21 @@ const updateUser = (
         })
       ),
     toError
-  ).chain(updateUserResponse =>
-    fromEither(
-      UserUpdated.decode({
-        email,
-        first_name: userPayload.first_name,
-        id: updateUserResponse.objectId,
-        last_name: userPayload.last_name,
-        token_name: userPayload.token_name
-      }).mapLeft(
-        errs =>
-          new Error(`Error decoding UserUpdated ERROR=${readableReport(errs)}`)
+  ).chain(() =>
+    getUserFromList(client, email).chain(userResponse =>
+      fromEither(
+        UserUpdated.decode({
+          email,
+          first_name: userPayload.first_name,
+          id: userResponse.objectId,
+          last_name: userPayload.last_name,
+          token_name: userPayload.token_name
+        }).mapLeft(
+          errs =>
+            new Error(
+              `Error decoding UserUpdated ERROR=${readableReport(errs)}`
+            )
+        )
       )
     )
   );
@@ -103,6 +107,12 @@ export function UpdateUserHandler(
       )
       .chain(graphRbacManagementClient =>
         getUserFromList(graphRbacManagementClient, email)
+          .mapLeft(userFromListError =>
+            internalErrorHandler(
+              "Could not retrieve user from list on the ADB2C",
+              userFromListError
+            )
+          )
           .chain(user =>
             updateUser(
               graphRbacManagementClient,
@@ -110,12 +120,11 @@ export function UpdateUserHandler(
               user,
               adb2cTokenAttributeName,
               userPayload
-            )
-          )
-          .mapLeft(error =>
-            internalErrorHandler(
-              "Could not update the user on the ADB2C",
-              new Error(JSON.stringify(error))
+            ).mapLeft(updateUserError =>
+              internalErrorHandler(
+                "Could not update the user on the ADB2C",
+                new Error(JSON.stringify(updateUserError))
+              )
             )
           )
       )
