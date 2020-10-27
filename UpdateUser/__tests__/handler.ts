@@ -4,8 +4,8 @@ import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import { EmailAddress } from "../../generated/definitions/EmailAddress";
-import { UserCreated } from "../../generated/definitions/UserCreated";
 import { UserStateEnum } from "../../generated/definitions/UserState";
+import { UserUpdated } from "../../generated/definitions/UserUpdated";
 import { UserUpdatePayload } from "../../generated/definitions/UserUpdatePayload";
 import { IServicePrincipalCreds } from "../../utils/apim";
 import { UpdateUserHandler } from "../handler";
@@ -46,16 +46,19 @@ mockGetToken.mockImplementation(() => {
   return Promise.resolve(undefined);
 });
 const mockUsersUpdate = jest.fn();
+const mockListUsers = jest.fn();
+mockListUsers.mockImplementation(() =>
+  Promise.resolve([
+    {
+      email: aUserEmail,
+      objectId: fakeObjectId
+    }
+  ])
+);
 
 mockGraphRbacManagementClient.mockImplementation(() => ({
   users: {
-    list: jest.fn(() =>
-      Promise.resolve([
-        {
-          email: "user@example.com"
-        }
-      ])
-    ),
+    list: mockListUsers,
     update: mockUsersUpdate
   }
 }));
@@ -126,7 +129,7 @@ describe("UpdateUser", () => {
       state: UserStateEnum.active,
       type: "Microsoft.ApiManagement/service/users"
     };
-    const expectedUpdatedUser: UserCreated = {
+    const expectedUpdatedUser: UserUpdated = {
       email: fakeApimUser.email,
       first_name: fakeApimUser.firstName,
       id: fakeApimUser.name,
