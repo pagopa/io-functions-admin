@@ -1,6 +1,5 @@
 import { Either } from "fp-ts/lib/Either";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
-import { MailerConfig } from "../config";
+import { MailerConfig } from "io-functions-commons/dist/src/mailer";
 
 const aMailFrom = "example@test.com";
 
