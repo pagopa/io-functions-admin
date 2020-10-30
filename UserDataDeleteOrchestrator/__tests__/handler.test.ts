@@ -358,7 +358,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
-        nextStatus: UserDataProcessingStatusEnum.ABORTED
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
       })
     );
     expect(setUserSessionLockActivity).not.toHaveBeenCalled();
