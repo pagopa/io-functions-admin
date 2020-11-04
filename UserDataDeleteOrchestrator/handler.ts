@@ -453,11 +453,11 @@ export const createUserDataDeleteOrchestratorHandler = (
           `${logPrefix}|VERBOSE|Operation resumed because of abort event`
         );
 
-        // set as aborted
+        // set as closed
         yield* setUserDataProcessingStatus(
           context,
           currentUserDataProcessing,
-          UserDataProcessingStatusEnum.ABORTED
+          UserDataProcessingStatusEnum.CLOSED
         );
 
         trackUserDataDeleteEvent("aborted", currentUserDataProcessing);
