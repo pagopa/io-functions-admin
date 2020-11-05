@@ -498,6 +498,14 @@ definitions:
     "$ref": "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceMetadata"
   ServiceScope:
     "$ref": "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceScope"
+  ServicePayload:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServicePayload"
+  HiddenServicePayload:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/HiddenServicePayload"
+  VisibleServicePayload:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/VisibleServicePayload"   
+  CommonServicePayload:
+    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/CommonServicePayload"
   ServiceId:
     $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceId"
   ServiceName:
