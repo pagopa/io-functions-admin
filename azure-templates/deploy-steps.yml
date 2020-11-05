@@ -8,7 +8,7 @@
 parameters:
   - name: 'deployType'
     type: string
-    default: deployToStagingSlot
+    default: deployToStagingSlotAndSwap
     values:
     - deployToProductionSlot
     - deployToStagingSlotAndSwap
@@ -26,6 +26,26 @@ parameters:
   - name: 'appName'
     type: string
     default: ''
+
+  # min container instance cpu
+  - name: 'containerInstanceCpu'
+    type: string
+    default: '0.5'
+
+  # min container instance memory
+  - name: 'containerInstanceMemory'
+    type: string
+    default: '0.5'
+
+  # attached vnet to the container instance
+  - name: 'containerInstanceVNet'
+    type: string
+    default: 'io-p-vnet-common'
+
+  # container instance subnet
+  - name: 'containerInstanceSubnet'
+    type: string
+    default: 'azure-devops'
     
 steps:
   - template: ./make-build-steps.yml
@@ -103,8 +123,40 @@ steps:
         deployToSlotOrASE: true
         slotName: 'staging'
       displayName: Deploy to staging slot
-      
-    - task: AzureAppServiceManage@0   # Second step: swap 'staging' with 'production' slot
+
+    - task: AzureCLI@2 # Second step: run healthcheck on 'staging' slot
+      displayName: Healthcheck
+      inputs:
+        azureSubscription: '${{ parameters.azureSubscription }}'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        failOnStandardError: false
+        inlineScript: |     
+          # define a temporary container instance name     
+          CONTAINER_INSTANCE_NAME="${{ parameters.appName }}-deploy"
+          
+          # create, run container instance in subnet, and get exit code
+          OUTPUT_CREATE=$(az container create \
+                           --resource-group '${{ parameters.resourceGroupName }}' \
+                           --name ${CONTAINER_INSTANCE_NAME} \
+                           --image microsoft/azure-cli:latest \
+                           --cpu '${{ parameters.containerInstanceCpu }}' \
+                           --memory '${{ parameters.containerInstanceMemory }}' \
+                           --restart-policy Never \
+                           --vnet '${{ parameters.containerInstanceVNet }}' \
+                           --subnet '${{ parameters.containerInstanceSubnet }}' \
+                           --command-line "az rest --skip-authorization-header --method get --url 'https://${{ parameters.appName }}-staging.azurewebsites.net/info'" \
+                           --output tsv \
+                           --query containers[].instanceView.currentState.exitCode)
+          
+          # print container instance logs
+          az container logs --resource-group '${{ parameters.resourceGroupName }}' --name ${CONTAINER_INSTANCE_NAME}
+          # delete container instance
+          OUTPUT_DELETE=$(az container delete --resource-group ${{ parameters.resourceGroupName }} --name ${CONTAINER_INSTANCE_NAME} --yes)
+          # reuse OUTPUT_CREATE as task exit code to interrupt pipeline if result is not 0.
+          exit $OUTPUT_CREATE
+  
+    - task: AzureAppServiceManage@0   # Third step: swap 'staging' with 'production' slot
       inputs:
         azureSubscription: '${{ parameters.azureSubscription }}'
         resourceGroupName: '${{ parameters.resourceGroupName }}'
