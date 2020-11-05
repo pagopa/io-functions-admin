@@ -1,11 +1,6 @@
 import * as HtmlToText from "html-to-text";
-import { MultiTransport } from "io-functions-commons/dist/src/utils/nodemailer";
-import * as NodeMailer from "nodemailer";
+import { getMailerTransporter } from "io-functions-commons/dist/src/mailer";
 import { getConfigOrThrow } from "../utils/config";
-import {
-  getMailerTransporter,
-  getTransportsForConnections
-} from "../utils/email";
 import { getActivityFunction } from "./handler";
 
 const config = getConfigOrThrow();
@@ -18,26 +13,7 @@ const HTML_TO_TEXT_OPTIONS: HtmlToText.HtmlToTextOptions = {
   tables: true
 };
 
-// if we have a valid multi transport configuration, configure a
-// Multi transport, or else fall back to the default logic
-const mailerTransporter =
-  typeof config.MAIL_TRANSPORTS !== "undefined"
-    ? NodeMailer.createTransport(
-        MultiTransport({
-          transports: getTransportsForConnections(config.MAIL_TRANSPORTS)
-        })
-      )
-    : getMailerTransporter({
-        isProduction: config.isProduction,
-        ...(typeof config.SENDGRID_API_KEY !== "undefined"
-          ? {
-              sendgridApiKey: config.SENDGRID_API_KEY
-            }
-          : {
-              mailupSecret: config.MAILUP_SECRET,
-              mailupUsername: config.MAILUP_USERNAME
-            })
-      });
+const mailerTransporter = getMailerTransporter(config);
 
 const index = getActivityFunction(mailerTransporter, {
   HTML_TO_TEXT_OPTIONS,

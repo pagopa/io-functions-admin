@@ -67,7 +67,7 @@
     "durable-functions": "^1.4.3",
     "express": "^4.15.3",
     "fp-ts": "1.17.0",
-    "io-functions-commons": "^14.6.0",
+    "io-functions-commons": "^16.0.0",
     "html-to-text": "^5.1.1",
     "io-functions-express": "^0.1.0",
     "io-ts": "1.8.5",
