@@ -173,9 +173,9 @@ steps:
                            --query containers[].instanceView.currentState.exitCode)
           
           # print container instance logs
-          az container logs --resource-group '${{ parameters.resourceGroupName }}' --name ${CONTAINER_INSTANCE_NAME}
+          az container logs --resource-group '${{ parameters.containerInstanceResourceGroup }}' --name ${CONTAINER_INSTANCE_NAME}
           # delete container instance
-          OUTPUT_DELETE=$(az container delete --resource-group ${{ parameters.resourceGroupName }} --name ${CONTAINER_INSTANCE_NAME} --yes)
+          OUTPUT_DELETE=$(az container delete --resource-group ${{ parameters.containerInstanceResourceGroup }} --name ${CONTAINER_INSTANCE_NAME} --yes)
           # reuse OUTPUT_CREATE as task exit code to interrupt pipeline if result is not 0.
           exit $OUTPUT_CREATE
   
