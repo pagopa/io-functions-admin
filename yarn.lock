@@ -851,14 +851,6 @@
   resolved "https://registry.yarnpkg.com/@types/minimatch/-/minimatch-3.0.3.tgz#3dca0e3f33b200fc7d1139c0cd96c1268cadfd9d"
   integrity sha512-tHq6qdbT9U1IRSGf14CL0pUlULksvY9OZ+5eEgl1N7t+OA3tGvNpxJCzuKQlsNgCVwbAs670L1vcVQi8j9HjnA==
 
-"@types/node-fetch@^2.5.6":
-  version "2.5.7"
-  resolved "https://registry.yarnpkg.com/@types/node-fetch/-/node-fetch-2.5.7.tgz#20a2afffa882ab04d44ca786449a276f9f6bbf3c"
-  integrity sha512-o2WVNf5UhWRkxlf6eq+jMZDu7kjgpgJfl4xVNlvryc95O/6F2ld8ztKX+qu+Rjyet93WAWm5LjeX9H5FGkODvw==
-  dependencies:
-    "@types/node" "*"
-    form-data "^3.0.0"
-
 "@types/node@*":
   version "12.0.8"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.0.8.tgz#551466be11b2adc3f3d47156758f610bd9f6b1d8"
@@ -3685,7 +3677,7 @@ forever-agent@~0.6.1:
   resolved "https://registry.yarnpkg.com/forever-agent/-/forever-agent-0.6.1.tgz#fbc71f0c41adeb37f96c577ad1ed42d8fdacca91"
   integrity sha1-+8cfDEGt6zf5bFd60e1C2P2sypE=
 
-form-data@3.0.0, form-data@^3.0.0:
+form-data@3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/form-data/-/form-data-3.0.0.tgz#31b7e39c85f1355b7139ee0c647cf0de7f83c682"
   integrity sha512-CKMFDglpbMi6PyN+brwB9Q/GOw0eAnsrEZDgcsH5Krhz5Od/haKHAX0NmQfha2zPPz0JpWzA7GJHGSnvCRLWsg==
@@ -4537,13 +4529,12 @@ invert-kv@^2.0.0:
   resolved "https://registry.yarnpkg.com/invert-kv/-/invert-kv-2.0.0.tgz#7393f5afa59ec9ff5f67a27620d11c226e3eec02"
   integrity sha512-wPVv/y/QQ/Uiirj/vh3oP+1Ww+AWehmi1g5fFWGPF6IpCBCDVrhgHRMvrLfdYcwDh3QJbGXDW4JAuzxElLSqKA==
 
-io-functions-commons@^14.6.0:
-  version "14.6.0"
-  resolved "https://registry.yarnpkg.com/io-functions-commons/-/io-functions-commons-14.6.0.tgz#c420cba54a7b4d01a97e5f75e295a3668a14cf6c"
-  integrity sha512-8vWY2aZgjCMZvQGKeiII+8wQYH7be1ghDG/jTu6+yE9/SDR90L2BFSwb4n1KihX5wugM3h5ne3UVhWVRV/S+tw==
+io-functions-commons@^16.0.0:
+  version "16.1.0"
+  resolved "https://registry.yarnpkg.com/io-functions-commons/-/io-functions-commons-16.1.0.tgz#cf50145d1d9f6cf197e1fcfdbf9551c53047bc64"
+  integrity sha512-CT4aMqkRHbuG1vm99jNOcAfUhLZL8SynNSoI0mGFDxwf0bPupK4efz/0cV5zc6aZr1dA8kEThqhartk50V3wJQ==
   dependencies:
     "@azure/cosmos" "^3.7.2"
-    "@types/node-fetch" "^2.5.6"
     applicationinsights "^1.7.3"
     azure-storage "^2.10.3"
     cidr-matcher "^2.1.0"
@@ -4553,8 +4544,9 @@ io-functions-commons@^14.6.0:
     io-functions-express "^0.1.1"
     io-ts "1.8.5"
     italia-ts-commons "^7.0.1"
-    node-fetch "^2.6.0"
-    nodemailer "^4.6.7"
+    node-fetch "^2.6.1"
+    nodemailer "^6.4.13"
+    nodemailer-sendgrid "^1.0.3"
     referrer-policy "^1.1.0"
     rehype-stringify "^3.0.0"
     remark-frontmatter "^2.0.0"
@@ -6965,6 +6957,11 @@ node-fetch@^2.1.1, node-fetch@^2.2.0, node-fetch@^2.3.0, node-fetch@^2.6.0:
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.0.tgz#e633456386d4aa55863f676a7ab0daa8fdecb0fd"
   integrity sha512-8dG4H5ujfvFiqDmVu9fQ5bOHUC15JMjMY/Zumv26oOvvVJjM67KF8koCWIabKQ1GJIa9r2mMZscBq/TbdOcmNA==
 
+node-fetch@^2.6.1:
+  version "2.6.1"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
+  integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
+
 node-int64@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/node-int64/-/node-int64-0.4.0.tgz#87a9065cdb355d3182d8f94ce11188b825c68a3b"
@@ -7022,15 +7019,15 @@ nodemailer-sendgrid@^1.0.3:
   dependencies:
     "@sendgrid/mail" "^6.2.1"
 
-nodemailer@^4.6.7:
-  version "4.7.0"
-  resolved "https://registry.yarnpkg.com/nodemailer/-/nodemailer-4.7.0.tgz#4420e06abfffd77d0618f184ea49047db84f4ad8"
-  integrity sha512-IludxDypFpYw4xpzKdMAozBSkzKHmNBvGanUREjJItgJ2NYcK/s8+PggVhj7c2yGFQykKsnnmv1+Aqo0ZfjHmw==
-
 nodemailer@^6.4.11:
   version "6.4.11"
   resolved "https://registry.npmjs.org/nodemailer/-/nodemailer-6.4.11.tgz#1f00b4ffd106403f17c03f3d43d5945b2677046c"
   integrity sha512-BVZBDi+aJV4O38rxsUh164Dk1NCqgh6Cm0rQSb9SK/DHGll/DrCMnycVDD7msJgZCnmVa8ASo8EZzR7jsgTukQ==
+
+nodemailer@^6.4.13:
+  version "6.4.14"
+  resolved "https://registry.yarnpkg.com/nodemailer/-/nodemailer-6.4.14.tgz#2ffb160b63ff0c15a979da75e1f82af85433d2a3"
+  integrity sha512-0AQHOOT+nRAOK6QnksNaK7+5vjviVvEBzmZytKU7XSA+Vze2NLykTx/05ti1uJgXFTWrMq08u3j3x4r4OE6PAA==
 
 nopt@^4.0.1:
   version "4.0.1"

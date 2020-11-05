@@ -2,14 +2,14 @@ import { Context } from "@azure/functions";
 import { NewMessage } from "io-functions-commons/dist/generated/definitions/NewMessage";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 
-import { Either } from "fp-ts/lib/Either";
 import * as HtmlToText from "html-to-text";
-import { sendMail } from "io-functions-commons/dist/src/utils/email";
 import { markdownToHtml } from "io-functions-commons/dist/src/utils/markdown";
 import * as t from "io-ts";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as NodeMailer from "nodemailer";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
+
+import { sendMail } from "io-functions-commons/dist/src/mailer";
 
 // TODO: switch text based on user's preferred_language
 const userDataDeleteMessage = NewMessage.decode({
@@ -93,25 +93,22 @@ export const getActivityFunction = (
         notificationDefaultParams.HTML_TO_TEXT_OPTIONS
       );
 
-      const sendResult: Either<
-        Error,
-        NodeMailer.SendMailOptions
-      > = await sendMail(lMailerTransporter, {
+      // trigger email delivery
+      await sendMail(lMailerTransporter, {
         from: notificationDefaultParams.MAIL_FROM,
         html: documentHtml,
         subject: content.subject,
         text: bodyText,
         to: toAddress
-      });
-
-      if (sendResult.isLeft()) {
-        const error = sendResult.value;
-        // track the event of failed delivery
-        context.log.error(`${logPrefix}|ERROR=${error.message}`);
-        throw new Error(`Error while sending email: ${error.message}`);
-      }
-
-      context.log.verbose(`${logPrefix}|RESULT=SUCCESS`);
+      })
+        .bimap(
+          error => {
+            context.log.error(`${logPrefix}|ERROR=${error.message}`);
+            throw new Error(`Error while sending email: ${error.message}`);
+          },
+          () => context.log.verbose(`${logPrefix}|RESULT=SUCCESS`)
+        )
+        .run();
 
       return success();
     }
