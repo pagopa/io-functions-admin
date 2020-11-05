@@ -37,6 +37,11 @@ parameters:
     type: string
     default: '0.5'
 
+  # the resource group must be the same where vnet is created
+  - name: 'containerInstanceResourceGroup'
+    type: string
+    default: 'io-p-rg-common'
+
   # attached vnet to the container instance
   - name: 'containerInstanceVNet'
     type: string
@@ -135,9 +140,27 @@ steps:
           # define a temporary container instance name     
           CONTAINER_INSTANCE_NAME="${{ parameters.appName }}-deploy"
           
+          # check if vnet exists in target resource group (containerInstanceResourceGroup)
+          OUTPUT_VNET=$(az network vnet list --resource-group '${{ parameters.containerInstanceResourceGroup }}' --query "[?contains(name, '${{ parameters.containerInstanceVNet }}')].name" --output tsv)
+          if [ "$OUTPUT_VNET" = '${{ parameters.containerInstanceVNet }}' ]; then
+            echo "VNET '${{ parameters.containerInstanceVNet }}' found, continue"
+          else
+            echo "VNET '${{ parameters.containerInstanceVNet }}' not found, fail"
+            exit 1
+          fi
+
+          # check if subnet exists in target resource group and vnet (containerInstanceResourceGroup, containerInstanceVNet)
+          OUTPUT_SUBNET=$(az network vnet subnet list --resource-group '${{ parameters.containerInstanceResourceGroup }}' --vnet-name '${{ parameters.containerInstanceVNet }}' --query "[?contains(name, '${{ parameters.containerInstanceSubnet }}')].name" --output tsv)
+          if [ "$OUTPUT_SUBNET" = '${{ parameters.containerInstanceSubnet }}' ]; then
+            echo "SUBNET '${{ parameters.containerInstanceSubnet }}' found, continue"
+          else
+            echo "SUBNET '${{ parameters.containerInstanceSubnet }}' not found, fail"
+            exit 1
+          fi
+
           # create, run container instance in subnet, and get exit code
           OUTPUT_CREATE=$(az container create \
-                           --resource-group '${{ parameters.resourceGroupName }}' \
+                           --resource-group '${{ parameters.containerInstanceResourceGroup }}' \
                            --name ${CONTAINER_INSTANCE_NAME} \
                            --image microsoft/azure-cli:latest \
                            --cpu '${{ parameters.containerInstanceCpu }}' \
