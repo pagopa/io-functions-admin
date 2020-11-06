@@ -9,6 +9,10 @@ parameters:
   - build
   - predeploy_build
 
+# the branch, tag or commit to build
+- name: 'git_reference'
+  type: string
+
 - name: 'cache_version_id'
   type: string
   default: $(CACHE_VERSION_ID)
@@ -29,6 +33,12 @@ steps:
   inputs:
     version: $(NODE_VERSION)
   displayName: 'Set up Node.js'
+
+# This is needed because the pipeline may point to a different commit than expected
+# The common case is when the previous stage pushed another commit
+- script: |
+    git fetch && git checkout ${{ parameters.git_reference }}
+  displayName: 'Checkout reference'  
     
 - script: |
     yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1

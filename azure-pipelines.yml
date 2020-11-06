@@ -69,18 +69,31 @@ parameters:
       - deployToProductionSlot
       - deployToStagingSlotAndSwap
 
-# This pipeline can be manually run or is automatically triggered whenever one 
-# of the following conditions is true:
-# - a push is made to any branch in the repository (not only 'master')
-# - a pull request is created
-# - a tag named 'latest' is pushed
-# Note. In the last case, the tag can be (re-)created using the Git CLI, e.g.:
-#    git push -f origin <abfb967>:refs/tags/latest
+  - name: 'RELEASE_SEMVER'
+    displayName: 'When packing a release, define the version bump to apply'
+    type: string
+    values:
+      - major
+      - minor
+      - patch
+    default: minor
+  
+  - name: 'DEPLOY_GIT_REFERENCE'
+    displayName: |
+      A git reference from which start a deploy. It could be a branch name, a tag or a commit sha.
+      You may need to set this when deploying without packaging a release (maybe providing a tag for a revious release)
+    type: string
+    default: master
+
+# Feature branches triggers the pipeline for pull request testing
+# Master branch does't trigger the pipeline as it is meant to be the production branch
+# Running the pipeline manually from master will deploy the application (see deploy stages for further conditions)
 trigger:
   branches:
     include:
       - '*'
-      - refs/tags/latest
+    exclude:
+      - 'master'
 
 # This pipeline has been implemented to be run on hosted agent pools based both
 # on 'windows' and 'ubuntu' virtual machine images and using the scripts defined
@@ -168,8 +181,39 @@ stages:
             bash <(curl -s https://codecov.io/bash)
           displayName: 'Code coverage'
 
+  # C) Create a relase
+  # Activated when all these are met:
+  # - is a manual trigger
+  # - is on branch master
+  # - DO_RELEASE is true
+  - stage: Release
+    condition: 
+      and(
+        succeeded(),
+        and (
+          eq(variables['DO_RELEASE'], true),
+          and(
+            eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+            eq(variables['Build.Reason'], 'Manual')
+          )
+        )
+      )  
+    dependsOn:
+      - Build
+      - Test
+    pool:
+      vmImage: 'ubuntu-latest'
+    jobs:
+      - job: make_release      
+        steps:
+        - template: azure-templates/make-release-steps.yml
+          parameters:
+            semver: '${{ parameters.RELEASE_SEMVER }}'
+            gitEmail: $(GIT_EMAIL)
+            gitUsername: $(GIT_USERNAME)
+            gitHubConnection: $(GITHUB_CONNECTION)
 
-  # C) Deploy to TEST environment if the following conditions apply:
+  # D) Deploy to TEST environment if the following conditions apply:
   #    - continuos deployment (automatic):
   #       - $DO_DEPLOY == true and TEST_ENABLE_DEPLOY == true
   #       - there is a push on 'master' branch 
@@ -191,6 +235,7 @@ stages:
       dependsOn:
         - Build
         - Test
+        - Release
       jobs:
         - job: '${{ parameters.TEST_DEPLOY_TYPE }}'
           steps:
@@ -200,9 +245,10 @@ stages:
               azureSubscription: '$(TEST_AZURE_SUBSCRIPTION)'
               resourceGroupName: '$(TEST_RESOURCE_GROUP_NAME)'
               appName: '$(TEST_APP_NAME)'
+              git_reference: '$(DEPLOY_GIT_REFERENCE)'
 
 
-  # D) Deploy to PRODUCTION environment if one of the following conditions apply:
+  # E) Deploy to PRODUCTION environment if one of the following conditions apply:
   #    - continuos deployment (automatic):
   #       - $DO_DEPLOY == true and PRODUCTION_ENABLE_DEPLOY == true
   #       - the 'latest' tag is pushed 
@@ -224,6 +270,7 @@ stages:
       dependsOn:
         - Build
         - Test
+        - Release
       jobs:
         - job: '${{ parameters.PRODUCTION_DEPLOY_TYPE }}'
           steps:
@@ -233,3 +280,5 @@ stages:
               azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
               resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
               appName: '$(PRODUCTION_APP_NAME)'
+              git_reference: '$(DEPLOY_GIT_REFERENCE)'
+

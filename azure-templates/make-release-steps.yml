@@ -1,0 +1,81 @@
+# Make Release Steps
+# Mark a release on the project repository, with version bump and tag,
+# and publish a release on Github
+
+parameters:
+- name: 'semver'
+  type: string
+  values:
+  - major
+  - minor
+  - patch
+- name: 'gitUsername'
+  type: string
+- name: 'gitEmail'
+  type: string
+- name: 'gitHubConnection'
+  type: string
+
+- name: 'cache_version_id'
+  type: string
+  default: $(CACHE_VERSION_ID)
+  
+steps:
+- checkout: self
+  displayName: 'Checkout'
+  clean: true
+  persistCredentials: true
+
+- script: |
+    git checkout master
+  displayName: 'Checkout master'
+      
+- task: Cache@2
+  inputs:
+    key: 'yarn-${{ parameters.cache_version_id }} | "$(Agent.OS)" | yarn.lock'
+    restoreKeys: |
+      yarn-${{ parameters.cache_version_id }} | "$(Agent.OS)"
+    path: $(YARN_CACHE_FOLDER)
+  displayName: 'Cache yarn packages'
+
+- task: UseNode@1
+  inputs:
+    version: $(NODE_VERSION)
+  displayName: 'Set up Node.js'
+    
+- script: |
+    yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
+  displayName: 'Install node modules'
+
+- script: |
+    git config --global user.email "${{ parameters.gitEmail }}" && git config --global user.name "${{ parameters.gitUsername }}"
+  displayName: 'Git setup'  
+
+- script: |
+    npm version ${{ parameters.semver }} -m "Bump version to %s [skip ci]"
+  displayName: 'Version bump and tag'
+
+- script: |
+    git push --follow-tags origin master 
+  displayName: 'Push to master'
+
+- script: |
+    NEXT_VERSION=$(node -p "require('./package.json').version")
+    HEAD_SHA=$(git rev-parse HEAD)
+    TITLE="Release $NEXT_VERSION"
+    TAG="v$NEXT_VERSION"
+    echo "##vso[task.setvariable variable=title]$TITLE"
+    echo "##vso[task.setvariable variable=sha]$HEAD_SHA"
+    echo "##vso[task.setvariable variable=tag]$TAG"
+  displayName: 'Set release variables'
+
+- task: GitHubRelease@0
+  inputs:
+    gitHubConnection: ${{ parameters.gitHubConnection }}
+    repositoryName: $(Build.Repository.Name)
+    action: create
+    target: $(sha)
+    tagSource: manual
+    tag: $(tag)
+    title: $(title)
+    addChangelog: true

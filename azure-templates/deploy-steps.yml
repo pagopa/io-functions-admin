@@ -51,11 +51,16 @@ parameters:
   - name: 'containerInstanceSubnet'
     type: string
     default: 'azure-devops'
+
+  # the branch, tag or commit to deploy
+  - name: 'git_reference'
+    type: string
     
 steps:
   - template: ./make-build-steps.yml
     parameters:
       make: predeploy_build
+      git_reference: $(git_reference)
 
   # Install functions extensions
   - task: DotNetCoreCLI@2
