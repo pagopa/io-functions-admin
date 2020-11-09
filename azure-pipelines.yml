@@ -110,7 +110,7 @@ stages:
         - template: azure-templates/make-build-steps.yml
           parameters:
             make: build
-            
+
       # A2) Analyze source code to find errors with lint
       - job: lint
         pool:
@@ -186,18 +186,15 @@ stages:
     condition: 
       and(
         succeeded(),
-        and (
-          eq(variables['DO_RELEASE'], true),
-          and(
-            or(
-              eq(variables['Build.SourceBranch'], 'refs/heads/master'),
-              and(
-                startsWith(variables['Build.SourceBranch'], 'refs/tags'),
-                endsWith(variables['Build.SourceBranch'], '-RELEASE')
-              )
-            ),
-            eq(variables['Build.Reason'], 'Manual')
-          )
+        and(
+          or(
+            eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+            and(
+              startsWith(variables['Build.SourceBranch'], 'refs/tags'),
+              endsWith(variables['Build.SourceBranch'], '-RELEASE')
+            )
+          ),
+          eq(variables['Build.Reason'], 'Manual')
         )
       )  
     dependsOn:
@@ -215,6 +212,10 @@ stages:
               gitEmail: $(GIT_EMAIL)
               gitUsername: $(GIT_USERNAME)
               gitHubConnection: $(GITHUB_CONNECTION)
+        - ${{ ne(variables['DO_RELEASE'], true) }}:    
+          - script: |
+              echo "Release stage disabled."
+            displayName: 'Skip release bundle'              
         - ${{ if ne(variables['Build.SourceBranch'], 'refs/heads/master') }}:    
           - script: |
               echo "We assume this reference to be a valid release: $(Build.SourceBranch). Therefore, there is no need to bundle a new release."
