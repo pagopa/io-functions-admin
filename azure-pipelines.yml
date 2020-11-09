@@ -5,9 +5,13 @@
 # set its value to 'skip' without marking it secret: 
 # - DANGER_GITHUB_API_TOKEN
 #
+# To enable the bundle of a new release you need to configure the following 
+# global variable otherwise all the deployment jobs will be always skipped:
+# - DO_RELEASE = true
 # To enable the deployment in any environment you need to configure the following 
 # global variable otherwise all the deployment jobs will be always skipped:
 # - DO_DEPLOY = true
+#
 # you also need to configure the following additional parameters based on the 
 # environment(s) to update when running the pipeline:
 # - PRODUCTION_ENABLE_DEPLOY = true
@@ -36,7 +40,6 @@
 # after deploying to 'staging', the swap task in this pipeline will probably fail
 # because conflicting with another (automatic) swap operation in progress.
 # 
-
 variables:
   NODE_VERSION: '10.14.1'
   YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
@@ -77,13 +80,6 @@ parameters:
       - minor
       - patch
     default: minor
-  
-  - name: 'DEPLOY_GIT_REFERENCE'
-    displayName: |
-      A git reference from which start a deploy. It could be a branch name, a tag or a commit sha.
-      You may need to set this when deploying without packaging a release (maybe providing a tag for a revious release)
-    type: string
-    default: master
 
 # Feature branches triggers the pipeline for pull request testing
 # Master branch does't trigger the pipeline as it is meant to be the production branch
@@ -184,7 +180,7 @@ stages:
   # C) Create a relase
   # Activated when all these are met:
   # - is a manual trigger
-  # - is on branch master
+  # - is on branch master or is a tag in the form v{version}-RELEASE
   # - DO_RELEASE is true
   - stage: Release
     condition: 
@@ -193,7 +189,13 @@ stages:
         and (
           eq(variables['DO_RELEASE'], true),
           and(
-            eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+            or(
+              eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+              and(
+                startsWith(variables['Build.SourceBranch'], 'refs/tags'),
+                endsWith(variables['Build.SourceBranch'], '-RELEASE')
+              )
+            ),
             eq(variables['Build.Reason'], 'Manual')
           )
         )
@@ -206,12 +208,17 @@ stages:
     jobs:
       - job: make_release      
         steps:
-        - template: azure-templates/make-release-steps.yml
-          parameters:
-            semver: '${{ parameters.RELEASE_SEMVER }}'
-            gitEmail: $(GIT_EMAIL)
-            gitUsername: $(GIT_USERNAME)
-            gitHubConnection: $(GITHUB_CONNECTION)
+        - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:    
+          - template: azure-templates/make-release-steps.yml
+            parameters:
+              semver: '${{ parameters.RELEASE_SEMVER }}'
+              gitEmail: $(GIT_EMAIL)
+              gitUsername: $(GIT_USERNAME)
+              gitHubConnection: $(GITHUB_CONNECTION)
+        - ${{ if ne(variables['Build.SourceBranch'], 'refs/heads/master') }}:    
+          - script: |
+              echo "We assume this reference to be a valid release: $(Build.SourceBranch). Therefore, there is no need to bundle a new release."
+            displayName: 'Skip release bundle'
 
   # D) Deploy to TEST environment if the following conditions apply:
   #    - continuos deployment (automatic):
@@ -226,10 +233,7 @@ stages:
           succeeded(),
           and (
             eq(variables['DO_DEPLOY'], true),
-            or(
-              eq(variables['Build.SourceBranch'], 'refs/heads/master'),
-              eq(variables['Build.Reason'], 'Manual')
-            )
+            eq(variables['Build.Reason'], 'Manual')
           )
         )    
       dependsOn:
@@ -245,7 +249,12 @@ stages:
               azureSubscription: '$(TEST_AZURE_SUBSCRIPTION)'
               resourceGroupName: '$(TEST_RESOURCE_GROUP_NAME)'
               appName: '$(TEST_APP_NAME)'
-              git_reference: '$(DEPLOY_GIT_REFERENCE)'
+              # On the assumption that this stage is executed only when Relase stage is, 
+              #  with this parameter we set the reference the deploy script must pull changes from. 
+              # The branch/tag name is calculated from the source branch
+              #  ex: Build.SourceBranch=refs/heads/master --> master
+              #  ex: Build.SourceBranch=refs/tags/v1.2.3-RELEASE --> v1.2.3-RELEASE
+              git_reference: ${{ replace(replace(variables['Build.SourceBranch'], 'refs/tags/', ''), 'refs/heads/', '') }}
 
 
   # E) Deploy to PRODUCTION environment if one of the following conditions apply:
@@ -261,10 +270,7 @@ stages:
           succeeded(),
           and (
             eq(variables['DO_DEPLOY'], true),
-            or(
-              eq(variables['Build.SourceBranch'], 'refs/tags/latest'),
-              eq(variables['Build.Reason'], 'Manual')
-            )
+            eq(variables['Build.Reason'], 'Manual')
           )
         )
       dependsOn:
@@ -280,5 +286,10 @@ stages:
               azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
               resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
               appName: '$(PRODUCTION_APP_NAME)'
-              git_reference: '$(DEPLOY_GIT_REFERENCE)'
+              # On the assumption that this stage is executed only when Relase stage is, 
+              #  with this parameter we set the reference the deploy script must pull changes from. 
+              # The branch/tag name is calculated from the source branch
+              #  ex: Build.SourceBranch=refs/heads/master --> master
+              #  ex: Build.SourceBranch=refs/tags/v1.2.3-RELEASE --> v1.2.3-RELEASE
+              git_reference: ${{ replace(replace(variables['Build.SourceBranch'], 'refs/tags/', ''), 'refs/heads/', '') }}
 

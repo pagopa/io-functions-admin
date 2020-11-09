@@ -19,6 +19,13 @@ parameters:
 - name: 'cache_version_id'
   type: string
   default: $(CACHE_VERSION_ID)
+
+# This is the branch in which we will push the release tag.
+# It'll be master, but it can be overridden
+# Basically, this variable is used to enforce the fact that we use the very same branch in different steps
+- name: 'release_branch'
+  type: string
+  default: master
   
 steps:
 - checkout: self
@@ -26,9 +33,10 @@ steps:
   clean: true
   persistCredentials: true
 
+# Without this step, changes would be applied to a detatched head
 - script: |
-    git checkout master
-  displayName: 'Checkout master'
+    git checkout ${{ parameters.release_branch }}
+  displayName: 'Checkout release branch'
       
 - task: Cache@2
   inputs:
@@ -52,18 +60,24 @@ steps:
   displayName: 'Git setup'  
 
 - script: |
-    npm version ${{ parameters.semver }} -m "Bump version to %s [skip ci]"
+    npm version ${{ parameters.semver }} --git-tag-version false
+    NEXT_VERSION=$(node -p "require('./package.json').version")
+    VERSION_TAG="v$NEXT_VERSION"
+    RELEASE_TAG="v$NEXT_VERSION-RELEASE"
+    git commit -am "Bump version to $NEXT_VERSION [skip ci]"
+    git tag $RELEASE_TAG
+    git tag $VERSION_TAG
   displayName: 'Version bump and tag'
 
 - script: |
-    git push --follow-tags origin master 
-  displayName: 'Push to master'
+    git push --follow-tags origin ${{ parameters.release_branch }} 
+  displayName: 'Push to the release branch'
 
 - script: |
     NEXT_VERSION=$(node -p "require('./package.json').version")
     HEAD_SHA=$(git rev-parse HEAD)
     TITLE="Release $NEXT_VERSION"
-    TAG="v$NEXT_VERSION"
+    TAG="v$NEXT_VERSION-RELEASE"
     echo "##vso[task.setvariable variable=title]$TITLE"
     echo "##vso[task.setvariable variable=sha]$HEAD_SHA"
     echo "##vso[task.setvariable variable=tag]$TAG"

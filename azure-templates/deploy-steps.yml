@@ -55,12 +55,13 @@ parameters:
   # the branch, tag or commit to deploy
   - name: 'git_reference'
     type: string
+    default: $(Build.SourceVersion)
     
 steps:
   - template: ./make-build-steps.yml
     parameters:
       make: predeploy_build
-      git_reference: $(git_reference)
+      git_reference: ${{ parameters.git_reference }}
 
   # Install functions extensions
   - task: DotNetCoreCLI@2
