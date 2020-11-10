@@ -22,7 +22,9 @@
     "predeploy": "npm-run-all generate build dist:modules",
     "generate:definitions": "rimraf ./generated/definitions && shx mkdir -p ./generated/definitions && gen-api-models --api-spec ./openapi/index.yaml --out-dir ./generated/definitions",
     "generate:session-api": "rimraf ./generated/session-api && shx mkdir -p ./generated/session-api && gen-api-models --api-spec https://raw.githubusercontent.com/pagopa/io-backend/master/api_session.yaml --out-dir ./generated/session-api --request-types --response-decoders",
-    "generate": "npm-run-all generate:*"
+    "generate": "npm-run-all generate:*",
+    "preversion": "auto-changelog  --config .auto-changelog.json --unreleased --commit-limit false --stdout --template preview.hbs",
+    "version": "auto-changelog -p --config .auto-changelog.json --unreleased && git add CHANGELOG.md"
   },
   "description": "",
   "devDependencies": {
@@ -32,6 +34,7 @@
     "@types/jest": "^24.0.15",
     "@types/lolex": "^5.1.0",
     "@types/upng-js": "^2.1.1",
+    "auto-changelog": "^2.2.1",
     "azurite": "^3.1.2-preview",
     "danger": "^4.0.2",
     "danger-plugin-digitalcitizenship": "^0.3.1",
@@ -46,7 +49,6 @@
     "npm-run-all": "^4.1.5",
     "oval": "^1.0.0",
     "prettier": "^1.18.2",
-    "release-it": "^13.1.1",
     "shx": "^0.3.2",
     "ts-jest": "^24.0.2",
     "ts-node": "^8.10.1",
@@ -67,8 +69,8 @@
     "durable-functions": "^1.4.3",
     "express": "^4.15.3",
     "fp-ts": "1.17.0",
-    "io-functions-commons": "^16.0.0",
     "html-to-text": "^5.1.1",
+    "io-functions-commons": "^16.0.0",
     "io-functions-express": "^0.1.0",
     "io-ts": "1.8.5",
     "italia-ts-commons": "^8.5.0",
@@ -78,9 +80,9 @@
     "redis": "^3.0.2",
     "redis-clustr": "^1.7.0",
     "ulid": "^2.3.0",
+    "upng-js": "^2.1.0",
     "winston": "^3.2.1",
-    "yaml": "^1.10.0",
-    "upng-js": "^2.1.0"
+    "yaml": "^1.10.0"
   },
   "resolutions": {
     "handlebars": "~4.5.3",

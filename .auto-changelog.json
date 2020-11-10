@@ -1,5 +1,6 @@
 {
   "issuePattern": "\\[#(\\d+)\\]",
   "issueUrl": "https://www.pivotaltracker.com/story/show/{id}",
-  "breakingPattern": "BREAKING CHANGE:"
+  "breakingPattern": "BREAKING CHANGE:",
+  "tagPattern": "^v\\d+.\\d+.\\d+$"
 }
