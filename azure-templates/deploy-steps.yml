@@ -53,7 +53,7 @@ parameters:
     default: 'azure-devops'
 
   # the branch, tag or commit to deploy
-  - name: 'git_reference'
+  - name: 'gitReference'
     type: string
     default: $(Build.SourceVersion)
     
@@ -61,7 +61,7 @@ steps:
   - template: ./make-build-steps.yml
     parameters:
       make: predeploy_build
-      git_reference: ${{ parameters.git_reference }}
+      gitReference: ${{ parameters.gitReference }}
 
   # Install functions extensions
   - task: DotNetCoreCLI@2
