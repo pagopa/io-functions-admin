@@ -212,7 +212,7 @@ stages:
               gitEmail: $(GIT_EMAIL)
               gitUsername: $(GIT_USERNAME)
               gitHubConnection: $(GITHUB_CONNECTION)
-        - ${{ ne(variables['DO_RELEASE'], true) }}:    
+        - ${{ if ne(variables['DO_RELEASE'], true) }}:    
           - script: |
               echo "Release stage disabled."
             displayName: 'Skip release bundle'              
