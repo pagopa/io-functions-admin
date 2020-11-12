@@ -5,9 +5,13 @@
 # set its value to 'skip' without marking it secret: 
 # - DANGER_GITHUB_API_TOKEN
 #
+# To enable the bundle of a new release you need to configure the following 
+# global variable otherwise all the deployment jobs will be always skipped:
+# - DO_RELEASE = true
 # To enable the deployment in any environment you need to configure the following 
 # global variable otherwise all the deployment jobs will be always skipped:
 # - DO_DEPLOY = true
+#
 # you also need to configure the following additional parameters based on the 
 # environment(s) to update when running the pipeline:
 # - PRODUCTION_ENABLE_DEPLOY = true
@@ -36,7 +40,6 @@
 # after deploying to 'staging', the swap task in this pipeline will probably fail
 # because conflicting with another (automatic) swap operation in progress.
 # 
-
 variables:
   NODE_VERSION: '10.14.1'
   YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
@@ -69,18 +72,24 @@ parameters:
       - deployToProductionSlot
       - deployToStagingSlotAndSwap
 
-# This pipeline can be manually run or is automatically triggered whenever one 
-# of the following conditions is true:
-# - a push is made to any branch in the repository (not only 'master')
-# - a pull request is created
-# - a tag named 'latest' is pushed
-# Note. In the last case, the tag can be (re-)created using the Git CLI, e.g.:
-#    git push -f origin <abfb967>:refs/tags/latest
+  - name: 'RELEASE_SEMVER'
+    displayName: 'When packing a release, define the version bump to apply'
+    type: string
+    values:
+      - major
+      - minor
+      - patch
+    default: minor
+
+# Feature branches triggers the pipeline for pull request testing
+# Master branch does't trigger the pipeline as it is meant to be the production branch
+# Running the pipeline manually from master will deploy the application (see deploy stages for further conditions)
 trigger:
   branches:
     include:
       - '*'
-      - refs/tags/latest
+    exclude:
+      - 'master'
 
 # This pipeline has been implemented to be run on hosted agent pools based both
 # on 'windows' and 'ubuntu' virtual machine images and using the scripts defined
@@ -101,7 +110,7 @@ stages:
         - template: azure-templates/make-build-steps.yml
           parameters:
             make: build
-            
+
       # A2) Analyze source code to find errors with lint
       - job: lint
         pool:
@@ -168,8 +177,51 @@ stages:
             bash <(curl -s https://codecov.io/bash)
           displayName: 'Code coverage'
 
+  # C) Create a relase
+  # Activated when all these are met:
+  # - is a manual trigger
+  # - is on branch master or is a tag in the form v{version}-RELEASE
+  # - DO_RELEASE is true
+  - stage: Release
+    condition: 
+      and(
+        succeeded(),
+        and(
+          or(
+            eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+            and(
+              startsWith(variables['Build.SourceBranch'], 'refs/tags'),
+              endsWith(variables['Build.SourceBranch'], '-RELEASE')
+            )
+          ),
+          eq(variables['Build.Reason'], 'Manual')
+        )
+      )  
+    dependsOn:
+      - Build
+      - Test
+    pool:
+      vmImage: 'ubuntu-latest'
+    jobs:
+      - job: make_release      
+        steps:
+        - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:    
+          - template: azure-templates/make-release-steps.yml
+            parameters:
+              semver: '${{ parameters.RELEASE_SEMVER }}'
+              gitEmail: $(GIT_EMAIL)
+              gitUsername: $(GIT_USERNAME)
+              gitHubConnection: $(GITHUB_CONNECTION)
+        - ${{ if ne(variables['DO_RELEASE'], true) }}:    
+          - script: |
+              echo "Release stage disabled."
+            displayName: 'Skip release bundle'              
+        - ${{ if ne(variables['Build.SourceBranch'], 'refs/heads/master') }}:    
+          - script: |
+              echo "We assume this reference to be a valid release: $(Build.SourceBranch). Therefore, there is no need to bundle a new release."
+            displayName: 'Skip release bundle'
 
-  # C) Deploy to TEST environment if the following conditions apply:
+  # D) Deploy to TEST environment if the following conditions apply:
   #    - continuos deployment (automatic):
   #       - $DO_DEPLOY == true and TEST_ENABLE_DEPLOY == true
   #       - there is a push on 'master' branch 
@@ -182,15 +234,13 @@ stages:
           succeeded(),
           and (
             eq(variables['DO_DEPLOY'], true),
-            or(
-              eq(variables['Build.SourceBranch'], 'refs/heads/master'),
-              eq(variables['Build.Reason'], 'Manual')
-            )
+            eq(variables['Build.Reason'], 'Manual')
           )
         )    
       dependsOn:
         - Build
         - Test
+        - Release
       jobs:
         - job: '${{ parameters.TEST_DEPLOY_TYPE }}'
           steps:
@@ -200,9 +250,15 @@ stages:
               azureSubscription: '$(TEST_AZURE_SUBSCRIPTION)'
               resourceGroupName: '$(TEST_RESOURCE_GROUP_NAME)'
               appName: '$(TEST_APP_NAME)'
+              # On the assumption that this stage is executed only when Relase stage is, 
+              #  with this parameter we set the reference the deploy script must pull changes from. 
+              # The branch/tag name is calculated from the source branch
+              #  ex: Build.SourceBranch=refs/heads/master --> master
+              #  ex: Build.SourceBranch=refs/tags/v1.2.3-RELEASE --> v1.2.3-RELEASE
+              gitReference: ${{ replace(replace(variables['Build.SourceBranch'], 'refs/tags/', ''), 'refs/heads/', '') }}
 
 
-  # D) Deploy to PRODUCTION environment if one of the following conditions apply:
+  # E) Deploy to PRODUCTION environment if one of the following conditions apply:
   #    - continuos deployment (automatic):
   #       - $DO_DEPLOY == true and PRODUCTION_ENABLE_DEPLOY == true
   #       - the 'latest' tag is pushed 
@@ -215,15 +271,13 @@ stages:
           succeeded(),
           and (
             eq(variables['DO_DEPLOY'], true),
-            or(
-              eq(variables['Build.SourceBranch'], 'refs/tags/latest'),
-              eq(variables['Build.Reason'], 'Manual')
-            )
+            eq(variables['Build.Reason'], 'Manual')
           )
         )
       dependsOn:
         - Build
         - Test
+        - Release
       jobs:
         - job: '${{ parameters.PRODUCTION_DEPLOY_TYPE }}'
           steps:
@@ -233,3 +287,10 @@ stages:
               azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
               resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
               appName: '$(PRODUCTION_APP_NAME)'
+              # On the assumption that this stage is executed only when Relase stage is, 
+              #  with this parameter we set the reference the deploy script must pull changes from. 
+              # The branch/tag name is calculated from the source branch
+              #  ex: Build.SourceBranch=refs/heads/master --> master
+              #  ex: Build.SourceBranch=refs/tags/v1.2.3-RELEASE --> v1.2.3-RELEASE
+              gitReference: ${{ replace(replace(variables['Build.SourceBranch'], 'refs/tags/', ''), 'refs/heads/', '') }}
+
