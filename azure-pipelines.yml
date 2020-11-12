@@ -182,7 +182,7 @@ stages:
   # - is a manual trigger
   # - is on branch master or is a tag in the form v{version}-RELEASE
   # - DO_RELEASE is true
-  ${{ if and( succeeded(), and( or( eq(variables['Build.SourceBranch'], 'refs/heads/master'), and( startsWith(variables['Build.SourceBranch'], 'refs/tags'), endsWith(variables['Build.SourceBranch'], '-RELEASE') ) ), eq(variables['Build.Reason'], 'Manual') ) )  }}:
+  - ${{ if and( succeeded(), and( or( eq(variables['Build.SourceBranch'], 'refs/heads/master'), and( startsWith(variables['Build.SourceBranch'], 'refs/tags'), endsWith(variables['Build.SourceBranch'], '-RELEASE') ) ), eq(variables['Build.Reason'], 'Manual') ) )  }}:
     - stage: Release
       dependsOn:
         - Build
