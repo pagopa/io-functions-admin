@@ -121,7 +121,7 @@ export function createClient<K extends ParamKeys>({
     headers: ApiHeaderJson,
 
     response_decoder: lockUserSessionDefaultDecoder(),
-    url: ({ fiscalCode }) => `${basePath}/sessions/${fiscalCode}/lock`,
+    url: ({ fiscalcode }) => `${basePath}/sessions/${fiscalcode}/lock`,
 
     body: () => "{}",
 
@@ -140,7 +140,7 @@ export function createClient<K extends ParamKeys>({
     headers: ApiHeaderJson,
 
     response_decoder: unlockUserSessionDefaultDecoder(),
-    url: ({ fiscalCode }) => `${basePath}/sessions/${fiscalCode}/lock`,
+    url: ({ fiscalcode }) => `${basePath}/sessions/${fiscalcode}/lock`,
 
     query: ({ token }) => ({ token })
   };

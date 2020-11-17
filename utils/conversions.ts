@@ -94,7 +94,7 @@ export function retrievedServiceToApiService(
     service_metadata: toApiServiceMetadata(retrievedService),
     service_name: retrievedService.serviceName,
     version: retrievedService.version
-  };
+  } as ApiService;
 }
 
 export function retrievedServiceToVisibleService(
