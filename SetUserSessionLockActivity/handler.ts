@@ -85,7 +85,7 @@ const callSessionApi = (
   context: Context,
   sessionApiClient: Client<"token">,
   action: ActivityInput["action"],
-  fiscalCode: FiscalCode
+  fiscalcode: FiscalCode
 ): TaskEither<ApiCallFailure | BadApiRequestFailure, SuccessResponse> =>
   taskEither
     .of<ApiCallFailure | BadApiRequestFailure, void>(void 0)
@@ -94,9 +94,9 @@ const callSessionApi = (
         () => {
           switch (action) {
             case "LOCK":
-              return sessionApiClient.lockUserSession({ fiscalCode });
+              return sessionApiClient.lockUserSession({ fiscalcode });
             case "UNLOCK":
-              return sessionApiClient.unlockUserSession({ fiscalCode });
+              return sessionApiClient.unlockUserSession({ fiscalcode });
             default:
               assertNever(action);
           }

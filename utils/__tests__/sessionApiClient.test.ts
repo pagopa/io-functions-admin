@@ -24,8 +24,8 @@ const aProblemJson500 = ProblemJson.decode({
 });
 
 const withDefaultApiKey: WithDefaultsT<"token"> = apiOperation => ({
-  fiscalCode
-}) => apiOperation({ fiscalCode, token: anApyKey });
+  fiscalcode
+}) => apiOperation({ fiscalcode, token: anApyKey });
 
 describe("sessionApiClient#lockUserSession", () => {
   it.each`
@@ -43,7 +43,7 @@ describe("sessionApiClient#lockUserSession", () => {
     const client = createClient({ baseUrl, fetchApi });
 
     const result = await client.lockUserSession({
-      fiscalCode: aFiscalCode,
+      fiscalcode: aFiscalCode,
       token: anApyKey
     });
 
@@ -68,7 +68,7 @@ describe("sessionApiClient#lockUserSession", () => {
     });
 
     await client.lockUserSession({
-      fiscalCode: aFiscalCode
+      fiscalcode: aFiscalCode
     });
 
     // fetchApi is actually a jest.Mock, can be spied
@@ -101,7 +101,7 @@ describe("sessionApiClient#unlockUserSession", () => {
     const client = createClient({ baseUrl, fetchApi });
 
     const result = await client.unlockUserSession({
-      fiscalCode: aFiscalCode,
+      fiscalcode: aFiscalCode,
       token: anApyKey
     });
 
@@ -126,7 +126,7 @@ describe("sessionApiClient#unlockUserSession", () => {
     });
 
     await client.unlockUserSession({
-      fiscalCode: aFiscalCode
+      fiscalcode: aFiscalCode
     });
 
     // fetchApi is actually a jest.Mock, can be spied
