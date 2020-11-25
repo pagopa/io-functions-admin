@@ -43,7 +43,7 @@ winston.add(contextTransport);
 const app = express();
 secureExpressApp(app);
 
-app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.json({ limit: "5mb" }));
 
 // Add express route
 app.put(
