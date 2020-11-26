@@ -19,6 +19,8 @@ import { createBlobService } from "azure-storage";
 import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 
+import * as bodyParser from "body-parser";
+
 const config = getConfigOrThrow();
 
 const database = cosmosdbClient.database(config.COSMOSDB_NAME);
@@ -40,6 +42,9 @@ winston.add(contextTransport);
 // Setup Express
 const app = express();
 secureExpressApp(app);
+
+// Setup max body size
+app.use(bodyParser.json({ limit: "5mb" }));
 
 // Add express route
 app.put(
