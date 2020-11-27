@@ -3990,10 +3990,15 @@ io-functions-commons@^17.0.0:
     unified "^9.0.0"
     winston "^3.1.0"
 
-io-functions-express@^0.1.0, io-functions-express@^0.1.1:
+io-functions-express@^0.1.1:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/io-functions-express/-/io-functions-express-0.1.1.tgz#6ae954fe89ec1d797c5e5d10eca5e77f08ff4a4d"
   integrity sha512-Co7sovRyB0lxgU6NFh5v72Apude3XbgKQtqA7slryvKoEqLAvlnLU7DtsYVoF62O3ZJdtSHYf9JWuhDc/di1mg==
+
+io-functions-express@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/io-functions-express/-/io-functions-express-1.1.0.tgz#278b7e3b91d1effc45752ca64779957aba8a40df"
+  integrity sha512-FEY81NiilqDTf9dTvhfAyg0eUrGE0U+m4pC8e52p90XEYxyS+wnSLr6eAciNGKDHXtNsnhwt00cPSbT/bZCsfQ==
 
 io-ts@1.8.5:
   version "1.8.5"

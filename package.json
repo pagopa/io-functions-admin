@@ -71,7 +71,7 @@
     "fp-ts": "1.17.0",
     "html-to-text": "^5.1.1",
     "io-functions-commons": "^17.0.0",
-    "io-functions-express": "^0.1.0",
+    "io-functions-express": "^1.1.0",
     "io-ts": "1.8.5",
     "italia-ts-commons": "^8.5.0",
     "nodemailer": "^6.4.11",
