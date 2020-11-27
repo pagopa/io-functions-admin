@@ -1,45 +1,45 @@
 # Azure DevOps pipeline to build, check source codes, run tests, and deploy.
 #
-# To make Danger JS run on a pull request you need to add the following pipeline 
-# variable and set it with a GitHub access token (scope public_repo); otherwise 
-# set its value to 'skip' without marking it secret: 
+# To make Danger JS run on a pull request you need to add the following pipeline
+# variable and set it with a GitHub access token (scope public_repo); otherwise
+# set its value to 'skip' without marking it secret:
 # - DANGER_GITHUB_API_TOKEN
 #
-# To enable the bundle of a new release you need to configure the following 
+# To enable the bundle of a new release you need to configure the following
 # global variable otherwise all the deployment jobs will be always skipped:
 # - DO_RELEASE = true
-# To enable the deployment in any environment you need to configure the following 
+# To enable the deployment in any environment you need to configure the following
 # global variable otherwise all the deployment jobs will be always skipped:
 # - DO_DEPLOY = true
 #
-# you also need to configure the following additional parameters based on the 
+# you also need to configure the following additional parameters based on the
 # environment(s) to update when running the pipeline:
 # - PRODUCTION_ENABLE_DEPLOY = true
 # - TEST_ENABLE_DEPLOY = true
 #
 # The following parameter and variables must also be set to run the deployment:
 # - PRODUCTION_DEPLOY_TYPE:
-#    -- 'deployToStagingSlot': deploy to 'staging' slot 
+#    -- 'deployToStagingSlot': deploy to 'staging' slot
 #    -- 'deployToProductionSlot' (default): deploy to 'production' slot
-#    -- 'deployToStagingSlotAndSwap': deploy to 'staging' slot and then swap 
+#    -- 'deployToStagingSlotAndSwap': deploy to 'staging' slot and then swap
 # - PRODUCTION_AZURE_SUBSCRIPTION
 # - PRODUCTION_RESOURCE_GROUP_NAME
 # - PRODUCTION_APP_NAME
 #
 # - TEST_DEPLOY_TYPE:
-#      -- 'deployToTestSlot' (default): deploy to 'test' slot 
+#      -- 'deployToTestSlot' (default): deploy to 'test' slot
 #      -- 'deployToProductionSlot': deploy to 'production' slot (TEST env)
 # - TEST_AZURE_SUBSCRIPTION
 # - TEST_RESOURCE_GROUP_NAME
 # - TEST_APP_NAME
-# 
+#
 # Please note that the deployment to a slot (e.g. 'staging') could automatically
 # trigger the swapping with 'production' slot if "auto swap" has been enabled in
-# the App service configuration. This also means that if the "auto swap" is on and 
+# the App service configuration. This also means that if the "auto swap" is on and
 # you select 'deployToStagingSlotAndSwap' to swap 'staging' and 'production' slots
 # after deploying to 'staging', the swap task in this pipeline will probably fail
 # because conflicting with another (automatic) swap operation in progress.
-# 
+#
 variables:
   NODE_VERSION: '10.14.1'
   YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
@@ -55,7 +55,7 @@ parameters:
     type: string
     default: deployToTestSlot
     values:
-      - deployToTestSlot  
+      - deployToTestSlot
       - deployToProductionSlot
 
   - name: 'PRODUCTION_ENABLE_DEPLOY'
@@ -68,7 +68,7 @@ parameters:
     type: string
     default: deployToStagingSlotAndSwap
     values:
-      - deployToStagingSlot  
+      - deployToStagingSlot
       - deployToProductionSlot
       - deployToStagingSlotAndSwap
 
@@ -99,13 +99,21 @@ trigger:
 pool:
   vmImage: 'windows-2019'
 
+resources:
+  repositories:
+    - repository: pagopaCommons
+      type: github
+      name: pagopa/azure-pipeline-templates
+      ref: refs/tags/v1
+      endpoint: 'pagopa'
+
 stages:
   # A) Build and code validation
   - stage: Build
     dependsOn: []
     jobs:
       # A1) Checkout, install module and build code
-      - job: make_build      
+      - job: make_build
         steps:
         - template: azure-templates/make-build-steps.yml
           parameters:
@@ -114,7 +122,7 @@ stages:
       # A2) Analyze source code to find errors with lint
       - job: lint
         pool:
-          vmImage: 'ubuntu-latest'      
+          vmImage: 'ubuntu-latest'
         steps:
         - template: azure-templates/make-build-steps.yml
           parameters:
@@ -127,7 +135,7 @@ stages:
       # A3) Validate API definition
       - job: lint_api
         pool:
-          vmImage: 'ubuntu-latest'      
+          vmImage: 'ubuntu-latest'
         steps:
         - script: |
             npx oval validate -p openapi/index.yaml
@@ -137,9 +145,9 @@ stages:
       - job: danger
         pool:
           vmImage: 'ubuntu-latest'
-        condition: 
+        condition:
           and(
-            succeeded(), 
+            succeeded(),
             and(
               eq(variables['Build.Reason'], 'PullRequest'),
               ne(variables['DANGER_GITHUB_API_TOKEN'], 'skip')
@@ -183,7 +191,7 @@ stages:
   # - is on branch master or is a tag in the form v{version}-RELEASE
   # - DO_RELEASE is true
   - stage: Release
-    condition: 
+    condition:
       and(
         succeeded(),
         and(
@@ -196,27 +204,27 @@ stages:
           ),
           eq(variables['Build.Reason'], 'Manual')
         )
-      )  
+      )
     dependsOn:
       - Build
       - Test
     pool:
       vmImage: 'ubuntu-latest'
     jobs:
-      - job: make_release      
+      - job: make_release
         steps:
-        - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:    
+        - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:
           - template: azure-templates/make-release-steps.yml
             parameters:
               semver: '${{ parameters.RELEASE_SEMVER }}'
               gitEmail: $(GIT_EMAIL)
               gitUsername: $(GIT_USERNAME)
               gitHubConnection: $(GITHUB_CONNECTION)
-        - ${{ if ne(variables['DO_RELEASE'], true) }}:    
+        - ${{ if ne(variables['DO_RELEASE'], true) }}:
           - script: |
               echo "Release stage disabled."
-            displayName: 'Skip release bundle'              
-        - ${{ if ne(variables['Build.SourceBranch'], 'refs/heads/master') }}:    
+            displayName: 'Skip release bundle'
+        - ${{ if ne(variables['Build.SourceBranch'], 'refs/heads/master') }}:
           - script: |
               echo "We assume this reference to be a valid release: $(Build.SourceBranch). Therefore, there is no need to bundle a new release."
             displayName: 'Skip release bundle'
@@ -224,19 +232,19 @@ stages:
   # D) Deploy to TEST environment if the following conditions apply:
   #    - continuos deployment (automatic):
   #       - $DO_DEPLOY == true and TEST_ENABLE_DEPLOY == true
-  #       - there is a push on 'master' branch 
+  #       - there is a push on 'master' branch
   #    - manual deployment:
   #       - $DO_DEPLOY == true and TEST_ENABLE_DEPLOY == true
   - ${{ if eq(parameters.TEST_ENABLE_DEPLOY, true) }}:
     - stage: Deploy_test
-      condition: 
+      condition:
         and(
           succeeded(),
           and (
             eq(variables['DO_DEPLOY'], true),
             eq(variables['Build.Reason'], 'Manual')
           )
-        )    
+        )
       dependsOn:
         - Build
         - Test
@@ -250,8 +258,12 @@ stages:
               azureSubscription: '$(TEST_AZURE_SUBSCRIPTION)'
               resourceGroupName: '$(TEST_RESOURCE_GROUP_NAME)'
               appName: '$(TEST_APP_NAME)'
-              # On the assumption that this stage is executed only when Relase stage is, 
-              #  with this parameter we set the reference the deploy script must pull changes from. 
+              healthcheckEndpoint: 'https://$(TEST_APP_NAME)-staging.azurewebsites.net/info'
+              containerInstanceResourceGroup: 'io-p-rg-common'
+              containerInstanceVNet: 'io-p-vnet-common'
+              containerInstanceSubnet: 'azure-devops'
+              # On the assumption that this stage is executed only when Relase stage is,
+              #  with this parameter we set the reference the deploy script must pull changes from.
               # The branch/tag name is calculated from the source branch
               #  ex: Build.SourceBranch=refs/heads/master --> master
               #  ex: Build.SourceBranch=refs/tags/v1.2.3-RELEASE --> v1.2.3-RELEASE
@@ -261,12 +273,12 @@ stages:
   # E) Deploy to PRODUCTION environment if one of the following conditions apply:
   #    - continuos deployment (automatic):
   #       - $DO_DEPLOY == true and PRODUCTION_ENABLE_DEPLOY == true
-  #       - the 'latest' tag is pushed 
+  #       - the 'latest' tag is pushed
   #    - manual deployment:
   #       - $DO_DEPLOY == true and PRODUCTION_ENABLE_DEPLOY == true
   - ${{ if eq(parameters.PRODUCTION_ENABLE_DEPLOY, true) }}:
     - stage: Deploy_production
-      condition: 
+      condition:
         and(
           succeeded(),
           and (
@@ -287,10 +299,13 @@ stages:
               azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
               resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
               appName: '$(PRODUCTION_APP_NAME)'
-              # On the assumption that this stage is executed only when Relase stage is, 
-              #  with this parameter we set the reference the deploy script must pull changes from. 
+              healthcheckEndpoint: 'https://$(PRODUCTION_APP_NAME)-staging.azurewebsites.net/api/v1/info'
+              containerInstanceResourceGroup: 'io-p-rg-common'
+              containerInstanceVNet: 'io-p-vnet-common'
+              containerInstanceSubnet: 'azure-devops'
+              # On the assumption that this stage is executed only when Relase stage is,
+              #  with this parameter we set the reference the deploy script must pull changes from.
               # The branch/tag name is calculated from the source branch
               #  ex: Build.SourceBranch=refs/heads/master --> master
               #  ex: Build.SourceBranch=refs/tags/v1.2.3-RELEASE --> v1.2.3-RELEASE
               gitReference: ${{ replace(replace(variables['Build.SourceBranch'], 'refs/tags/', ''), 'refs/heads/', '') }}
-
