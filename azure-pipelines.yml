@@ -299,7 +299,7 @@ stages:
               azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
               resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
               appName: '$(PRODUCTION_APP_NAME)'
-              healthcheckEndpoint: 'https://$(PRODUCTION_APP_NAME)-staging.azurewebsites.net/api/v1/info'
+              healthcheckEndpoint: 'https://$(PRODUCTION_APP_NAME)-staging.azurewebsites.net/info'
               containerInstanceResourceGroup: 'io-p-rg-common'
               containerInstanceVNet: 'io-p-vnet-common'
               containerInstanceSubnet: 'azure-devops'
