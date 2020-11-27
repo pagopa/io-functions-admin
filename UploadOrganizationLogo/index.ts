@@ -14,8 +14,6 @@ import { UploadOrganizationLogo } from "./handler";
 import { createBlobService } from "azure-storage";
 import { getConfigOrThrow } from "../utils/config";
 
-import * as bodyParser from "body-parser";
-
 const config = getConfigOrThrow();
 const logosUrl = config.LOGOS_URL;
 
@@ -33,7 +31,7 @@ const app = express();
 secureExpressApp(app);
 
 // Setup max body size
-app.use(bodyParser.json({ limit: "5mb" }));
+// app.use(bodyParser.json({ limit: "5mb" }));
 
 // Add express route
 app.put(
