@@ -26,9 +26,16 @@ parameters:
 - name: 'release_branch'
   type: string
   default: master
-  
+
+resources:
+  repositories:
+  - repository: Repository
+    type: GitHub
+    connection: ${{ parameters.gitHubConnection }}
+    source: $(Build.Repository.Name)
+
 steps:
-- checkout: self
+- checkout: Repository
   displayName: 'Checkout'
   clean: true
   persistCredentials: true
@@ -37,7 +44,7 @@ steps:
 - script: |
     git checkout ${{ parameters.release_branch }}
   displayName: 'Checkout release branch'
-      
+
 - task: Cache@2
   inputs:
     key: 'yarn-${{ parameters.cache_version_id }} | "$(Agent.OS)" | yarn.lock'
@@ -50,14 +57,14 @@ steps:
   inputs:
     version: $(NODE_VERSION)
   displayName: 'Set up Node.js'
-    
+
 - script: |
     yarn install --frozen-lockfile --no-progress --non-interactive --network-concurrency 1
   displayName: 'Install node modules'
 
 - script: |
     git config --global user.email "${{ parameters.gitEmail }}" && git config --global user.name "${{ parameters.gitUsername }}"
-  displayName: 'Git setup'  
+  displayName: 'Git setup'
 
 - script: |
     npm version ${{ parameters.semver }} -m "Bump version to %s [skip ci]"
@@ -67,7 +74,7 @@ steps:
   displayName: 'Version bump and tag'
 
 - script: |
-    git push --follow-tags origin ${{ parameters.release_branch }} 
+    git push --follow-tags origin ${{ parameters.release_branch }}
   displayName: 'Push to the release branch'
 
 - script: |
