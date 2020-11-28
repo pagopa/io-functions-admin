@@ -27,15 +27,8 @@ parameters:
   type: string
   default: master
 
-resources:
-  repositories:
-  - repository: Repository
-    type: GitHub
-    connection: ${{ parameters.gitHubConnection }}
-    source: $(Build.Repository.Name)
-
 steps:
-- checkout: Repository
+- checkout: repository
   displayName: 'Checkout'
   clean: true
   persistCredentials: true
