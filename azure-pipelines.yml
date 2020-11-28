@@ -106,10 +106,6 @@ resources:
       name: pagopa/azure-pipeline-templates
       ref: refs/tags/v1
       endpoint: 'pagopa'
-    - repository: repository
-      type: github
-      name: $(Build.Repository.Name)
-      endpoint: ${{ variables['GITHUB_CONNECTION'] }}
 
 stages:
   # A) Build and code validation

@@ -28,7 +28,7 @@ parameters:
   default: master
 
 steps:
-- checkout: repository
+- checkout: self
   displayName: 'Checkout'
   clean: true
   persistCredentials: true
