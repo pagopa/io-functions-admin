@@ -109,7 +109,7 @@ resources:
     - repository: repository
       type: github
       name: $(Build.Repository.Name)
-      endpoint: $(GITHUB_CONNECTION)
+      endpoint: ${{ variables['GITHUB_CONNECTION'] }}
 
 stages:
   # A) Build and code validation
