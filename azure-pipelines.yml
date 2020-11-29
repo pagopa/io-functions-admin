@@ -84,12 +84,7 @@ parameters:
 # Feature branches triggers the pipeline for pull request testing
 # Master branch does't trigger the pipeline as it is meant to be the production branch
 # Running the pipeline manually from master will deploy the application (see deploy stages for further conditions)
-trigger:
-  branches:
-    include:
-      - '*'
-    exclude:
-      - 'master'
+trigger: none
 
 # This pipeline has been implemented to be run on hosted agent pools based both
 # on 'windows' and 'ubuntu' virtual machine images and using the scripts defined
