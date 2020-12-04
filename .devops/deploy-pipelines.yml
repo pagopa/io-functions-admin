@@ -84,7 +84,6 @@ stages:
           # Build application
           - template: azure-templates/setup-project.yml
             parameters:
-              make: predeploy_build
               # On the assumption that this stage is executed only when Relase stage is,
               #  with this parameter we set the reference the deploy script must pull changes from.
               # The branch/tag name is calculated from the source branch
