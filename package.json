@@ -1,6 +1,6 @@
 {
   "name": "io-functions-admin",
-  "version": "0.17.5",
+  "version": "0.17.6",
   "license": "MIT",
   "scripts": {
     "prebuild": "shx rm -rf dist && yarn generate",
