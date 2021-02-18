@@ -21,7 +21,7 @@
     "dist:zip": "zip -r dist.zip . --exclude @.funcignore --exclude .funcignore",
     "predeploy": "npm-run-all generate build dist:modules",
     "generate:definitions": "rimraf ./generated/definitions && shx mkdir -p ./generated/definitions && gen-api-models --api-spec ./openapi/index.yaml --out-dir ./generated/definitions",
-    "generate:session-api": "rimraf ./generated/session-api && shx mkdir -p ./generated/session-api && gen-api-models --api-spec https://raw.githubusercontent.com/pagopa/io-backend/v7.15.3/api_session.yaml --out-dir ./generated/session-api --request-types --response-decoders",
+    "generate:session-api": "rimraf ./generated/session-api && gen-api-models --api-spec https://raw.githubusercontent.com/pagopa/io-backend/v7.15.3/api_session.yaml --out-dir ./generated/session-api --request-types --response-decoders",
     "generate": "npm-run-all generate:*",
     "preversion": "auto-changelog  --config .auto-changelog.json --unreleased --commit-limit false --stdout --template preview.hbs",
     "version": "auto-changelog -p --config .auto-changelog.json --unreleased && git add CHANGELOG.md"
