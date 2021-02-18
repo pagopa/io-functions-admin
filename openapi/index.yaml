@@ -477,7 +477,7 @@ definitions:
     required:
       - email
   EmailAddress:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/EmailAddress"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/EmailAddress"
   ServiceCollection:
     type: object
     properties:
@@ -491,39 +491,39 @@ definitions:
       - items
       - page_size
   ProblemJson:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ProblemJson"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/ProblemJson"
   Service:
-    "$ref": "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/Service"
+    "$ref": "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/Service"
   ServiceMetadata:
-    "$ref": "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceMetadata"
+    "$ref": "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/ServiceMetadata"
   ServiceScope:
-    "$ref": "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceScope"
+    "$ref": "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/ServiceScope"
   ServicePayload:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServicePayload"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/ServicePayload"
   HiddenServicePayload:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/HiddenServicePayload"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/HiddenServicePayload"
   VisibleServicePayload:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/VisibleServicePayload"   
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/VisibleServicePayload"   
   CommonServicePayload:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/CommonServicePayload"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/CommonServicePayload"
   ServiceId:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceId"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/ServiceId"
   ServiceName:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ServiceName"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/ServiceName"
   OrganizationName:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/OrganizationName"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/OrganizationName"
   DepartmentName:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/DepartmentName"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/DepartmentName"
   CIDR:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/CIDR"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/CIDR"
   MaxAllowedPaymentAmount:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/MaxAllowedPaymentAmount"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/MaxAllowedPaymentAmount"
   OrganizationFiscalCode:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/OrganizationFiscalCode"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/OrganizationFiscalCode"
   FiscalCode:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/FiscalCode"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/FiscalCode"
   ExtendedProfile:
-    $ref: "https://raw.githubusercontent.com/teamdigitale/io-functions-commons/master/openapi/definitions.yaml#/ExtendedProfile"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v19.1.0/openapi/definitions.yaml#/ExtendedProfile"
   UserGroupsPayload:
     description: |-
       All the groups with which the user must be associated.
