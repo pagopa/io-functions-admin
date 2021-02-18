@@ -185,3 +185,4 @@ stages:
         - template: templates/client-sdk-publish/template.yaml@pagopaCommons
           parameters:
             openapiSpecPath: 'openapi/index.yaml'
+            generatorPackageName: 'italia-utils'
