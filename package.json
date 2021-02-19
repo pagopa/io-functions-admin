@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "prebuild": "shx rm -rf dist && yarn generate",
-    "postbuild": "npx dependency-check package.json --missing ./dist/**/*.js",
+    "postbuild": "npx dependency-check package.json --no-dev --missing ./dist/**/*.js",
     "build": "tsc",
     "watch": "tsc -w",
     "prestart": "func extensions install --javascript",
