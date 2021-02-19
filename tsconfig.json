@@ -12,6 +12,7 @@
     "__mocks__",
     "dist",
     "node_modules",
-    "**/__tests__/*"
+    "**/__tests__/*",
+    "Dangerfile.ts"
   ]
 }
