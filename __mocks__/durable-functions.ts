@@ -1,4 +1,4 @@
-// tslint:disable: no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
@@ -36,13 +36,13 @@ export const RetryOptions = jest.fn(() => ({}));
 export const context = ({
   bindings: {},
   log: {
-    // tslint:disable-next-line: no-console
+    // eslint-disable-next-line no-console
     error: jest.fn().mockImplementation(console.log),
-    // tslint:disable-next-line: no-console
+    // eslint-disable-next-line no-console
     info: jest.fn().mockImplementation(console.log),
-    // tslint:disable-next-line: no-console
+    // eslint-disable-next-line no-console
     verbose: jest.fn().mockImplementation(console.log),
-    // tslint:disable-next-line: no-console
+    // eslint-disable-next-line no-console
     warn: jest.fn().mockImplementation(console.log)
   }
 } as any) as Context;

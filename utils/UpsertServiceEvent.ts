@@ -10,6 +10,7 @@ import { RetrievedService } from "io-functions-commons/dist/src/models/service";
  * When oldService is defined, the service has been updated, or it has been
  * created otherwise.
  */
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const UpsertServiceEvent = t.intersection([
   t.interface({
     newService: RetrievedService,

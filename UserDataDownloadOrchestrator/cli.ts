@@ -2,7 +2,7 @@
  * Exposes ExtractUserDataActivity as a cli command for local usage
  */
 
-// tslint:disable: no-console no-any
+// eslint-disable no-console, @typescript-eslint/no-explicit-any
 
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -10,9 +10,6 @@ dotenv.config();
 import { Context } from "@azure/functions";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
-import extractUserDataActivity from "../ExtractUserDataActivity";
-import sendUserDataDownloadMessageActivity from "../SendUserDataDownloadMessageActivity";
-import setUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
 
 import { toString } from "fp-ts/lib/function";
 
@@ -26,6 +23,9 @@ import {
 import { isLeft } from "fp-ts/lib/Either";
 import { isNone } from "fp-ts/lib/Option";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import setUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
+import sendUserDataDownloadMessageActivity from "../SendUserDataDownloadMessageActivity";
+import extractUserDataActivity from "../ExtractUserDataActivity";
 import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 
@@ -33,11 +33,14 @@ const config = getConfigOrThrow();
 
 const context = ({
   log: {
+    // eslint-disable-next-line no-console
     error: console.error,
+    // eslint-disable-next-line no-console
     info: console.log,
+    // eslint-disable-next-line no-console
     verbose: console.log
   }
-  // tslint:disable-next-line: no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any) as Context;
 
 const database = cosmosdbClient.database(config.COSMOSDB_NAME);
@@ -46,7 +49,7 @@ const userDataProcessingModel = new UserDataProcessingModel(
   database.container(USER_DATA_PROCESSING_COLLECTION_NAME)
 );
 
-// tslint:disable-next-line: max-union-size
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/no-explicit-any
 async function run(): Promise<any> {
   const fiscalCode = FiscalCode.decode(process.argv[2]).getOrElseL(reason => {
     throw new Error(`Invalid input: ${readableReport(reason)}`);
@@ -76,6 +79,7 @@ async function run(): Promise<any> {
 
   const currentUserDataProcessing = maybeUserDataProcessing.value;
 
+  // eslint-disable-next-line no-console
   console.log(
     "Found user data processing request (v=%d) with status %s",
     currentUserDataProcessing.version,
@@ -120,6 +124,7 @@ async function run(): Promise<any> {
       })
     )
     .catch(err => {
+      // eslint-disable-next-line no-console
       console.error(err);
       return setUserDataProcessingStatusActivity(context, {
         currentRecord: currentUserDataProcessing,
@@ -129,5 +134,7 @@ async function run(): Promise<any> {
 }
 
 run()
+  // eslint-disable-next-line no-console
   .then(result => console.log("OK", result))
+  // eslint-disable-next-line no-console
   .catch(ex => console.error("KO", ex));

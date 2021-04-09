@@ -1,5 +1,5 @@
-/* tslint:disable: no-any */
-/* tslint:disable: no-big-function */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable sonar/sonar-max-lines-per-function */
 
 import { left, right } from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";

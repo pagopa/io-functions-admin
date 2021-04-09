@@ -1,4 +1,4 @@
-/* tslint:disable: no-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { left, right } from "fp-ts/lib/Either";
 import * as asyncI from "io-functions-commons/dist/src/utils/async";

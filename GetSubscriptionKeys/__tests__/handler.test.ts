@@ -1,4 +1,4 @@
-// tslint:disable:no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";

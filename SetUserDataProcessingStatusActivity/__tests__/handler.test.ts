@@ -1,4 +1,4 @@
-/* tslint:disable: no-any no-identical-functions */
+/* eslint-disable @typescript-eslint/no-explicit-any, sonarjs/no-identical-functions */
 
 import { left, right } from "fp-ts/lib/Either";
 

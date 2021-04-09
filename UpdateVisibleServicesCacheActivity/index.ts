@@ -9,6 +9,7 @@ import {
   VisibleService
 } from "io-functions-commons/dist/src/models/visible_service";
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 async function UpdateVisibleServiceCacheActivity(
   context: Context
 ): Promise<void> {
@@ -31,7 +32,7 @@ async function UpdateVisibleServiceCacheActivity(
   // (where the activity result is saved),
   // so we return void from this method and
   // use context bindings
-  // tslint:disable-next-line: no-object-mutation
+  // eslint-disable-next-line functional/immutable-data
   context.bindings.visibleServiceCacheBlob = toServicePublic(visibleService);
 }
 

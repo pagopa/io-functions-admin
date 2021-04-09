@@ -19,6 +19,7 @@ import { UpsertServiceEvent } from "../utils/UpsertServiceEvent";
 /**
  * Using the data of new and old service calculate the action to perform to the visible services
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function computeMaybeAction(
   newService: RetrievedService,
   oldService?: RetrievedService
@@ -48,7 +49,7 @@ export const handler = function*(
   const input = context.df.getInput();
 
   const retryOptions = new df.RetryOptions(5000, 10);
-  // tslint:disable-next-line: no-object-mutation
+  // eslint-disable-next-line functional/immutable-data
   retryOptions.backoffCoefficient = 1.5;
 
   // Check if input is valid

@@ -15,6 +15,7 @@ const sessionApiKey = config.SESSION_API_KEY;
 
 const withDefaultApiKey: WithDefaultsT<"token"> = (
   apiOperation: ApiOperation
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => params => apiOperation({ ...params, token: sessionApiKey });
 
 const client: Client<"token"> = createClient({

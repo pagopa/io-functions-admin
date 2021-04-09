@@ -43,9 +43,11 @@ type IGetServiceHandler = (
   | IResponseErrorNotFound
 >;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function GetServiceHandler(
   serviceModel: ServiceModel
 ): IGetServiceHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (_, __, serviceId) => {
     const errorOrMaybeRetrievedService = await serviceModel
       .findOneByServiceId(serviceId)
@@ -75,6 +77,7 @@ export function GetServiceHandler(
 /**
  * Wraps a GetService handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function GetService(serviceModel: ServiceModel): express.RequestHandler {
   const handler = GetServiceHandler(serviceModel);
 

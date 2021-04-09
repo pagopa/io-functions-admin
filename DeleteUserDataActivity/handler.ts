@@ -30,19 +30,20 @@ import { logFailure } from "./utils";
 const logPrefix = `DeleteUserDataActivity`;
 
 export interface IActivityHandlerInput {
-  messageModel: MessageDeletableModel;
-  messageStatusModel: MessageStatusDeletableModel;
-  notificationModel: NotificationDeletableModel;
-  notificationStatusModel: NotificationStatusDeletableModel;
-  profileModel: ProfileDeletableModel;
-  messageContentBlobService: BlobService;
-  userDataBackupBlobService: BlobService;
-  userDataBackupContainerName: NonEmptyString;
+  readonly messageModel: MessageDeletableModel;
+  readonly messageStatusModel: MessageStatusDeletableModel;
+  readonly notificationModel: NotificationDeletableModel;
+  readonly notificationStatusModel: NotificationStatusDeletableModel;
+  readonly profileModel: ProfileDeletableModel;
+  readonly messageContentBlobService: BlobService;
+  readonly userDataBackupBlobService: BlobService;
+  readonly userDataBackupContainerName: NonEmptyString;
 }
 
 /**
  * Factory methods that builds an activity function
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function createDeleteUserDataActivityHandler({
   messageContentBlobService,
   messageModel,
@@ -56,6 +57,7 @@ export function createDeleteUserDataActivityHandler({
   context: Context,
   input: unknown
 ) => Promise<ActivityResult> {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return (context: Context, input: unknown) =>
     // validates the input
     fromEither(

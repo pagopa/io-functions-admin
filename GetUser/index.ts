@@ -35,7 +35,7 @@ const adb2cTokenAttributeName = getRequiredStringEnv(
   "ADB2C_TOKEN_ATTRIBUTE_NAME"
 );
 
-// tslint:disable-next-line: no-let
+// eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"
@@ -60,6 +60,7 @@ app.get(
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
 // Binds the express app to an Azure Function handler
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function httpStart(context: Context): void {
   logger = context.log;
   setAppContext(app, context);

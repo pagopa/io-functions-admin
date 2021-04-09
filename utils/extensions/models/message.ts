@@ -13,6 +13,7 @@ import { deleteBlob } from "../azure_storage";
 // duplicated from base calss module, as it is not exposed
 const MESSAGE_BLOB_STORAGE_SUFFIX = ".json";
 // duplicated from base calss module, as it is not exposed
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function blobIdFromMessageId(messageId: string): string {
   return `${messageId}${MESSAGE_BLOB_STORAGE_SUFFIX}`;
 }

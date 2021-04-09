@@ -9,9 +9,8 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { GetUsers } from "./handler";
-
 import { getConfigOrThrow } from "../utils/config";
+import { GetUsers } from "./handler";
 
 const config = getConfigOrThrow();
 
@@ -28,7 +27,7 @@ const azureApimConfig = {
 
 const azureApimHost = config.AZURE_APIM_HOST;
 
-// tslint:disable-next-line: no-let
+// eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"
@@ -48,6 +47,7 @@ app.get(
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
 // Binds the express app to an Azure Function handler
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function httpStart(context: Context): void {
   logger = context.log;
   setAppContext(app, context);

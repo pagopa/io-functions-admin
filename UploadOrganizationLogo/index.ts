@@ -9,19 +9,18 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { UploadOrganizationLogo } from "./handler";
-
 import { createBlobService } from "azure-storage";
+import * as bodyParser from "body-parser";
 import { getConfigOrThrow } from "../utils/config";
 
-import * as bodyParser from "body-parser";
+import { UploadOrganizationLogo } from "./handler";
 
 const config = getConfigOrThrow();
 const logosUrl = config.LOGOS_URL;
 
 const blobService = createBlobService(config.AssetsStorageConnection);
 
-// tslint:disable-next-line: no-let
+// eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"
@@ -44,6 +43,7 @@ app.put(
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
 // Binds the express app to an Azure Function handler
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function httpStart(context: Context): void {
   logger = context.log;
   setAppContext(app, context);

@@ -55,7 +55,7 @@ type IUpdateServiceHandler = (
   serviceId: ServiceId,
   logoPayload: ApiLogo
 ) => Promise<
-  // tslint:disable-next-line: max-union-size
+  // eslint-disable-next-line @typescript-eslint/ban-types
   | IResponseSuccessRedirectToResource<{}, {}>
   | IResponseErrorValidation
   | IResponseErrorQuery
@@ -63,6 +63,7 @@ type IUpdateServiceHandler = (
   | IResponseErrorInternal
 >;
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const imageValidationErrorResponse = () =>
   ResponseErrorValidation(
     "Image not valid",
@@ -74,17 +75,18 @@ const upsertBlobFromImageBuffer = (
   containerName: string,
   blobName: string,
   content: Buffer
-): TaskEither<Error, Option<BlobService.BlobResult>> => {
-  return taskify<Error, BlobService.BlobResult>(cb =>
+): TaskEither<Error, Option<BlobService.BlobResult>> =>
+  taskify<Error, BlobService.BlobResult>(cb =>
     blobService.createBlockBlobFromText(containerName, blobName, content, cb)
   )().map(fromNullable);
-};
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function UpdateServiceLogoHandler(
   serviceModel: ServiceModel,
   blobService: BlobService,
   logosUrl: string
 ): IUpdateServiceHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (_, __, serviceId, logoPayload) => {
     const errorOrMaybeRetrievedService = await serviceModel
       .findOneByServiceId(serviceId)
@@ -123,6 +125,7 @@ export function UpdateServiceLogoHandler(
       )
       .foldTaskEither<
         IResponseErrorValidation | IResponseErrorInternal,
+        // eslint-disable-next-line @typescript-eslint/ban-types
         IResponseSuccessRedirectToResource<{}, {}>
       >(
         imageValidationError => fromLeft(imageValidationError),
@@ -160,6 +163,7 @@ export function UpdateServiceLogoHandler(
       .fold<
         | IResponseErrorValidation
         | IResponseErrorInternal
+        // eslint-disable-next-line @typescript-eslint/ban-types
         | IResponseSuccessRedirectToResource<{}, {}>
       >(identity, identity)
       .run();
@@ -169,6 +173,7 @@ export function UpdateServiceLogoHandler(
 /**
  * Wraps a UpdateService handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function UploadServiceLogo(
   serviceModel: ServiceModel,
   blobService: BlobService,

@@ -1,4 +1,4 @@
-/* tslint:disable: no-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { right } from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
@@ -15,9 +15,7 @@ describe("UpdateServiceLogoHandler", () => {
   it("should return a not found error when the service is not found in the db", async () => {
     const aServiceId = "1" as NonEmptyString;
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => {
-        return fromEither(right(none));
-      })
+      findOneByServiceId: jest.fn(() => fromEither(right(none)))
     };
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
@@ -41,11 +39,9 @@ describe("UpdateServiceLogoHandler", () => {
   it("should return a query error when a database error occurs", async () => {
     const aServiceId = "1" as NonEmptyString;
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => {
-        return fromLeft(
-          toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" })
-        );
-      })
+      findOneByServiceId: jest.fn(() =>
+        fromLeft(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
+      )
     };
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
@@ -77,16 +73,13 @@ describe("UpdateServiceLogoHandler", () => {
     };
 
     const blobServiceMock = ({
-      createBlockBlobFromText: jest.fn((_, __, ___, cb) => {
-        return cb(null, "any");
-      })
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb(null, "any"))
     } as any) as BlobService;
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => {
-        return fromEither(right(some({})));
-      })
+      findOneByServiceId: jest.fn(() => fromEither(right(some({}))))
     };
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
@@ -117,11 +110,10 @@ describe("UpdateServiceLogoHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => {
-        return fromEither(right(some({})));
-      })
+      findOneByServiceId: jest.fn(() => fromEither(right(some({}))))
     };
     const blobServiceMock = ({
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb(null, "any"))
     } as any) as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
@@ -152,11 +144,10 @@ describe("UpdateServiceLogoHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => {
-        return fromEither(right(some({})));
-      })
+      findOneByServiceId: jest.fn(() => fromEither(right(some({}))))
     };
     const blobServiceMock = ({
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb("any", null))
     } as any) as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(

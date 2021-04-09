@@ -7,6 +7,7 @@ import { FiscalCode } from "italia-ts-commons/lib/strings";
  * of subscription event and the affected user profile.
  */
 export type Input = t.TypeOf<typeof ActivityInput>;
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.intersection([
   t.interface({
     // fiscal code of the user affected by this update
@@ -33,6 +34,7 @@ export const ActivityInput = t.intersection([
 ]);
 
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.union([
   t.literal("SUCCESS"),
   t.literal("FAILURE")

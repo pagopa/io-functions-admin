@@ -1,4 +1,4 @@
-// tslint:disable:no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import {
@@ -29,7 +29,7 @@ const fakeApimConfig: IAzureApimConfig = {
   subscriptionId: "subscription id"
 };
 
-// tslint:disable-next-line:readonly-array
+// eslint-disable-next-line functional/prefer-readonly-type
 const fakeParams = ["user@example.com", "newSubscriptionId"];
 const fakePayload = {
   product_name: "another-non-empty-string"
@@ -91,7 +91,7 @@ spyOnGetApiClient.mockImplementation(() =>
 const mockLog = jest.fn();
 const mockedContext = { log: { error: mockLog } };
 
-// tslint:disable-next-line:no-big-function
+// eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("CreateSubscription", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>

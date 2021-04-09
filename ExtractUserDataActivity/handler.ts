@@ -2,8 +2,8 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
-import * as t from "io-ts";
 import * as stream from "stream";
+import * as t from "io-ts";
 
 import { DeferredPromise } from "italia-ts-commons/lib/promises";
 
@@ -51,16 +51,17 @@ import {
 } from "io-functions-commons/dist/src/models/profile";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
-import { generateStrongPassword, StrongPassword } from "../utils/random";
-import { AllUserData, MessageContentWithId } from "../utils/userData";
-import { getEncryptedZipStream } from "../utils/zip";
 
 import { fromLeft } from "fp-ts/lib/TaskEither";
 import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as yaml from "yaml";
+import { getEncryptedZipStream } from "../utils/zip";
+import { AllUserData, MessageContentWithId } from "../utils/userData";
+import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ArchiveInfo = t.interface({
   blobName: NonEmptyString,
   password: StrongPassword
@@ -68,12 +69,14 @@ export const ArchiveInfo = t.interface({
 export type ArchiveInfo = t.TypeOf<typeof ArchiveInfo>;
 
 // Activity input
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.interface({
   fiscalCode: FiscalCode
 });
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity success result
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS"),
   value: ArchiveInfo
@@ -81,6 +84,7 @@ export const ActivityResultSuccess = t.interface({
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
 // Activity failed because of invalid input
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultInvalidInputFailure = t.interface({
   kind: t.literal("INVALID_INPUT_FAILURE"),
   reason: t.string
@@ -90,6 +94,7 @@ export type ActivityResultInvalidInputFailure = t.TypeOf<
 >;
 
 // Activity failed because of an error on a query
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultQueryFailure = t.intersection([
   t.interface({
     kind: t.literal("QUERY_FAILURE"),
@@ -102,12 +107,14 @@ export type ActivityResultQueryFailure = t.TypeOf<
 >;
 
 // activity failed for user not found
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultUserNotFound = t.interface({
   kind: t.literal("USER_NOT_FOUND_FAILURE")
 });
 type ActivityResultUserNotFound = t.TypeOf<typeof ActivityResultUserNotFound>;
 
 // activity failed for user not found
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultArchiveGenerationFailure = t.interface({
   kind: t.literal("ARCHIVE_GENERATION_FAILURE"),
   reason: t.string
@@ -117,6 +124,7 @@ export type ActivityResultArchiveGenerationFailure = t.TypeOf<
   typeof ActivityResultArchiveGenerationFailure
 >;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultFailure = t.taggedUnion("kind", [
   ActivityResultUserNotFound,
   ActivityResultQueryFailure,
@@ -125,6 +133,7 @@ export const ActivityResultFailure = t.taggedUnion("kind", [
 ]);
 export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.taggedUnion("kind", [
   ActivityResultSuccess,
   ActivityResultFailure
@@ -137,6 +146,7 @@ const logPrefix = `ExtractUserDataActivity`;
  * Converts a Promise<Either<L, R>> that can reject
  * into a TaskEither<Error | L, R>
  */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const fromPromiseEither = <L, R>(promise: Promise<Either<L, R>>) =>
   taskEither
     .of<Error | L, R>(void 0)
@@ -146,12 +156,14 @@ const fromPromiseEither = <L, R>(promise: Promise<Either<L, R>>) =>
 /**
  * To be used for exhaustive checks
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function assertNever(_: never): void {
   throw new Error("should not have executed this");
 }
 
 /**
  * Logs depending on failure type
+ *
  * @param context the Azure functions context
  * @param failure the failure to log
  */
@@ -184,6 +196,7 @@ const logFailure = (context: Context) => (
 
 /**
  * Look for a profile from a given fiscal code
+ *
  * @param fiscalCode a fiscal code identifying the user
  * @returns either a user profile, a query error or a user-not-found error
  */
@@ -193,8 +206,8 @@ export const getProfile = (
 ): TaskEither<
   ActivityResultUserNotFound | ActivityResultQueryFailure,
   Profile
-> => {
-  return profileModel
+> =>
+  profileModel
     .findLastVersionByModelId([fiscalCode])
     .foldTaskEither<
       ActivityResultUserNotFound | ActivityResultQueryFailure,
@@ -216,14 +229,13 @@ export const getProfile = (
           )(maybeProfile)
         )
     );
-};
 /**
  * Retrieves all contents for provided messages
  */
 export const getAllMessageContents = (
   messageContentBlobService: BlobService,
   messageModel: MessageModel,
-  messages: readonly RetrievedMessageWithoutContent[]
+  messages: ReadonlyArray<RetrievedMessageWithoutContent>
 ): TaskEither<
   ActivityResultQueryFailure,
   ReadonlyArray<MessageContentWithId>
@@ -241,7 +253,7 @@ export const getAllMessageContents = (
                 (content: MessageContent) =>
                   right({
                     content,
-                    // tslint:disable-next-line: no-useless-cast
+                    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
                     messageId: messageId as NonEmptyString
                   })
               )
@@ -255,7 +267,7 @@ export const getAllMessageContents = (
  */
 export const getAllMessagesStatuses = (
   messageStatusModel: MessageStatusModel,
-  messages: readonly RetrievedMessageWithoutContent[]
+  messages: ReadonlyArray<RetrievedMessageWithoutContent>
 ): TaskEither<ActivityResultQueryFailure, ReadonlyArray<MessageStatus>> =>
   array.sequence(taskEither)(
     messages.map(({ id: messageId }) =>
@@ -284,11 +296,12 @@ export const getAllMessagesStatuses = (
 
 /**
  * Given a list of messages, get the relative notifications
+ *
  * @param messages
  */
 export const findNotificationsForAllMessages = (
   notificationModel: NotificationModel,
-  messages: readonly RetrievedMessageWithoutContent[]
+  messages: ReadonlyArray<RetrievedMessageWithoutContent>
 ): TaskEither<
   ActivityResultQueryFailure,
   ReadonlyArray<RetrievedNotification>
@@ -346,17 +359,16 @@ export const findAllNotificationStatuses = (
         )
     )
     // filter empty results (it might not exist a content for a pair notification/channel)
-    .map(arrayOfMaybeNotification => {
-      return (
-        arrayOfMaybeNotification
-          // lift Option<T>[] to T[] by filtering all nones
-          .map(opt => opt.getOrElse(undefined))
-          .filter(value => typeof value !== "undefined")
-      );
-    });
+    .map(arrayOfMaybeNotification =>
+      arrayOfMaybeNotification
+        // lift Option<T>[] to T[] by filtering all nones
+        .map(opt => opt.getOrElse(undefined))
+        .filter(value => typeof value !== "undefined")
+    );
 
 /**
  * Perform all the queries to extract all data for a given user
+ *
  * @param fiscalCode user identifier
  * @returns Either a failure or a hash set with all the information regarding the user
  */
@@ -371,6 +383,7 @@ export const queryAllUserData = (
 ): TaskEither<
   ActivityResultUserNotFound | ActivityResultQueryFailure,
   AllUserData
+  // eslint-disable-next-line max-params
 > =>
   // step 0: look for the profile
   getProfile(profileModel, fiscalCode)
@@ -411,8 +424,8 @@ export const queryAllUserData = (
       })
     )
     // step 2: queries notifications and message contents, which need message data to be queried first
-    .chain(({ profile, messages }) => {
-      return sequenceS(taskEither)({
+    .chain(({ profile, messages }) =>
+      sequenceS(taskEither)({
         messageContents: getAllMessageContents(
           messageContentBlobService,
           messageModel,
@@ -425,8 +438,8 @@ export const queryAllUserData = (
           messages
         ),
         profile: taskEither.of(profile)
-      });
-    })
+      })
+    )
     // step 3: queries notifications statuses
     .chain(
       ({
@@ -435,8 +448,8 @@ export const queryAllUserData = (
         messageContents,
         messageStatuses,
         notifications
-      }) => {
-        return sequenceS(taskEither)({
+      }) =>
+        sequenceS(taskEither)({
           messageContents: taskEither.of(messageContents),
           messageStatuses: taskEither.of(messageStatuses),
           messages: taskEither.of(messages),
@@ -446,10 +459,10 @@ export const queryAllUserData = (
           ),
           notifications: taskEither.of(notifications),
           profiles: taskEither.of([profile])
-        });
-      }
+        })
     );
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
   container: string,
   blob: string
@@ -463,6 +476,7 @@ const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
     { contentSettings: { contentType: "application/zip" } },
     (err, result) => (err ? resolve(left(err)) : resolve(right(result)))
   );
+  // eslint-disable-next-line sort-keys
   return { errorOrResult, blobStream };
 };
 
@@ -470,6 +484,7 @@ const onStreamFinished = taskify(stream.finished);
 
 /**
  * Creates a bundle with all user data and save it to a blob on a remote storage
+ *
  * @param data all extracted user data
  * @param password a password for bundle encryption
  *
@@ -487,12 +502,14 @@ export const saveDataToBlob = (
 
   const zipStream = getEncryptedZipStream(password);
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const failure = (err: Error) =>
     ActivityResultArchiveGenerationFailure.encode({
       kind: "ARCHIVE_GENERATION_FAILURE",
       reason: err.message
     });
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const success = () =>
     ArchiveInfo.encode({
       blobName,
@@ -533,18 +550,19 @@ export const saveDataToBlob = (
 };
 
 export interface IActivityHandlerInput {
-  messageModel: MessageModel;
-  messageStatusModel: MessageStatusModel;
-  notificationModel: NotificationModel;
-  notificationStatusModel: NotificationStatusModel;
-  profileModel: ProfileModel;
-  messageContentBlobService: BlobService;
-  userDataBlobService: BlobService;
-  userDataContainerName: NonEmptyString;
+  readonly messageModel: MessageModel;
+  readonly messageStatusModel: MessageStatusModel;
+  readonly notificationModel: NotificationModel;
+  readonly notificationStatusModel: NotificationStatusModel;
+  readonly profileModel: ProfileModel;
+  readonly messageContentBlobService: BlobService;
+  readonly userDataBlobService: BlobService;
+  readonly userDataContainerName: NonEmptyString;
 }
 
-// tslint:disable-next-line: no-any
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-explicit-any
 const cleanData = (v: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { _self, _etag, _attachments, _rid, _ts, ...clean } = v;
   return clean;
 };
@@ -552,6 +570,7 @@ const cleanData = (v: any) => {
 /**
  * Factory methods that builds an activity function
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function createExtractUserDataActivityHandler({
   messageModel,
   messageStatusModel,
@@ -565,6 +584,7 @@ export function createExtractUserDataActivityHandler({
   context: Context,
   input: unknown
 ) => Promise<ActivityResult> {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return (context: Context, input: unknown) =>
     fromEither(
       ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
@@ -588,12 +608,13 @@ export function createExtractUserDataActivityHandler({
       )
       .map(allUserData => {
         // remove sensitive data
-        const notifications = allUserData.notifications.map(e => {
-          return cleanData({
+        const notifications = allUserData.notifications.map(e =>
+          cleanData({
             ...e,
+            // eslint-disable-next-line @typescript-eslint/naming-convention
             channels: { ...e.channels, WEBHOOK: { url: undefined } }
-          });
-        });
+          })
+        );
         return {
           messageContents: allUserData.messageContents,
           messageStatuses: allUserData.messageStatuses.map(cleanData),

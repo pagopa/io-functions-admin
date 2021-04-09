@@ -1,4 +1,4 @@
-// tslint:disable:no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
