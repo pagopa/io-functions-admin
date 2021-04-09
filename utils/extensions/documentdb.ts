@@ -3,11 +3,10 @@ import { mapAsyncIterable } from "io-functions-commons/dist/src/utils/async";
 import * as t from "io-ts";
 
 /**
-// eslint-disable-next-line jsdoc/check-indentation
- *  Find all versions of a document.
+ * Find all versions of a document.
  *
- *  Pass the partitionKey field / values if it differs from the modelId
- *  to avoid multi-partition queries.
+ * Pass the partitionKey field / values if it differs from the modelId
+ * to avoid multi-partition queries.
  */
 // eslint-disable-next-line max-params, prefer-arrow/prefer-arrow-functions
 export function findAllVersionsByModelId<TR>(
