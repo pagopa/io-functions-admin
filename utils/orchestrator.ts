@@ -10,7 +10,7 @@ export const isOrchestratorRunning = (
 ): TaskEither<
   Error,
   PromiseType<ReturnType<typeof client["getStatus"]>> & {
-    isRunning: boolean;
+    readonly isRunning: boolean;
   }
 > =>
   tryCatch(() => client.getStatus(orchestratorId), toError).map(status => ({

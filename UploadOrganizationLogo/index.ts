@@ -9,12 +9,11 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { UploadOrganizationLogo } from "./handler";
-
 import { createBlobService } from "azure-storage";
+import * as bodyParser from "body-parser";
 import { getConfigOrThrow } from "../utils/config";
 
-import * as bodyParser from "body-parser";
+import { UploadOrganizationLogo } from "./handler";
 
 const config = getConfigOrThrow();
 const logosUrl = config.LOGOS_URL;

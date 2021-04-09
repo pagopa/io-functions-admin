@@ -214,12 +214,10 @@ export function GetUserHandler(
                 )
             ).map(userList => userList[0])
           )
-          .map(adb2User => {
-            return {
-              ...taskResults,
-              token_name: adb2User[`${adb2cTokenAttributeName}`]
-            };
-          })
+          .map(adb2User => ({
+            ...taskResults,
+            token_name: adb2User[`${adb2cTokenAttributeName}`]
+          }))
       )
       .chain(
         fromPredicate(

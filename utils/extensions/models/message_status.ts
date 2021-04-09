@@ -29,6 +29,7 @@ export class MessageStatusDeletableModel extends MessageStatusModelBase {
 
   /**
    * Retrieves a list of every version of the requested model
+   *
    * @param modelId
    */
   public findAllVersionsByModelId(

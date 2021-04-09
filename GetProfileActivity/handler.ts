@@ -80,6 +80,7 @@ function assertNever(_: never): void {
 
 /**
  * Logs depending on failure type
+ *
  * @param context the Azure functions context
  * @param failure the failure to log
  */
@@ -109,9 +110,9 @@ const logFailure = (context: Context) => (
 export const createGetProfileActivityHandler = (profileModel: ProfileModel) => (
   context: Context,
   input: unknown
-) => {
+) =>
   // the actual handler
-  return fromEither(ActivityInput.decode(input))
+  fromEither(ActivityInput.decode(input))
     .mapLeft<ActivityResultFailure>((reason: t.Errors) =>
       ActivityResultInvalidInputFailure.encode({
         kind: "INVALID_INPUT_FAILURE",
@@ -153,4 +154,3 @@ export const createGetProfileActivityHandler = (profileModel: ProfileModel) => (
     })
     .run()
     .then(e => e.value);
-};

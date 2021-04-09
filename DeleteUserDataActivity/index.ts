@@ -1,19 +1,17 @@
-import { cosmosdbClient } from "../utils/cosmosdb";
-
-import { createDeleteUserDataActivityHandler } from "./handler";
-
 import { createBlobService } from "azure-storage";
 import { MESSAGE_COLLECTION_NAME } from "io-functions-commons/dist/src/models/message";
 import { MESSAGE_STATUS_COLLECTION_NAME } from "io-functions-commons/dist/src/models/message_status";
 import { NOTIFICATION_COLLECTION_NAME } from "io-functions-commons/dist/src/models/notification";
 import { NOTIFICATION_STATUS_COLLECTION_NAME } from "io-functions-commons/dist/src/models/notification_status";
 import { PROFILE_COLLECTION_NAME } from "io-functions-commons/dist/src/models/profile";
+import { cosmosdbClient } from "../utils/cosmosdb";
 import { getConfigOrThrow } from "../utils/config";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
+import { createDeleteUserDataActivityHandler } from "./handler";
 
 const config = getConfigOrThrow();
 

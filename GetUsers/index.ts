@@ -9,9 +9,8 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { GetUsers } from "./handler";
-
 import { getConfigOrThrow } from "../utils/config";
+import { GetUsers } from "./handler";
 
 const config = getConfigOrThrow();
 

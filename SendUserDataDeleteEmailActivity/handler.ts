@@ -7,9 +7,8 @@ import { markdownToHtml } from "io-functions-commons/dist/src/utils/markdown";
 import * as t from "io-ts";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as NodeMailer from "nodemailer";
-import { EmailAddress } from "../generated/definitions/EmailAddress";
-
 import { sendMail } from "io-functions-commons/dist/src/mailer";
+import { EmailAddress } from "../generated/definitions/EmailAddress";
 
 // TODO: switch text based on user's preferred_language
 const userDataDeleteMessage = NewMessage.decode({

@@ -59,11 +59,12 @@ export type Result = t.TypeOf<typeof Result>;
 const VisibleServicesBlob = t.dictionary(ServiceId, VisibleService);
 
 interface IVisibleServices {
-  [key: string]: VisibleService;
+  readonly [key: string]: VisibleService;
 }
 
 /**
  * Create new visibleServices
+ *
  * @param visibleServices The current visibleServices
  * @param visibleService The visible service to add/remove
  * @param action The UPSERT/DELETE action

@@ -37,7 +37,6 @@ app.post(
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
-
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"

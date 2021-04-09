@@ -100,7 +100,7 @@ export const OrchestratorResult = t.union([
 ]);
 
 const toActivityFailure = (
-  err: { kind: string },
+  err: { readonly kind: string },
   activityName: string,
   extra?: object
 ) =>

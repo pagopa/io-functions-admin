@@ -10,9 +10,6 @@ dotenv.config();
 import { Context } from "@azure/functions";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
-import extractUserDataActivity from "../ExtractUserDataActivity";
-import sendUserDataDownloadMessageActivity from "../SendUserDataDownloadMessageActivity";
-import setUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
 
 import { toString } from "fp-ts/lib/function";
 
@@ -26,6 +23,9 @@ import {
 import { isLeft } from "fp-ts/lib/Either";
 import { isNone } from "fp-ts/lib/Option";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import setUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
+import sendUserDataDownloadMessageActivity from "../SendUserDataDownloadMessageActivity";
+import extractUserDataActivity from "../ExtractUserDataActivity";
 import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 

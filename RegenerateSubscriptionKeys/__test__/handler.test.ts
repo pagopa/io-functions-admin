@@ -64,12 +64,10 @@ mockApiManagementClient.mockImplementation(() => ({
     regenerateSecondaryKey: mockRegenerateSecondaryKey
   }
 }));
-mockLoginWithServicePrincipalSecret.mockImplementation(() => {
-  return Promise.resolve({ getToken: mockGetToken });
-});
-mockGetToken.mockImplementation(() => {
-  return Promise.resolve(undefined);
-});
+mockLoginWithServicePrincipalSecret.mockImplementation(() =>
+  Promise.resolve({ getToken: mockGetToken })
+);
+mockGetToken.mockImplementation(() => Promise.resolve(undefined));
 
 const mockedContext = { log: { error: mockLog } };
 

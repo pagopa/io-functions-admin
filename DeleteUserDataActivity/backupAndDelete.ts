@@ -19,6 +19,9 @@ import { RetrievedNotification } from "io-functions-commons/dist/src/models/noti
 import { RetrievedNotificationStatus } from "io-functions-commons/dist/src/models/notification_status";
 import { RetrievedProfile } from "io-functions-commons/dist/src/models/profile";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
+import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { Errors } from "io-ts";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
@@ -28,12 +31,9 @@ import { DataFailure, IBlobServiceInfo, QueryFailure } from "./types";
 import { saveDataToBlob } from "./utils";
 import { toDocumentDeleteFailure, toQueryFailure } from "./utils";
 
-import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
-import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
-import { Errors } from "io-ts";
-
 /**
  * Recursively consumes an iterator and executes operations on every item
+ *
  * @param deleteSingle takes an item and delete it
  * @param userDataBackup references about where to save data
  * @param makeBackupBlobName takes an item and construct a name for the backup blob
@@ -44,15 +44,11 @@ const executeRecursiveBackupAndDelete = <T>(
   userDataBackup: IBlobServiceInfo,
   makeBackupBlobName: (item: T) => string,
   iterator: AsyncIterator<ReadonlyArray<Either<Errors, T>>>
-): TaskEither<
-  
-  DataFailure,
-  readonly T[]
-> =>
+): TaskEither<DataFailure, ReadonlyArray<T>> =>
   tryCatch(() => iterator.next(), toError)
     // this is just type lifting
     // eslint-disable-next-line functional/prefer-readonly-type
-    .foldTaskEither<DataFailure, readonly T[]>(
+    .foldTaskEither<DataFailure, ReadonlyArray<T>>(
       e => fromLeft(toQueryFailure(e)),
       e =>
         e.done
@@ -75,7 +71,7 @@ const executeRecursiveBackupAndDelete = <T>(
                 TaskEither<DataFailure, T>,
                 TaskEither<DataFailure, string>,
                 // eslint-disable-next-line functional/prefer-readonly-type
-                TaskEither<DataFailure, readonly T[]>
+                TaskEither<DataFailure, ReadonlyArray<T>>
               ]
             >(
               saveDataToBlob<T>(userDataBackup, makeBackupBlobName(item), item),
@@ -107,9 +103,9 @@ const backupAndDeleteProfile = ({
   profileModel,
   userDataBackup
 }: {
-  profileModel: ProfileDeletableModel;
-  userDataBackup: IBlobServiceInfo;
-  fiscalCode: FiscalCode;
+  readonly profileModel: ProfileDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
+  readonly fiscalCode: FiscalCode;
 }) =>
   executeRecursiveBackupAndDelete<RetrievedProfile>(
     item => profileModel.deleteProfileVersion(item.fiscalCode, item.id),
@@ -130,9 +126,9 @@ const backupAndDeleteNotification = ({
   userDataBackup,
   notification
 }: {
-  notificationModel: NotificationDeletableModel;
-  userDataBackup: IBlobServiceInfo;
-  notification: RetrievedNotification;
+  readonly notificationModel: NotificationDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
+  readonly notification: RetrievedNotification;
 }): TaskEither<DataFailure, RetrievedNotification> =>
   sequenceT(taskEitherSeq)<
     DataFailure,
@@ -155,6 +151,7 @@ const backupAndDeleteNotification = ({
 
 /**
  * Find all versions of a notification status, then backup and delete each document
+ *
  * @param param0.notificationStatusModel instance of NotificationStatusModel
  * @param param0.userDataBackup information about the blob storage account to place backup into
  * @param param0.notification parent notification
@@ -165,11 +162,11 @@ const backupAndDeleteNotificationStatus = ({
   userDataBackup,
   notification
 }: {
-  notificationStatusModel: NotificationStatusDeletableModel;
-  userDataBackup: IBlobServiceInfo;
-  notification: RetrievedNotification;
-}): TaskEither<DataFailure, readonly RetrievedNotificationStatus[]> => {
-  return executeRecursiveBackupAndDelete<RetrievedNotificationStatus>(
+  readonly notificationStatusModel: NotificationStatusDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
+  readonly notification: RetrievedNotification;
+}): TaskEither<DataFailure, ReadonlyArray<RetrievedNotificationStatus>> =>
+  executeRecursiveBackupAndDelete<RetrievedNotificationStatus>(
     item =>
       notificationStatusModel.deleteNotificationStatusVersion(
         item.notificationId,
@@ -179,7 +176,6 @@ const backupAndDeleteNotificationStatus = ({
     item => `notification-status/${item.id}.json`,
     notificationStatusModel.findAllVersionsByNotificationId(notification.id)
   );
-};
 
 /**
  * Backup and delete a given message
@@ -193,9 +189,9 @@ const backupAndDeleteMessage = ({
   userDataBackup,
   message
 }: {
-  messageModel: MessageDeletableModel;
-  userDataBackup: IBlobServiceInfo;
-  message: RetrievedMessageWithoutContent;
+  readonly messageModel: MessageDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
+  readonly message: RetrievedMessageWithoutContent;
 }): TaskEither<DataFailure, RetrievedMessageWithoutContent> =>
   sequenceT(taskEitherSeq)<
     DataFailure,
@@ -222,19 +218,18 @@ const backupAndDeleteMessageContent = ({
   userDataBackup,
   message
 }: {
-  messageContentBlobService: BlobService;
-  messageModel: MessageDeletableModel;
-  userDataBackup: IBlobServiceInfo;
-  message: RetrievedMessageWithoutContent;
+  readonly messageContentBlobService: BlobService;
+  readonly messageModel: MessageDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
+  readonly message: RetrievedMessageWithoutContent;
 }): TaskEither<DataFailure, Option<MessageContent>> =>
   messageModel
     .getContentFromBlob(messageContentBlobService, message.id)
     .chain(e => fromEither(fromOption(undefined)(e)))
     .foldTaskEither<DataFailure, Option<MessageContent>>(
-      _ => {
+      _ =>
         // unfortunately, a document not found is threated like a query error
-        return taskEither.of(none);
-      },
+        taskEither.of(none),
       content =>
         taskEither
           .of<DataFailure, void>(void 0)
@@ -255,6 +250,7 @@ const backupAndDeleteMessageContent = ({
 
 /**
  * Find all versions of a message status, then backup and delete each document
+ *
  * @param param0.messageStatusModel instance of MessageStatusModel
  * @param param0.userDataBackup information about the blob storage account to place backup into
  * @param param0.message parent message
@@ -265,10 +261,10 @@ const backupAndDeleteMessageStatus = ({
   userDataBackup,
   message
 }: {
-  messageStatusModel: MessageStatusDeletableModel;
-  userDataBackup: IBlobServiceInfo;
-  message: RetrievedMessageWithoutContent;
-}): TaskEither<DataFailure, readonly RetrievedMessageStatus[]> =>
+  readonly messageStatusModel: MessageStatusDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
+  readonly message: RetrievedMessageWithoutContent;
+}): TaskEither<DataFailure, ReadonlyArray<RetrievedMessageStatus>> =>
   executeRecursiveBackupAndDelete<RetrievedMessageStatus>(
     item =>
       messageStatusModel.deleteMessageStatusVersion(item.messageId, item.id),
@@ -291,10 +287,10 @@ const backupAndDeleteAllNotificationsData = ({
   notificationStatusModel,
   userDataBackup
 }: {
-  message: RetrievedMessageWithoutContent;
-  notificationModel: NotificationDeletableModel;
-  notificationStatusModel: NotificationStatusDeletableModel;
-  userDataBackup: IBlobServiceInfo;
+  readonly message: RetrievedMessageWithoutContent;
+  readonly notificationModel: NotificationDeletableModel;
+  readonly notificationStatusModel: NotificationStatusDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
 }): TaskEither<QueryFailure, true> =>
   notificationModel.findNotificationForMessage(message.id).foldTaskEither(
     failure =>
@@ -328,6 +324,7 @@ const backupAndDeleteAllNotificationsData = ({
 
 /**
  * For a given user, search all its messages and backup&delete each one including its own child models (messagestatus, notifications, message content)
+ *
  * @param param0.messageContentBlobService instance of blob service where message contents are stored
  * @param param0.messageModel instance of MessageModel
  * @param param0.messageStatusModel instance of MessageStatusModel
@@ -345,13 +342,13 @@ const backupAndDeleteAllMessagesData = ({
   userDataBackup,
   fiscalCode
 }: {
-  messageContentBlobService: BlobService;
-  messageModel: MessageDeletableModel;
-  messageStatusModel: MessageStatusDeletableModel;
-  notificationModel: NotificationDeletableModel;
-  notificationStatusModel: NotificationStatusDeletableModel;
-  userDataBackup: IBlobServiceInfo;
-  fiscalCode: FiscalCode;
+  readonly messageContentBlobService: BlobService;
+  readonly messageModel: MessageDeletableModel;
+  readonly messageStatusModel: MessageStatusDeletableModel;
+  readonly notificationModel: NotificationDeletableModel;
+  readonly notificationStatusModel: NotificationStatusDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
+  readonly fiscalCode: FiscalCode;
 }): TaskEither<DataFailure, unknown> =>
   messageModel
     .findMessages(fiscalCode)
@@ -427,14 +424,14 @@ export const backupAndDeleteAllUserData = ({
   userDataBackup,
   fiscalCode
 }: {
-  messageContentBlobService: BlobService;
-  messageModel: MessageDeletableModel;
-  messageStatusModel: MessageStatusDeletableModel;
-  notificationModel: NotificationDeletableModel;
-  notificationStatusModel: NotificationStatusDeletableModel;
-  profileModel: ProfileDeletableModel;
-  userDataBackup: IBlobServiceInfo;
-  fiscalCode: FiscalCode;
+  readonly messageContentBlobService: BlobService;
+  readonly messageModel: MessageDeletableModel;
+  readonly messageStatusModel: MessageStatusDeletableModel;
+  readonly notificationModel: NotificationDeletableModel;
+  readonly notificationStatusModel: NotificationStatusDeletableModel;
+  readonly profileModel: ProfileDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
+  readonly fiscalCode: FiscalCode;
 }) =>
   backupAndDeleteAllMessagesData({
     fiscalCode,

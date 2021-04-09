@@ -74,8 +74,8 @@ const startOrchestrator = async (
     | "UserDataDeleteOrchestrator",
   orchestratorId: string,
   orchestratorInput: unknown
-) => {
-  return isOrchestratorRunning(dfClient, orchestratorId)
+) =>
+  isOrchestratorRunning(dfClient, orchestratorId)
     .fold(
       error => {
         throw error;
@@ -90,7 +90,6 @@ const startOrchestrator = async (
           : null
     )
     .run();
-};
 
 export function index(
   context: Context,

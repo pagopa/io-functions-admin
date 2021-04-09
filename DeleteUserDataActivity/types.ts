@@ -75,7 +75,7 @@ export type DataFailure =
 
 // define a value object with the info related to the blob storage for backup files
 export interface IBlobServiceInfo {
-  blobService: BlobService;
-  containerName: string;
-  folder?: NonEmptyString;
+  readonly blobService: BlobService;
+  readonly containerName: string;
+  readonly folder?: NonEmptyString;
 }

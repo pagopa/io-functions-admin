@@ -37,8 +37,8 @@ type IGetSubscriptionKeysHandler = (
   serviceId: ServiceId
 ) => Promise<
   | IResponseSuccessJson<{
-      primary_key: string;
-      secondary_key: string;
+      readonly primary_key: string;
+      readonly secondary_key: string;
     }>
   | IResponseErrorNotFound
   | IResponseErrorInternal

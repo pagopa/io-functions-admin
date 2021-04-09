@@ -1,7 +1,3 @@
-import { cosmosdbClient } from "../utils/cosmosdb";
-
-import { createExtractUserDataActivityHandler } from "./handler";
-
 import { createBlobService } from "azure-storage";
 import {
   MESSAGE_COLLECTION_NAME,
@@ -23,7 +19,9 @@ import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "io-functions-commons/dist/src/models/profile";
+import { cosmosdbClient } from "../utils/cosmosdb";
 import { getConfigOrThrow } from "../utils/config";
+import { createExtractUserDataActivityHandler } from "./handler";
 
 const config = getConfigOrThrow();
 

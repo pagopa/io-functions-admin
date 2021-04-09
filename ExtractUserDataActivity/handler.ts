@@ -2,8 +2,8 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
-import * as t from "io-ts";
 import * as stream from "stream";
+import * as t from "io-ts";
 
 import { DeferredPromise } from "italia-ts-commons/lib/promises";
 
@@ -51,14 +51,14 @@ import {
 } from "io-functions-commons/dist/src/models/profile";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
-import { generateStrongPassword, StrongPassword } from "../utils/random";
-import { AllUserData, MessageContentWithId } from "../utils/userData";
-import { getEncryptedZipStream } from "../utils/zip";
 
 import { fromLeft } from "fp-ts/lib/TaskEither";
 import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as yaml from "yaml";
+import { getEncryptedZipStream } from "../utils/zip";
+import { AllUserData, MessageContentWithId } from "../utils/userData";
+import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 export const ArchiveInfo = t.interface({
@@ -152,6 +152,7 @@ function assertNever(_: never): void {
 
 /**
  * Logs depending on failure type
+ *
  * @param context the Azure functions context
  * @param failure the failure to log
  */
@@ -184,6 +185,7 @@ const logFailure = (context: Context) => (
 
 /**
  * Look for a profile from a given fiscal code
+ *
  * @param fiscalCode a fiscal code identifying the user
  * @returns either a user profile, a query error or a user-not-found error
  */
@@ -193,8 +195,8 @@ export const getProfile = (
 ): TaskEither<
   ActivityResultUserNotFound | ActivityResultQueryFailure,
   Profile
-> => {
-  return profileModel
+> =>
+  profileModel
     .findLastVersionByModelId([fiscalCode])
     .foldTaskEither<
       ActivityResultUserNotFound | ActivityResultQueryFailure,
@@ -216,14 +218,13 @@ export const getProfile = (
           )(maybeProfile)
         )
     );
-};
 /**
  * Retrieves all contents for provided messages
  */
 export const getAllMessageContents = (
   messageContentBlobService: BlobService,
   messageModel: MessageModel,
-  messages: readonly RetrievedMessageWithoutContent[]
+  messages: ReadonlyArray<RetrievedMessageWithoutContent>
 ): TaskEither<
   ActivityResultQueryFailure,
   ReadonlyArray<MessageContentWithId>
@@ -255,7 +256,7 @@ export const getAllMessageContents = (
  */
 export const getAllMessagesStatuses = (
   messageStatusModel: MessageStatusModel,
-  messages: readonly RetrievedMessageWithoutContent[]
+  messages: ReadonlyArray<RetrievedMessageWithoutContent>
 ): TaskEither<ActivityResultQueryFailure, ReadonlyArray<MessageStatus>> =>
   array.sequence(taskEither)(
     messages.map(({ id: messageId }) =>
@@ -284,11 +285,12 @@ export const getAllMessagesStatuses = (
 
 /**
  * Given a list of messages, get the relative notifications
+ *
  * @param messages
  */
 export const findNotificationsForAllMessages = (
   notificationModel: NotificationModel,
-  messages: readonly RetrievedMessageWithoutContent[]
+  messages: ReadonlyArray<RetrievedMessageWithoutContent>
 ): TaskEither<
   ActivityResultQueryFailure,
   ReadonlyArray<RetrievedNotification>
@@ -346,17 +348,16 @@ export const findAllNotificationStatuses = (
         )
     )
     // filter empty results (it might not exist a content for a pair notification/channel)
-    .map(arrayOfMaybeNotification => {
-      return (
-        arrayOfMaybeNotification
-          // lift Option<T>[] to T[] by filtering all nones
-          .map(opt => opt.getOrElse(undefined))
-          .filter(value => typeof value !== "undefined")
-      );
-    });
+    .map(arrayOfMaybeNotification =>
+      arrayOfMaybeNotification
+        // lift Option<T>[] to T[] by filtering all nones
+        .map(opt => opt.getOrElse(undefined))
+        .filter(value => typeof value !== "undefined")
+    );
 
 /**
  * Perform all the queries to extract all data for a given user
+ *
  * @param fiscalCode user identifier
  * @returns Either a failure or a hash set with all the information regarding the user
  */
@@ -411,8 +412,8 @@ export const queryAllUserData = (
       })
     )
     // step 2: queries notifications and message contents, which need message data to be queried first
-    .chain(({ profile, messages }) => {
-      return sequenceS(taskEither)({
+    .chain(({ profile, messages }) =>
+      sequenceS(taskEither)({
         messageContents: getAllMessageContents(
           messageContentBlobService,
           messageModel,
@@ -425,8 +426,8 @@ export const queryAllUserData = (
           messages
         ),
         profile: taskEither.of(profile)
-      });
-    })
+      })
+    )
     // step 3: queries notifications statuses
     .chain(
       ({
@@ -435,8 +436,8 @@ export const queryAllUserData = (
         messageContents,
         messageStatuses,
         notifications
-      }) => {
-        return sequenceS(taskEither)({
+      }) =>
+        sequenceS(taskEither)({
           messageContents: taskEither.of(messageContents),
           messageStatuses: taskEither.of(messageStatuses),
           messages: taskEither.of(messages),
@@ -446,8 +447,7 @@ export const queryAllUserData = (
           ),
           notifications: taskEither.of(notifications),
           profiles: taskEither.of([profile])
-        });
-      }
+        })
     );
 
 const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
@@ -470,6 +470,7 @@ const onStreamFinished = taskify(stream.finished);
 
 /**
  * Creates a bundle with all user data and save it to a blob on a remote storage
+ *
  * @param data all extracted user data
  * @param password a password for bundle encryption
  *
@@ -533,14 +534,14 @@ export const saveDataToBlob = (
 };
 
 export interface IActivityHandlerInput {
-  messageModel: MessageModel;
-  messageStatusModel: MessageStatusModel;
-  notificationModel: NotificationModel;
-  notificationStatusModel: NotificationStatusModel;
-  profileModel: ProfileModel;
-  messageContentBlobService: BlobService;
-  userDataBlobService: BlobService;
-  userDataContainerName: NonEmptyString;
+  readonly messageModel: MessageModel;
+  readonly messageStatusModel: MessageStatusModel;
+  readonly notificationModel: NotificationModel;
+  readonly notificationStatusModel: NotificationStatusModel;
+  readonly profileModel: ProfileModel;
+  readonly messageContentBlobService: BlobService;
+  readonly userDataBlobService: BlobService;
+  readonly userDataContainerName: NonEmptyString;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -588,12 +589,12 @@ export function createExtractUserDataActivityHandler({
       )
       .map(allUserData => {
         // remove sensitive data
-        const notifications = allUserData.notifications.map(e => {
-          return cleanData({
+        const notifications = allUserData.notifications.map(e =>
+          cleanData({
             ...e,
             channels: { ...e.channels, WEBHOOK: { url: undefined } }
-          });
-        });
+          })
+        );
         return {
           messageContents: allUserData.messageContents,
           messageStatuses: allUserData.messageStatuses.map(cleanData),

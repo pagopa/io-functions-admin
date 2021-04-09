@@ -71,6 +71,7 @@ function assertNever(_: never): void {
 
 /**
  * Logs depending on failure type
+ *
  * @param context the Azure functions context
  * @param failure the failure to log
  */
@@ -98,6 +99,7 @@ export const createSetUserDataProcessingStatusActivityHandler = (
 ) => (context: Context, input: unknown) => {
   /**
    * Updates a UserDataProcessing record by creating a new version of it with a chenged status
+   *
    * @param param0.currentRecord the record to be modified
    * @param param0.nextStatus: the status to assign the record to
    *
@@ -107,8 +109,8 @@ export const createSetUserDataProcessingStatusActivityHandler = (
     currentRecord,
     nextStatus
   }: {
-    currentRecord: UserDataProcessing;
-    nextStatus: UserDataProcessingStatus;
+    readonly currentRecord: UserDataProcessing;
+    readonly nextStatus: UserDataProcessingStatus;
   }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
     userDataProcessingModel
       .createOrUpdateByNewOne({

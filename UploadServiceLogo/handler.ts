@@ -74,11 +74,10 @@ const upsertBlobFromImageBuffer = (
   containerName: string,
   blobName: string,
   content: Buffer
-): TaskEither<Error, Option<BlobService.BlobResult>> => {
-  return taskify<Error, BlobService.BlobResult>(cb =>
+): TaskEither<Error, Option<BlobService.BlobResult>> =>
+  taskify<Error, BlobService.BlobResult>(cb =>
     blobService.createBlockBlobFromText(containerName, blobName, content, cb)
   )().map(fromNullable);
-};
 
 export function UpdateServiceLogoHandler(
   serviceModel: ServiceModel,

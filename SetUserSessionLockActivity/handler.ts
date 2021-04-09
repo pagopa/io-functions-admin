@@ -77,6 +77,7 @@ const logPrefix = `SetUserSessionLockActivity`;
 
 /**
  * Wraps the logic to call Session API and lift errors to the correct domain values
+ *
  * @param sessionApiClient
  * @param action
  * @param fiscalCode

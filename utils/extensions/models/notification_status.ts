@@ -29,6 +29,7 @@ export class NotificationStatusDeletableModel extends NotificationStatusModelBas
 
   /**
    * Retrieves a list of every version of the requested model
+   *
    * @param modelId
    */
   public findAllVersionsByNotificationId(

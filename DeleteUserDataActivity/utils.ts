@@ -20,6 +20,7 @@ export function assertNever(_: never): never {
 
 /**
  * to cast an error to QueryFailure
+ *
  * @param err
  */
 export const toQueryFailure = (err: Error | CosmosErrors): QueryFailure =>
@@ -30,6 +31,7 @@ export const toQueryFailure = (err: Error | CosmosErrors): QueryFailure =>
 
 /**
  * to cast an error to a DocumentDeleteFailure
+ *
  * @param err
  */
 export const toDocumentDeleteFailure = (
@@ -42,6 +44,7 @@ export const toDocumentDeleteFailure = (
 
 /**
  * Logs depending on failure type
+ *
  * @param context the Azure functions context
  * @param failure the failure to log
  */
@@ -79,6 +82,7 @@ export const logFailure = (context: Context, logPrefix: string) => (
 
 /**
  * Saves data into a dedicated blob
+ *
  * @param blobServiceInfo references about where to save data
  * @param blobName name of the blob to be saved. It might not include a folder if specified in blobServiceInfo
  * @param data serializable data to be saved
@@ -89,8 +93,8 @@ export const saveDataToBlob = <T>(
   { blobService, containerName, folder }: IBlobServiceInfo,
   blobName: string,
   data: T
-): TaskEither<BlobCreationFailure, T> => {
-  return taskify<Error, BlobService.BlobResult>(cb =>
+): TaskEither<BlobCreationFailure, T> =>
+  taskify<Error, BlobService.BlobResult>(cb =>
     blobService.createBlockBlobFromText(
       containerName,
       `${folder}${folder ? "/" : ""}${blobName}`,
@@ -105,4 +109,3 @@ export const saveDataToBlob = <T>(
       }),
     _ => data
   );
-};

@@ -13,13 +13,12 @@ import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/c
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
-import { UploadServiceLogo } from "./handler";
-
 import { createBlobService } from "azure-storage";
+import * as bodyParser from "body-parser";
 import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 
-import * as bodyParser from "body-parser";
+import { UploadServiceLogo } from "./handler";
 
 const config = getConfigOrThrow();
 

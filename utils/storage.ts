@@ -15,8 +15,8 @@ export const insertTableEntity = (
   entityDescriptor: T
 ): Promise<
   ITuple2<Either<Error, T | TableService.EntityMetadata>, ServiceResponse>
-> => {
-  return new Promise(resolve =>
+> =>
+  new Promise(resolve =>
     tableService.insertEntity(
       table,
       entityDescriptor,
@@ -32,7 +32,6 @@ export const insertTableEntity = (
         )
     )
   );
-};
 
 /**
  * A promisified version of TableService.deleteEntity
@@ -42,8 +41,8 @@ export const deleteTableEntity = (
   table: string
 ) => <T>(
   entityDescriptor: T
-): Promise<ITuple2<Option<Error>, ServiceResponse>> => {
-  return new Promise(resolve =>
+): Promise<ITuple2<Option<Error>, ServiceResponse>> =>
+  new Promise(resolve =>
     tableService.deleteEntity(
       table,
       entityDescriptor,
@@ -55,4 +54,3 @@ export const deleteTableEntity = (
         )
     )
   );
-};

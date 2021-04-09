@@ -37,8 +37,8 @@ import { ServiceIdWithVersion } from "../generated/definitions/ServiceIdWithVers
 type IGetServicesHandlerResult =
   | IResponseErrorQuery
   | IResponseSuccessJson<{
-      items: readonly ServiceIdWithVersion[];
-      page_size: number;
+      readonly items: ReadonlyArray<ServiceIdWithVersion>;
+      readonly page_size: number;
     }>;
 
 type IGetServicesHandler = (
@@ -64,7 +64,6 @@ export function GetServicesHandler(
       .fold<IGetServicesHandlerResult>(
         error => ResponseErrorQuery("Cannot get services", error),
         results => {
-          
           const reducedResults = results.reduce((prev, maybeCurr) => {
             if (isLeft(maybeCurr)) {
               return prev;
