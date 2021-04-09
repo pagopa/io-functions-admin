@@ -28,7 +28,7 @@ const azureApimConfig = {
 
 const azureApimHost = config.AZURE_APIM_HOST;
 
-// tslint:disable-next-line: no-let
+// eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"

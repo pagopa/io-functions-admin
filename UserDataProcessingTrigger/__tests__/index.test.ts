@@ -1,4 +1,4 @@
-// tslint:disable: no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";

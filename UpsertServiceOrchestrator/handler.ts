@@ -48,7 +48,7 @@ export const handler = function*(
   const input = context.df.getInput();
 
   const retryOptions = new df.RetryOptions(5000, 10);
-  // tslint:disable-next-line: no-object-mutation
+  // eslint-disable-next-line functional/immutable-data
   retryOptions.backoffCoefficient = 1.5;
 
   // Check if input is valid

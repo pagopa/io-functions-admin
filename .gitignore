@@ -52,3 +52,6 @@ generated
 todo.md
 
 /generated
+# eslint section
+!.eslintrc.js
+.eslintcache

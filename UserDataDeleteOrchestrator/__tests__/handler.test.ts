@@ -1,4 +1,4 @@
-// tslint:disable: no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 import {
@@ -134,7 +134,7 @@ mockOrchestratorCallActivityWithRetry.mockImplementation(
  * @returns the last value yielded by the orchestrator
  */
 const consumeOrchestrator = (orch: any) => {
-  // tslint:disable-next-line: no-let
+  // eslint-disable-next-line functional/no-let
   let prevValue: unknown;
   while (true) {
     const { done, value } = orch.next(prevValue);
@@ -151,7 +151,7 @@ const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionCo
 const waitForAbortInterval = 0 as Day;
 const waitForDownloadInterval = 0 as Hour;
 
-// tslint:disable-next-line: no-big-function
+// eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("createUserDataDeleteOrchestratorHandler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -177,7 +177,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
   it("should set processing ad FAILED if fails to lock the user session", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
     setUserSessionLockActivity.mockImplementationOnce(
-      // tslint:disable-next-line: no-duplicate-string
+      // eslint-disable-next-line sonarjs/no-duplicate-string
       () => "any unsuccessful value"
     );
 

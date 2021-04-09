@@ -1,4 +1,4 @@
-/* tslint:disable: no-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { right } from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";

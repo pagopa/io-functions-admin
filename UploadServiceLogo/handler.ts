@@ -55,7 +55,7 @@ type IUpdateServiceHandler = (
   serviceId: ServiceId,
   logoPayload: ApiLogo
 ) => Promise<
-  // tslint:disable-next-line: max-union-size
+  // eslint-disable-next-line sonar/max-union-size
   | IResponseSuccessRedirectToResource<{}, {}>
   | IResponseErrorValidation
   | IResponseErrorQuery

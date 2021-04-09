@@ -2,7 +2,7 @@
  * Exposes ExtractUserDataActivity as a cli command for local usage
  */
 
-// tslint:disable: no-console no-any
+// eslint-disable no-console, @typescript-eslint/no-explicit-any
 
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -37,7 +37,7 @@ const context = ({
     info: console.log,
     verbose: console.log
   }
-  // tslint:disable-next-line: no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any) as Context;
 
 const database = cosmosdbClient.database(config.COSMOSDB_NAME);
@@ -46,7 +46,7 @@ const userDataProcessingModel = new UserDataProcessingModel(
   database.container(USER_DATA_PROCESSING_COLLECTION_NAME)
 );
 
-// tslint:disable-next-line: max-union-size
+// eslint-disable-next-line sonar/max-union-size
 async function run(): Promise<any> {
   const fiscalCode = FiscalCode.decode(process.argv[2]).getOrElseL(reason => {
     throw new Error(`Invalid input: ${readableReport(reason)}`);

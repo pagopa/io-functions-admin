@@ -37,7 +37,7 @@ app.post(
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
-// tslint:disable-next-line: no-let
+
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"

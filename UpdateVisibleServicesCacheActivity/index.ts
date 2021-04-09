@@ -31,7 +31,7 @@ async function UpdateVisibleServiceCacheActivity(
   // (where the activity result is saved),
   // so we return void from this method and
   // use context bindings
-  // tslint:disable-next-line: no-object-mutation
+  // eslint-disable-next-line functional/immutable-data
   context.bindings.visibleServiceCacheBlob = toServicePublic(visibleService);
 }
 

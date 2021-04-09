@@ -71,14 +71,14 @@ function getGroups(
   apim: string
 ): TaskEither<Error, ReadonlyArray<GroupContract>> {
   return tryCatch(async () => {
-    // tslint:disable-next-line:readonly-array no-let
+    // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
     const groupList: GroupContract[] = [];
     const groupListResponse = await apimClient.group.listByService(
       apimResourceGroup,
       apim
     );
     groupList.push(...groupListResponse);
-    // tslint:disable-next-line:no-let
+    // eslint-disable-next-line functional/no-let
     let nextLink = groupListResponse.nextLink;
     while (nextLink) {
       const nextGroupList = await apimClient.group.listByServiceNext(nextLink);

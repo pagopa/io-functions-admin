@@ -43,7 +43,7 @@ async function UpdateVisibleServiceCache(context: Context): Promise<void> {
   }));
 
   // store visible services in the blob
-  // tslint:disable-next-line: no-object-mutation
+  // eslint-disable-next-line functional/immutable-data
   context.bindings.visibleServicesCacheBlob = {
     items: visibleServicesTuples.reduce([], (p, c) => [...p, c])
   };
@@ -53,7 +53,7 @@ async function UpdateVisibleServiceCache(context: Context): Promise<void> {
   );
 
   // store visible services partitioned by scope
-  // tslint:disable-next-line: no-object-mutation
+  // eslint-disable-next-line functional/immutable-data
   context.bindings.visibleServicesByScopeCacheBlob = {
     LOCAL: LOCAL.map(_ => _.serviceId).reduce([], (p, c) => [...p, c]),
     NATIONAL: NATIONAL.map(_ => _.serviceId).reduce([], (p, c) => [...p, c])

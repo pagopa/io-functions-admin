@@ -1,5 +1,5 @@
-/* tslint:disable: no-any */
-/* tslint:disable: no-big-function */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable sonar/sonar-max-lines-per-function */
 
 import * as df from "durable-functions";
 import * as lolex from "lolex";
@@ -17,7 +17,7 @@ import {
 import { UpsertServiceEvent } from "../../utils/UpsertServiceEvent";
 import { CreateServiceHandler } from "../handler";
 
-// tslint:disable-next-line: no-let
+// eslint-disable-next-line functional/no-let
 let clock: lolex.InstalledClock;
 
 beforeEach(() => {

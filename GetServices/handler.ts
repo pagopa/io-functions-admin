@@ -64,7 +64,7 @@ export function GetServicesHandler(
       .fold<IGetServicesHandlerResult>(
         error => ResponseErrorQuery("Cannot get services", error),
         results => {
-          // tslint:disable-next-line: no-inferred-empty-object-type
+          
           const reducedResults = results.reduce((prev, maybeCurr) => {
             if (isLeft(maybeCurr)) {
               return prev;

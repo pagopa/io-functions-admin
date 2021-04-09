@@ -94,7 +94,7 @@ export function RegenerateSubscriptionKeysHandler(
       )
       .mapLeft(error => {
         context.log.error(error);
-        // tslint:disable-next-line:no-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const anyError = error as any;
         if ("statusCode" in anyError && anyError.statusCode === 404) {
           return ResponseErrorNotFound(

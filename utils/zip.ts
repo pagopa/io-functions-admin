@@ -5,7 +5,7 @@ const initArchiverZipEncryptedPlugin = {
   called: false,
   run(): void {
     if (!initArchiverZipEncryptedPlugin.called) {
-      // tslint:disable-next-line: no-object-mutation
+      // eslint-disable-next-line functional/immutable-data
       initArchiverZipEncryptedPlugin.called = true;
       // note: only do it once per Node.js process/application, as duplicate registration will throw an error
       archiver.registerFormat(
@@ -35,6 +35,6 @@ export function getEncryptedZipStream(
       level: DEFAULT_ZLIB_LEVEL
     }
     // following cast due to incomplete archive typings
-    // tslint:disable-next-line: no-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
 }

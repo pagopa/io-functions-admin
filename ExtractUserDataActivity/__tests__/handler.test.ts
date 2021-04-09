@@ -1,4 +1,4 @@
-/* tslint:disable: no-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { right } from "fp-ts/lib/Either";
 import { some } from "fp-ts/lib/Option";
 
@@ -88,7 +88,7 @@ jest
     ])
   );
 
-// tslint:disable-next-line: no-identical-functions
+// eslint-disable-next-line sonarjs/no-identical-functions
 jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
   return {
     [Symbol.asyncIterator]: () => messageIteratorMock
@@ -148,7 +148,7 @@ const setupStreamMocks = () => {
   } as any) as BlobService;
   const aZipStream = archiver.create("zip");
   const origFinalize = aZipStream.finalize.bind(aZipStream);
-  // tslint:disable-next-line: no-object-mutation
+  // eslint-disable-next-line functional/immutable-data
   aZipStream.finalize = jest.fn().mockImplementationOnce(() => {
     return origFinalize().then(resolve);
   });

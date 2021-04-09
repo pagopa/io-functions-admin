@@ -241,7 +241,7 @@ export const getAllMessageContents = (
                 (content: MessageContent) =>
                   right({
                     content,
-                    // tslint:disable-next-line: no-useless-cast
+                    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
                     messageId: messageId as NonEmptyString
                   })
               )
@@ -543,7 +543,7 @@ export interface IActivityHandlerInput {
   userDataContainerName: NonEmptyString;
 }
 
-// tslint:disable-next-line: no-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const cleanData = (v: any) => {
   const { _self, _etag, _attachments, _rid, _ts, ...clean } = v;
   return clean;

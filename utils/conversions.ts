@@ -187,7 +187,7 @@ function removeNullProperties<T>(obj: T): unknown {
     (filteredObj, key) =>
       obj[key] === null
         ? filteredObj
-        : // tslint:disable-next-line: no-any
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
           { ...(filteredObj as any), [key]: obj[key] },
     {}
   );

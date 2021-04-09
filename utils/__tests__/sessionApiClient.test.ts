@@ -1,4 +1,4 @@
-// tslint:disable: no-duplicate-string
+// eslint-disable sonarjs/no-duplicate-string
 
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { aFiscalCode } from "../../__mocks__/mocks";

@@ -32,7 +32,7 @@ const serviceModel = new ServiceModel(servicesContainer);
 
 const blobService = createBlobService(config.AssetsStorageConnection);
 
-// tslint:disable-next-line: no-let
+// eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"

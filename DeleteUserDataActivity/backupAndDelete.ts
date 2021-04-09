@@ -45,13 +45,13 @@ const executeRecursiveBackupAndDelete = <T>(
   makeBackupBlobName: (item: T) => string,
   iterator: AsyncIterator<ReadonlyArray<Either<Errors, T>>>
 ): TaskEither<
-  // tslint:disable-next-line: use-type-alias
+  
   DataFailure,
   readonly T[]
 > =>
   tryCatch(() => iterator.next(), toError)
     // this is just type lifting
-    // tslint:disable-next-line: readonly-array
+    // eslint-disable-next-line functional/prefer-readonly-type
     .foldTaskEither<DataFailure, readonly T[]>(
       e => fromLeft(toQueryFailure(e)),
       e =>
@@ -70,11 +70,11 @@ const executeRecursiveBackupAndDelete = <T>(
           items.map((item: T) =>
             sequenceT(taskEitherSeq)<
               DataFailure,
-              // tslint:disable-next-line: readonly-array
+              // eslint-disable-next-line functional/prefer-readonly-type
               [
                 TaskEither<DataFailure, T>,
                 TaskEither<DataFailure, string>,
-                // tslint:disable-next-line: readonly-array
+                // eslint-disable-next-line functional/prefer-readonly-type
                 TaskEither<DataFailure, readonly T[]>
               ]
             >(
@@ -136,7 +136,7 @@ const backupAndDeleteNotification = ({
 }): TaskEither<DataFailure, RetrievedNotification> =>
   sequenceT(taskEitherSeq)<
     DataFailure,
-    // tslint:disable-next-line: readonly-array
+    // eslint-disable-next-line functional/prefer-readonly-type
     [
       TaskEither<DataFailure, RetrievedNotification>,
       TaskEither<DataFailure, string>
@@ -199,7 +199,7 @@ const backupAndDeleteMessage = ({
 }): TaskEither<DataFailure, RetrievedMessageWithoutContent> =>
   sequenceT(taskEitherSeq)<
     DataFailure,
-    // tslint:disable-next-line: readonly-array
+    // eslint-disable-next-line functional/prefer-readonly-type
     [
       TaskEither<DataFailure, RetrievedMessageWithoutContent>,
       TaskEither<DataFailure, string>
@@ -370,7 +370,7 @@ const backupAndDeleteAllMessagesData = ({
           : array.sequence(taskEitherSeq)(
               rights(results).map(message => {
                 // cast needed because findMessages has a wrong signature
-                // tslint:disable-next-line: no-any
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
                 return sequenceT(taskEitherSeq)(
                   backupAndDeleteMessageContent({

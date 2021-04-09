@@ -66,7 +66,7 @@ function getUserSubscriptions(
   userName: string
 ): TaskEither<Error, ReadonlyArray<SubscriptionContract>> {
   return tryCatch(async () => {
-    // tslint:disable-next-line:readonly-array no-let
+    // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
     const subscriptionList: SubscriptionContract[] = [];
     const subscriptionListResponse = await apimClient.userSubscription.list(
       apimResourceGroup,
@@ -74,7 +74,7 @@ function getUserSubscriptions(
       userName
     );
     subscriptionList.push(...subscriptionListResponse);
-    // tslint:disable-next-line:no-let
+    // eslint-disable-next-line functional/no-let
     let nextLink = subscriptionListResponse.nextLink;
     while (nextLink) {
       const nextSubscriptionList = await apimClient.userSubscription.listNext(

@@ -22,7 +22,7 @@ const adb2cTokenAttributeName = getRequiredStringEnv(
   "ADB2C_TOKEN_ATTRIBUTE_NAME"
 );
 
-// tslint:disable-next-line: no-let
+// eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"
