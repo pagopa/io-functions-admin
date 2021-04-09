@@ -37,13 +37,16 @@ type ICreateUserHandler = (
   userPayload: UserPayload
 ) => Promise<IResponseSuccessJson<UserCreated> | IResponseErrorInternal>;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function CreateUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
   apimCredentials: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   adb2cTokenAttributeName: NonEmptyString
 ): ICreateUserHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, userPayload) => {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
@@ -78,6 +81,7 @@ export function CreateUserHandler(
                 surname: userPayload.last_name,
                 userPrincipalName: `${ulid()}@${adb2cCredentials.tenantId}`,
                 userType: "Member",
+                // eslint-disable-next-line sort-keys
                 [adb2cTokenAttributeName]: userPayload.token_name
               })
             ),
@@ -139,6 +143,7 @@ export function CreateUserHandler(
 /**
  * Wraps a CreateUser handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function CreateUser(
   adb2cCreds: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,

@@ -98,6 +98,7 @@ const executeRecursiveBackupAndDelete = <T>(
  * @param param0.userDataBackup information about the blob storage account to place backup into
  * @param param0.fiscalCode the identifier of the user
  */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const backupAndDeleteProfile = ({
   fiscalCode,
   profileModel,
@@ -414,6 +415,7 @@ const backupAndDeleteAllMessagesData = ({
  * @param param0.userDataBackup information about the blob storage account to place backup into
  * @param param0.fiscalCode identifier of the user
  */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const backupAndDeleteAllUserData = ({
   messageContentBlobService,
   messageModel,
@@ -442,5 +444,6 @@ export const backupAndDeleteAllUserData = ({
     notificationStatusModel,
     userDataBackup
   }).chain(_ =>
+    // eslint-disable-next-line sort-keys
     backupAndDeleteProfile({ profileModel, userDataBackup, fiscalCode })
   );

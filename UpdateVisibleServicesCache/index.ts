@@ -6,6 +6,7 @@
  * - put the generated JSON into the assets storage (which is reachable behind the CDN)
  * - loop on visible services and store services/<serviceid>.json (output binding)
  *
+// eslint-disable-next-line jsdoc/check-indentation
  *  The tuple stored is (serviceId, version, scope).
  *
  *  TODO: delete blobs for services that aren't visible anymore.
@@ -19,8 +20,10 @@ import { VisibleService } from "io-functions-commons/dist/src/models/visible_ser
 import * as df from "durable-functions";
 import * as t from "io-ts";
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const VisibleServices = t.record(t.string, VisibleService);
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 async function UpdateVisibleServiceCache(context: Context): Promise<void> {
   const errorOrVisibleServices = VisibleServices.decode(
     context.bindings.visibleServicesBlob
@@ -38,6 +41,7 @@ async function UpdateVisibleServiceCache(context: Context): Promise<void> {
 
   const visibleServicesTuples = visibleServices.mapWithKey((_, v) => ({
     scope: v.serviceMetadata ? v.serviceMetadata.scope : undefined,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     service_id: v.serviceId,
     version: v.version
   }));
@@ -55,7 +59,9 @@ async function UpdateVisibleServiceCache(context: Context): Promise<void> {
   // store visible services partitioned by scope
   // eslint-disable-next-line functional/immutable-data
   context.bindings.visibleServicesByScopeCacheBlob = {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     LOCAL: LOCAL.map(_ => _.serviceId).reduce([], (p, c) => [...p, c]),
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     NATIONAL: NATIONAL.map(_ => _.serviceId).reduce([], (p, c) => [...p, c])
   };
 

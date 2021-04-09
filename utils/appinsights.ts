@@ -14,6 +14,7 @@ import { NonEmptyString } from "italia-ts-commons/lib/strings";
 const DEFAULT_SAMPLING_PERCENTAGE = 20;
 
 // Avoid to initialize Application Insights more than once
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const initTelemetryClient = (env = process.env) =>
   ai.defaultClient
     ? ai.defaultClient
@@ -28,12 +29,14 @@ export const initTelemetryClient = (env = process.env) =>
           })
       );
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackEvent = (event: EventTelemetry) => {
   fromNullable(initTelemetryClient()).map(_ =>
     tryCatch(() => _.trackEvent(event))
   );
 };
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackException = (event: ExceptionTelemetry) => {
   fromNullable(initTelemetryClient()).map(_ =>
     tryCatch(() => _.trackException(event))

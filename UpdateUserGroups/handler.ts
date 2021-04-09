@@ -65,6 +65,7 @@ type IGetSubscriptionKeysHandler = (
   | IGetSubscriptionKeysHandlerResponseError
 >;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function getGroups(
   apimClient: ApiManagementClient,
   apimResourceGroup: string,
@@ -77,11 +78,13 @@ function getGroups(
       apimResourceGroup,
       apim
     );
+    // eslint-disable-next-line functional/immutable-data
     groupList.push(...groupListResponse);
     // eslint-disable-next-line functional/no-let
     let nextLink = groupListResponse.nextLink;
     while (nextLink) {
       const nextGroupList = await apimClient.group.listByServiceNext(nextLink);
+      // eslint-disable-next-line functional/immutable-data
       groupList.push(...nextGroupList);
       nextLink = nextGroupList.nextLink;
     }
@@ -101,6 +104,7 @@ interface IGroupsClusterization {
  * @param currentUserGroups The list of displayNames of the groups with which the user is currently associated
  * @param groupsInPayload The list of displayNames of the groups with which the user must be associated
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function clusterizeGroups(
   existingGroups: Record<string, string>,
   currentUserGroups: ReadonlyArray<string>,
@@ -134,11 +138,14 @@ function clusterizeGroups(
   );
 }
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention, max-lines-per-function
 export function UpdateUserGroupHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, email, userGroupsPayload) => {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
@@ -338,6 +345,7 @@ export function UpdateUserGroupHandler(
 /**
  * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function UpdateUserGroup(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig

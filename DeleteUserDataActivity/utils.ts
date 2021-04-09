@@ -14,6 +14,7 @@ import {
 /**
  * To be used for exhaustive checks
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function assertNever(_: never): never {
   throw new Error("should not have executed this");
 }

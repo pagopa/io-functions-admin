@@ -13,6 +13,7 @@ import * as df from "durable-functions";
 import { isLeft } from "fp-ts/lib/Either";
 import { VisibleServices } from "../UpdateVisibleServicesCache";
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const UpdateVisibleServicesCacheOrchestrator = df.orchestrator(function*(
   context: IOrchestrationFunctionContext
 ): Generator<Task> {

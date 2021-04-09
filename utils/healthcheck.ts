@@ -21,6 +21,7 @@ import { getConfig, IConfig } from "./config";
 
 type ProblemSource = "AzureCosmosDB" | "AzureStorage" | "Config" | "Url";
 export type HealthProblem<S extends ProblemSource> = string & {
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   readonly __source: S;
 };
 export type HealthCheck<
@@ -101,6 +102,7 @@ export const checkAzureStorageHealth = (
                 azurestorageCommon.models.ServicePropertiesResult.ServiceProperties
               >((resolve, reject) =>
                 createService(connStr).getServiceProperties((err, result) => {
+                  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
                   err
                     ? reject(err.message.replace(/\n/gim, " ")) // avoid newlines
                     : resolve(result);
@@ -138,6 +140,7 @@ export const checkApplicationHealth = (): HealthCheck<ProblemSource, true> =>
       sequenceT(taskEither)<
         ReadonlyArray<HealthProblem<ProblemSource>>,
         // eslint-disable functional/prefer-readonly-type
+        // eslint-disable-next-line functional/prefer-readonly-type
         Array<TaskEither<ReadonlyArray<HealthProblem<ProblemSource>>, true>>
       >(
         checkAzureCosmosDbHealth(config.COSMOSDB_URI, config.COSMOSDB_KEY),

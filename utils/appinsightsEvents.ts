@@ -3,6 +3,7 @@
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import { trackEvent, trackException } from "./appinsights";
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDeleteEvent = (
   eventName: string,
   userDataProcessing: UserDataProcessing
@@ -19,6 +20,7 @@ export const trackUserDataDeleteEvent = (
     }
   });
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDeleteException = (
   eventName: string,
   exception: Error,
@@ -36,6 +38,7 @@ export const trackUserDataDeleteException = (
     }
   });
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDownloadEvent = (
   eventName: string,
   userDataProcessing: UserDataProcessing
@@ -52,6 +55,7 @@ export const trackUserDataDownloadEvent = (
     }
   });
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDownloadException = (
   eventName: string,
   exception: Error,

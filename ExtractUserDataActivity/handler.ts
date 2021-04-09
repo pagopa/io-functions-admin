@@ -61,6 +61,7 @@ import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ArchiveInfo = t.interface({
   blobName: NonEmptyString,
   password: StrongPassword
@@ -68,12 +69,14 @@ export const ArchiveInfo = t.interface({
 export type ArchiveInfo = t.TypeOf<typeof ArchiveInfo>;
 
 // Activity input
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.interface({
   fiscalCode: FiscalCode
 });
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity success result
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS"),
   value: ArchiveInfo
@@ -81,6 +84,7 @@ export const ActivityResultSuccess = t.interface({
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
 // Activity failed because of invalid input
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultInvalidInputFailure = t.interface({
   kind: t.literal("INVALID_INPUT_FAILURE"),
   reason: t.string
@@ -90,6 +94,7 @@ export type ActivityResultInvalidInputFailure = t.TypeOf<
 >;
 
 // Activity failed because of an error on a query
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultQueryFailure = t.intersection([
   t.interface({
     kind: t.literal("QUERY_FAILURE"),
@@ -102,12 +107,14 @@ export type ActivityResultQueryFailure = t.TypeOf<
 >;
 
 // activity failed for user not found
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultUserNotFound = t.interface({
   kind: t.literal("USER_NOT_FOUND_FAILURE")
 });
 type ActivityResultUserNotFound = t.TypeOf<typeof ActivityResultUserNotFound>;
 
 // activity failed for user not found
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultArchiveGenerationFailure = t.interface({
   kind: t.literal("ARCHIVE_GENERATION_FAILURE"),
   reason: t.string
@@ -117,6 +124,7 @@ export type ActivityResultArchiveGenerationFailure = t.TypeOf<
   typeof ActivityResultArchiveGenerationFailure
 >;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultFailure = t.taggedUnion("kind", [
   ActivityResultUserNotFound,
   ActivityResultQueryFailure,
@@ -125,6 +133,7 @@ export const ActivityResultFailure = t.taggedUnion("kind", [
 ]);
 export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.taggedUnion("kind", [
   ActivityResultSuccess,
   ActivityResultFailure
@@ -137,6 +146,7 @@ const logPrefix = `ExtractUserDataActivity`;
  * Converts a Promise<Either<L, R>> that can reject
  * into a TaskEither<Error | L, R>
  */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const fromPromiseEither = <L, R>(promise: Promise<Either<L, R>>) =>
   taskEither
     .of<Error | L, R>(void 0)
@@ -146,6 +156,7 @@ const fromPromiseEither = <L, R>(promise: Promise<Either<L, R>>) =>
 /**
  * To be used for exhaustive checks
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function assertNever(_: never): void {
   throw new Error("should not have executed this");
 }
@@ -372,6 +383,7 @@ export const queryAllUserData = (
 ): TaskEither<
   ActivityResultUserNotFound | ActivityResultQueryFailure,
   AllUserData
+  // eslint-disable-next-line max-params
 > =>
   // step 0: look for the profile
   getProfile(profileModel, fiscalCode)
@@ -450,6 +462,7 @@ export const queryAllUserData = (
         })
     );
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
   container: string,
   blob: string
@@ -463,6 +476,7 @@ const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
     { contentSettings: { contentType: "application/zip" } },
     (err, result) => (err ? resolve(left(err)) : resolve(right(result)))
   );
+  // eslint-disable-next-line sort-keys
   return { errorOrResult, blobStream };
 };
 
@@ -488,12 +502,14 @@ export const saveDataToBlob = (
 
   const zipStream = getEncryptedZipStream(password);
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const failure = (err: Error) =>
     ActivityResultArchiveGenerationFailure.encode({
       kind: "ARCHIVE_GENERATION_FAILURE",
       reason: err.message
     });
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const success = () =>
     ArchiveInfo.encode({
       blobName,
@@ -544,8 +560,9 @@ export interface IActivityHandlerInput {
   readonly userDataContainerName: NonEmptyString;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-explicit-any
 const cleanData = (v: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { _self, _etag, _attachments, _rid, _ts, ...clean } = v;
   return clean;
 };
@@ -553,6 +570,7 @@ const cleanData = (v: any) => {
 /**
  * Factory methods that builds an activity function
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function createExtractUserDataActivityHandler({
   messageModel,
   messageStatusModel,
@@ -566,6 +584,7 @@ export function createExtractUserDataActivityHandler({
   context: Context,
   input: unknown
 ) => Promise<ActivityResult> {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return (context: Context, input: unknown) =>
     fromEither(
       ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
@@ -592,6 +611,7 @@ export function createExtractUserDataActivityHandler({
         const notifications = allUserData.notifications.map(e =>
           cleanData({
             ...e,
+            // eslint-disable-next-line @typescript-eslint/naming-convention
             channels: { ...e.channels, WEBHOOK: { url: undefined } }
           })
         );

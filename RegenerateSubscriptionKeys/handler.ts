@@ -46,10 +46,12 @@ type IGetSubscriptionKeysHandler = (
   | IResponseErrorInternal
 >;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function RegenerateSubscriptionKeysHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, serviceId, keyTypePayload) => {
     const response = await getApiClient(
       servicePrincipalCreds,
@@ -88,7 +90,9 @@ export function RegenerateSubscriptionKeysHandler(
       )
       .map(subscription =>
         ResponseSuccessJson({
+          // eslint-disable-next-line @typescript-eslint/naming-convention
           primary_key: subscription.primaryKey,
+          // eslint-disable-next-line @typescript-eslint/naming-convention
           secondary_key: subscription.secondaryKey
         })
       )
@@ -112,6 +116,7 @@ export function RegenerateSubscriptionKeysHandler(
 /**
  * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function RegenerateSubscriptionKeys(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig

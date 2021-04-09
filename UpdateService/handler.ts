@@ -49,7 +49,6 @@ type IUpdateServiceHandler = (
   serviceId: ServiceId,
   servicePayload: ApiService
 ) => Promise<
-  // eslint-disable-next-line sonar/max-union-size
   | IResponseSuccessJson<ApiService>
   | IResponseErrorValidation
   | IResponseErrorQuery
@@ -57,9 +56,11 @@ type IUpdateServiceHandler = (
   | IResponseErrorInternal
 >;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function UpdateServiceHandler(
   serviceModel: ServiceModel
 ): IUpdateServiceHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, serviceId, servicePayload) => {
     if (servicePayload.service_id !== serviceId) {
       return ResponseErrorValidation(
@@ -126,6 +127,7 @@ export function UpdateServiceHandler(
 /**
  * Wraps a UpdateService handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function UpdateService(
   serviceModel: ServiceModel
 ): express.RequestHandler {

@@ -26,16 +26,19 @@ import {
 // If the function crashes the lease is released by the system.
 const LEASE_DURATION = 15 as Second;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const AddVisibleServiceInput = t.interface({
   action: t.literal("UPSERT"),
   visibleService: VisibleService
 });
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const RemoveVisibleServiceInput = t.interface({
   action: t.literal("DELETE"),
   visibleService: VisibleService
 });
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const Input = t.taggedUnion("action", [
   AddVisibleServiceInput,
   RemoveVisibleServiceInput
@@ -43,19 +46,23 @@ export const Input = t.taggedUnion("action", [
 
 export type Input = t.TypeOf<typeof Input>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ResultSuccess = t.interface({
   kind: t.literal("SUCCESS")
 });
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ResultFailure = t.interface({
   kind: t.literal("FAILURE"),
   reason: t.string
 });
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const Result = t.taggedUnion("kind", [ResultSuccess, ResultFailure]);
 
 export type Result = t.TypeOf<typeof Result>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const VisibleServicesBlob = t.dictionary(ServiceId, VisibleService);
 
 interface IVisibleServices {
@@ -69,6 +76,7 @@ interface IVisibleServices {
  * @param visibleService The visible service to add/remove
  * @param action The UPSERT/DELETE action
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function computeNewVisibleServices(
   visibleServices: IVisibleServices,
   visibleService: VisibleService,
@@ -85,6 +93,7 @@ function computeNewVisibleServices(
   }
   if (action === "DELETE") {
     const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       [visibleService.serviceId]: deletedVisibleService,
       ...restVisibleServices
     } = visibleServices;
@@ -102,6 +111,7 @@ function computeNewVisibleServices(
  * Update visibleServices blob adding/removing the visible service.
  * Return an error on failure.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 async function updateVisibleServices(
   blobService: BlobService,
   visibleService: VisibleService,

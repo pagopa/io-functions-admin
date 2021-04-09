@@ -3,6 +3,7 @@ import { StrongPassword } from "./random";
 
 const initArchiverZipEncryptedPlugin = {
   called: false,
+  // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
   run(): void {
     if (!initArchiverZipEncryptedPlugin.called) {
       // eslint-disable-next-line functional/immutable-data
@@ -10,6 +11,7 @@ const initArchiverZipEncryptedPlugin = {
       // note: only do it once per Node.js process/application, as duplicate registration will throw an error
       archiver.registerFormat(
         "zip-encrypted",
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         require("archiver-zip-encrypted")
       );
     }
@@ -17,13 +19,16 @@ const initArchiverZipEncryptedPlugin = {
 };
 
 export enum EncryptionMethodEnum {
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   ZIP20 = "zip20",
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   AES256 = "aes256"
 }
 
 export const DEFAULT_ZIP_ENCRYPTION_METHOD = EncryptionMethodEnum.ZIP20;
 export const DEFAULT_ZLIB_LEVEL = 8;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getEncryptedZipStream(
   password: StrongPassword
 ): archiver.Archiver {

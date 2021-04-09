@@ -73,6 +73,7 @@ describe("UpdateServiceLogoHandler", () => {
     };
 
     const blobServiceMock = ({
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb(null, "any"))
     } as any) as BlobService;
     const aServiceId = "1" as NonEmptyString;
@@ -112,6 +113,7 @@ describe("UpdateServiceLogoHandler", () => {
       findOneByServiceId: jest.fn(() => fromEither(right(some({}))))
     };
     const blobServiceMock = ({
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb(null, "any"))
     } as any) as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
@@ -145,6 +147,7 @@ describe("UpdateServiceLogoHandler", () => {
       findOneByServiceId: jest.fn(() => fromEither(right(some({}))))
     };
     const blobServiceMock = ({
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb("any", null))
     } as any) as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(

@@ -33,8 +33,11 @@ const config = getConfigOrThrow();
 
 const context = ({
   log: {
+    // eslint-disable-next-line no-console
     error: console.error,
+    // eslint-disable-next-line no-console
     info: console.log,
+    // eslint-disable-next-line no-console
     verbose: console.log
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,7 +49,7 @@ const userDataProcessingModel = new UserDataProcessingModel(
   database.container(USER_DATA_PROCESSING_COLLECTION_NAME)
 );
 
-// eslint-disable-next-line sonar/max-union-size
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/no-explicit-any
 async function run(): Promise<any> {
   const fiscalCode = FiscalCode.decode(process.argv[2]).getOrElseL(reason => {
     throw new Error(`Invalid input: ${readableReport(reason)}`);
@@ -76,6 +79,7 @@ async function run(): Promise<any> {
 
   const currentUserDataProcessing = maybeUserDataProcessing.value;
 
+  // eslint-disable-next-line no-console
   console.log(
     "Found user data processing request (v=%d) with status %s",
     currentUserDataProcessing.version,
@@ -120,6 +124,7 @@ async function run(): Promise<any> {
       })
     )
     .catch(err => {
+      // eslint-disable-next-line no-console
       console.error(err);
       return setUserDataProcessingStatusActivity(context, {
         currentRecord: currentUserDataProcessing,
@@ -129,5 +134,7 @@ async function run(): Promise<any> {
 }
 
 run()
+  // eslint-disable-next-line no-console
   .then(result => console.log("OK", result))
+  // eslint-disable-next-line no-console
   .catch(ex => console.error("KO", ex));

@@ -43,6 +43,7 @@ export interface IActivityHandlerInput {
 /**
  * Factory methods that builds an activity function
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function createDeleteUserDataActivityHandler({
   messageContentBlobService,
   messageModel,
@@ -56,6 +57,7 @@ export function createDeleteUserDataActivityHandler({
   context: Context,
   input: unknown
 ) => Promise<ActivityResult> {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return (context: Context, input: unknown) =>
     // validates the input
     fromEither(

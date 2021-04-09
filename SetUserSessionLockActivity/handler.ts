@@ -17,11 +17,13 @@ import { FiscalCode } from "italia-ts-commons/lib/strings";
 import { SuccessResponse } from "../generated/session-api/SuccessResponse";
 import { Client } from "../utils/sessionApiClient";
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function assertNever(_: never): void {
   throw new Error("should not have executed this");
 }
 
 // Activity input
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.interface({
   action: t.union([t.literal("LOCK"), t.literal("UNLOCK")]),
   fiscalCode: FiscalCode
@@ -29,12 +31,14 @@ export const ActivityInput = t.interface({
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity result
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS")
 });
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
 // Activity failed because of invalid input
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const InvalidInputFailure = t.interface({
   kind: t.literal("INVALID_INPUT_FAILURE"),
   reason: t.string
@@ -42,6 +46,7 @@ export const InvalidInputFailure = t.interface({
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 
 // Activity failed because of an error on an api call
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ApiCallFailure = t.interface({
   kind: t.literal("API_CALL_FAILURE"),
   reason: t.string
@@ -49,6 +54,7 @@ export const ApiCallFailure = t.interface({
 export type ApiCallFailure = t.TypeOf<typeof ApiCallFailure>;
 
 // Activity failed because the api has been called badly
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const BadApiRequestFailure = t.interface({
   kind: t.literal("BAD_API_REQUEST_FAILURE"),
   reason: t.string
@@ -56,9 +62,11 @@ export const BadApiRequestFailure = t.interface({
 export type BadApiRequestFailure = t.TypeOf<typeof BadApiRequestFailure>;
 
 // maps domain errors that are considered transient and thus may allow a retry
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const TransientFailure = ApiCallFailure;
 export type TransientFailure = t.TypeOf<typeof TransientFailure>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultFailure = t.taggedUnion("kind", [
   ApiCallFailure,
   BadApiRequestFailure,
@@ -66,6 +74,7 @@ export const ActivityResultFailure = t.taggedUnion("kind", [
 ]);
 export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.taggedUnion("kind", [
   ActivityResultSuccess,
   ActivityResultFailure
@@ -165,6 +174,7 @@ const callSessionApi = (
 
 export const createSetUserSessionLockActivityHandler = (
   sessionApiClient: Client<"token">
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => (context: Context, input: unknown) =>
   taskEither
     .of<ActivityResultFailure, void>(void 0)

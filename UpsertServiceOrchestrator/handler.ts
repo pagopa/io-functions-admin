@@ -19,6 +19,7 @@ import { UpsertServiceEvent } from "../utils/UpsertServiceEvent";
 /**
  * Using the data of new and old service calculate the action to perform to the visible services
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function computeMaybeAction(
   newService: RetrievedService,
   oldService?: RetrievedService

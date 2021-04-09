@@ -5,6 +5,7 @@ import { ResponseErrorInternal } from "italia-ts-commons/lib/responses";
 
 const genericErrorDetail = "An error occurred while performing the operation";
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const genericInternalErrorHandler = (
   context: Context,
   logMessage: string,
@@ -15,6 +16,7 @@ export const genericInternalErrorHandler = (
   return ResponseErrorInternal(errorDetail);
 };
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const genericInternalValidationErrorHandler = (
   context: Context,
   logMessage: string,

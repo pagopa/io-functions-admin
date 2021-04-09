@@ -48,12 +48,15 @@ type ICreateSubscriptionHandler = (
   | IResponseErrorNotFound
 >;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function CreateSubscriptionHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): ICreateSubscriptionHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, requestParams, productNamePayload) => {
     const [userEmail, subscriptionId] = requestParams;
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
@@ -61,6 +64,7 @@ export function CreateSubscriptionHandler(
         error,
         errorMessage
       );
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const internalValidationErrorHandler = (
       errorMessage: string,
       errors: Errors
@@ -209,6 +213,7 @@ export function CreateSubscriptionHandler(
 /**
  * Wraps a CreateSubscription handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function CreateSubscription(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig

@@ -39,6 +39,7 @@ app.put("/adm/users/:email", UpdateUser(adb2cCreds, adb2cTokenAttributeName));
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
 // Binds the express app to an Azure Function handler
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function httpStart(context: Context): void {
   logger = context.log;
   setAppContext(app, context);

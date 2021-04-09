@@ -26,6 +26,7 @@ const logPrefix = "UserDataProcessingTrigger";
 export type ProcessableUserDataDownload = t.TypeOf<
   typeof ProcessableUserDataDownload
 >;
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ProcessableUserDataDownload = t.intersection([
   UserDataProcessing,
   // ony the subset of UserDataProcessing documents
@@ -40,6 +41,7 @@ export const ProcessableUserDataDownload = t.intersection([
 export type ProcessableUserDataDelete = t.TypeOf<
   typeof ProcessableUserDataDelete
 >;
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ProcessableUserDataDelete = t.intersection([
   UserDataProcessing,
   // ony the subset of UserDataProcessing documents
@@ -54,6 +56,7 @@ export const ProcessableUserDataDelete = t.intersection([
 export type ProcessableUserDataDeleteAbort = t.TypeOf<
   typeof ProcessableUserDataDeleteAbort
 >;
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ProcessableUserDataDeleteAbort = t.intersection([
   UserDataProcessing,
   // ony the subset of UserDataProcessing documents
@@ -64,9 +67,11 @@ export const ProcessableUserDataDeleteAbort = t.intersection([
   })
 ]);
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const CosmosDbDocumentCollection = t.readonlyArray(t.readonly(t.UnknownRecord));
 type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const startOrchestrator = async (
   dfClient: DurableOrchestrationClient,
   orchestratorName:
@@ -91,6 +96,7 @@ const startOrchestrator = async (
     )
     .run();
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, sonarjs/cognitive-complexity
 export function index(
   context: Context,
   input: unknown
@@ -113,7 +119,8 @@ export function index(
             fromNullable(undefined)(
               flags.ENABLE_USER_DATA_DOWNLOAD &&
                 ProcessableUserDataDownload.is(processable)
-                ? () => {
+                ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                  () => {
                     context.log.info(
                       `${logPrefix}: starting UserDataDownloadOrchestrator with ${processable.fiscalCode}`
                     );
@@ -130,7 +137,8 @@ export function index(
                   }
                 : flags.ENABLE_USER_DATA_DELETE &&
                   ProcessableUserDataDelete.is(processable)
-                ? () => {
+                ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                  () => {
                     context.log.info(
                       `${logPrefix}: starting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
                     );
@@ -146,7 +154,8 @@ export function index(
                     );
                   }
                 : ProcessableUserDataDeleteAbort.is(processable)
-                ? () => {
+                ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                  () => {
                     context.log.info(
                       `${logPrefix}: aborting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
                     );
