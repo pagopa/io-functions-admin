@@ -17,7 +17,8 @@ import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model
 import { toApiServiceMetadata as toServiceMetadata } from "io-functions-commons/dist/src/utils/service_metadata";
 import { Errors } from "io-ts";
 import { errorsToReadableMessages } from "italia-ts-commons/lib/reporters";
-import { CIDR, EmailString, FiscalCode } from "italia-ts-commons/lib/strings";
+import { EmailString, FiscalCode } from "italia-ts-commons/lib/strings";
+import { CIDR } from "../generated/definitions/CIDR";
 import { Group, Group as ApiGroup } from "../generated/definitions/Group";
 import {
   Subscription,
