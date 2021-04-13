@@ -1,4 +1,4 @@
-// tslint:disable:no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import {
   GroupContract,
@@ -86,7 +86,7 @@ const mockedContext = { log: { error: mockLog } };
 
 const fakeAdb2cExtensionAppClientId = "extension-client-id" as NonEmptyString;
 
-// tslint:disable-next-line:no-big-function
+// eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("GetUser", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
@@ -331,7 +331,7 @@ describe("GetUser", () => {
     );
     mockUserGroupList.mockImplementation(() => {
       const apimResponse = someValidGroups;
-      // tslint:disable-next-line:no-string-literal no-object-mutation
+      // eslint-disable-next-line functional/immutable-data
       apimResponse["nextLink"] = "next-page";
       return Promise.resolve(apimResponse);
     });
@@ -340,7 +340,7 @@ describe("GetUser", () => {
     );
     mockUserSubscriptionList.mockImplementation(() => {
       const apimResponse = someValidSubscriptions;
-      // tslint:disable-next-line:no-string-literal no-object-mutation
+      // eslint-disable-next-line functional/immutable-data
       apimResponse["nextLink"] = "next-page";
       return Promise.resolve(apimResponse);
     });

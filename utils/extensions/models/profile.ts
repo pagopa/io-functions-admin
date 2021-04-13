@@ -29,6 +29,7 @@ export class ProfileDeletableModel extends ProfileModelBase {
 
   /**
    * Retrieves a list of every version of the requested model
+   *
    * @param modelId
    */
   public findAllVersionsByModelId(

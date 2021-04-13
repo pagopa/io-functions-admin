@@ -17,6 +17,7 @@ import { NonEmptyString } from "italia-ts-commons/lib/strings";
 export class NotificationDeletableModel extends NotificationModelBase {
   /**
    * Deletes a single notification
+   *
    * @param messageId message identifier of the notification (is partition key)
    * @param notificationId notification identifier
    */

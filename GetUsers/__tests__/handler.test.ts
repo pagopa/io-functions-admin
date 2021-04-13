@@ -1,4 +1,4 @@
-// tslint:disable:no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
@@ -125,13 +125,13 @@ describe("GetUsers", () => {
   });
 
   it("should return an internal error response if the API management client returns invalid data", async () => {
-    // tslint:disable-next-line:readonly-array
+    // eslint-disable-next-line functional/prefer-readonly-type
     const mockedApimUsersList: any[] = [
       mockedUserContract1,
       mockedUserContract2,
       mockedInvalidUserContract
     ];
-    // tslint:disable-next-line:no-string-literal no-object-mutation
+    // eslint-disable-next-line functional/immutable-data
     mockedApimUsersList["nextLink"] = "next-link";
     mockApiManagementClient.mockImplementation(() => ({
       user: {
@@ -194,7 +194,7 @@ describe("GetUsers", () => {
             options.skip,
             options.skip + resultsPerPage
           );
-          // tslint:disable-next-line:no-string-literal no-object-mutation
+          // eslint-disable-next-line functional/immutable-data
           list["nextLink"] =
             mockedApimUsersList.length > options.skip + list.length
               ? "next-link"

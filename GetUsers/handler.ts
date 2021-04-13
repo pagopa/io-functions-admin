@@ -33,11 +33,13 @@ type IGetSubscriptionKeysHandler = (
   cursor?: number
 ) => Promise<IResponseSuccessJson<UserCollection> | IResponseErrorInternal>;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function GetUsersHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   azureApimHost: string
 ): IGetSubscriptionKeysHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, cursor = 0) => {
     const response = await getApiClient(
       servicePrincipalCreds,
@@ -90,6 +92,7 @@ export function GetUsersHandler(
 /**
  * Wraps a GetUsers handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function GetUsers(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,

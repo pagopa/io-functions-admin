@@ -1,4 +1,4 @@
-// tslint:disable: no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
@@ -64,7 +64,7 @@ mockOrchestratorCallActivityWithRetry.mockImplementation(
  * @returns the last value yielded by the orchestrator
  */
 const consumeOrchestrator = (orch: any) => {
-  // tslint:disable-next-line: no-let
+  // eslint-disable-next-line functional/no-let
   let prevValue: unknown;
   while (true) {
     const { done, value } = orch.next(prevValue);
@@ -78,7 +78,7 @@ const consumeOrchestrator = (orch: any) => {
 // just a convenient cast, good for every test case
 const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
 
-// tslint:disable-next-line: no-big-function
+// eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("UserDataDownloadOrchestrator", () => {
   beforeEach(() => {
     jest.clearAllMocks();

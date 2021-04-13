@@ -65,23 +65,26 @@ type IGetSubscriptionKeysHandler = (
   | IGetSubscriptionKeysHandlerResponseError
 >;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function getGroups(
   apimClient: ApiManagementClient,
   apimResourceGroup: string,
   apim: string
 ): TaskEither<Error, ReadonlyArray<GroupContract>> {
   return tryCatch(async () => {
-    // tslint:disable-next-line:readonly-array no-let
+    // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
     const groupList: GroupContract[] = [];
     const groupListResponse = await apimClient.group.listByService(
       apimResourceGroup,
       apim
     );
+    // eslint-disable-next-line functional/immutable-data
     groupList.push(...groupListResponse);
-    // tslint:disable-next-line:no-let
+    // eslint-disable-next-line functional/no-let
     let nextLink = groupListResponse.nextLink;
     while (nextLink) {
       const nextGroupList = await apimClient.group.listByServiceNext(nextLink);
+      // eslint-disable-next-line functional/immutable-data
       groupList.push(...nextGroupList);
       nextLink = nextGroupList.nextLink;
     }
@@ -90,16 +93,18 @@ function getGroups(
 }
 
 interface IGroupsClusterization {
-  toBeAssociated: ReadonlyArray<string>;
-  toBeRemoved: ReadonlyArray<string>;
+  readonly toBeAssociated: ReadonlyArray<string>;
+  readonly toBeRemoved: ReadonlyArray<string>;
 }
 
 /**
  * Returns a clusterization of the group names on which an operation from the APIM client must be performed.
+ *
  * @param existingGroups The record of the existing group names on the APIM, indexed by their displayNames
  * @param currentUserGroups The list of displayNames of the groups with which the user is currently associated
  * @param groupsInPayload The list of displayNames of the groups with which the user must be associated
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function clusterizeGroups(
   existingGroups: Record<string, string>,
   currentUserGroups: ReadonlyArray<string>,
@@ -133,11 +138,14 @@ function clusterizeGroups(
   );
 }
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention, max-lines-per-function
 export function UpdateUserGroupHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, email, userGroupsPayload) => {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
@@ -337,6 +345,7 @@ export function UpdateUserGroupHandler(
 /**
  * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function UpdateUserGroup(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig

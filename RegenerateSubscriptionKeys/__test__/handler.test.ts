@@ -1,4 +1,4 @@
-// tslint:disable:no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";
@@ -28,6 +28,7 @@ const mockedSubscription = {
   secondaryKey: "secondary-key"
 };
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const regenerateKeyImplementation = (_, __, subscriptionId) => {
   if (subscriptionId === aValidSubscriptionId) {
     return Promise.resolve();
@@ -48,6 +49,7 @@ mockRegenerateSecondaryKey.mockImplementation(regenerateKeyImplementation);
 
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     get: (_, __, subscriptionId) => {
       if (subscriptionId === aValidSubscriptionId) {
         return Promise.resolve(mockedSubscription);
@@ -64,12 +66,10 @@ mockApiManagementClient.mockImplementation(() => ({
     regenerateSecondaryKey: mockRegenerateSecondaryKey
   }
 }));
-mockLoginWithServicePrincipalSecret.mockImplementation(() => {
-  return Promise.resolve({ getToken: mockGetToken });
-});
-mockGetToken.mockImplementation(() => {
-  return Promise.resolve(undefined);
-});
+mockLoginWithServicePrincipalSecret.mockImplementation(() =>
+  Promise.resolve({ getToken: mockGetToken })
+);
+mockGetToken.mockImplementation(() => Promise.resolve(undefined));
 
 const mockedContext = { log: { error: mockLog } };
 
@@ -98,9 +98,12 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       fakeApimConfig
     );
     const response = await regenerateSubscriptionKeysHandler(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockedContext as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       undefined as any,
       aNotExistingSubscriptionId,
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
     expect(response.kind).toEqual("IResponseErrorNotFound");
@@ -112,9 +115,12 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       fakeApimConfig
     );
     const response = await regenerateSubscriptionKeysHandler(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockedContext as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       undefined as any,
       aBreakingApimSubscriptionId,
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -127,16 +133,21 @@ describe("RegenerateSubscriptionKeysHandler", () => {
     );
     // Primary key regeneration
     const firstResponse = await regenerateSubscriptionKeysHandler(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockedContext as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       undefined as any,
       aValidSubscriptionId,
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
     expect(firstResponse).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",
       value: {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         primary_key: mockedSubscription.primaryKey,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         secondary_key: mockedSubscription.secondaryKey
       }
     });
@@ -148,16 +159,21 @@ describe("RegenerateSubscriptionKeysHandler", () => {
 
     // Secondary key regeneration
     const secondResponse = await regenerateSubscriptionKeysHandler(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockedContext as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       undefined as any,
       aValidSubscriptionId,
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       { key_type: SubscriptionKeyTypeEnum.SECONDARY_KEY }
     );
     expect(secondResponse).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",
       value: {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         primary_key: mockedSubscription.primaryKey,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         secondary_key: mockedSubscription.secondaryKey
       }
     });

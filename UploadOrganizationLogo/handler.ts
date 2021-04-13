@@ -48,12 +48,13 @@ type IUploadOrganizationLogoHandler = (
   organizationFiscalCode: OrganizationFiscalCode,
   logoPayload: ApiLogo
 ) => Promise<
-  // tslint:disable-next-line: max-union-size
+  // eslint-disable-next-line @typescript-eslint/ban-types
   | IResponseSuccessRedirectToResource<{}, {}>
   | IResponseErrorValidation
   | IResponseErrorInternal
 >;
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const imageValidationErrorResponse = () =>
   ResponseErrorValidation(
     "Image not valid",
@@ -65,16 +66,17 @@ const upsertBlobFromImageBuffer = (
   containerName: string,
   blobName: string,
   content: Buffer
-): TaskEither<Error, Option<BlobService.BlobResult>> => {
-  return taskify<Error, BlobService.BlobResult>(cb =>
+): TaskEither<Error, Option<BlobService.BlobResult>> =>
+  taskify<Error, BlobService.BlobResult>(cb =>
     blobService.createBlockBlobFromText(containerName, blobName, content, cb)
   )().map(fromNullable);
-};
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function UploadOrganizationLogoHandler(
   blobService: BlobService,
   logosUrl: string
 ): IUploadOrganizationLogoHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (_, __, organizationFiscalCode, logoPayload) => {
     const bufferImage = Buffer.from(logoPayload.logo, "base64");
     const cleanedOrganizationFiscalCode = organizationFiscalCode.replace(
@@ -98,6 +100,7 @@ export function UploadOrganizationLogoHandler(
       )
       .foldTaskEither<
         IResponseErrorValidation | IResponseErrorInternal,
+        // eslint-disable-next-line @typescript-eslint/ban-types
         IResponseSuccessRedirectToResource<{}, {}>
       >(
         imageValidationError => fromLeft(imageValidationError),
@@ -135,6 +138,7 @@ export function UploadOrganizationLogoHandler(
       .fold<
         | IResponseErrorValidation
         | IResponseErrorInternal
+        // eslint-disable-next-line @typescript-eslint/ban-types
         | IResponseSuccessRedirectToResource<{}, {}>
       >(identity, identity)
       .run();
@@ -144,6 +148,7 @@ export function UploadOrganizationLogoHandler(
 /**
  * Wraps an UploadOrganizationLogo handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function UploadOrganizationLogo(
   blobService: BlobService,
   logosUrl: string

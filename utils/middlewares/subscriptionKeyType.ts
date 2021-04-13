@@ -5,6 +5,7 @@ import { SubscriptionKeyTypePayload } from "../../generated/definitions/Subscrip
 /**
  * A middleware that extracts a Subscription key type payload from a request
  */
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const SubscriptionKeyTypeMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
   SubscriptionKeyTypePayload

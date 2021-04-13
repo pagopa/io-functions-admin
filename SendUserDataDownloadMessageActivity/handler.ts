@@ -6,6 +6,7 @@ import * as t from "io-ts";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 
 // TODO: switch text based on user's preferred_language
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const userDataDownloadMessage = (
   blobName: string,
   password: string,
@@ -92,6 +93,7 @@ Il Team Privacy di PagoPA S.p.A.
  * Send a single user data download message
  * using the IO Notification API (REST).
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 async function sendMessage(
   fiscalCode: FiscalCode,
   apiUrl: string,
@@ -102,7 +104,9 @@ async function sendMessage(
   return timeoutFetch(`${apiUrl}/api/v1/messages/${fiscalCode}`, {
     body: JSON.stringify(newMessage),
     headers: {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       "Content-Type": "application/json",
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       "Ocp-Apim-Subscription-Key": apiKey
     },
     method: "POST"
@@ -110,12 +114,14 @@ async function sendMessage(
 }
 
 // Activity result
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS")
 });
 
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultFailure = t.interface({
   kind: t.literal("FAILURE"),
   reason: t.string
@@ -123,12 +129,14 @@ const ActivityResultFailure = t.interface({
 
 type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.taggedUnion("kind", [
   ActivityResultSuccess,
   ActivityResultFailure
 ]);
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.interface({
   blobName: t.string,
   fiscalCode: FiscalCode,
@@ -142,6 +150,7 @@ export const getActivityFunction = (
   publicDownloadBaseUrl: NonEmptyString,
   timeoutFetch: typeof fetch
 ) => (context: Context, input: unknown): Promise<ActivityResult> => {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const failure = (reason: string) => {
     context.log.error(reason);
     return ActivityResultFailure.encode({
@@ -150,6 +159,7 @@ export const getActivityFunction = (
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const success = () =>
     ActivityResultSuccess.encode({
       kind: "SUCCESS"

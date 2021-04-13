@@ -1,4 +1,4 @@
-// tslint:disable:no-any
+// eslint-disable @typescript-eslint/no-explicit-any
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { GroupContract } from "@azure/arm-apimanagement/esm/models";
@@ -93,7 +93,7 @@ spyOnGetApiClient.mockImplementation(() =>
 const mockLog = jest.fn();
 const mockedContext = { log: { error: mockLog } };
 
-// tslint:disable-next-line:no-big-function
+// eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("UpdateUserGroups", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>

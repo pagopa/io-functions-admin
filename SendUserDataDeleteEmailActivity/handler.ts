@@ -7,9 +7,8 @@ import { markdownToHtml } from "io-functions-commons/dist/src/utils/markdown";
 import * as t from "io-ts";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as NodeMailer from "nodemailer";
-import { EmailAddress } from "../generated/definitions/EmailAddress";
-
 import { sendMail } from "io-functions-commons/dist/src/mailer";
+import { EmailAddress } from "../generated/definitions/EmailAddress";
 
 // TODO: switch text based on user's preferred_language
 const userDataDeleteMessage = NewMessage.decode({
@@ -23,12 +22,14 @@ Potrai iscriverti nuovamente all’App IO in ogni momento effettuando una nuova 
 });
 
 // Activity result
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS")
 });
 
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultFailure = t.interface({
   kind: t.literal("FAILURE"),
   reason: t.string
@@ -36,12 +37,14 @@ const ActivityResultFailure = t.interface({
 
 type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.taggedUnion("kind", [
   ActivityResultSuccess,
   ActivityResultFailure
 ]);
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.interface({
   fiscalCode: FiscalCode,
   toAddress: EmailAddress
@@ -49,7 +52,9 @@ export const ActivityInput = t.interface({
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 export interface INotificationDefaults {
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   readonly HTML_TO_TEXT_OPTIONS: HtmlToText.HtmlToTextOptions;
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   readonly MAIL_FROM: NonEmptyString;
 }
 
@@ -57,6 +62,7 @@ export const getActivityFunction = (
   lMailerTransporter: NodeMailer.Transporter,
   notificationDefaultParams: INotificationDefaults
 ) => (context: Context, input: unknown): Promise<ActivityResult> => {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const failure = (reason: string) => {
     context.log.error(reason);
     return ActivityResultFailure.encode({
@@ -65,6 +71,7 @@ export const getActivityFunction = (
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const success = () =>
     ActivityResultSuccess.encode({
       kind: "SUCCESS"

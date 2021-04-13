@@ -37,17 +37,21 @@ type IGetSubscriptionKeysHandler = (
   serviceId: ServiceId
 ) => Promise<
   | IResponseSuccessJson<{
-      primary_key: string;
-      secondary_key: string;
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      readonly primary_key: string;
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      readonly secondary_key: string;
     }>
   | IResponseErrorNotFound
   | IResponseErrorInternal
 >;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function GetSubscriptionKeysHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, serviceId) => {
     const response = await getApiClient(
       servicePrincipalCreds,
@@ -66,13 +70,15 @@ export function GetSubscriptionKeysHandler(
       )
       .map(subscription =>
         ResponseSuccessJson({
+          // eslint-disable-next-line @typescript-eslint/naming-convention
           primary_key: subscription.primaryKey,
+          // eslint-disable-next-line @typescript-eslint/naming-convention
           secondary_key: subscription.secondaryKey
         })
       )
       .mapLeft(error => {
         context.log.error(error);
-        // tslint:disable-next-line:no-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const anyError = error as any;
         if ("statusCode" in anyError && anyError.statusCode === 404) {
           return ResponseErrorNotFound(
@@ -90,6 +96,7 @@ export function GetSubscriptionKeysHandler(
 /**
  * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function GetSubscriptionKeys(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig

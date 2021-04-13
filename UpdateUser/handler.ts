@@ -39,6 +39,7 @@ type IUpdateUserHandler = (
   userPayload: UserUpdatePayload
 ) => Promise<IResponseSuccessJson<UserUpdated> | IResponseErrorInternal>;
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const getUserFromList = (client: GraphRbacManagementClient, email: string) =>
   tryCatch(
     () =>
@@ -66,6 +67,7 @@ const updateUser = (
               : undefined,
           givenName: userPayload.first_name,
           surname: userPayload.last_name,
+          // eslint-disable-next-line sort-keys
           [adb2cTokenAttributeName]: userPayload.token_name
         })
       ),
@@ -75,9 +77,12 @@ const updateUser = (
       fromEither(
         UserUpdated.decode({
           email,
+          // eslint-disable-next-line @typescript-eslint/naming-convention
           first_name: userPayload.first_name,
           id: userResponse.objectId,
+          // eslint-disable-next-line @typescript-eslint/naming-convention
           last_name: userPayload.last_name,
+          // eslint-disable-next-line @typescript-eslint/naming-convention
           token_name: userPayload.token_name
         }).mapLeft(
           errs =>
@@ -89,11 +94,14 @@ const updateUser = (
     )
   );
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function UpdateUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
   adb2cTokenAttributeName: NonEmptyString
 ): IUpdateUserHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, email, userPayload) => {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
@@ -139,6 +147,7 @@ export function UpdateUserHandler(
 /**
  * Wraps an UpdateUser handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function UpdateUser(
   adb2cCreds: IServicePrincipalCreds,
   adb2cTokenAttributeName: NonEmptyString

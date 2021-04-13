@@ -17,6 +17,7 @@ export interface IAzureApimConfig {
   readonly apim: string;
 }
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getApiClient(
   servicePrincipalCreds: IServicePrincipalCreds,
   subscriptionId: string
@@ -32,6 +33,7 @@ export function getApiClient(
   ).map(credentials => new ApiManagementClient(credentials, subscriptionId));
 }
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getGraphRbacManagementClient(
   adb2cCreds: IServicePrincipalCreds
 ): TaskEither<Error, GraphRbacManagementClient> {
@@ -52,6 +54,7 @@ export function getGraphRbacManagementClient(
   );
 }
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getUserGroups(
   apimClient: ApiManagementClient,
   apimResourceGroup: string,
@@ -59,18 +62,20 @@ export function getUserGroups(
   userName: string
 ): TaskEither<Error, ReadonlyArray<GroupContract>> {
   return tryCatch(async () => {
-    // tslint:disable-next-line:readonly-array no-let
+    // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
     const groupList: GroupContract[] = [];
     const groupListResponse = await apimClient.userGroup.list(
       apimResourceGroup,
       apim,
       userName
     );
+    // eslint-disable-next-line functional/immutable-data
     groupList.push(...groupListResponse);
-    // tslint:disable-next-line:no-let
+    // eslint-disable-next-line functional/no-let
     let nextLink = groupListResponse.nextLink;
     while (nextLink) {
       const nextGroupList = await apimClient.userGroup.listNext(nextLink);
+      // eslint-disable-next-line functional/immutable-data
       groupList.push(...nextGroupList);
       nextLink = nextGroupList.nextLink;
     }

@@ -59,6 +59,7 @@ type IGetSubscriptionKeysHandler = (
   | IResponseErrorNotFound
 >;
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function getUserSubscriptions(
   apimClient: ApiManagementClient,
   apimResourceGroup: string,
@@ -66,20 +67,22 @@ function getUserSubscriptions(
   userName: string
 ): TaskEither<Error, ReadonlyArray<SubscriptionContract>> {
   return tryCatch(async () => {
-    // tslint:disable-next-line:readonly-array no-let
+    // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
     const subscriptionList: SubscriptionContract[] = [];
     const subscriptionListResponse = await apimClient.userSubscription.list(
       apimResourceGroup,
       apim,
       userName
     );
+    // eslint-disable-next-line functional/immutable-data
     subscriptionList.push(...subscriptionListResponse);
-    // tslint:disable-next-line:no-let
+    // eslint-disable-next-line functional/no-let
     let nextLink = subscriptionListResponse.nextLink;
     while (nextLink) {
       const nextSubscriptionList = await apimClient.userSubscription.listNext(
         nextLink
       );
+      // eslint-disable-next-line functional/immutable-data
       subscriptionList.push(...nextSubscriptionList);
       nextLink = nextSubscriptionList.nextLink;
     }
@@ -87,13 +90,16 @@ function getUserSubscriptions(
   }, toError);
 }
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function GetUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   adb2cTokenAttributeName: NonEmptyString
 ): IGetSubscriptionKeysHandler {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, email) => {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
@@ -101,6 +107,7 @@ export function GetUserHandler(
         error,
         errorMessage
       );
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const internalValidationErrorHandler = (
       errorMessage: string,
       errors: Errors
@@ -214,12 +221,11 @@ export function GetUserHandler(
                 )
             ).map(userList => userList[0])
           )
-          .map(adb2User => {
-            return {
-              ...taskResults,
-              token_name: adb2User[`${adb2cTokenAttributeName}`]
-            };
-          })
+          .map(adb2User => ({
+            ...taskResults,
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            token_name: adb2User[`${adb2cTokenAttributeName}`]
+          }))
       )
       .chain(
         fromPredicate(
@@ -246,6 +252,7 @@ export function GetUserHandler(
           UserInfo.decode({
             groups: userInfo.errorOrGroups.value,
             subscriptions: userInfo.errorOrSubscriptions.value,
+            // eslint-disable-next-line @typescript-eslint/naming-convention
             token_name: userInfo.token_name
           })
             .mapLeft(errors =>
@@ -265,6 +272,7 @@ export function GetUserHandler(
 /**
  * Wraps a GetUsers handler inside an Express request handler.
  */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
 export function GetUser(
   adb2cCredentials: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,

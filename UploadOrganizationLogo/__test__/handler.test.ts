@@ -1,4 +1,4 @@
-/* tslint:disable: no-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { OrganizationFiscalCode } from "italia-ts-commons/lib/strings";
 
@@ -20,9 +20,8 @@ describe("UploadOrganizationLogoHandler", () => {
     };
 
     const blobServiceMock = ({
-      createBlockBlobFromText: jest.fn((_, __, ___, cb) => {
-        return cb(null, "any");
-      })
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb(null, "any"))
     } as any) as BlobService;
 
     const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
@@ -46,6 +45,7 @@ describe("UploadOrganizationLogoHandler", () => {
     } as Logo;
     const mockedContext = {};
     const blobServiceMock = ({
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb(null, "any"))
     } as any) as BlobService;
     const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
@@ -69,6 +69,7 @@ describe("UploadOrganizationLogoHandler", () => {
     } as Logo;
     const mockedContext = {};
     const blobServiceMock = ({
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb("any", null))
     } as any) as BlobService;
     const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
