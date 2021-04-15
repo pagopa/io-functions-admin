@@ -6,10 +6,9 @@
  * - put the generated JSON into the assets storage (which is reachable behind the CDN)
  * - loop on visible services and store services/<serviceid>.json (output binding)
  *
-// eslint-disable-next-line jsdoc/check-indentation
- *  The tuple stored is (serviceId, version, scope).
+ * The tuple stored is (serviceId, version, scope).
  *
- *  TODO: delete blobs for services that aren't visible anymore.
+ * TODO: delete blobs for services that aren't visible anymore.
  */
 import { Context } from "@azure/functions";
 
