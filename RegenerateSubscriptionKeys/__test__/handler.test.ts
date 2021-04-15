@@ -103,7 +103,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       undefined as any,
       aNotExistingSubscriptionId,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
     expect(response.kind).toEqual("IResponseErrorNotFound");
@@ -120,7 +119,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       undefined as any,
       aBreakingApimSubscriptionId,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -138,16 +136,13 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       undefined as any,
       aValidSubscriptionId,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
     expect(firstResponse).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",
       value: {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
         primary_key: mockedSubscription.primaryKey,
-        // eslint-disable-next-line @typescript-eslint/naming-convention
         secondary_key: mockedSubscription.secondaryKey
       }
     });
@@ -164,16 +159,13 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       undefined as any,
       aValidSubscriptionId,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       { key_type: SubscriptionKeyTypeEnum.SECONDARY_KEY }
     );
     expect(secondResponse).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",
       value: {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
         primary_key: mockedSubscription.primaryKey,
-        // eslint-disable-next-line @typescript-eslint/naming-convention
         secondary_key: mockedSubscription.secondaryKey
       }
     });

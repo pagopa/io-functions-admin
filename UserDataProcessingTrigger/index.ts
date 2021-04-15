@@ -26,7 +26,6 @@ const logPrefix = "UserDataProcessingTrigger";
 export type ProcessableUserDataDownload = t.TypeOf<
   typeof ProcessableUserDataDownload
 >;
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ProcessableUserDataDownload = t.intersection([
   UserDataProcessing,
   // ony the subset of UserDataProcessing documents
@@ -41,7 +40,6 @@ export const ProcessableUserDataDownload = t.intersection([
 export type ProcessableUserDataDelete = t.TypeOf<
   typeof ProcessableUserDataDelete
 >;
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ProcessableUserDataDelete = t.intersection([
   UserDataProcessing,
   // ony the subset of UserDataProcessing documents
@@ -56,7 +54,6 @@ export const ProcessableUserDataDelete = t.intersection([
 export type ProcessableUserDataDeleteAbort = t.TypeOf<
   typeof ProcessableUserDataDeleteAbort
 >;
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ProcessableUserDataDeleteAbort = t.intersection([
   UserDataProcessing,
   // ony the subset of UserDataProcessing documents
@@ -67,7 +64,6 @@ export const ProcessableUserDataDeleteAbort = t.intersection([
   })
 ]);
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const CosmosDbDocumentCollection = t.readonlyArray(t.readonly(t.UnknownRecord));
 type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 

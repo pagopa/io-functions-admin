@@ -37,7 +37,7 @@ type ICreateUserHandler = (
   userPayload: UserPayload
 ) => Promise<IResponseSuccessJson<UserCreated> | IResponseErrorInternal>;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
   apimCredentials: IServicePrincipalCreds,
@@ -143,7 +143,7 @@ export function CreateUserHandler(
 /**
  * Wraps a CreateUser handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateUser(
   adb2cCreds: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,

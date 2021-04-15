@@ -7,7 +7,6 @@ import { Logo as ApiLogo } from "../../generated/definitions/Logo";
 /**
  * A middleware that extracts a Service payload from a request.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ServicePayloadMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
   ApiService
@@ -21,7 +20,6 @@ export const ServicePayloadMiddleware: IRequestMiddleware<
 /**
  * A middleware that extracts a Logo payload from a request.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const LogoPayloadMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
   ApiLogo

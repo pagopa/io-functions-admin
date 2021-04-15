@@ -138,7 +138,7 @@ function clusterizeGroups(
   );
 }
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention, max-lines-per-function
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, max-lines-per-function
 export function UpdateUserGroupHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
@@ -345,7 +345,7 @@ export function UpdateUserGroupHandler(
 /**
  * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateUserGroup(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig

@@ -104,9 +104,7 @@ async function sendMessage(
   return timeoutFetch(`${apiUrl}/api/v1/messages/${fiscalCode}`, {
     body: JSON.stringify(newMessage),
     headers: {
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       "Content-Type": "application/json",
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       "Ocp-Apim-Subscription-Key": apiKey
     },
     method: "POST"
@@ -114,14 +112,12 @@ async function sendMessage(
 }
 
 // Activity result
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS")
 });
 
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultFailure = t.interface({
   kind: t.literal("FAILURE"),
   reason: t.string
@@ -129,14 +125,12 @@ const ActivityResultFailure = t.interface({
 
 type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.taggedUnion("kind", [
   ActivityResultSuccess,
   ActivityResultFailure
 ]);
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.interface({
   blobName: t.string,
   fiscalCode: FiscalCode,

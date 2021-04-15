@@ -6,7 +6,6 @@ import { NonNegativeInteger } from "italia-ts-commons/lib/numbers";
 import { IRequestMiddleware } from "italia-ts-commons/lib/request_middleware";
 import { ResponseErrorFromValidationErrors } from "italia-ts-commons/lib/responses";
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const CursorMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
   NonNegativeInteger

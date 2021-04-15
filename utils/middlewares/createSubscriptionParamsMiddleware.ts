@@ -13,7 +13,6 @@ import { EmailAddress } from "../../generated/definitions/EmailAddress";
 /**
  * A middleware that extracts a tuple of email address and subscription id from the request parameters
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const CreateSubscriptionParamsMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
   readonly [EmailAddress, NonEmptyString]

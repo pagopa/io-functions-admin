@@ -38,7 +38,6 @@ type IGetServicesHandlerResult =
   | IResponseErrorQuery
   | IResponseSuccessJson<{
       readonly items: ReadonlyArray<ServiceIdWithVersion>;
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       readonly page_size: number;
     }>;
 
@@ -47,7 +46,7 @@ type IGetServicesHandler = (
   auth: IAzureApiAuthorization
 ) => Promise<IGetServicesHandlerResult>;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetServicesHandler(
   serviceModel: ServiceModel
 ): IGetServicesHandler {
@@ -90,7 +89,6 @@ export function GetServicesHandler(
           // FIXME: make response iterable over results pages
           return ResponseSuccessJson({
             items,
-            // eslint-disable-next-line @typescript-eslint/naming-convention
             page_size: items.length
           });
         }
@@ -102,7 +100,7 @@ export function GetServicesHandler(
 /**
  * Wraps a GetServices handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetServices(
   serviceModel: ServiceModel
 ): express.RequestHandler {

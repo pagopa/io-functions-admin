@@ -42,20 +42,13 @@ import { DevelopmentProfile } from "../generated/definitions/DevelopmentProfile"
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function toExtendedProfile(profile: RetrievedProfile): ExtendedProfile {
   return {
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     accepted_tos_version: profile.acceptedTosVersion,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     blocked_inbox_or_channels: profile.blockedInboxOrChannels,
     email: profile.email,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     is_email_enabled: profile.isEmailEnabled,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     is_email_validated: profile.isEmailValidated,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     is_inbox_enabled: profile.isInboxEnabled === true,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     is_webhook_enabled: profile.isWebhookEnabled === true,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     preferred_languages: profile.preferredLanguages,
     version: profile.version
   };
@@ -64,7 +57,6 @@ export function toExtendedProfile(profile: RetrievedProfile): ExtendedProfile {
 /**
  * A middleware that extracts a DevelopmentProfile payload from a request.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const DeveloperProfilePayloadMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
   DevelopmentProfile
@@ -92,7 +84,7 @@ type ICreateDevelopmentProfileHandler = (
   | IResponseErrorConflict
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateDevelopmentProfileHandler(
   profileModel: ProfileModel
 ): ICreateDevelopmentProfileHandler {
@@ -150,7 +142,7 @@ export function CreateDevelopmentProfileHandler(
 /**
  * Wraps an CreateDevelopmentProfile handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateDevelopmentProfile(
   profileModel: ProfileModel
 ): express.RequestHandler {

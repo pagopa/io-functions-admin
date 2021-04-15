@@ -19,9 +19,7 @@ const initArchiverZipEncryptedPlugin = {
 };
 
 export enum EncryptionMethodEnum {
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   ZIP20 = "zip20",
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   AES256 = "aes256"
 }
 

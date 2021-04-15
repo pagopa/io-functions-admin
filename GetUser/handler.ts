@@ -90,7 +90,7 @@ function getUserSubscriptions(
   }, toError);
 }
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,
@@ -223,7 +223,6 @@ export function GetUserHandler(
           )
           .map(adb2User => ({
             ...taskResults,
-            // eslint-disable-next-line @typescript-eslint/naming-convention
             token_name: adb2User[`${adb2cTokenAttributeName}`]
           }))
       )
@@ -252,7 +251,6 @@ export function GetUserHandler(
           UserInfo.decode({
             groups: userInfo.errorOrGroups.value,
             subscriptions: userInfo.errorOrSubscriptions.value,
-            // eslint-disable-next-line @typescript-eslint/naming-convention
             token_name: userInfo.token_name
           })
             .mapLeft(errors =>
@@ -272,7 +270,7 @@ export function GetUserHandler(
 /**
  * Wraps a GetUsers handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetUser(
   adb2cCredentials: IServicePrincipalCreds,
   servicePrincipalCreds: IServicePrincipalCreds,

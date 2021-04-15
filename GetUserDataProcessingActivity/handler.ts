@@ -19,7 +19,6 @@ import { FiscalCode } from "italia-ts-commons/lib/strings";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.interface({
   choice: UserDataProcessingChoice,
   fiscalCode: FiscalCode
@@ -27,7 +26,6 @@ export const ActivityInput = t.interface({
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity result
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS"),
   value: UserDataProcessing
@@ -35,7 +33,6 @@ export const ActivityResultSuccess = t.interface({
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
 // Activity failed because of invalid input
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultInvalidInputFailure = t.interface({
   kind: t.literal("INVALID_INPUT_FAILURE"),
   reason: t.string
@@ -45,7 +42,6 @@ export type ActivityResultInvalidInputFailure = t.TypeOf<
 >;
 
 // Activity failed because of invalid input
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultNotFoundFailure = t.interface({
   kind: t.literal("NOT_FOUND_FAILURE")
 });
@@ -54,7 +50,6 @@ export type ActivityResultNotFoundFailure = t.TypeOf<
 >;
 
 // Activity failed because of an error on a query
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultQueryFailure = t.intersection([
   t.interface({
     kind: t.literal("QUERY_FAILURE"),
@@ -66,7 +61,6 @@ export type ActivityResultQueryFailure = t.TypeOf<
   typeof ActivityResultQueryFailure
 >;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultFailure = t.taggedUnion("kind", [
   ActivityResultQueryFailure,
   ActivityResultInvalidInputFailure,
@@ -74,7 +68,6 @@ export const ActivityResultFailure = t.taggedUnion("kind", [
 ]);
 export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.taggedUnion("kind", [
   ActivityResultSuccess,
   ActivityResultFailure

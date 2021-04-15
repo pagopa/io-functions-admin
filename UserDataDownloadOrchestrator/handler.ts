@@ -18,21 +18,18 @@ import {
 const logPrefix = "UserDataDownloadOrchestrator";
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const InvalidInputFailure = t.interface({
   kind: t.literal("INVALID_INPUT"),
   reason: t.string
 });
 
 export type UnhanldedFailure = t.TypeOf<typeof UnhanldedFailure>;
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const UnhanldedFailure = t.interface({
   kind: t.literal("UNHANDLED"),
   reason: t.string
 });
 
 export type ActivityFailure = t.TypeOf<typeof ActivityFailure>;
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityFailure = t.intersection([
   t.interface({
     activityName: t.string,
@@ -43,7 +40,6 @@ export const ActivityFailure = t.intersection([
 ]);
 
 export type OrchestratorFailure = t.TypeOf<typeof OrchestratorFailure>;
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const OrchestratorFailure = t.taggedUnion("kind", [
   InvalidInputFailure,
   UnhanldedFailure,
@@ -51,19 +47,16 @@ export const OrchestratorFailure = t.taggedUnion("kind", [
 ]);
 
 export type OrchestratorSuccess = t.TypeOf<typeof OrchestratorSuccess>;
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const OrchestratorSuccess = t.interface({
   kind: t.literal("SUCCESS")
 });
 
 export type SkippedDocument = t.TypeOf<typeof SkippedDocument>;
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const SkippedDocument = t.interface({
   kind: t.literal("SKIPPED")
 });
 
 export type OrchestratorResult = t.TypeOf<typeof OrchestratorResult>;
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const OrchestratorResult = t.union([
   OrchestratorFailure,
   SkippedDocument,

@@ -77,12 +77,9 @@ const updateUser = (
       fromEither(
         UserUpdated.decode({
           email,
-          // eslint-disable-next-line @typescript-eslint/naming-convention
           first_name: userPayload.first_name,
           id: userResponse.objectId,
-          // eslint-disable-next-line @typescript-eslint/naming-convention
           last_name: userPayload.last_name,
-          // eslint-disable-next-line @typescript-eslint/naming-convention
           token_name: userPayload.token_name
         }).mapLeft(
           errs =>
@@ -94,7 +91,7 @@ const updateUser = (
     )
   );
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
   adb2cTokenAttributeName: NonEmptyString
@@ -147,7 +144,7 @@ export function UpdateUserHandler(
 /**
  * Wraps an UpdateUser handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateUser(
   adb2cCreds: IServicePrincipalCreds,
   adb2cTokenAttributeName: NonEmptyString

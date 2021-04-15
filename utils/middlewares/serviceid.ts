@@ -4,7 +4,6 @@ import { RequiredParamMiddleware } from "io-functions-commons/dist/src/utils/mid
 /**
  * A middleware that extracts the serviceid value from the URL path parameter.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ServiceIdMiddleware = RequiredParamMiddleware(
   "serviceid",
   ServiceId

@@ -80,7 +80,7 @@ const upsertBlobFromImageBuffer = (
     blobService.createBlockBlobFromText(containerName, blobName, content, cb)
   )().map(fromNullable);
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateServiceLogoHandler(
   serviceModel: ServiceModel,
   blobService: BlobService,
@@ -173,7 +173,7 @@ export function UpdateServiceLogoHandler(
 /**
  * Wraps a UpdateService handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UploadServiceLogo(
   serviceModel: ServiceModel,
   blobService: BlobService,
