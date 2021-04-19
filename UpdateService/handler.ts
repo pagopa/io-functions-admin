@@ -56,7 +56,7 @@ type IUpdateServiceHandler = (
   | IResponseErrorInternal
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateServiceHandler(
   serviceModel: ServiceModel
 ): IUpdateServiceHandler {
@@ -127,7 +127,7 @@ export function UpdateServiceHandler(
 /**
  * Wraps a UpdateService handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateService(
   serviceModel: ServiceModel
 ): express.RequestHandler {

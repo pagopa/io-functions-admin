@@ -11,9 +11,7 @@ const getFlagFromEnv = (name: string, defaultValue: boolean) =>
     .getOrElse(defaultValue);
 
 export const flags = {
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   ENABLE_USER_DATA_DELETE: getFlagFromEnv("FF_ENABLE_USER_DATA_DELETE", true),
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   ENABLE_USER_DATA_DOWNLOAD: getFlagFromEnv(
     "FF_ENABLE_USER_DATA_DOWNLOAD",
     true

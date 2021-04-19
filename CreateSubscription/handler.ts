@@ -48,7 +48,7 @@ type ICreateSubscriptionHandler = (
   | IResponseErrorNotFound
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateSubscriptionHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
@@ -213,7 +213,7 @@ export function CreateSubscriptionHandler(
 /**
  * Wraps a CreateSubscription handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateSubscription(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig

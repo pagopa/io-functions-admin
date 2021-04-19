@@ -33,7 +33,7 @@ type IGetSubscriptionKeysHandler = (
   cursor?: number
 ) => Promise<IResponseSuccessJson<UserCollection> | IResponseErrorInternal>;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetUsersHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
@@ -92,7 +92,7 @@ export function GetUsersHandler(
 /**
  * Wraps a GetUsers handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetUsers(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,

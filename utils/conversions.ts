@@ -81,32 +81,21 @@ export function retrievedServiceToApiService(
   retrievedService: RetrievedService
 ): ApiService {
   return {
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     authorized_cidrs: Array.from(retrievedService.authorizedCIDRs).filter(
       CIDR.is
     ),
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     authorized_recipients: Array.from(
       retrievedService.authorizedRecipients
     ).filter(FiscalCode.is),
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     department_name: retrievedService.departmentName,
     id: retrievedService.id,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     is_visible: retrievedService.isVisible,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     max_allowed_payment_amount: retrievedService.maxAllowedPaymentAmount,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     organization_fiscal_code: retrievedService.organizationFiscalCode,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     organization_name: retrievedService.organizationName,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     require_secure_channels: retrievedService.requireSecureChannels,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     service_id: retrievedService.serviceId,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     service_metadata: toApiServiceMetadata(retrievedService),
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     service_name: retrievedService.serviceName,
     version: retrievedService.version
   } as ApiService;
@@ -146,15 +135,12 @@ export function userContractToApiUser(
 ): Either<Error, ApiUser> {
   return User.decode({
     email: user.email as EmailString,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     first_name: user.firstName,
     id: user.id,
     identities: user.identities,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     last_name: user.lastName,
     name: user.name,
     note: user.note || undefined, // the value from Apim can be null, but the property note must be string or undefined
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     registration_date: user.registrationDate,
     state: user.state as UserStateEnum,
     type: user.type
@@ -168,10 +154,8 @@ export function userContractToApiUserCreated(
 ): Either<Error, ApiUserCreated> {
   return ApiUserCreated.decode({
     email: user.email,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     first_name: user.firstName,
     id: user.name,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     last_name: user.lastName
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
   }).mapLeft(errorsToError);
@@ -184,7 +168,6 @@ export function groupContractToApiGroup(
   return Group.decode(
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     removeNullProperties({
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       display_name: group.displayName,
       id: group.id,
       name: group.name
@@ -203,10 +186,8 @@ export function subscriptionContractToApiSubscription(
       id: subscription.id
         ? subscription.id.substr(subscription.id.lastIndexOf("/") + 1)
         : subscription.id,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       primary_key: subscription.primaryKey,
       scope: subscription.scope,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       secondary_key: subscription.secondaryKey
     })
     // eslint-disable-next-line @typescript-eslint/no-use-before-define

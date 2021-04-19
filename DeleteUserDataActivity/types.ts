@@ -3,7 +3,6 @@ import * as t from "io-ts";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 
 // Activity input
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.interface({
   backupFolder: NonEmptyString,
   fiscalCode: FiscalCode
@@ -11,14 +10,12 @@ export const ActivityInput = t.interface({
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity success result
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS")
 });
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
 // Activity failed because of invalid input
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const InvalidInputFailure = t.interface({
   kind: t.literal("INVALID_INPUT_FAILURE"),
   reason: t.string
@@ -26,7 +23,6 @@ export const InvalidInputFailure = t.interface({
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 
 // Activity failed because of an error on a query
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const QueryFailure = t.intersection([
   t.interface({
     kind: t.literal("QUERY_FAILURE"),
@@ -37,14 +33,12 @@ export const QueryFailure = t.intersection([
 export type QueryFailure = t.TypeOf<typeof QueryFailure>;
 
 // activity failed for user not found
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const UserNotFound = t.interface({
   kind: t.literal("USER_NOT_FOUND_FAILURE")
 });
 export type UserNotFound = t.TypeOf<typeof UserNotFound>;
 
 // activity failed while deleting a document from the db
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const DocumentDeleteFailure = t.interface({
   kind: t.literal("DELETE_FAILURE"),
   reason: t.string
@@ -52,14 +46,12 @@ export const DocumentDeleteFailure = t.interface({
 export type DocumentDeleteFailure = t.TypeOf<typeof DocumentDeleteFailure>;
 
 // activity failed while creating a new blob on storage
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const BlobCreationFailure = t.interface({
   kind: t.literal("BLOB_FAILURE"),
   reason: t.string
 });
 export type BlobCreationFailure = t.TypeOf<typeof BlobCreationFailure>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultFailure = t.taggedUnion("kind", [
   UserNotFound,
   QueryFailure,
@@ -69,7 +61,6 @@ export const ActivityResultFailure = t.taggedUnion("kind", [
 ]);
 export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.taggedUnion("kind", [
   ActivityResultSuccess,
   ActivityResultFailure

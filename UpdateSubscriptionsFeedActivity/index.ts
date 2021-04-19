@@ -57,9 +57,7 @@ async function updateSubscriptionStatus(
   // from the subscription feed entries for the current day
   context.log.verbose(`${logPrefix}|KEY=${delKey}|Deleting entity`);
   const { e1: maybeError, e2: uResponse } = await deleteEntity({
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     PartitionKey: eg.String(delPartitionKey),
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     RowKey: eg.String(delKey)
   });
 
@@ -81,9 +79,7 @@ async function updateSubscriptionStatus(
   // we insert the new (un)subscription entry into the feed
   context.log.verbose(`${logPrefix}|KEY=${insKey}|Inserting entity`);
   const { e1: resultOrError, e2: sResponse } = await insertEntity({
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     PartitionKey: eg.String(insPartitionKey),
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     RowKey: eg.String(insKey),
     version: eg.Int32(version)
   });

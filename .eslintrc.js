@@ -20,6 +20,5 @@ module.exports = {
     "extends": [
         "@pagopa/eslint-config/strong",
     ],
-    "rules": {
-    }
+    "rules": {}
 }

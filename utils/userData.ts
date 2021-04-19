@@ -15,7 +15,6 @@ import * as t from "io-ts";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
 // like Notification, but it's export-safe (the decoder removes webhook's sensitive data)
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const SafeNotification = t.intersection([
   NotificationBase,
   t.interface({
@@ -29,7 +28,6 @@ export const SafeNotification = t.intersection([
 ]);
 export type SafeNotification = t.TypeOf<typeof SafeNotification>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const MessageContentWithId = t.interface({
   content: MessageContent,
   messageId: NonEmptyString
@@ -37,7 +35,6 @@ const MessageContentWithId = t.interface({
 export type MessageContentWithId = t.TypeOf<typeof MessageContentWithId>;
 
 // the shape of the dataset to be extracted
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const AllUserData = t.interface({
   messageContents: t.readonlyArray(
     t.exact(MessageContentWithId),

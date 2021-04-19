@@ -61,7 +61,6 @@ import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ArchiveInfo = t.interface({
   blobName: NonEmptyString,
   password: StrongPassword
@@ -69,14 +68,12 @@ export const ArchiveInfo = t.interface({
 export type ArchiveInfo = t.TypeOf<typeof ArchiveInfo>;
 
 // Activity input
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.interface({
   fiscalCode: FiscalCode
 });
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity success result
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS"),
   value: ArchiveInfo
@@ -84,7 +81,6 @@ export const ActivityResultSuccess = t.interface({
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
 // Activity failed because of invalid input
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultInvalidInputFailure = t.interface({
   kind: t.literal("INVALID_INPUT_FAILURE"),
   reason: t.string
@@ -94,7 +90,6 @@ export type ActivityResultInvalidInputFailure = t.TypeOf<
 >;
 
 // Activity failed because of an error on a query
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultQueryFailure = t.intersection([
   t.interface({
     kind: t.literal("QUERY_FAILURE"),
@@ -107,14 +102,12 @@ export type ActivityResultQueryFailure = t.TypeOf<
 >;
 
 // activity failed for user not found
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultUserNotFound = t.interface({
   kind: t.literal("USER_NOT_FOUND_FAILURE")
 });
 type ActivityResultUserNotFound = t.TypeOf<typeof ActivityResultUserNotFound>;
 
 // activity failed for user not found
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultArchiveGenerationFailure = t.interface({
   kind: t.literal("ARCHIVE_GENERATION_FAILURE"),
   reason: t.string
@@ -124,7 +117,6 @@ export type ActivityResultArchiveGenerationFailure = t.TypeOf<
   typeof ActivityResultArchiveGenerationFailure
 >;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultFailure = t.taggedUnion("kind", [
   ActivityResultUserNotFound,
   ActivityResultQueryFailure,
@@ -133,7 +125,6 @@ export const ActivityResultFailure = t.taggedUnion("kind", [
 ]);
 export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.taggedUnion("kind", [
   ActivityResultSuccess,
   ActivityResultFailure
@@ -611,7 +602,6 @@ export function createExtractUserDataActivityHandler({
         const notifications = allUserData.notifications.map(e =>
           cleanData({
             ...e,
-            // eslint-disable-next-line @typescript-eslint/naming-convention
             channels: { ...e.channels, WEBHOOK: { url: undefined } }
           })
         );

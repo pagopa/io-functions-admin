@@ -9,7 +9,7 @@ import {
   VisibleService
 } from "io-functions-commons/dist/src/models/visible_service";
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 async function UpdateVisibleServiceCacheActivity(
   context: Context
 ): Promise<void> {

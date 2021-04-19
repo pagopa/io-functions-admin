@@ -46,7 +46,7 @@ type ICreateServiceHandler = (
   | IResponseErrorValidation
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateServiceHandler(
   serviceModel: ServiceModel
 ): ICreateServiceHandler {
@@ -87,7 +87,7 @@ export function CreateServiceHandler(
 /**
  * Wraps a CreateService handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateService(
   serviceModel: ServiceModel
 ): express.RequestHandler {

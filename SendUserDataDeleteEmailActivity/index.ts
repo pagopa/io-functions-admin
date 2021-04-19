@@ -16,9 +16,7 @@ const HTML_TO_TEXT_OPTIONS: HtmlToText.HtmlToTextOptions = {
 const mailerTransporter = getMailerTransporter(config);
 
 const index = getActivityFunction(mailerTransporter, {
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   HTML_TO_TEXT_OPTIONS,
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   MAIL_FROM
 });
 

@@ -11,7 +11,6 @@ import * as randomstring from "randomstring";
 const RANDOM_CHARSET =
   "ABCDEFGHIJKLMNOPQRSTUVWYZabcdefghijklmnopqrstuvwyz0123456789!#$%&()*+-/=?@";
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const StrongPassword = WithinRangeString(18, 19);
 export type StrongPassword = t.TypeOf<typeof StrongPassword>;
 

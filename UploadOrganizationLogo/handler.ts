@@ -71,7 +71,7 @@ const upsertBlobFromImageBuffer = (
     blobService.createBlockBlobFromText(containerName, blobName, content, cb)
   )().map(fromNullable);
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UploadOrganizationLogoHandler(
   blobService: BlobService,
   logosUrl: string
@@ -148,7 +148,7 @@ export function UploadOrganizationLogoHandler(
 /**
  * Wraps an UploadOrganizationLogo handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/naming-convention
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UploadOrganizationLogo(
   blobService: BlobService,
   logosUrl: string

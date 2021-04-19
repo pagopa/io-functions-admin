@@ -22,14 +22,12 @@ Potrai iscriverti nuovamente all’App IO in ogni momento effettuando una nuova 
 });
 
 // Activity result
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResultSuccess = t.interface({
   kind: t.literal("SUCCESS")
 });
 
 export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const ActivityResultFailure = t.interface({
   kind: t.literal("FAILURE"),
   reason: t.string
@@ -37,14 +35,12 @@ const ActivityResultFailure = t.interface({
 
 type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityResult = t.taggedUnion("kind", [
   ActivityResultSuccess,
   ActivityResultFailure
 ]);
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ActivityInput = t.interface({
   fiscalCode: FiscalCode,
   toAddress: EmailAddress
@@ -52,9 +48,7 @@ export const ActivityInput = t.interface({
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 export interface INotificationDefaults {
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   readonly HTML_TO_TEXT_OPTIONS: HtmlToText.HtmlToTextOptions;
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   readonly MAIL_FROM: NonEmptyString;
 }
 
