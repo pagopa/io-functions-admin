@@ -2,31 +2,31 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import { ServiceModel } from "io-functions-commons/dist/src/models/service";
+import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
 
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
   UserGroup
-} from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
+} from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
+import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import {
   withRequestMiddlewares,
   wrapRequestHandler
-} from "io-functions-commons/dist/src/utils/request_middleware";
+} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorQuery,
   ResponseErrorQuery
-} from "io-functions-commons/dist/src/utils/response";
+} from "@pagopa/io-functions-commons/dist/src/utils/response";
 
-import { isLeft } from "fp-ts/lib/Either";
-import { collect, StrMap } from "fp-ts/lib/StrMap";
-import { tryCatch } from "fp-ts/lib/TaskEither";
 import {
   asyncIteratorToArray,
   flattenAsyncIterator
-} from "io-functions-commons/dist/src/utils/async";
-import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+} from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { isLeft } from "fp-ts/lib/Either";
+import { collect, StrMap } from "fp-ts/lib/StrMap";
+import { tryCatch } from "fp-ts/lib/TaskEither";
 import { NonNegativeInteger } from "italia-ts-commons/lib/numbers";
 import {
   IResponseSuccessJson,

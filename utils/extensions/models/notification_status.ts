@@ -1,14 +1,14 @@
-import { Either } from "fp-ts/lib/Either";
-import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
   NOTIFICATION_STATUS_MODEL_PK_FIELD,
   NotificationStatusModel as NotificationStatusModelBase,
   RetrievedNotificationStatus
-} from "io-functions-commons/dist/src/models/notification_status";
+} from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import {
   CosmosErrors,
   toCosmosErrorResponse
-} from "io-functions-commons/dist/src/utils/cosmosdb_model";
+} from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { Either } from "fp-ts/lib/Either";
+import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import { Errors } from "io-ts";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as DocumentDbUtils from "../documentdb";

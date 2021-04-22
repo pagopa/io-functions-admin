@@ -1,6 +1,18 @@
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { GroupContract } from "@azure/arm-apimanagement/esm/models";
 import { Context } from "@azure/functions";
+import {
+  AzureApiAuthMiddleware,
+  IAzureApiAuthorization,
+  UserGroup
+} from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
+import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
+import { RequiredBodyPayloadMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_body_payload";
+import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
+import {
+  withRequestMiddlewares,
+  wrapRequestHandler
+} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import * as express from "express";
 import { sequenceT } from "fp-ts/lib/Apply";
 import { array } from "fp-ts/lib/Array";
@@ -14,18 +26,6 @@ import {
   taskEitherSeq,
   tryCatch
 } from "fp-ts/lib/TaskEither";
-import {
-  AzureApiAuthMiddleware,
-  IAzureApiAuthorization,
-  UserGroup
-} from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import { RequiredBodyPayloadMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_body_payload";
-import { RequiredParamMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_param";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,

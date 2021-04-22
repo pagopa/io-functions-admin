@@ -1,5 +1,5 @@
 import { Either } from "fp-ts/lib/Either";
-import { MailerConfig } from "io-functions-commons/dist/src/mailer";
+import { MailerConfig } from "@pagopa/io-functions-commons/dist/src/mailer";
 
 const aMailFrom = "example@test.com";
 

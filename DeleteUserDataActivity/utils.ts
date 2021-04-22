@@ -1,8 +1,8 @@
 import { Context } from "@azure/functions";
+import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { BlobService } from "azure-storage";
 import { toString } from "fp-ts/lib/function";
 import { TaskEither, taskify } from "fp-ts/lib/TaskEither";
-import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   ActivityResultFailure,
   BlobCreationFailure,

@@ -1,12 +1,12 @@
+import { MessageModel as MessageModelBase } from "@pagopa/io-functions-commons/dist/src/models/message";
+import {
+  CosmosErrors,
+  toCosmosErrorResponse
+} from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { BlobService } from "azure-storage";
 import { toError } from "fp-ts/lib/Either";
 import { fromEither, TaskEither } from "fp-ts/lib/TaskEither";
 import { tryCatch } from "fp-ts/lib/TaskEither";
-import { MessageModel as MessageModelBase } from "io-functions-commons/dist/src/models/message";
-import {
-  CosmosErrors,
-  toCosmosErrorResponse
-} from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import { deleteBlob } from "../azure_storage";
 

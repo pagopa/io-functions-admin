@@ -1,5 +1,5 @@
 ﻿import { Context } from "@azure/functions";
-import { NewMessage } from "io-functions-commons/dist/generated/definitions/NewMessage";
+import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 
 import * as t from "io-ts";
@@ -85,7 +85,7 @@ Il Team Privacy di PagoPA S.p.A.
       subject: `IO App - richiesta di accesso ai dati`
     }
   }).getOrElseL(errs => {
-    throw new Error("Invalid MessageContent: " + readableReport(errs));
+    throw new Error(`Invalid MessageContent: ${readableReport(errs)}`);
   });
 
 /**

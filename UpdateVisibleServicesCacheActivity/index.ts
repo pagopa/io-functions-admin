@@ -1,13 +1,13 @@
-﻿/**
+/**
  * Take service json as input and store the JSON into
  * services/<serviceid>.json through output binding.
  */
 import { Context } from "@azure/functions";
-import { isLeft } from "fp-ts/lib/Either";
 import {
   toServicePublic,
   VisibleService
-} from "io-functions-commons/dist/src/models/visible_service";
+} from "@pagopa/io-functions-commons/dist/src/models/visible_service";
+import { isLeft } from "fp-ts/lib/Either";
 
 async function UpdateVisibleServiceCacheActivity(
   context: Context

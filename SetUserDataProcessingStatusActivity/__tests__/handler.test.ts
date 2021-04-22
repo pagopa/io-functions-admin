@@ -12,9 +12,9 @@ import {
 } from "../handler";
 
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { UserDataProcessingModel } from "io-functions-commons/dist/src/models/user_data_processing";
-import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingModel } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 
 describe("SetUserDataProcessingStatusActivityHandler", () => {
   it("should handle a correct status change", async () => {

@@ -1,6 +1,6 @@
 // tslint:disable: no-duplicate-string
 
-import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
+import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { trackEvent, trackException } from "./appinsights";
 
 export const trackUserDataDeleteEvent = (

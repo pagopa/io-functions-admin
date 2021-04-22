@@ -1,14 +1,14 @@
-import { Either } from "fp-ts/lib/Either";
-import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import {
   PROFILE_MODEL_PK_FIELD,
   ProfileModel as ProfileModelBase,
   RetrievedProfile
-} from "io-functions-commons/dist/src/models/profile";
+} from "@pagopa/io-functions-commons/dist/src/models/profile";
 import {
   CosmosErrors,
   toCosmosErrorResponse
-} from "io-functions-commons/dist/src/utils/cosmosdb_model";
+} from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { Either } from "fp-ts/lib/Either";
+import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import { Errors } from "io-ts";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as DocumentDbUtils from "../documentdb";

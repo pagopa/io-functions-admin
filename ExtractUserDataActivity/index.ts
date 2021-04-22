@@ -2,27 +2,27 @@ import { cosmosdbClient } from "../utils/cosmosdb";
 
 import { createExtractUserDataActivityHandler } from "./handler";
 
-import { createBlobService } from "azure-storage";
 import {
   MESSAGE_COLLECTION_NAME,
   MessageModel
-} from "io-functions-commons/dist/src/models/message";
+} from "@pagopa/io-functions-commons/dist/src/models/message";
 import {
   MESSAGE_STATUS_COLLECTION_NAME,
   MessageStatusModel
-} from "io-functions-commons/dist/src/models/message_status";
+} from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import {
   NOTIFICATION_COLLECTION_NAME,
   NotificationModel
-} from "io-functions-commons/dist/src/models/notification";
+} from "@pagopa/io-functions-commons/dist/src/models/notification";
 import {
   NOTIFICATION_STATUS_COLLECTION_NAME,
   NotificationStatusModel
-} from "io-functions-commons/dist/src/models/notification_status";
+} from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
-} from "io-functions-commons/dist/src/models/profile";
+} from "@pagopa/io-functions-commons/dist/src/models/profile";
+import { createBlobService } from "azure-storage";
 import { getConfigOrThrow } from "../utils/config";
 
 const config = getConfigOrThrow();

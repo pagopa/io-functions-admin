@@ -11,13 +11,13 @@ import {
   tryCatch
 } from "fp-ts/lib/TaskEither";
 
+import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
+import { RetrievedMessageWithoutContent } from "@pagopa/io-functions-commons/dist/src/models/message";
+import { RetrievedMessageStatus } from "@pagopa/io-functions-commons/dist/src/models/message_status";
+import { RetrievedNotification } from "@pagopa/io-functions-commons/dist/src/models/notification";
+import { RetrievedNotificationStatus } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
+import { RetrievedProfile } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import { array, flatten, rights } from "fp-ts/lib/Array";
-import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
-import { RetrievedMessageWithoutContent } from "io-functions-commons/dist/src/models/message";
-import { RetrievedMessageStatus } from "io-functions-commons/dist/src/models/message_status";
-import { RetrievedNotification } from "io-functions-commons/dist/src/models/notification";
-import { RetrievedNotificationStatus } from "io-functions-commons/dist/src/models/notification_status";
-import { RetrievedProfile } from "io-functions-commons/dist/src/models/profile";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
@@ -28,8 +28,8 @@ import { DataFailure, IBlobServiceInfo, QueryFailure } from "./types";
 import { saveDataToBlob } from "./utils";
 import { toDocumentDeleteFailure, toQueryFailure } from "./utils";
 
-import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
-import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";
 
 /**

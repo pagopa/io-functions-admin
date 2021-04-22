@@ -1,15 +1,15 @@
 import { Context } from "@azure/functions";
-import { NewMessage } from "io-functions-commons/dist/generated/definitions/NewMessage";
+import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 
+import { markdownToHtml } from "@pagopa/io-functions-commons/dist/src/utils/markdown";
 import * as HtmlToText from "html-to-text";
-import { markdownToHtml } from "io-functions-commons/dist/src/utils/markdown";
 import * as t from "io-ts";
 import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
 import * as NodeMailer from "nodemailer";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 
-import { sendMail } from "io-functions-commons/dist/src/mailer";
+import { sendMail } from "@pagopa/io-functions-commons/dist/src/mailer";
 
 // TODO: switch text based on user's preferred_language
 const userDataDeleteMessage = NewMessage.decode({
@@ -19,7 +19,7 @@ Potrai iscriverti nuovamente all’App IO in ogni momento effettuando una nuova 
     subject: `Eliminazione del tuo profilo su IO`
   }
 }).getOrElseL(errs => {
-  throw new Error("Invalid MessageContent: " + readableReport(errs));
+  throw new Error(`Invalid MessageContent: ${readableReport(errs)}`);
 });
 
 // Activity result

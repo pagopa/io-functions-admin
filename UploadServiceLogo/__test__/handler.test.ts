@@ -5,9 +5,9 @@ import { none, some } from "fp-ts/lib/Option";
 
 import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { BlobService } from "azure-storage";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
-import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Logo } from "../../generated/definitions/Logo";
 import { UpdateServiceLogoHandler } from "../handler";
 

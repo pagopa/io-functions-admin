@@ -16,8 +16,8 @@ import {
 
 import { none, some } from "fp-ts/lib/Option";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
-import { UserDataProcessingModel } from "io-functions-commons/dist/src/models/user_data_processing";
-import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { UserDataProcessingModel } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 
 const aChoice = aUserDataProcessing.choice;
 

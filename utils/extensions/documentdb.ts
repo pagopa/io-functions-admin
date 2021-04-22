@@ -1,5 +1,5 @@
 import { Container } from "@azure/cosmos";
-import { mapAsyncIterable } from "io-functions-commons/dist/src/utils/async";
+import { mapAsyncIterable } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import * as t from "io-ts";
 
 /**

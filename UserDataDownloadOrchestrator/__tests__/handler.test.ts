@@ -1,7 +1,7 @@
 // tslint:disable: no-any
 
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,

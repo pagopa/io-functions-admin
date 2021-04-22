@@ -1,8 +1,8 @@
 // tslint:disable: no-any
 
-import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import {
   context,
   mockRaiseEvent,
