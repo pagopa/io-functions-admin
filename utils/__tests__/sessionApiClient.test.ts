@@ -1,6 +1,6 @@
 // eslint-disable sonarjs/no-duplicate-string
 
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { aFiscalCode } from "../../__mocks__/mocks";
 import { createMockFetch } from "../../__mocks__/node-fetch";
 import { ProblemJson } from "../../generated/session-api/ProblemJson";

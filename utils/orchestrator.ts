@@ -2,7 +2,7 @@ import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
 import { toError } from "fp-ts/lib/Either";
 import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
-import { PromiseType } from "italia-ts-commons/lib/types";
+import { PromiseType } from "@pagopa/ts-commons/lib/types";
 
 export const isOrchestratorRunning = (
   client: DurableOrchestrationClient,

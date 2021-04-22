@@ -14,15 +14,15 @@ import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewar
 import { RequiredBodyPayloadMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_body_payload";
 import { RequiredParamMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_param";
 import { withRequestMiddlewares } from "io-functions-commons/dist/src/utils/request_middleware";
-import { readableReport } from "italia-ts-commons/lib/reporters";
-import { wrapRequestHandler } from "italia-ts-commons/lib/request_middleware";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { wrapRequestHandler } from "@pagopa/ts-commons/lib/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseSuccessJson,
   ResponseSuccessJson
-} from "italia-ts-commons/lib/responses";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
-import { withoutUndefinedValues } from "italia-ts-commons/lib/types";
+} from "@pagopa/ts-commons/lib/responses";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { withoutUndefinedValues } from "@pagopa/ts-commons/lib/types";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { UserUpdated } from "../generated/definitions/UserUpdated";
 import { UserUpdatePayload } from "../generated/definitions/UserUpdatePayload";

@@ -3,7 +3,7 @@ import { ServiceResponse, TableService } from "azure-storage";
 import { Either, left, right } from "fp-ts/lib/Either";
 import { none, Option, some } from "fp-ts/lib/Option";
 
-import { ITuple2, Tuple2 } from "italia-ts-commons/lib/tuples";
+import { ITuple2, Tuple2 } from "@pagopa/ts-commons/lib/tuples";
 
 /**
  * A promisified version of TableService.insertEntity

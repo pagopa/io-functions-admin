@@ -5,9 +5,9 @@ import {
 } from "applicationinsights/out/Declarations/Contracts";
 import { fromNullable } from "fp-ts/lib/Option";
 import { tryCatch } from "fp-ts/lib/Option";
-import { initAppInsights } from "italia-ts-commons/lib/appinsights";
-import { IntegerFromString } from "italia-ts-commons/lib/numbers";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { initAppInsights } from "@pagopa/ts-commons/lib/appinsights";
+import { IntegerFromString } from "@pagopa/ts-commons/lib/numbers";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 // the internal function runtime has MaxTelemetryItem per second set to 20 by default
 // @see https://github.com/Azure/azure-functions-host/blob/master/src/WebJobs.Script/Config/ApplicationInsightsLoggerOptionsSetup.cs#L29

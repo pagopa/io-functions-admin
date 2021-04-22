@@ -27,11 +27,11 @@ import {
   flattenAsyncIterator
 } from "io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
-import { NonNegativeInteger } from "italia-ts-commons/lib/numbers";
+import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import {
   IResponseSuccessJson,
   ResponseSuccessJson
-} from "italia-ts-commons/lib/responses";
+} from "@pagopa/ts-commons/lib/responses";
 import { ServiceIdWithVersion } from "../generated/definitions/ServiceIdWithVersion";
 
 type IGetServicesHandlerResult =

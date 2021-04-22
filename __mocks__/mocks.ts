@@ -33,13 +33,13 @@ import {
 import {
   NonNegativeInteger,
   NonNegativeNumber
-} from "italia-ts-commons/lib/numbers";
+} from "@pagopa/ts-commons/lib/numbers";
 import {
   EmailString,
   FiscalCode,
   NonEmptyString,
   OrganizationFiscalCode
-} from "italia-ts-commons/lib/strings";
+} from "@pagopa/ts-commons/lib/strings";
 
 import { MessageBodyMarkdown } from "io-functions-commons/dist/generated/definitions/MessageBodyMarkdown";
 import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
@@ -63,7 +63,7 @@ import {
   NotificationStatus,
   NotificationStatusId
 } from "io-functions-commons/dist/src/models/notification_status";
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { ArchiveInfo } from "../ExtractUserDataActivity/handler";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 

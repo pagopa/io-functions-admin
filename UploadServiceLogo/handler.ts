@@ -14,7 +14,7 @@ import {
   ResponseErrorNotFound,
   ResponseErrorValidation,
   ResponseSuccessRedirectToResource
-} from "italia-ts-commons/lib/responses";
+} from "@pagopa/ts-commons/lib/responses";
 
 import { ServiceModel } from "io-functions-commons/dist/src/models/service";
 import {

@@ -2,7 +2,7 @@
 
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { EmailAddress } from "../../generated/definitions/EmailAddress";
 import { UserStateEnum } from "../../generated/definitions/UserState";
 import { UserUpdated } from "../../generated/definitions/UserUpdated";

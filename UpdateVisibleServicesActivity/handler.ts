@@ -6,7 +6,7 @@ import * as t from "io-ts";
 import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { isSome, none, Option, some } from "fp-ts/lib/Option";
 
-import { Second } from "italia-ts-commons/lib/units";
+import { Second } from "@pagopa/ts-commons/lib/units";
 
 import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
 import {

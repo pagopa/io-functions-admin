@@ -34,8 +34,8 @@ import {
   ResponseErrorNotFound,
   ResponseErrorValidation,
   ResponseSuccessJson
-} from "italia-ts-commons/lib/responses";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+} from "@pagopa/ts-commons/lib/responses";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { GroupCollection } from "../generated/definitions/GroupCollection";
 import { UserGroupsPayload } from "../generated/definitions/UserGroupsPayload";

@@ -5,7 +5,7 @@ import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes
 import { isLeft } from "fp-ts/lib/Either";
 import { isSome, none, Option, some } from "fp-ts/lib/Option";
 
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 
 import { RetrievedService } from "io-functions-commons/dist/src/models/service";
 

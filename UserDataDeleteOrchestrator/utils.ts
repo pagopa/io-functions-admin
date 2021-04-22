@@ -1,5 +1,5 @@
-import { FiscalCode } from "italia-ts-commons/lib/strings";
-import { Day, Hour } from "italia-ts-commons/lib/units";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { Day, Hour } from "@pagopa/ts-commons/lib/units";
 
 export const ABORT_EVENT = "user-data-processing-delete-abort";
 

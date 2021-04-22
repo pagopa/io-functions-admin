@@ -1,9 +1,9 @@
 ﻿import { Context } from "@azure/functions";
 import { NewMessage } from "io-functions-commons/dist/generated/definitions/NewMessage";
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 
 import * as t from "io-ts";
-import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 // TODO: switch text based on user's preferred_language
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

@@ -10,13 +10,13 @@ import {
 } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { withRequestMiddlewares } from "io-functions-commons/dist/src/utils/request_middleware";
-import { wrapRequestHandler } from "italia-ts-commons/lib/request_middleware";
+import { wrapRequestHandler } from "@pagopa/ts-commons/lib/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseSuccessJson,
   ResponseErrorInternal,
   ResponseSuccessJson
-} from "italia-ts-commons/lib/responses";
+} from "@pagopa/ts-commons/lib/responses";
 
 import { UserCollection } from "../generated/definitions/UserCollection";
 import {

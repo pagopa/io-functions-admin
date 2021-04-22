@@ -9,7 +9,7 @@ import {
   CosmosErrors,
   toCosmosErrorResponse
 } from "io-functions-commons/dist/src/utils/cosmosdb_model";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 /**
  * Extends NotificationModel with deleting operations

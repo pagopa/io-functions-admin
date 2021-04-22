@@ -18,7 +18,7 @@ import { RetrievedMessageStatus } from "io-functions-commons/dist/src/models/mes
 import { RetrievedNotification } from "io-functions-commons/dist/src/models/notification";
 import { RetrievedNotificationStatus } from "io-functions-commons/dist/src/models/notification_status";
 import { RetrievedProfile } from "io-functions-commons/dist/src/models/profile";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
 import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";

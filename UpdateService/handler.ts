@@ -15,7 +15,7 @@ import {
   ResponseErrorNotFound,
   ResponseErrorValidation,
   ResponseSuccessJson
-} from "italia-ts-commons/lib/responses";
+} from "@pagopa/ts-commons/lib/responses";
 
 import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
 import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";

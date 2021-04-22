@@ -7,7 +7,7 @@ import {
   CosmosErrors,
   toCosmosErrorResponse
 } from "io-functions-commons/dist/src/utils/cosmosdb_model";
-import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { deleteBlob } from "../azure_storage";
 
 // duplicated from base calss module, as it is not exposed

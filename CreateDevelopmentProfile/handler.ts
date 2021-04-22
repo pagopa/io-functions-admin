@@ -4,7 +4,7 @@ import { Context } from "@azure/functions";
 
 import { isLeft } from "fp-ts/lib/Either";
 
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import {
   IResponseErrorConflict,
   IResponseErrorValidation,
@@ -12,8 +12,8 @@ import {
   ResponseErrorConflict,
   ResponseErrorFromValidationErrors,
   ResponseSuccessJson
-} from "italia-ts-commons/lib/responses";
-import { FiscalCode, SandboxFiscalCode } from "italia-ts-commons/lib/strings";
+} from "@pagopa/ts-commons/lib/responses";
+import { FiscalCode, SandboxFiscalCode } from "@pagopa/ts-commons/lib/strings";
 
 import { ExtendedProfile } from "io-functions-commons/dist/generated/definitions/ExtendedProfile";
 import {

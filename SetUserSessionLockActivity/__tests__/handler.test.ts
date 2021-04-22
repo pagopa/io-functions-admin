@@ -2,7 +2,7 @@
 
 import { right } from "fp-ts/lib/Either";
 import * as t from "io-ts";
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { context } from "../../__mocks__/durable-functions";
 import { aFiscalCode } from "../../__mocks__/mocks";
 import { SuccessResponse } from "../../generated/session-api/SuccessResponse";

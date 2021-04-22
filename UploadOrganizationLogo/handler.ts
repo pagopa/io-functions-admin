@@ -12,7 +12,7 @@ import {
   ResponseErrorInternal,
   ResponseErrorValidation,
   ResponseSuccessRedirectToResource
-} from "italia-ts-commons/lib/responses";
+} from "@pagopa/ts-commons/lib/responses";
 
 import {
   AzureApiAuthMiddleware,
@@ -37,7 +37,7 @@ import {
 } from "fp-ts/lib/TaskEither";
 import { fromEither } from "fp-ts/lib/TaskEither";
 import { RequiredParamMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_param";
-import { OrganizationFiscalCode } from "italia-ts-commons/lib/strings";
+import { OrganizationFiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as UPNG from "upng-js";
 import { Logo as ApiLogo } from "../generated/definitions/Logo";
 import { LogoPayloadMiddleware } from "../utils/middlewares/service";
