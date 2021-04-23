@@ -4,11 +4,11 @@ import {
   MESSAGE_STATUS_MODEL_PK_FIELD,
   MessageStatusModel as MessageStatusModelBase,
   RetrievedMessageStatus
-} from "io-functions-commons/dist/src/models/message_status";
+} from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import {
   CosmosErrors,
   toCosmosErrorResponse
-} from "io-functions-commons/dist/src/utils/cosmosdb_model";
+} from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as t from "io-ts";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as DocumentDbUtils from "../documentdb";

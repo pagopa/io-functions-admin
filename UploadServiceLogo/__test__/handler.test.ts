@@ -7,7 +7,7 @@ import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 import { BlobService } from "azure-storage";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
-import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Logo } from "../../generated/definitions/Logo";
 import { UpdateServiceLogoHandler } from "../handler";
 

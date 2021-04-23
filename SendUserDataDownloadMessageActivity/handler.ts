@@ -1,5 +1,5 @@
 ﻿import { Context } from "@azure/functions";
-import { NewMessage } from "io-functions-commons/dist/generated/definitions/NewMessage";
+import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 
 import * as t from "io-ts";

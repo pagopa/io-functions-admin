@@ -77,7 +77,6 @@
     "express": "^4.15.3",
     "fp-ts": "1.17.0",
     "html-to-text": "^5.1.1",
-    "io-functions-commons": "^17.0.0",
     "io-functions-express": "^1.1.0",
     "io-ts": "1.8.5",
     "node-fetch": "^2.6.1",

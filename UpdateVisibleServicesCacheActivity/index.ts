@@ -7,7 +7,7 @@ import { isLeft } from "fp-ts/lib/Either";
 import {
   toServicePublic,
   VisibleService
-} from "io-functions-commons/dist/src/models/visible_service";
+} from "@pagopa/io-functions-commons/dist/src/models/visible_service";
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 async function UpdateVisibleServiceCacheActivity(

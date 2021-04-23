@@ -15,8 +15,8 @@ import {
   OrchestratorSuccess
 } from "../handler";
 
-import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { Day, Hour } from "@pagopa/ts-commons/lib/units";
 import {

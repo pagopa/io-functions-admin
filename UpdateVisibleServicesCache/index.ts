@@ -14,7 +14,7 @@ import { Context } from "@azure/functions";
 
 import { isLeft } from "fp-ts/lib/Either";
 import { StrMap } from "fp-ts/lib/StrMap";
-import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
+import { VisibleService } from "@pagopa/io-functions-commons/dist/src/models/visible_service";
 
 import * as df from "durable-functions";
 import * as t from "io-ts";

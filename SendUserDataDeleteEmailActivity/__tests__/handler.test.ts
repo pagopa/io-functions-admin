@@ -11,8 +11,8 @@ import { fromLeft, taskEither } from "fp-ts/lib/TaskEither";
 
 import * as HtmlToText from "html-to-text";
 
-import { EmailAddress } from "io-functions-commons/dist/generated/definitions/EmailAddress";
-import * as mail from "io-functions-commons/dist/src/mailer";
+import { EmailAddress } from "@pagopa/io-functions-commons/dist/generated/definitions/EmailAddress";
+import * as mail from "@pagopa/io-functions-commons/dist/src/mailer";
 
 beforeEach(() => jest.clearAllMocks());
 

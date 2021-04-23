@@ -3,9 +3,9 @@ import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
 import { fromNullable } from "fp-ts/lib/Either";
 import { Lazy } from "fp-ts/lib/function";
-import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import {

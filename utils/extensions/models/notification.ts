@@ -4,11 +4,11 @@
  */
 
 import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
-import { NotificationModel as NotificationModelBase } from "io-functions-commons/dist/src/models/notification";
+import { NotificationModel as NotificationModelBase } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import {
   CosmosErrors,
   toCosmosErrorResponse
-} from "io-functions-commons/dist/src/utils/cosmosdb_model";
+} from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 /**

@@ -1,7 +1,7 @@
 import * as azureStorage from "azure-storage";
 import { Either, left, right } from "fp-ts/lib/Either";
 
-export * from "io-functions-commons/dist/src/utils/azure_storage";
+export * from "@pagopa/io-functions-commons/dist/src/utils/azure_storage";
 
 /**
  * Deletes a blof if exists
