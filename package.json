@@ -21,8 +21,7 @@
     "dist:modules": "modclean -r -n default:safe && yarn install --production",
     "dist:zip": "zip -r dist.zip . --exclude @.funcignore --exclude .funcignore",
     "predeploy": "npm-run-all generate build dist:modules",
-    "generate:definitions": "rimraf ./generated/definitions && shx mkdir -p ./generated/definitions && gen-api-models --api-spec ./openapi/index.yaml --out-dir ./generated/definitions",
-    "generate:session-api": "rimraf ./generated/session-api && gen-api-models --api-spec https://raw.githubusercontent.com/pagopa/io-backend/v7.15.3/api_session.yaml --out-dir ./generated/session-api --request-types --response-decoders",
+    "generate:definitions": "rimraf ./generated/definitions && gen-api-models --api-spec ./openapi/index.yaml --out-dir ./generated/definitions",
     "generate": "npm-run-all generate:*",
     "preversion": "auto-changelog  --config .auto-changelog.json --unreleased --commit-limit false --stdout --template preview.hbs",
     "version": "auto-changelog -p --config .auto-changelog.json --unreleased && git add CHANGELOG.md"
@@ -62,6 +61,7 @@
     "@azure/graph": "^4.0.1",
     "@azure/ms-rest-js": "^2.2.3",
     "@azure/ms-rest-nodeauth": "^2.0.5",
+    "@pagopa/io-backend-session-sdk": "^7.15.4",
     "@pagopa/io-functions-commons": "^20.0.0",
     "@pagopa/ts-commons": "^9.1.0",
     "@types/archiver": "^3.1.0",

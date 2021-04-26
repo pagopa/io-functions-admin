@@ -594,6 +594,15 @@
     eslint-plugin-sonarjs "^0.5.0"
     prettier "^2.1.2"
 
+"@pagopa/io-backend-session-sdk@^7.15.4":
+  version "7.15.4"
+  resolved "https://registry.yarnpkg.com/@pagopa/io-backend-session-sdk/-/io-backend-session-sdk-7.15.4.tgz#25a8724042a664a9d583944fe80d68bc5012689f"
+  integrity sha512-tk83urVCsIRdZZ5GvO8Wxg1Dn1IzUpWEhw8eHP2yTb/ZklVQP86Qki5Pov8WyKpWzOKyQOkccT1XkgiT2/6sBg==
+  dependencies:
+    fp-ts "1.17.4"
+    io-ts "1.8.5"
+    italia-ts-commons "^5.1.13"
+
 "@pagopa/io-functions-commons@^20.0.0":
   version "20.0.0"
   resolved "https://registry.yarnpkg.com/@pagopa/io-functions-commons/-/io-functions-commons-20.0.0.tgz#e2a60824a7a88ed38b1c5d6df0be41151507d6c8"
@@ -4027,7 +4036,7 @@ forwarded@~0.1.2:
   resolved "https://registry.yarnpkg.com/forwarded/-/forwarded-0.1.2.tgz#98c23dab1175657b8c0573e8ceccd91b0ff18c84"
   integrity sha1-mMI9qxF1ZXuMBXPozszZGw/xjIQ=
 
-fp-ts@1.17.0, fp-ts@1.17.4, fp-ts@^1.0.0:
+fp-ts@1.12.0, fp-ts@1.17.0, fp-ts@1.17.4, fp-ts@^1.0.0:
   version "1.17.0"
   resolved "https://registry.yarnpkg.com/fp-ts/-/fp-ts-1.17.0.tgz#289127353ddbb4622ada1920d4ad6643182c1f1f"
   integrity sha512-nBq25aCAMbCwVLobUUuM/MZihPKyjn0bCVBf6xMAGriHlf8W8Ze9UhyfLnbmfp0ekFTxMuTfLXrCzpJ34px7PQ==
@@ -5279,6 +5288,16 @@ istanbul-reports@^2.1.1:
   integrity sha512-SKi4rnMyLBKe0Jy2uUdx28h8oG7ph2PPuQPvIAh31d+Ci+lSiEu4C+h3oBPuJ9+mPKhOyW0M8gY4U5NM1WLeXA==
   dependencies:
     handlebars "^4.1.2"
+
+italia-ts-commons@^5.1.13:
+  version "5.1.13"
+  resolved "https://registry.yarnpkg.com/italia-ts-commons/-/italia-ts-commons-5.1.13.tgz#7ae919374f9c03c04e38603b7f7e9681ebee79b7"
+  integrity sha512-mXtrNG/HR6lRCOTtBrEzsxGmkHccoDXKqoc9i+J2+yGhhxcznASu+0KMC05ZR1yJP4bWliC9rXJ3hnCw0rMSnQ==
+  dependencies:
+    fp-ts "1.12.0"
+    io-ts "1.8.5"
+    json-set-map "^1.0.2"
+    validator "^10.1.0"
 
 jest-changed-files@^17.0.2:
   version "17.0.2"
