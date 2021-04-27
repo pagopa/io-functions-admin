@@ -8,6 +8,7 @@ import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generate
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "italia-ts-commons/lib/reporters";
+import { createTableService, TableUtilities } from "azure-storage";
 import {
   ABORT_EVENT as ABORT_DELETE_EVENT,
   makeOrchestratorId as makeDeleteOrchestratorId
@@ -20,6 +21,24 @@ import {
 import { flags } from "../utils/featureFlags";
 import { isOrchestratorRunning } from "../utils/orchestrator";
 
+import { getConfigOrThrow } from "../utils/config";
+import { deleteTableEntity, insertTableEntity } from "../utils/storage";
+
+// prepare table storage utils
+const config = getConfigOrThrow();
+
+const storageConnectionString =
+  config.FailedUserDataProcessingStorageConnection;
+const tableService = createTableService(storageConnectionString);
+
+const subscriptionsFeedTable = config.FAILED_USER_DATA_PROCESSING_TABLE;
+
+const insertEntity = insertTableEntity(tableService, subscriptionsFeedTable);
+const deleteEntity = deleteTableEntity(tableService, subscriptionsFeedTable);
+
+const eg = TableUtilities.entityGenerator;
+
+// configure log prefix
 const logPrefix = "UserDataProcessingTrigger";
 
 // models the subset of UserDataProcessing documents that this orchestrator accepts
@@ -61,6 +80,32 @@ export const ProcessableUserDataDeleteAbort = t.intersection([
   t.interface({
     choice: t.literal(UserDataProcessingChoiceEnum.DELETE),
     status: t.literal(UserDataProcessingStatusEnum.ABORTED)
+  })
+]);
+
+// models the subset of UserDataProcessing documents that this orchestrator accepts
+export type FailedUserDataProcessing = t.TypeOf<
+  typeof FailedUserDataProcessing
+>;
+export const FailedUserDataProcessing = t.intersection([
+  UserDataProcessing,
+  // ony the subset of UserDataProcessing documents
+  // with the following characteristics must be processed
+  t.interface({
+    status: t.literal(UserDataProcessingStatusEnum.FAILED)
+  })
+]);
+
+// models the subset of UserDataProcessing documents that this orchestrator accepts
+export type CompletedUserDataProcessing = t.TypeOf<
+  typeof CompletedUserDataProcessing
+>;
+export const CompletedUserDataProcessing = t.intersection([
+  UserDataProcessing,
+  // ony the subset of UserDataProcessing documents
+  // with the following characteristics must be processed
+  t.interface({
+    status: t.literal(UserDataProcessingStatusEnum.CLOSED)
   })
 ]);
 
@@ -108,7 +153,9 @@ export function index(
           .union([
             ProcessableUserDataDownload,
             ProcessableUserDataDelete,
-            ProcessableUserDataDeleteAbort
+            ProcessableUserDataDeleteAbort,
+            FailedUserDataProcessing,
+            CompletedUserDataProcessing
           ])
           .decode(processableOrNot)
           .chain(processable =>
@@ -164,6 +211,52 @@ export function index(
                       ABORT_DELETE_EVENT,
                       {}
                     );
+                  }
+                : FailedUserDataProcessing.is(processable)
+                ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                  async (): Promise<void> => {
+                    // If a failed user_data_processing has been inserted
+                    // we insert a record into failed_user_data_processing table storage
+                    context.log.verbose(
+                      `${logPrefix}|KEY=${processable.fiscalCode}|Inserting failed_user_data_processing entity`
+                    );
+                    const {
+                      e1: resultOrError,
+                      e2: sResponse
+                    } = await insertEntity({
+                      PartitionKey: eg.String(processable.choice),
+                      RowKey: eg.String(processable.fiscalCode)
+                    });
+                    if (
+                      resultOrError.isLeft() &&
+                      sResponse.statusCode !== 409
+                    ) {
+                      // retry
+                      context.log.error(
+                        `${logPrefix}|ERROR=${resultOrError.value.message}`
+                      );
+                    }
+                  }
+                : CompletedUserDataProcessing.is(processable)
+                ? async (): Promise<void> => {
+                    // If a completed user_data_processing has been inserted
+                    // we delete any record into failed_user_data_processing table storage
+                    context.log.verbose(
+                      `${logPrefix}|KEY=${processable.fiscalCode}|Deleting any failed_user_data_processing entity`
+                    );
+                    const {
+                      e1: maybeError,
+                      e2: uResponse
+                    } = await deleteEntity({
+                      PartitionKey: eg.String(processable.choice),
+                      RowKey: eg.String(processable.fiscalCode)
+                    });
+                    if (maybeError.isSome() && uResponse.statusCode !== 404) {
+                      // retry
+                      context.log.error(
+                        `${logPrefix}|ERROR=${maybeError.value.message}`
+                      );
+                    }
                   }
                 : undefined
             )

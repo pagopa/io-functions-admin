@@ -14,6 +14,7 @@ import { NonEmptyString } from "italia-ts-commons/lib/strings";
 export type IConfig = t.TypeOf<typeof IConfig>;
 export const IConfig = t.intersection([
   t.interface({
+    /* eslint-disable sort-keys */
     COSMOSDB_KEY: NonEmptyString,
     COSMOSDB_NAME: NonEmptyString,
     COSMOSDB_URI: NonEmptyString,
@@ -22,31 +23,27 @@ export const IConfig = t.intersection([
     SERVICE_PRINCIPAL_SECRET: NonEmptyString,
     SERVICE_PRINCIPAL_TENANT_ID: NonEmptyString,
 
-    // eslint-disable-next-line sort-keys
     AZURE_APIM: NonEmptyString,
     AZURE_APIM_HOST: NonEmptyString,
     AZURE_APIM_RESOURCE_GROUP: NonEmptyString,
     AZURE_SUBSCRIPTION_ID: NonEmptyString,
 
-    // eslint-disable-next-line sort-keys
     ADB2C_CLIENT_ID: NonEmptyString,
     ADB2C_CLIENT_KEY: NonEmptyString,
     ADB2C_TENANT_ID: NonEmptyString,
 
     UserDataBackupStorageConnection: NonEmptyString,
 
-    // eslint-disable-next-line sort-keys
     MESSAGE_CONTAINER_NAME: NonEmptyString,
     USER_DATA_BACKUP_CONTAINER_NAME: NonEmptyString,
     USER_DATA_CONTAINER_NAME: NonEmptyString,
 
-    // eslint-disable-next-line sort-keys
     AssetsStorageConnection: NonEmptyString,
+    FailedUserDataProcessingStorageConnection: NonEmptyString,
     StorageConnection: NonEmptyString,
     SubscriptionFeedStorageConnection: NonEmptyString,
     UserDataArchiveStorageConnection: NonEmptyString,
 
-    // eslint-disable-next-line sort-keys
     PUBLIC_API_KEY: NonEmptyString,
     PUBLIC_API_URL: NonEmptyString,
 
@@ -55,13 +52,14 @@ export const IConfig = t.intersection([
     SESSION_API_KEY: NonEmptyString,
     SESSION_API_URL: NonEmptyString,
 
-    // eslint-disable-next-line sort-keys
     LOGOS_URL: NonEmptyString,
 
+    FAILED_USER_DATA_PROCESSING_TABLE: NonEmptyString,
     SUBSCRIPTIONS_FEED_TABLE: NonEmptyString,
     USER_DATA_DELETE_DELAY_DAYS: NonEmptyString,
 
     isProduction: t.boolean
+    /* eslint-enable sort-keys */
   }),
   MailerConfig
 ]);
