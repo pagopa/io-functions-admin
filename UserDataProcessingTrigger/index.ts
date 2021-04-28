@@ -129,19 +129,27 @@ const startOrchestrator = async (
       _ =>
         !_.isRunning
           ? dfClient.startNew(
-              orchestratorName,
-              orchestratorId,
-              orchestratorInput
-            )
+            orchestratorName,
+            orchestratorId,
+            orchestratorInput
+          )
           : null
     )
     .run();
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, sonarjs/cognitive-complexity
-export function index(
+export const index = (
   context: Context,
   input: unknown
-): Promise<ReadonlyArray<string | void>> {
+) => {
+  const handler = createHandler(insertEntity, deleteEntity);
+  return handler(context, input);
+}
+
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, sonarjs/cognitive-complexity
+export const createHandler = (a: typeof insertEntity, b: typeof deleteEntity) => (
+  context: Context,
+  input: unknown
+): Promise<ReadonlyArray<string | void>> => {
   const dfClient = df.getClient(context);
   const operations = CosmosDbDocumentCollection.decode(input)
     .getOrElseL(err => {
@@ -163,24 +171,24 @@ export function index(
               flags.ENABLE_USER_DATA_DOWNLOAD &&
                 ProcessableUserDataDownload.is(processable)
                 ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-                  () => {
-                    context.log.info(
-                      `${logPrefix}: starting UserDataDownloadOrchestrator with ${processable.fiscalCode}`
-                    );
-                    trackUserDataDownloadEvent("started", processable);
-                    const orchestratorId = makeDownloadOrchestratorId(
-                      processable.fiscalCode
-                    );
-                    return startOrchestrator(
-                      dfClient,
-                      "UserDataDownloadOrchestrator",
-                      orchestratorId,
-                      processable
-                    );
-                  }
+                () => {
+                  context.log.info(
+                    `${logPrefix}: starting UserDataDownloadOrchestrator with ${processable.fiscalCode}`
+                  );
+                  trackUserDataDownloadEvent("started", processable);
+                  const orchestratorId = makeDownloadOrchestratorId(
+                    processable.fiscalCode
+                  );
+                  return startOrchestrator(
+                    dfClient,
+                    "UserDataDownloadOrchestrator",
+                    orchestratorId,
+                    processable
+                  );
+                }
                 : flags.ENABLE_USER_DATA_DELETE &&
                   ProcessableUserDataDelete.is(processable)
-                ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                  ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
                   () => {
                     context.log.info(
                       `${logPrefix}: starting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
@@ -196,69 +204,68 @@ export function index(
                       processable
                     );
                   }
-                : ProcessableUserDataDeleteAbort.is(processable)
-                ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-                  () => {
-                    context.log.info(
-                      `${logPrefix}: aborting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
-                    );
-                    trackUserDataDeleteEvent("abort_requested", processable);
-                    const orchestratorId = makeDeleteOrchestratorId(
-                      processable.fiscalCode
-                    );
-                    return dfClient.raiseEvent(
-                      orchestratorId,
-                      ABORT_DELETE_EVENT,
-                      {}
-                    );
-                  }
-                : FailedUserDataProcessing.is(processable)
-                ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-                  async (): Promise<void> => {
-                    // If a failed user_data_processing has been inserted
-                    // we insert a record into failed_user_data_processing table storage
-                    context.log.verbose(
-                      `${logPrefix}|KEY=${processable.fiscalCode}|Inserting failed_user_data_processing entity`
-                    );
-                    const {
-                      e1: resultOrError,
-                      e2: sResponse
-                    } = await insertEntity({
-                      PartitionKey: eg.String(processable.choice),
-                      RowKey: eg.String(processable.fiscalCode)
-                    });
-                    if (
-                      resultOrError.isLeft() &&
-                      sResponse.statusCode !== 409
-                    ) {
-                      // retry
-                      context.log.error(
-                        `${logPrefix}|ERROR=${resultOrError.value.message}`
+                  : ProcessableUserDataDeleteAbort.is(processable)
+                    ? // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                    () => {
+                      context.log.info(
+                        `${logPrefix}: aborting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
+                      );
+                      trackUserDataDeleteEvent("abort_requested", processable);
+                      const orchestratorId = makeDeleteOrchestratorId(
+                        processable.fiscalCode
+                      );
+                      return dfClient.raiseEvent(
+                        orchestratorId,
+                        ABORT_DELETE_EVENT,
+                        {}
                       );
                     }
-                  }
-                : CompletedUserDataProcessing.is(processable)
-                ? async (): Promise<void> => {
-                    // If a completed user_data_processing has been inserted
-                    // we delete any record into failed_user_data_processing table storage
-                    context.log.verbose(
-                      `${logPrefix}|KEY=${processable.fiscalCode}|Deleting any failed_user_data_processing entity`
-                    );
-                    const {
-                      e1: maybeError,
-                      e2: uResponse
-                    } = await deleteEntity({
-                      PartitionKey: eg.String(processable.choice),
-                      RowKey: eg.String(processable.fiscalCode)
-                    });
-                    if (maybeError.isSome() && uResponse.statusCode !== 404) {
-                      // retry
-                      context.log.error(
-                        `${logPrefix}|ERROR=${maybeError.value.message}`
-                      );
-                    }
-                  }
-                : undefined
+                    : FailedUserDataProcessing.is(processable)
+                      ? async (): Promise<void> => {
+                        // If a failed user_data_processing has been inserted
+                        // we insert a record into failed_user_data_processing table storage
+                        context.log.verbose(
+                          `${logPrefix}|KEY=${processable.fiscalCode}|Inserting failed_user_data_processing entity`
+                        );
+                        const {
+                          e1: resultOrError,
+                          e2: sResponse
+                        } = await a({
+                          PartitionKey: eg.String(processable.choice),
+                          RowKey: eg.String(processable.fiscalCode)
+                        });
+                        if (
+                          resultOrError.isLeft() &&
+                          sResponse.statusCode !== 409
+                        ) {
+                          // retry
+                          context.log.error(
+                            `${logPrefix}|ERROR=${resultOrError.value.message}`
+                          );
+                        }
+                      }
+                      : CompletedUserDataProcessing.is(processable)
+                        ? async (): Promise<void> => {
+                          // If a completed user_data_processing has been inserted
+                          // we delete any record into failed_user_data_processing table storage
+                          context.log.verbose(
+                            `${logPrefix}|KEY=${processable.fiscalCode}|Deleting any failed_user_data_processing entity`
+                          );
+                          const {
+                            e1: maybeError,
+                            e2: uResponse
+                          } = await b({
+                            PartitionKey: eg.String(processable.choice),
+                            RowKey: eg.String(processable.fiscalCode)
+                          });
+                          if (maybeError.isSome() && uResponse.statusCode !== 404) {
+                            // retry
+                            context.log.error(
+                              `${logPrefix}|ERROR=${maybeError.value.message}`
+                            );
+                          }
+                        }
+                        : undefined
             )
           )
           .fold(
@@ -276,8 +283,7 @@ export function index(
     );
 
   context.log.info(
-    `${logPrefix}: processing ${operations.length} document${
-      operations.length === 1 ? "" : "s"
+    `${logPrefix}: processing ${operations.length} document${operations.length === 1 ? "" : "s"
     }`
   );
 
