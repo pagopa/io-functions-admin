@@ -86,11 +86,11 @@ const deleteEntity = jest.fn<any, any[]>(() => ({
   e2: { statusCode: 200 }
 }) as any);
 
-describe("UserDataProcessingTrigger", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
+describe("UserDataProcessingTrigger", () => {
   it("should fail on invalid input", async () => {
     const input = "invalid";
 
