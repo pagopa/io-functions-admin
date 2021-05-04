@@ -1,7 +1,6 @@
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
-import { fromNullable } from "fp-ts/lib/Either";
 import { Lazy } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
@@ -26,11 +25,18 @@ import { deleteTableEntity, insertTableEntity } from "../utils/storage";
 
 // prepare table storage utils
 const config = getConfigOrThrow();
-const storageConnectionString = config.FailedUserDataProcessingStorageConnection;
+const storageConnectionString =
+  config.FailedUserDataProcessingStorageConnection;
 const failedUserDataProcessingTable = config.FAILED_USER_DATA_PROCESSING_TABLE;
 const tableService = createTableService(storageConnectionString);
-const addFailedUserDataProcessing = insertTableEntity(tableService, failedUserDataProcessingTable);
-const removeFailedUserDataProcessing = deleteTableEntity(tableService, failedUserDataProcessingTable);
+const addFailedUserDataProcessing = insertTableEntity(
+  tableService,
+  failedUserDataProcessingTable
+);
+const removeFailedUserDataProcessing = deleteTableEntity(
+  tableService,
+  failedUserDataProcessingTable
+);
 
 tableService.createTableIfNotExists(failedUserDataProcessingTable, () => 0);
 
@@ -127,123 +133,111 @@ const startOrchestrator = async (
       _ =>
         !_.isRunning
           ? dfClient.startNew(
-            orchestratorName,
-            orchestratorId,
-            orchestratorInput
-          )
+              orchestratorName,
+              orchestratorId,
+              orchestratorInput
+            )
           : null
     )
     .run();
 
-const startUserDataDownloadOrchestrator = (context: Context, processable: ProcessableUserDataDownload): Promise<string> => {
+const startUserDataDownloadOrchestrator = (
+  context: Context,
+  processable: ProcessableUserDataDownload
+): Promise<string> => {
   const dfClient = df.getClient(context);
   context.log.info(
     `${logPrefix}: starting UserDataDownloadOrchestrator with ${processable.fiscalCode}`
   );
   trackUserDataDownloadEvent("started", processable);
-  const orchestratorId = makeDownloadOrchestratorId(
-    processable.fiscalCode
-  );
+  const orchestratorId = makeDownloadOrchestratorId(processable.fiscalCode);
   return startOrchestrator(
     dfClient,
     "UserDataDownloadOrchestrator",
     orchestratorId,
     processable
   );
-}
+};
 
-const startUserDataDeleteOrchestrator = (context: Context, processable: ProcessableUserDataDelete): Promise<string> => {
+const startUserDataDeleteOrchestrator = (
+  context: Context,
+  processable: ProcessableUserDataDelete
+): Promise<string> => {
   const dfClient = df.getClient(context);
   context.log.info(
     `${logPrefix}: starting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
   );
   trackUserDataDeleteEvent("started", processable);
-  const orchestratorId = makeDeleteOrchestratorId(
-    processable.fiscalCode
-  );
+  const orchestratorId = makeDeleteOrchestratorId(processable.fiscalCode);
   return startOrchestrator(
     dfClient,
     "UserDataDeleteOrchestrator",
     orchestratorId,
     processable
   );
-}
+};
 
-const raiseAbortEventOnOrchestrator = (context: Context, processable: ProcessableUserDataDeleteAbort): Promise<void> => {
+const raiseAbortEventOnOrchestrator = (
+  context: Context,
+  processable: ProcessableUserDataDeleteAbort
+): Promise<void> => {
   const dfClient = df.getClient(context);
   context.log.info(
     `${logPrefix}: aborting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
   );
   trackUserDataDeleteEvent("abort_requested", processable);
-  const orchestratorId = makeDeleteOrchestratorId(
-    processable.fiscalCode
-  );
-  return dfClient.raiseEvent(
-    orchestratorId,
-    ABORT_DELETE_EVENT,
-    {}
-  );
-}
+  const orchestratorId = makeDeleteOrchestratorId(processable.fiscalCode);
+  return dfClient.raiseEvent(orchestratorId, ABORT_DELETE_EVENT, {});
+};
 
-const processFailedUserDataProcessing = async (context: Context, processable: FailedUserDataProcessing, insertEntityFn: typeof addFailedUserDataProcessing): Promise<void> => {
+const processFailedUserDataProcessing = async (
+  context: Context,
+  processable: FailedUserDataProcessing,
+  insertEntityFn: typeof addFailedUserDataProcessing
+): Promise<void> => {
   // If a failed user_data_processing has been inserted
   // we insert a record into failed_user_data_processing table storage
   context.log.verbose(
     `${logPrefix}|KEY=${processable.fiscalCode}|Inserting failed_user_data_processing entity`
   );
-  const {
-    e1: resultOrError,
-    e2: sResponse
-  } = await insertEntityFn({
+  const { e1: resultOrError, e2: sResponse } = await insertEntityFn({
     PartitionKey: eg.String(processable.choice),
     RowKey: eg.String(processable.fiscalCode)
   });
-  if (
-    resultOrError.isLeft() &&
-    sResponse.statusCode !== 409
-  ) {
+  if (resultOrError.isLeft() && sResponse.statusCode !== 409) {
     // retry
-    context.log.error(
-      `${logPrefix}|ERROR=${resultOrError.value.message}`
-    );
+    context.log.error(`${logPrefix}|ERROR=${resultOrError.value.message}`);
   }
-}
+};
 
-const processClosedUserDataProcessing = async (context: Context, processable: ClosedUserDataProcessing, deleteEntityFn: typeof removeFailedUserDataProcessing): Promise<void> => {
+const processClosedUserDataProcessing = async (
+  context: Context,
+  processable: ClosedUserDataProcessing,
+  deleteEntityFn: typeof removeFailedUserDataProcessing
+): Promise<void> => {
   // If a completed user_data_processing has been inserted
   // we delete any record into failed_user_data_processing table storage
   context.log.verbose(
     `${logPrefix}|KEY=${processable.fiscalCode}|Deleting any failed_user_data_processing entity`
   );
-  const {
-    e1: maybeError,
-    e2: uResponse
-  } = await deleteEntityFn({
+  const { e1: maybeError, e2: uResponse } = await deleteEntityFn({
     PartitionKey: eg.String(processable.choice),
     RowKey: eg.String(processable.fiscalCode)
   });
   if (maybeError.isSome() && uResponse.statusCode !== 404) {
     // retry
-    context.log.error(
-      `${logPrefix}|ERROR=${maybeError.value.message}`
-    );
+    context.log.error(`${logPrefix}|ERROR=${maybeError.value.message}`);
   }
-}
-
-export const index = (
-  context: Context,
-  input: unknown
-) => {
-  const handler = createHandler(addFailedUserDataProcessing, removeFailedUserDataProcessing);
-  return handler(context, input);
-}
+};
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions, sonarjs/cognitive-complexity
-export const createHandler = (addFailure: typeof addFailedUserDataProcessing, removeFailure: typeof removeFailedUserDataProcessing) => (
+export const createHandler = (
+  addFailure: typeof addFailedUserDataProcessing,
+  removeFailure: typeof removeFailedUserDataProcessing
+) => (
   context: Context,
-  input: unknown
+  input: unknown // eslint-disable-next-line sonarjs/cognitive-complexity
 ): Promise<ReadonlyArray<string | void>> => {
-  const dfClient = df.getClient(context);
   const operations = CosmosDbDocumentCollection.decode(input)
     .getOrElseL(err => {
       throw Error(`${logPrefix}: cannot decode input [${readableReport(err)}]`);
@@ -261,18 +255,32 @@ export const createHandler = (addFailure: typeof addFailedUserDataProcessing, re
           .decode(processableOrNot)
           .map(processable =>
             flags.ENABLE_USER_DATA_DOWNLOAD &&
-              ProcessableUserDataDownload.is(processable)
-              ? () => startUserDataDownloadOrchestrator(context, processable)
+            ProcessableUserDataDownload.is(processable)
+              ? (): Promise<string> =>
+                  startUserDataDownloadOrchestrator(context, processable)
               : flags.ENABLE_USER_DATA_DELETE &&
                 ProcessableUserDataDelete.is(processable)
-                ? () => startUserDataDeleteOrchestrator(context, processable)
-                : ProcessableUserDataDeleteAbort.is(processable)
-                  ? () => raiseAbortEventOnOrchestrator(context, processable)
-                  : FailedUserDataProcessing.is(processable)
-                    ? () => processFailedUserDataProcessing(context, processable, addFailure)
-                    : ClosedUserDataProcessing.is(processable)
-                      ? () => processClosedUserDataProcessing(context, processable, removeFailure)
-                      : () => void 0
+              ? (): Promise<string> =>
+                  startUserDataDeleteOrchestrator(context, processable)
+              : ProcessableUserDataDeleteAbort.is(processable)
+              ? (): Promise<void> =>
+                  raiseAbortEventOnOrchestrator(context, processable)
+              : FailedUserDataProcessing.is(processable)
+              ? (): Promise<void> =>
+                  processFailedUserDataProcessing(
+                    context,
+                    processable,
+                    addFailure
+                  )
+              : ClosedUserDataProcessing.is(processable)
+              ? (): Promise<void> =>
+                  processClosedUserDataProcessing(
+                    context,
+                    processable,
+                    removeFailure
+                  )
+              : // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                () => void 0
           )
           .fold(
             _ => {
@@ -289,9 +297,21 @@ export const createHandler = (addFailure: typeof addFailedUserDataProcessing, re
     );
 
   context.log.info(
-    `${logPrefix}: processing ${operations.length} document${operations.length === 1 ? "" : "s"
+    `${logPrefix}: processing ${operations.length} document${
+      operations.length === 1 ? "" : "s"
     }`
   );
 
   return Promise.all(operations.map(op => op()));
-}
+};
+
+export const index = (
+  context: Context,
+  input: unknown
+): Promise<ReadonlyArray<string | void>> => {
+  const handler = createHandler(
+    addFailedUserDataProcessing,
+    removeFailedUserDataProcessing
+  );
+  return handler(context, input);
+};

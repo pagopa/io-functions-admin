@@ -11,18 +11,17 @@ import { AzureContextTransport } from "io-functions-commons/dist/src/utils/loggi
 import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
+import { createTableService } from "azure-storage";
 import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 import { GetFailedUserDataProcessingList } from "./handler";
-
-import { createTableService } from "azure-storage";
-import { UserDataProcessingChoice } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 
 /**
  * Table service
  */
 const config = getConfigOrThrow();
-const storageConnectionString = config.FailedUserDataProcessingStorageConnection;
+const storageConnectionString =
+  config.FailedUserDataProcessingStorageConnection;
 const failedUserDataProcessingTable = config.FAILED_USER_DATA_PROCESSING_TABLE;
 const tableService = createTableService(storageConnectionString);
 

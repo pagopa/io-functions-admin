@@ -18,9 +18,11 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { ServiceResponse, TableQuery, TableService } from "azure-storage";
-import { UserDataProcessingChoice } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { Either, left, right } from "fp-ts/lib/Either";
-import { IResponseErrorInternal, ResponseErrorInternal, ResponseErrorNotFound } from "@pagopa/ts-commons/lib/responses";
+import {
+  IResponseErrorInternal,
+  ResponseErrorInternal
+} from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 type TableEntry = Readonly<{
@@ -31,16 +33,13 @@ type TableEntry = Readonly<{
 
 type ResultSet = Readonly<{
   readonly failedDataProcessingUsers: ReadonlyArray<NonEmptyString>;
-}>
+}>;
 
 type IHttpHandler = (
   context: Context,
   userAttrs: IAzureUserAttributes,
   param: NonEmptyString
-) => Promise<
-  | IResponseSuccessJson<ResultSet>
-  | IResponseErrorInternal
->;
+) => Promise<IResponseSuccessJson<ResultSet> | IResponseErrorInternal>;
 
 export const GetFailedUserDataProcessingListHandler = (
   tableService: TableService,
@@ -49,37 +48,42 @@ export const GetFailedUserDataProcessingListHandler = (
   ctx,
   userAttrs,
   choice
-): Promise<
-  | IResponseSuccessJson<ResultSet>
-  | IResponseErrorInternal
-> => {
-    const tableQuery = new TableQuery().select("RowKey").where("PartitionKey == ?", choice);
+): Promise<IResponseSuccessJson<ResultSet> | IResponseErrorInternal> => {
+  const tableQuery = new TableQuery()
+    .select("RowKey")
+    .where("PartitionKey == ?", choice);
 
-    const query = () => new Promise<Either<Error, TableService.QueryEntitiesResult<TableEntry>>>(resolve => tableService.queryEntities(
-      failedUserDataProcessingTable,
-      tableQuery,
-      null,
-      (
-        error: Error,
-        result: TableService.QueryEntitiesResult<TableEntry>,
-        response: ServiceResponse
-      ) => resolve(response.isSuccessful ? right(result) : left(error))
-    ));
+  const query = (): Promise<
+    Either<Error, TableService.QueryEntitiesResult<TableEntry>>
+  > =>
+    new Promise<Either<Error, TableService.QueryEntitiesResult<TableEntry>>>(
+      resolve =>
+        tableService.queryEntities(
+          failedUserDataProcessingTable,
+          tableQuery,
+          null,
+          (
+            error: Error,
+            result: TableService.QueryEntitiesResult<TableEntry>,
+            response: ServiceResponse
+          ) => resolve(response.isSuccessful ? right(result) : left(error))
+        )
+    );
 
-    const resultEntriesOrError = await query();
+  const resultEntriesOrError = await query();
 
-    const response =
-      resultEntriesOrError.bimap(
-        er => {
-          return ResponseErrorInternal(er.message);
-        },
-        rs => {
-          const resultSet = { failedDataProcessingUsers: rs.entries.map(e => e.RowKey._) as ReadonlyArray<NonEmptyString> };
-          return ResponseSuccessJson(resultSet);
-        });
-
-    return response.value;
-  };
+  return resultEntriesOrError.bimap(
+    er => ResponseErrorInternal(er.message),
+    rs => {
+      const resultSet = {
+        failedDataProcessingUsers: rs.entries.map(
+          e => e.RowKey._
+        ) as ReadonlyArray<NonEmptyString>
+      };
+      return ResponseSuccessJson(resultSet);
+    }
+  ).value;
+};
 
 export const GetFailedUserDataProcessingList = (
   serviceModel: ServiceModel,
