@@ -26,15 +26,13 @@ import { deleteTableEntity, insertTableEntity } from "../utils/storage";
 
 // prepare table storage utils
 const config = getConfigOrThrow();
-
-const storageConnectionString =
-  config.FailedUserDataProcessingStorageConnection;
-const tableService = createTableService(storageConnectionString);
-
+const storageConnectionString = config.FailedUserDataProcessingStorageConnection;
 const failedUserDataProcessingTable = config.FAILED_USER_DATA_PROCESSING_TABLE;
-
+const tableService = createTableService(storageConnectionString);
 const addFailedUserDataProcessing = insertTableEntity(tableService, failedUserDataProcessingTable);
 const removeFailedUserDataProcessing = deleteTableEntity(tableService, failedUserDataProcessingTable);
+
+tableService.createTableIfNotExists(failedUserDataProcessingTable, () => 0);
 
 const eg = TableUtilities.entityGenerator;
 
