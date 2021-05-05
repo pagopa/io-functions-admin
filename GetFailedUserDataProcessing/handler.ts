@@ -19,9 +19,10 @@ import {
   ResponseErrorInternal
 } from "@pagopa/ts-commons/lib/responses";
 import { ServiceResponse, TableService } from "azure-storage";
-import { Either, left, right } from "fp-ts/lib/Either";
+import { toError } from "fp-ts/lib/Either";
 import { NonEmptyString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { UserDataProcessingChoice } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { tryCatch } from "fp-ts/lib/TaskEither";
 
 type TableEntry = Readonly<{
   readonly RowKey: Readonly<{
@@ -48,31 +49,29 @@ export const GetFailedUserDataProcessingHandler = (
   __,
   choice,
   fiscalCode
-): Promise<IResponseSuccessJson<ResultSet> | IResponseErrorInternal> => {
-  const query = (): Promise<Either<Error, TableEntry>> =>
-    new Promise<Either<Error, TableEntry>>(resolve =>
-      tableService.retrieveEntity(
-        failedUserDataProcessingTable,
-        choice,
-        fiscalCode,
-        null,
-        (error: Error, result: TableEntry, response: ServiceResponse) =>
-          resolve(response.isSuccessful ? right(result) : left(error))
-      )
-    );
-
-  const resultEntriesOrError = await query();
-
-  return resultEntriesOrError.bimap(
-    er => ResponseErrorInternal(er.message),
-    rs => {
-      const resultSet = {
-        failedDataProcessingUser: rs.RowKey._
-      };
-      return ResponseSuccessJson(resultSet);
-    }
-  ).value;
-};
+): Promise<IResponseSuccessJson<ResultSet> | IResponseErrorInternal> =>
+  tryCatch(
+    () =>
+      new Promise<TableEntry>((resolve, reject) =>
+        tableService.retrieveEntity(
+          failedUserDataProcessingTable,
+          choice,
+          fiscalCode,
+          null,
+          (error: Error, result: TableEntry, response: ServiceResponse) =>
+            response.isSuccessful ? resolve(result) : reject(error)
+        )
+      ),
+    toError
+  )
+    .map(rs => ({
+      failedDataProcessingUser: rs.RowKey._
+    }))
+    .fold<IResponseSuccessJson<ResultSet> | IResponseErrorInternal>(
+      er => ResponseErrorInternal(er.message),
+      ResponseSuccessJson
+    )
+    .run();
 
 export const GetFailedUserDataProcessing = (
   serviceModel: ServiceModel,
