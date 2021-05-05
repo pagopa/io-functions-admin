@@ -35,7 +35,8 @@ const retrieveEntityFailedUserDataProcessingMock = (
         : new Error("Internal error"),
       findEntry(entries)(choice, fiscalCode),
       {
-        isSuccessful: findEntry(entries)(choice, fiscalCode)
+        isSuccessful: findEntry(entries)(choice, fiscalCode),
+        statusCode: findEntry(entries)(choice, fiscalCode) ? 200 : 404
       }
     );
   });
@@ -81,7 +82,7 @@ beforeEach(() => {
 });
 
 describe("GetFailedUserDataProcessingHandler", () => {
-  it("should return an internal error response if no failed user data processing request is present", async () => {
+  it("should return a not found error response if no failed user data processing request is present", async () => {
     const tableServiceMock = ({
       retrieveEntity: retrieveEntityFailedUserDataProcessingMock(
         noFailedRequests
@@ -100,7 +101,7 @@ describe("GetFailedUserDataProcessingHandler", () => {
       fiscalCode1
     );
 
-    expect(result.kind).toBe("IResponseErrorInternal");
+    expect(result.kind).toBe("IResponseErrorNotFound");
   });
 
   it("should return an internal error response if retrieve entity fails", async () => {
