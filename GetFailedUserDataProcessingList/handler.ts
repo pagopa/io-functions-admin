@@ -72,17 +72,14 @@ export const GetFailedUserDataProcessingListHandler = (
 
   const resultEntriesOrError = await query();
 
-  return resultEntriesOrError.bimap(
-    er => ResponseErrorInternal(er.message),
-    rs => {
-      const resultSet = {
-        failedDataProcessingUsers: rs.entries.map(
-          e => e.RowKey._
-        ) as ReadonlyArray<NonEmptyString>
-      };
-      return ResponseSuccessJson(resultSet);
-    }
-  ).value;
+  return resultEntriesOrError
+    .map(rs => ({
+      failedDataProcessingUsers: rs.entries.map(e => e.RowKey._)
+    }))
+    .fold<IResponseSuccessJson<ResultSet> | IResponseErrorInternal>(
+      er => ResponseErrorInternal(er.message),
+      ResponseSuccessJson
+    );
 };
 
 export const GetFailedUserDataProcessingList = (
