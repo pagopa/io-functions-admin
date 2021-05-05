@@ -30,7 +30,7 @@ const queryEntitiesFailedUserDataProcessingMock = (
 
 const storageTableMock = "FailedUserDataProcessing" as NonEmptyString;
 
-const fiscalCode = "SPNDNL80R13C523K" as FiscalCode;
+const fiscalCode = "UEEFON48A55Y758X" as FiscalCode;
 
 const noFailedRequests = [];
 
@@ -61,7 +61,7 @@ beforeEach(() => {
 
 describe("GetFailedUserDataProcessingListHandler", () => {
 
-  it("should return an empty json if no failed user data processing request has been found", async () => {
+  it("should return an empty json if no failed user data processing request is present", async () => {
     const tableServiceMock = ({
       queryEntities: queryEntitiesFailedUserDataProcessingMock(noFailedRequests)
     } as any) as TableService;
