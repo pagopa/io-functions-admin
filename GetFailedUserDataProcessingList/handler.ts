@@ -18,12 +18,13 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { ServiceResponse, TableQuery, TableService } from "azure-storage";
-import { Either, left, right } from "fp-ts/lib/Either";
+import { toError } from "fp-ts/lib/Either";
 import {
   IResponseErrorInternal,
   ResponseErrorInternal
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { tryCatch } from "fp-ts/lib/TaskEither";
 
 type TableEntry = Readonly<{
   readonly RowKey: Readonly<{
@@ -53,33 +54,31 @@ export const GetFailedUserDataProcessingListHandler = (
     .select("RowKey")
     .where("PartitionKey == ?", choice);
 
-  const query = (): Promise<
-    Either<Error, TableService.QueryEntitiesResult<TableEntry>>
-  > =>
-    new Promise<Either<Error, TableService.QueryEntitiesResult<TableEntry>>>(
-      resolve =>
-        tableService.queryEntities(
-          failedUserDataProcessingTable,
-          tableQuery,
-          null,
-          (
-            error: Error,
-            result: TableService.QueryEntitiesResult<TableEntry>,
-            response: ServiceResponse
-          ) => resolve(response.isSuccessful ? right(result) : left(error))
-        )
-    );
-
-  const resultEntriesOrError = await query();
-
-  return resultEntriesOrError
+  return tryCatch(
+    () =>
+      new Promise<TableService.QueryEntitiesResult<TableEntry>>(
+        (resolve, reject) =>
+          tableService.queryEntities(
+            failedUserDataProcessingTable,
+            tableQuery,
+            null,
+            (
+              error: Error,
+              result: TableService.QueryEntitiesResult<TableEntry>,
+              response: ServiceResponse
+            ) => (response.isSuccessful ? resolve(result) : reject(error))
+          )
+      ),
+    toError
+  )
     .map(rs => ({
       failedDataProcessingUsers: rs.entries.map(e => e.RowKey._)
     }))
     .fold<IResponseSuccessJson<ResultSet> | IResponseErrorInternal>(
       er => ResponseErrorInternal(er.message),
       ResponseSuccessJson
-    );
+    )
+    .run();
 };
 
 export const GetFailedUserDataProcessingList = (
