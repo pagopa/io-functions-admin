@@ -11,13 +11,11 @@ import {
 } from "../../__mocks__/durable-functions";
 import { aUserDataProcessing } from "../../__mocks__/mocks";
 import {
-  index,
-  createHandler,
+  triggerHandler,
   ProcessableUserDataDelete,
   ProcessableUserDataDeleteAbort,
   ProcessableUserDataDownload
-} from "../index";
-import { insertTableEntity } from "../../utils/storage";
+} from "../handler";
 import { some } from "fp-ts/lib/Option";
 import { TableUtilities } from "azure-storage";
 
@@ -95,7 +93,8 @@ describe("UserDataProcessingTrigger", () => {
     const input = "invalid";
 
     try {
-      await index(context, input);
+      const handler = triggerHandler(insertEntity, deleteEntity);
+      await handler(context, input);
       fail("it should throw");
     } catch (error) {
       expect(mockStartNew).not.toHaveBeenCalled();
@@ -115,7 +114,8 @@ describe("UserDataProcessingTrigger", () => {
       aNonProcessableDeleteWrongStatus
     ];
 
-    await index(context, input);
+    const handler = triggerHandler(insertEntity, deleteEntity);
+    await handler(context, input);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
   });
@@ -139,7 +139,8 @@ describe("UserDataProcessingTrigger", () => {
       aNonProcessableDeleteWrongStatus
     ].map(toUndecoded);
 
-    await index(context, input);
+    const handler = triggerHandler(insertEntity, deleteEntity);
+    await handler(context, input);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
     expect(mockRaiseEvent).toHaveBeenCalledTimes(processableDocsAbort.length);
@@ -207,7 +208,7 @@ describe("FailedUserDataProcessing", () => {
       ...failedUserDataProcessing
     ].map(toUndecoded);
 
-    const handler = createHandler(insertEntity, deleteEntity);
+    const handler = triggerHandler(insertEntity, deleteEntity);
     await handler(context, input);
 
     expect(insertEntity).toBeCalled();
@@ -230,7 +231,7 @@ describe("ClosedUserDataProcessing", () => {
       ...closedUserDataProcessing
     ].map(toUndecoded);
 
-    const handler = createHandler(insertEntity, deleteEntity);
+    const handler = triggerHandler(insertEntity, deleteEntity);
     await handler(context, input);
 
     expect(insertEntity).not.toBeCalled();

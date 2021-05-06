@@ -40,7 +40,7 @@ import {
 } from "../SetUserSessionLockActivity/handler";
 
 import { ActivityInput as UpdateServiceSubscriptionFeedActivityInput } from "../UpdateSubscriptionsFeedActivity/types";
-import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger";
+import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger/handler";
 import {
   trackUserDataDeleteEvent,
   trackUserDataDeleteException
