@@ -19,12 +19,12 @@ import {
 } from "../utils/appinsightsEvents";
 import { flags } from "../utils/featureFlags";
 import { isOrchestratorRunning } from "../utils/orchestrator";
-import { InsertTableEntityType, DeleteTableEntityType } from "./utils";
+import { DeleteTableEntity, InsertTableEntity } from "../utils/storage";
 
 const eg = TableUtilities.entityGenerator;
 
 // configure log prefix
-const logPrefix = "UserDataProcessingTrigger";
+const logPrefix = "UserDataProcessingHandler";
 
 // models the subset of UserDataProcessing documents that this orchestrator accepts
 export type ProcessableUserDataDownload = t.TypeOf<
@@ -174,7 +174,7 @@ const raiseAbortEventOnOrchestrator = (
 const processFailedUserDataProcessing = async (
   context: Context,
   processable: FailedUserDataProcessing,
-  insertEntityFn: InsertTableEntityType
+  insertEntityFn: InsertTableEntity
 ): Promise<void> => {
   // If a failed user_data_processing has been inserted
   // we insert a record into failed_user_data_processing table storage
@@ -194,7 +194,7 @@ const processFailedUserDataProcessing = async (
 const processClosedUserDataProcessing = async (
   context: Context,
   processable: ClosedUserDataProcessing,
-  deleteEntityFn: DeleteTableEntityType
+  deleteEntityFn: DeleteTableEntity
 ): Promise<void> => {
   // If a completed user_data_processing has been inserted
   // we delete any record into failed_user_data_processing table storage
@@ -213,8 +213,8 @@ const processClosedUserDataProcessing = async (
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions, sonarjs/cognitive-complexity
 export const triggerHandler = (
-  addFailure: InsertTableEntityType,
-  removeFailure: DeleteTableEntityType
+  addFailure: InsertTableEntity,
+  removeFailure: DeleteTableEntity
 ) => (
   context: Context,
   input: unknown // eslint-disable-next-line sonarjs/cognitive-complexity

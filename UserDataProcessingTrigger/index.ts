@@ -1,20 +1,38 @@
 import { Context } from "@azure/functions";
-import { triggerHandler } from "./handler";
+import { createTableService } from "azure-storage";
+import { getConfigOrThrow } from "../utils/config";
 import {
-  addFailedUserDataProcessing,
-  removeFailedUserDataProcessing,
-  createFailedUserDataProcessingTableIfNotExists
-} from "./utils";
+  createTableIfNotExists,
+  deleteTableEntity,
+  insertTableEntity
+} from "../utils/storage";
+import { triggerHandler } from "./handler";
 
-createFailedUserDataProcessingTableIfNotExists();
+// configure log prefix
+const logPrefix = "UserDataProcessingTrigger";
 
-export const index = (
+// prepare table storage utils
+const config = getConfigOrThrow();
+const connectionString = config.FailedUserDataProcessingStorageConnection;
+const failedUserDataProcessingTable = config.FAILED_USER_DATA_PROCESSING_TABLE;
+const tableService = createTableService(connectionString);
+
+export const index = async (
   context: Context,
   input: unknown
 ): Promise<ReadonlyArray<string | void>> => {
+  (await createTableIfNotExists(
+    tableService,
+    failedUserDataProcessingTable
+  )).mapLeft(_ => {
+    context.log.verbose(
+      `${logPrefix}|Failed to create storage table ${failedUserDataProcessingTable}`
+    );
+  });
+
   const handler = triggerHandler(
-    addFailedUserDataProcessing,
-    removeFailedUserDataProcessing
+    insertTableEntity(tableService, failedUserDataProcessingTable),
+    deleteTableEntity(tableService, failedUserDataProcessingTable)
   );
   return handler(context, input);
 };

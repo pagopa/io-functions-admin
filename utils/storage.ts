@@ -6,6 +6,19 @@ import { none, Option, some } from "fp-ts/lib/Option";
 import { ITuple2, Tuple2 } from "italia-ts-commons/lib/tuples";
 
 /**
+ * A promisified version of TableService.createTableIfNotExists
+ */
+export const createTableIfNotExists = (
+  tableService: TableService,
+  table: string
+): Promise<Either<Error, TableService.TableResult>> =>
+  new Promise(resolve =>
+    tableService.createTableIfNotExists(table, (error, result, response) =>
+      resolve(response.isSuccessful ? right(result) : left(error))
+    )
+  );
+
+/**
  * A promisified version of TableService.insertEntity
  */
 export const insertTableEntity = (
@@ -33,6 +46,8 @@ export const insertTableEntity = (
     )
   );
 
+export type InsertTableEntity = ReturnType<typeof insertTableEntity>;
+
 /**
  * A promisified version of TableService.deleteEntity
  */
@@ -54,3 +69,5 @@ export const deleteTableEntity = (
         )
     )
   );
+
+export type DeleteTableEntity = ReturnType<typeof deleteTableEntity>;
