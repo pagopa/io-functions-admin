@@ -49,59 +49,55 @@ type IHttpHandler = (
 >;
 
 export const GetFailedUserDataProcessingHandler = (
-         tableService: TableService,
-         failedUserDataProcessingTable: NonEmptyString
-       ): IHttpHandler => async (
-         _,
-         __,
-         choice,
-         fiscalCode
-       ): Promise<
-         | IResponseSuccessJson<ResultSet>
-         | IResponseErrorInternal
-         | IResponseErrorNotFound
-       > =>
-         tryCatch(
-           () =>
-             new Promise<Option<TableEntry>>((resolve, reject) =>
-               tableService.retrieveEntity(
-                 failedUserDataProcessingTable,
-                 choice,
-                 fiscalCode,
-                 null,
-                 (
-                   error: Error,
-                   result: TableEntry,
-                   response: ServiceResponse
-                 ) =>
-                   response.isSuccessful
-                     ? resolve(some(result))
-                     : response.statusCode === 404
-                     ? resolve(none)
-                     : reject(error)
-               )
-             ),
-           toError
-         )
-           .mapLeft<IResponseErrorInternal | IResponseErrorNotFound>(er =>
-             ResponseErrorInternal(er.message)
-           )
-           .chain(maybeTableEntry =>
-             fromEither(
-               fromOption(
-                 ResponseErrorNotFound("Not found!", "No record found.")
-               )(maybeTableEntry)
-             )
-           )
-           .map(rs => ({
-             failedDataProcessingUser: rs.RowKey._
-           }))
-           .fold<
-             | IResponseSuccessJson<ResultSet>
-             | IResponseErrorInternal
-             | IResponseErrorNotFound
-           >(er => er, ResponseSuccessJson)
-           .run();
+  tableService: TableService,
+  failedUserDataProcessingTable: NonEmptyString
+): IHttpHandler => async (
+  _,
+  __,
+  choice,
+  fiscalCode
+): Promise<
+  | IResponseSuccessJson<ResultSet>
+  | IResponseErrorInternal
+  | IResponseErrorNotFound
+> =>
+  tryCatch(
+    () =>
+      new Promise<Option<TableEntry>>((resolve, reject) =>
+        tableService.retrieveEntity(
+          failedUserDataProcessingTable,
+          choice,
+          fiscalCode,
+          null,
+          (error: Error, result: TableEntry, response: ServiceResponse) =>
+            response.isSuccessful
+              ? resolve(some(result))
+              : response.statusCode === 404
+              ? resolve(none)
+              : reject(error)
+        )
+      ),
+    toError
+  )
+    .mapLeft<IResponseErrorInternal | IResponseErrorNotFound>(er =>
+      ResponseErrorInternal(er.message)
+    )
+    .chain(maybeTableEntry =>
+      fromEither(
+        fromOption(ResponseErrorNotFound("Not found!", "No record found."))(
+          maybeTableEntry
+        )
+      )
+    )
+    .map(rs => ({
+      failedDataProcessingUser: rs.RowKey._
+    }))
+    .fold<
+      | IResponseSuccessJson<ResultSet>
+      | IResponseErrorInternal
+      | IResponseErrorNotFound
+    >(er => er, ResponseSuccessJson)
+    .run();
 
 export const GetFailedUserDataProcessing = (
   serviceModel: ServiceModel,
