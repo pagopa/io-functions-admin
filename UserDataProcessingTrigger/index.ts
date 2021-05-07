@@ -21,14 +21,13 @@ export const index = async (
   context: Context,
   input: unknown
 ): Promise<ReadonlyArray<string | void>> => {
-  (await createTableIfNotExists(
-    tableService,
-    failedUserDataProcessingTable
-  )).mapLeft(_ => {
-    context.log.verbose(
-      `${logPrefix}|Failed to create storage table ${failedUserDataProcessingTable}`
-    );
-  });
+  await createTableIfNotExists(tableService, failedUserDataProcessingTable)
+    .mapLeft(_ => {
+      context.log.verbose(
+        `${logPrefix}|Failed to create storage table ${failedUserDataProcessingTable}`
+      );
+    })
+    .run();
 
   const handler = triggerHandler(
     insertTableEntity(tableService, failedUserDataProcessingTable),

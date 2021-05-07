@@ -1,21 +1,26 @@
 import { ServiceResponse, TableService } from "azure-storage";
 
-import { Either, left, right } from "fp-ts/lib/Either";
+import { Either, left, right, toError } from "fp-ts/lib/Either";
 import { none, Option, some } from "fp-ts/lib/Option";
+import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 
 import { ITuple2, Tuple2 } from "italia-ts-commons/lib/tuples";
 
 /**
- * A promisified version of TableService.createTableIfNotExists
+ * A taskified version of TableService.createTableIfNotExists
  */
 export const createTableIfNotExists = (
   tableService: TableService,
   table: string
-): Promise<Either<Error, TableService.TableResult>> =>
-  new Promise(resolve =>
-    tableService.createTableIfNotExists(table, (error, result, response) =>
-      resolve(response.isSuccessful ? right(result) : left(error))
-    )
+): TaskEither<Error, TableService.TableResult> =>
+  tryCatch(
+    () =>
+      new Promise((resolve, reject) =>
+        tableService.createTableIfNotExists(table, (error, result, response) =>
+          response.isSuccessful ? resolve(result) : reject(error)
+        )
+      ),
+    toError
   );
 
 /**
