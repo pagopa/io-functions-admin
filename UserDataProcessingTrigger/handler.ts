@@ -19,7 +19,7 @@ import {
 } from "../utils/appinsightsEvents";
 import { flags } from "../utils/featureFlags";
 import { isOrchestratorRunning } from "../utils/orchestrator";
-import { DeleteTableEntity, InsertTableEntity } from "../utils/storage";
+import { DeleteTableEntity } from "../utils/storage";
 
 const eg = TableUtilities.entityGenerator;
 
@@ -173,22 +173,20 @@ const raiseAbortEventOnOrchestrator = (
 
 const processFailedUserDataProcessing = async (
   context: Context,
-  processable: FailedUserDataProcessing,
-  insertEntityFn: InsertTableEntity
+  processable: FailedUserDataProcessing
 ): Promise<void> => {
   // If a failed user_data_processing has been inserted
-  // we insert a record into failed_user_data_processing table storage
+  // we insert a record into FailedUserDataProcessing table storage
   context.log.verbose(
     `${logPrefix}|KEY=${processable.fiscalCode}|Inserting failed_user_data_processing entity`
   );
-  const { e1: resultOrError, e2: sResponse } = await insertEntityFn({
-    PartitionKey: eg.String(processable.choice),
-    RowKey: eg.String(processable.fiscalCode)
-  });
-  if (resultOrError.isLeft() && sResponse.statusCode !== 409) {
-    // retry
-    context.log.error(`${logPrefix}|ERROR=${resultOrError.value.message}`);
-  }
+  // eslint-disable-next-line functional/immutable-data
+  context.bindings.FailedUserDataProcessingOut = [
+    {
+      PartitionKey: processable.choice,
+      RowKey: processable.fiscalCode
+    }
+  ];
 };
 
 const processClosedUserDataProcessing = async (
@@ -197,7 +195,7 @@ const processClosedUserDataProcessing = async (
   deleteEntityFn: DeleteTableEntity
 ): Promise<void> => {
   // If a completed user_data_processing has been inserted
-  // we delete any record into failed_user_data_processing table storage
+  // we delete any record from FailedUserDataProcessing table storage
   context.log.verbose(
     `${logPrefix}|KEY=${processable.fiscalCode}|Deleting any failed_user_data_processing entity`
   );
@@ -206,16 +204,14 @@ const processClosedUserDataProcessing = async (
     RowKey: eg.String(processable.fiscalCode)
   });
   if (maybeError.isSome() && uResponse.statusCode !== 404) {
-    // retry
-    context.log.error(`${logPrefix}|ERROR=${maybeError.value.message}`);
+    context.log.error(
+      `${logPrefix}|processClosedUserDataProcessing|ERROR=${maybeError.value.message}`
+    );
   }
 };
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions, sonarjs/cognitive-complexity
-export const triggerHandler = (
-  addFailure: InsertTableEntity,
-  removeFailure: DeleteTableEntity
-) => (
+export const triggerHandler = (removeFailure: DeleteTableEntity) => (
   context: Context,
   input: unknown // eslint-disable-next-line sonarjs/cognitive-complexity
 ): Promise<ReadonlyArray<string | void>> => {
@@ -248,11 +244,7 @@ export const triggerHandler = (
                   raiseAbortEventOnOrchestrator(context, processable)
               : FailedUserDataProcessing.is(processable)
               ? (): Promise<void> =>
-                  processFailedUserDataProcessing(
-                    context,
-                    processable,
-                    addFailure
-                  )
+                  processFailedUserDataProcessing(context, processable)
               : ClosedUserDataProcessing.is(processable)
               ? (): Promise<void> =>
                   processClosedUserDataProcessing(
