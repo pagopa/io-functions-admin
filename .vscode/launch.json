@@ -41,9 +41,9 @@
       "port": 5861,
       "restart": true,
       "localRoot": "${workspaceFolder}",
-      "remoteRoot": "${workspaceFolder}",
+      "remoteRoot": "/usr/src/app",
       "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
+        "${workspaceFolder}/src/**/*.js"
       ],
       "skipFiles": [
         "<node_internals>/**/*.js"

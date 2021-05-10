@@ -1,9 +1,27 @@
 import { ServiceResponse, TableService } from "azure-storage";
 
-import { Either, left, right } from "fp-ts/lib/Either";
+import { Either, left, right, toError } from "fp-ts/lib/Either";
 import { none, Option, some } from "fp-ts/lib/Option";
+import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 
 import { ITuple2, Tuple2 } from "italia-ts-commons/lib/tuples";
+
+/**
+ * A taskified version of TableService.createTableIfNotExists
+ */
+export const createTableIfNotExists = (
+  tableService: TableService,
+  table: string
+): TaskEither<Error, TableService.TableResult> =>
+  tryCatch(
+    () =>
+      new Promise((resolve, reject) =>
+        tableService.createTableIfNotExists(table, (error, result, response) =>
+          response.isSuccessful ? resolve(result) : reject(error)
+        )
+      ),
+    toError
+  );
 
 /**
  * A promisified version of TableService.insertEntity
@@ -33,6 +51,8 @@ export const insertTableEntity = (
     )
   );
 
+export type InsertTableEntity = ReturnType<typeof insertTableEntity>;
+
 /**
  * A promisified version of TableService.deleteEntity
  */
@@ -54,3 +74,5 @@ export const deleteTableEntity = (
         )
     )
   );
+
+export type DeleteTableEntity = ReturnType<typeof deleteTableEntity>;

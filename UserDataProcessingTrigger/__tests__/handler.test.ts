@@ -1,5 +1,6 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
+import { right } from "fp-ts/lib/Either";
 import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
@@ -10,11 +11,13 @@ import {
 } from "../../__mocks__/durable-functions";
 import { aUserDataProcessing } from "../../__mocks__/mocks";
 import {
-  index,
+  triggerHandler,
   ProcessableUserDataDelete,
   ProcessableUserDataDeleteAbort,
   ProcessableUserDataDownload
-} from "../index";
+} from "../handler";
+import { some } from "fp-ts/lib/Option";
+import { TableUtilities } from "azure-storage";
 
 // converts a UserDataProcessing object in a form as it would come from the database
 const toUndecoded = (doc: UserDataProcessing) => ({
@@ -53,6 +56,16 @@ const aProcessableDeleteAbort = {
   status: UserDataProcessingStatusEnum.ABORTED
 };
 
+const aFailedUserDataProcessing = {
+  ...aUserDataProcessing,
+  status: UserDataProcessingStatusEnum.FAILED
+};
+
+const aClosedUserDataProcessing = {
+  ...aUserDataProcessing,
+  status: UserDataProcessingStatusEnum.CLOSED
+};
+
 jest.mock("../../utils/featureFlags", () => ({
   flags: {
     ENABLE_USER_DATA_DELETE: true,
@@ -60,16 +73,27 @@ jest.mock("../../utils/featureFlags", () => ({
   }
 }));
 
-describe("UserDataProcessingTrigger", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+const eg = TableUtilities.entityGenerator;
 
+const deleteEntity = jest.fn<any, any[]>(
+  () =>
+    ({
+      e1: some("deleted"),
+      e2: { statusCode: 200 }
+    } as any)
+);
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+describe("UserDataProcessingTrigger", () => {
   it("should fail on invalid input", async () => {
     const input = "invalid";
 
     try {
-      await index(context, input);
+      const handler = triggerHandler(deleteEntity);
+      await handler(context, input);
       fail("it should throw");
     } catch (error) {
       expect(mockStartNew).not.toHaveBeenCalled();
@@ -89,7 +113,8 @@ describe("UserDataProcessingTrigger", () => {
       aNonProcessableDeleteWrongStatus
     ];
 
-    await index(context, input);
+    const handler = triggerHandler(deleteEntity);
+    await handler(context, input);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
   });
@@ -113,7 +138,8 @@ describe("UserDataProcessingTrigger", () => {
       aNonProcessableDeleteWrongStatus
     ].map(toUndecoded);
 
-    await index(context, input);
+    const handler = triggerHandler(deleteEntity);
+    await handler(context, input);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
     expect(mockRaiseEvent).toHaveBeenCalledTimes(processableDocsAbort.length);
@@ -167,5 +193,52 @@ describe("ProcessableUserDataDeleteAbort", () => {
     ${"processable delete"}    | ${aProcessableDelete}
   `("should not map unprocessable record '$name'", ({ value }) => {
     expect(ProcessableUserDataDeleteAbort.decode(value).isLeft()).toBe(true);
+  });
+});
+
+describe("FailedUserDataProcessing", () => {
+  it("should process a failed user_data_processing inserting a failed record", async () => {
+    const failedUserDataProcessing: ReadonlyArray<UserDataProcessing> = [
+      aFailedUserDataProcessing
+    ];
+
+    const input: ReadonlyArray<any> = [...failedUserDataProcessing].map(
+      toUndecoded
+    );
+
+    const handler = triggerHandler(deleteEntity);
+    await handler(context, input);
+
+    // check if binding to FailedUserDataProcessing has failed records
+    input.forEach(i => expect(context.bindings.FailedUserDataProcessingOut).toEqual([
+      {
+        PartitionKey: i.choice,
+        RowKey: i.fiscalCode
+      }
+    ]))
+
+    expect(deleteEntity).not.toBeCalled();
+  });
+});
+
+describe("ClosedUserDataProcessing", () => {
+  it("should process a closed user_data_processing removing a possible failed record", async () => {
+    const closedUserDataProcessing: ReadonlyArray<UserDataProcessing> = [
+      aClosedUserDataProcessing
+    ];
+
+    const input: ReadonlyArray<any> = [...closedUserDataProcessing].map(
+      toUndecoded
+    );
+
+    const handler = triggerHandler(deleteEntity);
+    await handler(context, input);
+
+    expect(deleteEntity).toBeCalled();
+    expect(deleteEntity).toBeCalledTimes(1);
+    expect(deleteEntity).toBeCalledWith({
+      PartitionKey: eg.String(closedUserDataProcessing[0].choice),
+      RowKey: eg.String(closedUserDataProcessing[0].fiscalCode)
+    });
   });
 });

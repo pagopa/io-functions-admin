@@ -9,7 +9,7 @@ import { readableReport } from "italia-ts-commons/lib/reporters";
 import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from "../ExtractUserDataActivity/handler";
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../SendUserDataDownloadMessageActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
-import { ProcessableUserDataDownload } from "../UserDataProcessingTrigger";
+import { ProcessableUserDataDownload } from "../UserDataProcessingTrigger/handler";
 import {
   trackUserDataDownloadEvent,
   trackUserDataDownloadException

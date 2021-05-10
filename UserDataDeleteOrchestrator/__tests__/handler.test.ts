@@ -33,7 +33,7 @@ import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSucce
 import { ActivityResultSuccess as SetUserSessionLockActivityResultSuccess } from "../../SetUserSessionLockActivity/handler";
 import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler";
 import { ActivityResultSuccess as GetProfileActivityResultSuccess } from "../../GetProfileActivity/handler";
-import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger";
+import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger/handler";
 import { ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess } from "../../SendUserDataDeleteEmailActivity/handler";
 
 const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
