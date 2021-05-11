@@ -84,7 +84,7 @@
     "nodemailer": "^6.4.11",
     "nodemailer-sendgrid": "^1.0.3",
     "randomstring": "^1.1.5",
-    "redis": "^3.0.2",
+    "redis": "^3.1.1",
     "redis-clustr": "^1.7.0",
     "ulid": "^2.3.0",
     "upng-js": "^2.1.0",
