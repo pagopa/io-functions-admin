@@ -9,9 +9,9 @@
     "http": {
       "routePrefix": ""
     },
-
     "durableTask": {
       "hubName": "%SLOT_TASK_HUBNAME%",
+      "localRpcEndpointEnabled": false,
       "storageProvider": {
         "connectionStringName": "AzureWebJobsStorage"
       },
@@ -20,6 +20,5 @@
         "traceReplayEvents": false
       }
     }
-
   }
 }
