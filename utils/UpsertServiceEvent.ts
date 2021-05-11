@@ -2,7 +2,7 @@ import * as t from "io-ts";
 
 import { UTCISODateFromString } from "italia-ts-commons/lib/dates";
 
-import { RetrievedService } from "io-functions-commons/dist/src/models/service";
+import { RetrievedService } from "@pagopa/io-functions-commons/dist/src/models/service";
 
 /**
  * Carries information about created or updated service.

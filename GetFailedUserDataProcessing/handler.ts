@@ -1,17 +1,17 @@
 import * as express from "express";
 
 import { Context } from "@azure/functions";
-import { ServiceModel } from "io-functions-commons/dist/src/models/service";
+import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
 import {
   AzureUserAttributesMiddleware,
   IAzureUserAttributes
-} from "io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
-import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import { RequiredParamMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_param";
+} from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
+import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
+import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
 import {
   withRequestMiddlewares,
   wrapRequestHandler
-} from "io-functions-commons/dist/src/utils/request_middleware";
+} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseSuccessJson,
   ResponseSuccessJson,
@@ -22,7 +22,7 @@ import {
 import { ServiceResponse, TableService } from "azure-storage";
 import { fromOption, toError } from "fp-ts/lib/Either";
 import { NonEmptyString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { UserDataProcessingChoice } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { fromEither, tryCatch } from "fp-ts/lib/TaskEither";
 import { none, Option, some } from "fp-ts/lib/Option";
 import { ResponseErrorNotFound } from "italia-ts-commons/lib/responses";

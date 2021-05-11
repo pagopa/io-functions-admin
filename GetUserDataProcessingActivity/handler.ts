@@ -8,12 +8,12 @@ import { fromEither, fromLeft, taskEither } from "fp-ts/lib/TaskEither";
 
 import { Context } from "@azure/functions";
 
-import { UserDataProcessingChoice } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import {
   makeUserDataProcessingId,
   UserDataProcessing,
   UserDataProcessingModel
-} from "io-functions-commons/dist/src/models/user_data_processing";
+} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
 import { getMessageFromCosmosErrors } from "../utils/conversions";

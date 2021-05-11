@@ -62,6 +62,7 @@
     "@azure/graph": "^4.0.1",
     "@azure/ms-rest-js": "^2.2.3",
     "@azure/ms-rest-nodeauth": "^2.0.5",
+    "@pagopa/io-functions-commons": "^20.3.4",
     "@pagopa/ts-commons": "^9.1.0",
     "@types/archiver": "^3.1.0",
     "@types/randomstring": "^1.1.6",
@@ -74,9 +75,8 @@
     "dotenv": "^8.2.0",
     "durable-functions": "^1.4.3",
     "express": "^4.15.3",
-    "fp-ts": "1.17.0",
+    "fp-ts": "1.17.4",
     "html-to-text": "^5.1.1",
-    "io-functions-commons": "^17.0.0",
     "io-functions-express": "^1.1.0",
     "io-ts": "1.8.5",
     "italia-ts-commons": "^8.5.0",
@@ -93,6 +93,7 @@
   },
   "resolutions": {
     "handlebars": "~4.5.3",
-    "fp-ts": "1.17.0"
+    "fp-ts": "1.17.4",
+    "@azure/cosmos": "^3.9.1"
   }
 }

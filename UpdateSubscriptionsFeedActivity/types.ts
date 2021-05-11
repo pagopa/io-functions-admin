@@ -1,4 +1,4 @@
-import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
+import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
 import * as t from "io-ts";
 import { FiscalCode } from "italia-ts-commons/lib/strings";
 

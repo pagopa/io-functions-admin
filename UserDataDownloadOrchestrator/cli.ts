@@ -13,16 +13,16 @@ import { FiscalCode } from "italia-ts-commons/lib/strings";
 
 import { toString } from "fp-ts/lib/function";
 
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   makeUserDataProcessingId,
   USER_DATA_PROCESSING_COLLECTION_NAME,
   UserDataProcessingModel
-} from "io-functions-commons/dist/src/models/user_data_processing";
+} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 
 import { isLeft } from "fp-ts/lib/Either";
 import { isNone } from "fp-ts/lib/Option";
-import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import setUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
 import sendUserDataDownloadMessageActivity from "../SendUserDataDownloadMessageActivity";
 import extractUserDataActivity from "../ExtractUserDataActivity";

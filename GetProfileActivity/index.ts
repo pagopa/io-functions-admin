@@ -1,7 +1,7 @@
 import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
-} from "io-functions-commons/dist/src/models/profile";
+} from "@pagopa/io-functions-commons/dist/src/models/profile";
 import { cosmosdbClient } from "../utils/cosmosdb";
 
 import { getConfigOrThrow } from "../utils/config";

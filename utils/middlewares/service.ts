@@ -1,5 +1,5 @@
-import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
-import { IRequestMiddleware } from "io-functions-commons/dist/src/utils/request_middleware";
+import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
+import { IRequestMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import { ResponseErrorFromValidationErrors } from "italia-ts-commons/lib/responses";
 
 import { Logo as ApiLogo } from "../../generated/definitions/Logo";

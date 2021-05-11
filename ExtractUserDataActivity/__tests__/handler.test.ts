@@ -23,15 +23,15 @@ import {
 import archiver = require("archiver");
 import { BlobService } from "azure-storage";
 import { fromEither, taskEither } from "fp-ts/lib/TaskEither";
-import { MessageModel } from "io-functions-commons/dist/src/models/message";
-import { MessageStatusModel } from "io-functions-commons/dist/src/models/message_status";
+import { MessageModel } from "@pagopa/io-functions-commons/dist/src/models/message";
+import { MessageStatusModel } from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import {
   NotificationModel,
   RetrievedNotification
-} from "io-functions-commons/dist/src/models/notification";
-import { NotificationStatusModel } from "io-functions-commons/dist/src/models/notification_status";
-import { ProfileModel } from "io-functions-commons/dist/src/models/profile";
-import * as asyncI from "io-functions-commons/dist/src/utils/async";
+} from "@pagopa/io-functions-commons/dist/src/models/notification";
+import { NotificationStatusModel } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
+import { ProfileModel } from "@pagopa/io-functions-commons/dist/src/models/profile";
+import * as asyncI from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { DeferredPromise } from "italia-ts-commons/lib/promises";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { NonEmptyString } from "italia-ts-commons/lib/strings";

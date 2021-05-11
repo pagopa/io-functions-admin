@@ -16,8 +16,8 @@ import {
 
 import { none, some } from "fp-ts/lib/Option";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
-import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
-import { ProfileModel } from "io-functions-commons/dist/src/models/profile";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { ProfileModel } from "@pagopa/io-functions-commons/dist/src/models/profile";
 
 describe("GetProfileActivityHandler", () => {
   it("should handle a result", async () => {

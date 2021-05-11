@@ -4,17 +4,17 @@ import {
   UserContract
 } from "@azure/arm-apimanagement/esm/models";
 import { Either } from "fp-ts/lib/Either";
-import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
-import { ServiceMetadata as ApiServiceMetadata } from "io-functions-commons/dist/generated/definitions/ServiceMetadata";
+import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
+import { ServiceMetadata as ApiServiceMetadata } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceMetadata";
 import {
   RetrievedService,
   Service,
   toAuthorizedCIDRs,
   toAuthorizedRecipients
-} from "io-functions-commons/dist/src/models/service";
-import { VisibleService } from "io-functions-commons/dist/src/models/visible_service";
-import { CosmosErrors } from "io-functions-commons/dist/src/utils/cosmosdb_model";
-import { toApiServiceMetadata as toServiceMetadata } from "io-functions-commons/dist/src/utils/service_metadata";
+} from "@pagopa/io-functions-commons/dist/src/models/service";
+import { VisibleService } from "@pagopa/io-functions-commons/dist/src/models/visible_service";
+import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { toApiServiceMetadata as toServiceMetadata } from "@pagopa/io-functions-commons/dist/src/utils/service_metadata";
 import { Errors } from "io-ts";
 import { errorsToReadableMessages } from "italia-ts-commons/lib/reporters";
 import { EmailString, FiscalCode } from "italia-ts-commons/lib/strings";
