@@ -35,6 +35,11 @@ import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler"
 import { ActivityResultSuccess as GetProfileActivityResultSuccess } from "../../GetProfileActivity/handler";
 import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger/handler";
 import { ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess } from "../../SendUserDataDeleteEmailActivity/handler";
+import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+
+const decodeUserDataProcessing = (o: object): UserDataProcessing =>
+  UserDataProcessing.decode(o).getOrElseL(e =>
+    fail(`Failed creating a mock input document: ${readableReport(e)}`));
 
 const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
   ...aUserDataProcessing,
@@ -44,23 +49,23 @@ const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
   fail(`Failed creating a mock input document: ${readableReport(e)}`)
 );
 
-const aUserDataDownloadPending = {
+const aUserDataDownloadPending = decodeUserDataProcessing({
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DOWNLOAD,
   status: UserDataProcessingStatusEnum.PENDING
-};
+});
 
-const aUserDataDownloadWip = {
+const aUserDataDownloadWip = decodeUserDataProcessing({
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DOWNLOAD,
   status: UserDataProcessingStatusEnum.WIP
-};
+});
 
-const aUserDataDownloadClosed = {
+const aUserDataDownloadClosed = decodeUserDataProcessing({
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DOWNLOAD,
   status: UserDataProcessingStatusEnum.CLOSED
-};
+});
 
 const setUserDataProcessingStatusActivity = jest.fn().mockImplementation(() =>
   SetUserDataProcessingStatusActivityResultSuccess.encode({

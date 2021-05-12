@@ -6,7 +6,8 @@
     "rootDir": ".",
     "sourceMap": true,
     "strict": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "skipLibCheck": true
   },
   "exclude": [
     "__mocks__",

@@ -4,14 +4,18 @@
 
 import * as t from "io-ts";
 
-import { fromEither, TaskEither } from "fp-ts/lib/TaskEither";
+import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 
 import { Context } from "@azure/functions";
 
-import { UserDataProcessingStatus, UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import {
+  UserDataProcessingStatus,
+  UserDataProcessingStatusEnum
+} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
-  UserDataProcessingModel
+  UserDataProcessingModel,
+  UserDataProcessingWithoutId
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
@@ -113,20 +117,25 @@ export const createSetUserDataProcessingStatusActivityHandler = (
   }: {
     readonly currentRecord: UserDataProcessing;
     readonly nextStatus: UserDataProcessingStatus;
-  }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
-    userDataProcessingModel
-      .createOrUpdateByNewOne({
-        ...currentRecord,
-        status: nextStatus,
-        updatedAt: new Date()
-      })
-      .mapLeft(err =>
-        ActivityResultQueryFailure.encode({
-          kind: "QUERY_FAILURE",
-          query: "userDataProcessingModel.createOrUpdateByNewOne",
-          reason: `${err.kind}, ${getMessageFromCosmosErrors(err)}`
-        })
-      );
+  }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> => {
+    return UserDataProcessingWithoutId.decode({
+      ...currentRecord,
+      status: nextStatus,
+      updatedAt: new Date()
+    }).fold(
+      _ => void 0,
+      userDataProcessingWithoutId =>
+        userDataProcessingModel
+          .createOrUpdateByNewOne(userDataProcessingWithoutId)
+          .mapLeft(err =>
+            ActivityResultQueryFailure.encode({
+              kind: "QUERY_FAILURE",
+              query: "userDataProcessingModel.createOrUpdateByNewOne",
+              reason: `${err.kind}, ${getMessageFromCosmosErrors(err)}`
+            })
+          )
+    );
+  };
 
   // the actual handler
   return fromEither(ActivityInput.decode(input))

@@ -1,6 +1,5 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-import { right } from "fp-ts/lib/Either";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
@@ -18,6 +17,7 @@ import {
 } from "../handler";
 import { some } from "fp-ts/lib/Option";
 import { TableUtilities } from "azure-storage";
+import { readableReport } from "italia-ts-commons/lib/reporters";
 
 // converts a UserDataProcessing object in a form as it would come from the database
 const toUndecoded = (doc: UserDataProcessing) => ({
@@ -26,45 +26,50 @@ const toUndecoded = (doc: UserDataProcessing) => ({
   updatedAt: doc.updatedAt ? doc.updatedAt.toISOString() : undefined
 });
 
-const aProcessableDownload = {
+const decodeUserDataProcessing = (o: object): UserDataProcessing =>
+  UserDataProcessing.decode(o).getOrElseL(e =>
+    fail(`Failed creating a mock input document: ${readableReport(e)}`));
+
+const aProcessableDownload = decodeUserDataProcessing({
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DOWNLOAD,
   status: UserDataProcessingStatusEnum.PENDING
-};
+});
 
-const aProcessableDelete = {
+const aProcessableDelete = decodeUserDataProcessing({
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DELETE,
   status: UserDataProcessingStatusEnum.PENDING
-};
+});
 
-const aNonProcessableDownloadWrongStatus = {
+const aNonProcessableDownloadWrongStatus = decodeUserDataProcessing({
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DOWNLOAD,
   status: UserDataProcessingStatusEnum.WIP
-};
+});
 
-const aNonProcessableDeleteWrongStatus = {
+const aNonProcessableDeleteWrongStatus = decodeUserDataProcessing({
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DELETE,
-  status: UserDataProcessingStatusEnum.WIP
-};
+  status: UserDataProcessingStatusEnum.WIP,
+});
 
-const aProcessableDeleteAbort = {
+const aProcessableDeleteAbort = decodeUserDataProcessing({
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DELETE,
   status: UserDataProcessingStatusEnum.ABORTED
-};
+});
 
-const aFailedUserDataProcessing = {
+const aFailedUserDataProcessing = decodeUserDataProcessing({
   ...aUserDataProcessing,
-  status: UserDataProcessingStatusEnum.FAILED
-};
+  status: UserDataProcessingStatusEnum.FAILED,
+  reason: "a reason"
+});
 
-const aClosedUserDataProcessing = {
+const aClosedUserDataProcessing = decodeUserDataProcessing({
   ...aUserDataProcessing,
   status: UserDataProcessingStatusEnum.CLOSED
-};
+});
 
 jest.mock("../../utils/featureFlags", () => ({
   flags: {
@@ -210,12 +215,14 @@ describe("FailedUserDataProcessing", () => {
     await handler(context, input);
 
     // check if binding to FailedUserDataProcessing has failed records
-    input.forEach(i => expect(context.bindings.FailedUserDataProcessingOut).toEqual([
-      {
-        PartitionKey: i.choice,
-        RowKey: i.fiscalCode
-      }
-    ]))
+    input.forEach(i =>
+      expect(context.bindings.FailedUserDataProcessingOut).toEqual([
+        {
+          PartitionKey: i.choice,
+          RowKey: i.fiscalCode
+        }
+      ])
+    );
 
     expect(deleteEntity).not.toBeCalled();
   });

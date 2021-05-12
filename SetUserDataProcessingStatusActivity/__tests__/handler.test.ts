@@ -13,8 +13,13 @@ import {
 
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { UserDataProcessingModel } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+import { UserDataProcessing, UserDataProcessingModel } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { readableReport } from "italia-ts-commons/lib/reporters";
+
+const decodeUserDataProcessing = (o: object): UserDataProcessing =>
+  UserDataProcessing.decode(o).getOrElseL(e =>
+    fail(`Failed creating a mock input document: ${readableReport(e)}`));
 
 describe("SetUserDataProcessingStatusActivityHandler", () => {
   it("should handle a correct status change", async () => {
@@ -31,10 +36,10 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
-      currentRecord: {
+      currentRecord: decodeUserDataProcessing({
         ...aUserDataProcessing,
         status: UserDataProcessingStatusEnum.PENDING
-      },
+      }),
       nextStatus: UserDataProcessingStatusEnum.WIP
     };
     const result = await handler(contextMock, input);
@@ -51,10 +56,10 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
-      currentRecord: {
+      currentRecord: decodeUserDataProcessing({
         ...aUserDataProcessing,
         status: UserDataProcessingStatusEnum.PENDING
-      },
+      }),
       nextStatus: UserDataProcessingStatusEnum.WIP
     };
     const result = await handler(contextMock, input);
