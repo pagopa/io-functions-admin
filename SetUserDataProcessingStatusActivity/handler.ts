@@ -4,14 +4,11 @@
 
 import * as t from "io-ts";
 
-import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { fromEither, TaskEither } from "fp-ts/lib/TaskEither";
 
 import { Context } from "@azure/functions";
 
-import {
-  UserDataProcessingStatus,
-  UserDataProcessingStatusEnum
-} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
   UserDataProcessingModel,
@@ -117,8 +114,8 @@ export const createSetUserDataProcessingStatusActivityHandler = (
   }: {
     readonly currentRecord: UserDataProcessing;
     readonly nextStatus: UserDataProcessingStatus;
-  }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> => {
-    return UserDataProcessingWithoutId.decode({
+  }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
+    UserDataProcessingWithoutId.decode({
       ...currentRecord,
       status: nextStatus,
       updatedAt: new Date()
@@ -135,7 +132,6 @@ export const createSetUserDataProcessingStatusActivityHandler = (
             })
           )
     );
-  };
 
   // the actual handler
   return fromEither(ActivityInput.decode(input))
