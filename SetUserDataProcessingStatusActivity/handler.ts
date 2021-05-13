@@ -8,7 +8,10 @@ import { fromEither, TaskEither } from "fp-ts/lib/TaskEither";
 
 import { Context } from "@azure/functions";
 
-import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import {
+  UserDataProcessingStatus,
+  UserDataProcessingStatusEnum
+} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
   UserDataProcessingModel,
@@ -109,29 +112,41 @@ export const createSetUserDataProcessingStatusActivityHandler = (
    * @returns either an Error or the new created record
    */
   const saveNewStatusOnDb = ({
-    currentRecord,
+    currentRecord: { status: _, reason, ...currentRecord },
     nextStatus
   }: {
     readonly currentRecord: UserDataProcessing;
     readonly nextStatus: UserDataProcessingStatus;
   }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
-    UserDataProcessingWithoutId.decode({
-      ...currentRecord,
-      status: nextStatus,
-      updatedAt: new Date()
-    }).fold(
-      _ => void 0,
-      userDataProcessingWithoutId =>
+    fromEither(
+      // FIXME
+      // In https://github.com/pagopa/io-functions-commons/pull/142 we accidentally introduced complexity
+      //   to the model in order to add reason field for FAILED records only.
+      // Type system fails to narrow types, so we can't easily create a new UserDataProcessing by extending an old one
+      //   because it would result in an attempt to assign void to a string field.
+      // Hence, we had to introduce an extra decoding step in order to have proper typings.
+      UserDataProcessingWithoutId.decode({
+        ...currentRecord,
+        status: nextStatus,
+        updatedAt: new Date(),
+        // we also need to conditionally remove the reason field
+        ...(nextStatus === UserDataProcessingStatusEnum.FAILED
+          ? { reason }
+          : {})
+      }).mapLeft(err => `cannot decode input , ${readableReport(err)}`)
+    )
+      .chain(userDataProcessingWithoutId =>
         userDataProcessingModel
           .createOrUpdateByNewOne(userDataProcessingWithoutId)
-          .mapLeft(err =>
-            ActivityResultQueryFailure.encode({
-              kind: "QUERY_FAILURE",
-              query: "userDataProcessingModel.createOrUpdateByNewOne",
-              reason: `${err.kind}, ${getMessageFromCosmosErrors(err)}`
-            })
-          )
-    );
+          .mapLeft(err => `${err.kind}, ${getMessageFromCosmosErrors(err)}`)
+      )
+      .mapLeft(msg =>
+        ActivityResultQueryFailure.encode({
+          kind: "QUERY_FAILURE",
+          query: "userDataProcessingModel.createOrUpdateByNewOne",
+          reason: msg
+        })
+      );
 
   // the actual handler
   return fromEither(ActivityInput.decode(input))
