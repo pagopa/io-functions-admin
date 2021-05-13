@@ -468,7 +468,7 @@ export const createUserDataDeleteOrchestratorHandler = (
       }
     } catch (error) {
       context.log.error(
-        `${logPrefix}|ERROR|Failed processing user data for download: ${printableError(
+        `${logPrefix}|ERROR|Failed processing user data for delete: ${printableError(
           error
         )}`
       );
@@ -481,7 +481,8 @@ export const createUserDataDeleteOrchestratorHandler = (
       SetUserDataProcessingStatusActivityResultSuccess.decode(
         yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
           currentRecord: currentUserDataProcessing,
-          nextStatus: UserDataProcessingStatusEnum.FAILED
+          nextStatus: UserDataProcessingStatusEnum.FAILED,
+          reason: JSON.stringify(error)
         })
       ).getOrElseL(err => {
         trackUserDataDeleteException(

@@ -21,11 +21,6 @@ import {
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { readableReport } from "italia-ts-commons/lib/reporters";
 
-const decodeUserDataProcessing = (o: object): UserDataProcessing =>
-  UserDataProcessing.decode(o).getOrElseL(e =>
-    fail(`Failed creating a mock input document: ${readableReport(e)}`)
-  );
-
 describe("SetUserDataProcessingStatusActivityHandler", () => {
   it("should handle a correct status change", async () => {
     const mockModel = ({
@@ -41,10 +36,10 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
-      currentRecord: decodeUserDataProcessing({
+      currentRecord: {
         ...aUserDataProcessing,
         status: UserDataProcessingStatusEnum.PENDING
-      }),
+      },
       nextStatus: UserDataProcessingStatusEnum.WIP
     };
     const result = await handler(contextMock, input);
@@ -61,10 +56,10 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
-      currentRecord: decodeUserDataProcessing({
+      currentRecord: {
         ...aUserDataProcessing,
         status: UserDataProcessingStatusEnum.PENDING
-      }),
+      },
       nextStatus: UserDataProcessingStatusEnum.WIP
     };
     const result = await handler(contextMock, input);

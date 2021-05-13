@@ -184,6 +184,7 @@ const processFailedUserDataProcessing = async (
   context.bindings.FailedUserDataProcessingOut = [
     {
       PartitionKey: processable.choice,
+      Reason: processable.reason,
       RowKey: processable.fiscalCode
     }
   ];

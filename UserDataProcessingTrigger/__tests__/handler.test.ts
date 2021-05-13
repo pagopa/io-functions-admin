@@ -18,6 +18,7 @@ import {
 import { some } from "fp-ts/lib/Option";
 import { TableUtilities } from "azure-storage";
 import { readableReport } from "italia-ts-commons/lib/reporters";
+import { NonEmptyString } from "italia-ts-commons/lib/strings";
 
 // converts a UserDataProcessing object in a form as it would come from the database
 const toUndecoded = (doc: UserDataProcessing) => ({
@@ -26,50 +27,46 @@ const toUndecoded = (doc: UserDataProcessing) => ({
   updatedAt: doc.updatedAt ? doc.updatedAt.toISOString() : undefined
 });
 
-const decodeUserDataProcessing = (o: object): UserDataProcessing =>
-  UserDataProcessing.decode(o).getOrElseL(e =>
-    fail(`Failed creating a mock input document: ${readableReport(e)}`));
-
-const aProcessableDownload = decodeUserDataProcessing({
+const aProcessableDownload = {
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DOWNLOAD,
   status: UserDataProcessingStatusEnum.PENDING
-});
+};
 
-const aProcessableDelete = decodeUserDataProcessing({
+const aProcessableDelete = {
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DELETE,
   status: UserDataProcessingStatusEnum.PENDING
-});
+};
 
-const aNonProcessableDownloadWrongStatus = decodeUserDataProcessing({
+const aNonProcessableDownloadWrongStatus = {
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DOWNLOAD,
   status: UserDataProcessingStatusEnum.WIP
-});
+};
 
-const aNonProcessableDeleteWrongStatus = decodeUserDataProcessing({
+const aNonProcessableDeleteWrongStatus = {
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DELETE,
-  status: UserDataProcessingStatusEnum.WIP,
-});
+  status: UserDataProcessingStatusEnum.WIP
+};
 
-const aProcessableDeleteAbort = decodeUserDataProcessing({
+const aProcessableDeleteAbort = {
   ...aUserDataProcessing,
   choice: UserDataProcessingChoiceEnum.DELETE,
   status: UserDataProcessingStatusEnum.ABORTED
-});
+};
 
-const aFailedUserDataProcessing = decodeUserDataProcessing({
+const aFailedUserDataProcessing = {
   ...aUserDataProcessing,
   status: UserDataProcessingStatusEnum.FAILED,
-  reason: "a reason"
-});
+  reason: "any reason" as NonEmptyString
+};
 
-const aClosedUserDataProcessing = decodeUserDataProcessing({
+const aClosedUserDataProcessing = {
   ...aUserDataProcessing,
   status: UserDataProcessingStatusEnum.CLOSED
-});
+};
 
 jest.mock("../../utils/featureFlags", () => ({
   flags: {
@@ -215,11 +212,12 @@ describe("FailedUserDataProcessing", () => {
     await handler(context, input);
 
     // check if binding to FailedUserDataProcessing has failed records
-    input.forEach(i =>
+    input.forEach((i: UserDataProcessing) =>
       expect(context.bindings.FailedUserDataProcessingOut).toEqual([
         {
           PartitionKey: i.choice,
-          RowKey: i.fiscalCode
+          RowKey: i.fiscalCode,
+          Reason: i.reason
         }
       ])
     );

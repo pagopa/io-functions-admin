@@ -62,7 +62,7 @@
     "@azure/graph": "^4.0.1",
     "@azure/ms-rest-js": "^2.2.3",
     "@azure/ms-rest-nodeauth": "^2.0.5",
-    "@pagopa/io-functions-commons": "^20.3.4",
+    "@pagopa/io-functions-commons": "^20.3.5",
     "@pagopa/ts-commons": "^9.1.0",
     "@types/archiver": "^3.1.0",
     "@types/randomstring": "^1.1.6",
