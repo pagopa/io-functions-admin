@@ -177,8 +177,8 @@ export const handler = function*(
     SetUserDataProcessingStatusActivityResultSuccess.decode(
       yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
         currentRecord: currentUserDataProcessing,
-        nextStatus: UserDataProcessingStatusEnum.FAILED,
-        failureReason: failureReason
+        failureReason,
+        nextStatus: UserDataProcessingStatusEnum.FAILED
       })
     ).getOrElseL(err => {
       trackUserDataDownloadException(

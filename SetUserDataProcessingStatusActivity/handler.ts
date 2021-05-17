@@ -117,7 +117,10 @@ export const createSetUserDataProcessingStatusActivityHandler = (
     currentRecord: { status: _, ...currentRecord },
     nextStatus,
     failureReason
-  }: ActivityInput): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
+  }: ActivityInput): TaskEither<
+    ActivityResultQueryFailure,
+    UserDataProcessing
+  > =>
     userDataProcessingModel
       .createOrUpdateByNewOne({
         ...currentRecord,

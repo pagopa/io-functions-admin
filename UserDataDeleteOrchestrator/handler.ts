@@ -495,8 +495,8 @@ export const createUserDataDeleteOrchestratorHandler = (
       SetUserDataProcessingStatusActivityResultSuccess.decode(
         yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
           currentRecord: currentUserDataProcessing,
-          nextStatus: UserDataProcessingStatusEnum.FAILED,
-          failureReason: failureReason
+          failureReason,
+          nextStatus: UserDataProcessingStatusEnum.FAILED
         })
       ).getOrElseL(err => {
         trackUserDataDeleteException(
