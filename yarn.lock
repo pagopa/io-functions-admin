@@ -58,7 +58,24 @@
     "@opentelemetry/api" "1.0.0-rc.0"
     tslib "^2.0.0"
 
-"@azure/cosmos@^3.9.0", "@azure/cosmos@^3.9.1":
+"@azure/cosmos@^3.11.1":
+  version "3.11.2"
+  resolved "https://registry.yarnpkg.com/@azure/cosmos/-/cosmos-3.11.2.tgz#569c0f262651f86e94c4cd67450ab0f6de076813"
+  integrity sha512-mhMIOU9n1NqcCimhD4pMJu+iaZN/3WZ6/i08MD94ltgQ3rZhBpmM5DfAyhYbFGf2noxjcSsippA2n9DX9JxkLQ==
+  dependencies:
+    "@azure/core-auth" "^1.3.0"
+    "@azure/core-rest-pipeline" "^1.0.0"
+    debug "^4.1.1"
+    fast-json-stable-stringify "^2.0.0"
+    jsbi "^3.1.3"
+    node-abort-controller "^1.2.0"
+    priorityqueuejs "^1.0.0"
+    semaphore "^1.0.5"
+    tslib "^2.0.0"
+    universal-user-agent "^6.0.0"
+    uuid "^8.3.0"
+
+"@azure/cosmos@^3.9.0":
   version "3.11.1"
   resolved "https://registry.yarnpkg.com/@azure/cosmos/-/cosmos-3.11.1.tgz#57a846dc96c852abda7a286e6415f2b4c340eefe"
   integrity sha512-VzCbkn8pqFa4IS/b4BeLGsneRYALJEaYih6Zf9yMrdW9Z46bqnxDNpVtkt2nUVTOSE0sa8XwBs/oQhVHl8limg==
@@ -75,10 +92,15 @@
     universal-user-agent "^6.0.0"
     uuid "^8.3.0"
 
-"@azure/functions@^1.0.1-beta1", "@azure/functions@^1.0.2-beta2":
+"@azure/functions@^1.0.2-beta2":
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/@azure/functions/-/functions-1.0.3.tgz#1b51d58f188903f59f39bd093fe6f7b8d88deb11"
   integrity sha512-/D+sz6LgWT+A6RRW2zhwlwhKqqDSxL6HCF1Q1lN0iXolD2FfNFZpzrOxGyGYEEXp/5Dtjp12bcRTBhMH1cBi2Q==
+
+"@azure/functions@^1.0.3":
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/@azure/functions/-/functions-1.2.3.tgz#65765837e7319eedffbf8a971cb2f78d4e043d54"
+  integrity sha512-dZITbYPNg6ay6ngcCOjRUh1wDhlFITS0zIkqplyH5KfKEAVPooaoaye5mUFnR+WP9WdGRjlNXyl/y2tgWKHcRg==
 
 "@azure/graph@^4.0.1":
   version "4.3.0"
@@ -837,13 +859,23 @@
     "@types/node" "*"
     "@types/range-parser" "*"
 
-"@types/express@^4.16.0":
-  version "4.17.0"
-  resolved "https://registry.yarnpkg.com/@types/express/-/express-4.17.0.tgz#49eaedb209582a86f12ed9b725160f12d04ef287"
-  integrity sha512-CjaMu57cjgjuZbh9DpkloeGxV45CnMGlVd+XpG7Gm9QgVrd7KFq+X4HY0vM+2v0bczS48Wg7bvnMY5TN+Xmcfw==
+"@types/express-serve-static-core@^4.17.18":
+  version "4.17.19"
+  resolved "https://registry.yarnpkg.com/@types/express-serve-static-core/-/express-serve-static-core-4.17.19.tgz#00acfc1632e729acac4f1530e9e16f6dd1508a1d"
+  integrity sha512-DJOSHzX7pCiSElWaGR8kCprwibCB/3yW6vcT8VG3P0SJjnv19gnWG/AZMfM60Xj/YJIp/YCaDHyvzsFVeniARA==
+  dependencies:
+    "@types/node" "*"
+    "@types/qs" "*"
+    "@types/range-parser" "*"
+
+"@types/express@^4.17.1":
+  version "4.17.11"
+  resolved "https://registry.yarnpkg.com/@types/express/-/express-4.17.11.tgz#debe3caa6f8e5fcda96b47bd54e2f40c4ee59545"
+  integrity sha512-no+R6rW60JEc59977wIxreQVsIEOAYwgCqldrA/vkpCnbD7MqTefO97lmoBe4WE0F156bC4uLSP1XHDOySnChg==
   dependencies:
     "@types/body-parser" "*"
-    "@types/express-serve-static-core" "*"
+    "@types/express-serve-static-core" "^4.17.18"
+    "@types/qs" "*"
     "@types/serve-static" "*"
 
 "@types/glob@*":
@@ -942,6 +974,11 @@
   version "8.10.59"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-8.10.59.tgz#9e34261f30183f9777017a13d185dfac6b899e04"
   integrity sha512-8RkBivJrDCyPpBXhVZcjh7cQxVBSmRk9QM7hOketZzp6Tg79c0N8kkpAIito9bnJ3HCVCHVYz+KHTEbfQNfeVQ==
+
+"@types/qs@*":
+  version "6.9.6"
+  resolved "https://registry.yarnpkg.com/@types/qs/-/qs-6.9.6.tgz#df9c3c8b31a247ec315e6996566be3171df4b3b1"
+  integrity sha512-0/HnwIfW4ki2D8L8c9GVcG5I72s9jP5GSLVF0VIXDW00kmIpA6O33G7a8n59Tmh7Nz0WUC3rSb7PTY/sdW2JzA==
 
 "@types/randomstring@^1.1.6":
   version "1.1.6"
@@ -3736,7 +3773,7 @@ expect@^24.8.0:
     jest-message-util "^24.8.0"
     jest-regex-util "^24.3.0"
 
-express@^4.15.3, express@^4.16.4:
+express@^4.16.4, express@^4.17.1:
   version "4.17.1"
   resolved "https://registry.yarnpkg.com/express/-/express-4.17.1.tgz#4491fc38605cf51f8629d39c2b5d026f98a4c134"
   integrity sha512-mHJ9O79RqluphRrcw2X/GTh3k9tVv8YcoyY4Kkh4WDMUYKRZUq0h1o0w2rrrxBqM7VoeUVqgb27xlEMXTnYt4g==
@@ -4761,12 +4798,7 @@ invert-kv@^2.0.0:
   resolved "https://registry.yarnpkg.com/invert-kv/-/invert-kv-2.0.0.tgz#7393f5afa59ec9ff5f67a27620d11c226e3eec02"
   integrity sha512-wPVv/y/QQ/Uiirj/vh3oP+1Ww+AWehmi1g5fFWGPF6IpCBCDVrhgHRMvrLfdYcwDh3QJbGXDW4JAuzxElLSqKA==
 
-io-functions-express@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/io-functions-express/-/io-functions-express-0.1.1.tgz#6ae954fe89ec1d797c5e5d10eca5e77f08ff4a4d"
-  integrity sha512-Co7sovRyB0lxgU6NFh5v72Apude3XbgKQtqA7slryvKoEqLAvlnLU7DtsYVoF62O3ZJdtSHYf9JWuhDc/di1mg==
-
-io-functions-express@^1.1.0:
+io-functions-express@^0.1.1, io-functions-express@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/io-functions-express/-/io-functions-express-1.1.0.tgz#278b7e3b91d1effc45752ca64779957aba8a40df"
   integrity sha512-FEY81NiilqDTf9dTvhfAyg0eUrGE0U+m4pC8e52p90XEYxyS+wnSLr6eAciNGKDHXtNsnhwt00cPSbT/bZCsfQ==

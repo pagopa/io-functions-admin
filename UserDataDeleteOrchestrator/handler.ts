@@ -472,17 +472,31 @@ export const createUserDataDeleteOrchestratorHandler = (
           error
         )}`
       );
+
       trackUserDataDeleteException(
         "failed",
         toError(error),
         currentUserDataProcessing
       );
 
+      const orchestrationFailure = OrchestratorFailure.decode(error).getOrElse(
+        UnhanldedFailure.encode({
+          kind: "UNHANDLED",
+          reason: printableError(error)
+        })
+      );
+
+      const failureReason = `${orchestrationFailure.kind}${
+        orchestrationFailure.kind === "ACTIVITY"
+          ? `(${orchestrationFailure.activityName})`
+          : ""
+      }|${orchestrationFailure.reason}`;
+
       SetUserDataProcessingStatusActivityResultSuccess.decode(
         yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
           currentRecord: currentUserDataProcessing,
           nextStatus: UserDataProcessingStatusEnum.FAILED,
-          reason: JSON.stringify(error)
+          failureReason: failureReason
         })
       ).getOrElseL(err => {
         trackUserDataDeleteException(
@@ -497,11 +511,6 @@ export const createUserDataDeleteOrchestratorHandler = (
         );
       });
 
-      return OrchestratorFailure.decode(error).getOrElse(
-        UnhanldedFailure.encode({
-          kind: "UNHANDLED",
-          reason: printableError(error)
-        })
-      );
+      return orchestrationFailure;
     }
   };

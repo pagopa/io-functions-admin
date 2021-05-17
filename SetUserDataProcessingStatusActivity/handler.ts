@@ -24,7 +24,7 @@ export const ActivityInput = t.intersection([
     nextStatus: UserDataProcessingStatus
   }),
   t.partial({
-    reason: NonEmptyString
+    failureReason: NonEmptyString
   })
 ]);
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
@@ -114,16 +114,14 @@ export const createSetUserDataProcessingStatusActivityHandler = (
    * @returns either an Error or the new created record
    */
   const saveNewStatusOnDb = ({
-    currentRecord: { status: _, reason, ...currentRecord },
-    nextStatus
-  }: {
-    readonly currentRecord: UserDataProcessing;
-    readonly nextStatus: UserDataProcessingStatus;
-  }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
+    currentRecord: { status: _, ...currentRecord },
+    nextStatus,
+    failureReason
+  }: ActivityInput): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
     userDataProcessingModel
       .createOrUpdateByNewOne({
         ...currentRecord,
-        reason,
+        reason: failureReason,
         status: nextStatus,
         updatedAt: new Date()
       })

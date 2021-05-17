@@ -158,12 +158,27 @@ export const handler = function*(
       toError(error),
       currentUserDataProcessing
     );
+
     context.log.error(`${logPrefix}|ERROR|${JSON.stringify(error)}`);
+
+    const orchestrationFailure = OrchestratorFailure.decode(error).getOrElse(
+      UnhanldedFailure.encode({
+        kind: "UNHANDLED",
+        reason: JSON.stringify(error)
+      })
+    );
+
+    const failureReason = `${orchestrationFailure.kind}${
+      orchestrationFailure.kind === "ACTIVITY"
+        ? `(${orchestrationFailure.activityName})`
+        : ""
+    }|${orchestrationFailure.reason}`;
+
     SetUserDataProcessingStatusActivityResultSuccess.decode(
       yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
         currentRecord: currentUserDataProcessing,
         nextStatus: UserDataProcessingStatusEnum.FAILED,
-        reason: JSON.stringify(error)
+        failureReason: failureReason
       })
     ).getOrElseL(err => {
       trackUserDataDownloadException(
@@ -179,11 +194,6 @@ export const handler = function*(
       );
     });
 
-    return OrchestratorFailure.is(error)
-      ? error
-      : UnhanldedFailure.encode({
-          kind: "UNHANDLED",
-          reason: error.message
-        });
+    return orchestrationFailure;
   }
 };
