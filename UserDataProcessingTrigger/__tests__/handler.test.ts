@@ -17,8 +17,8 @@ import {
 } from "../handler";
 import { some } from "fp-ts/lib/Option";
 import { TableUtilities } from "azure-storage";
-import { readableReport } from "italia-ts-commons/lib/reporters";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 // converts a UserDataProcessing object in a form as it would come from the database
 const toUndecoded = (doc: UserDataProcessing) => ({

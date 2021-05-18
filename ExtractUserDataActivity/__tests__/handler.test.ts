@@ -32,9 +32,9 @@ import {
 import { NotificationStatusModel } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import { ProfileModel } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import * as asyncI from "@pagopa/io-functions-commons/dist/src/utils/async";
-import { DeferredPromise } from "italia-ts-commons/lib/promises";
-import { readableReport } from "italia-ts-commons/lib/reporters";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import {
   aMessageContent,
   aRetrievedMessageWithoutContent,

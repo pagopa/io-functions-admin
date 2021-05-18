@@ -3,7 +3,7 @@
 import { right } from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
 
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 import { BlobService } from "azure-storage";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";

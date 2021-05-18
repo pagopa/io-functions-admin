@@ -19,7 +19,7 @@ import {
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 
 describe("SetUserDataProcessingStatusActivityHandler", () => {
   it("should handle a correct status change", async () => {

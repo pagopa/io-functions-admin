@@ -5,7 +5,7 @@ import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { left } from "fp-ts/lib/Either";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { User } from "../../generated/definitions/User";
 import { UserPayload } from "../../generated/definitions/UserPayload";
 import { UserStateEnum } from "../../generated/definitions/UserState";

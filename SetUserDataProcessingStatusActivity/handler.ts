@@ -13,7 +13,7 @@ import {
   UserDataProcessing,
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 

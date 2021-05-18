@@ -25,7 +25,7 @@ import { NonEmptyString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { fromEither, tryCatch } from "fp-ts/lib/TaskEither";
 import { none, Option, some } from "fp-ts/lib/Option";
-import { ResponseErrorNotFound } from "italia-ts-commons/lib/responses";
+import { ResponseErrorNotFound } from "@pagopa/ts-commons/lib/responses";
 
 type TableEntry = Readonly<{
   readonly RowKey: Readonly<{

@@ -8,8 +8,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { Context } from "@azure/functions";
-import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 
 import { toString } from "fp-ts/lib/function";
 

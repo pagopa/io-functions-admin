@@ -12,8 +12,8 @@ import {
   tryCatch
 } from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
-import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { SuccessResponse } from "../generated/session-api/SuccessResponse";
 import { Client } from "../utils/sessionApiClient";
 

@@ -15,7 +15,7 @@ import {
   TaskEither,
   tryCatch
 } from "fp-ts/lib/TaskEither";
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import fetch from "node-fetch";
 import { getConfig, IConfig } from "./config";
 

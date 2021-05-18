@@ -16,8 +16,8 @@ import { VisibleService } from "@pagopa/io-functions-commons/dist/src/models/vis
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { toApiServiceMetadata as toServiceMetadata } from "@pagopa/io-functions-commons/dist/src/utils/service_metadata";
 import { Errors } from "io-ts";
-import { errorsToReadableMessages } from "italia-ts-commons/lib/reporters";
-import { EmailString, FiscalCode } from "italia-ts-commons/lib/strings";
+import { errorsToReadableMessages } from "@pagopa/ts-commons/lib/reporters";
+import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { CIDR } from "../generated/definitions/CIDR";
 import { Group, Group as ApiGroup } from "../generated/definitions/Group";
 import {

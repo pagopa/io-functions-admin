@@ -1,6 +1,6 @@
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
 import * as t from "io-ts";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 
 /**
  * Input data for this activity function, we need information about the kind

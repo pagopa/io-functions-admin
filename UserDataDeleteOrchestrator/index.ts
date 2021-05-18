@@ -1,5 +1,5 @@
 import * as df from "durable-functions";
-import { Day } from "italia-ts-commons/lib/units";
+import { Day } from "@pagopa/ts-commons/lib/units";
 import { getConfigOrThrow } from "../utils/config";
 import { createUserDataDeleteOrchestratorHandler } from "./handler";
 

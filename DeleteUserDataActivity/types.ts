@@ -1,6 +1,6 @@
 import { BlobService } from "azure-storage";
 import * as t from "io-ts";
-import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 // Activity input
 export const ActivityInput = t.interface({

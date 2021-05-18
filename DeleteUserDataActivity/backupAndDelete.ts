@@ -18,7 +18,7 @@ import { RetrievedMessageStatus } from "@pagopa/io-functions-commons/dist/src/mo
 import { RetrievedNotification } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import { RetrievedNotificationStatus } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import { RetrievedProfile } from "@pagopa/io-functions-commons/dist/src/models/profile";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";

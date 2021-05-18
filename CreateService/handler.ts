@@ -10,7 +10,7 @@ import {
   IResponseErrorValidation,
   IResponseSuccessJson,
   ResponseSuccessJson
-} from "italia-ts-commons/lib/responses";
+} from "@pagopa/ts-commons/lib/responses";
 
 import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
 import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";

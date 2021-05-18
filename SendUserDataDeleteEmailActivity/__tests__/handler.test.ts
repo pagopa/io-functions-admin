@@ -3,7 +3,7 @@
 /* eslint-disable sonar/sonar-max-lines-per-function */
 /* eslint-disable sonarjs/no-identical-functions */
 
-import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 import { ActivityInput, getActivityFunction } from "../handler";
 

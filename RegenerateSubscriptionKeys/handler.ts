@@ -22,7 +22,7 @@ import {
   ResponseErrorInternal,
   ResponseErrorNotFound,
   ResponseSuccessJson
-} from "italia-ts-commons/lib/responses";
+} from "@pagopa/ts-commons/lib/responses";
 import { ServiceId } from "../generated/definitions/ServiceId";
 import { SubscriptionKeys } from "../generated/definitions/SubscriptionKeys";
 import { SubscriptionKeyTypeEnum } from "../generated/definitions/SubscriptionKeyType";

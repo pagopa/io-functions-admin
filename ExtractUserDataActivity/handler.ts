@@ -5,7 +5,7 @@
 import * as stream from "stream";
 import * as t from "io-ts";
 
-import { DeferredPromise } from "italia-ts-commons/lib/promises";
+import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
 
 import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
 import { array, catOptions, flatten, rights } from "fp-ts/lib/Array";
@@ -49,8 +49,8 @@ import {
   Profile,
   ProfileModel
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
-import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 import { fromLeft } from "fp-ts/lib/TaskEither";
 import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";

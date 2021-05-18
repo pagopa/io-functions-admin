@@ -1,6 +1,6 @@
 import * as t from "io-ts";
 
-import { UTCISODateFromString } from "italia-ts-commons/lib/dates";
+import { UTCISODateFromString } from "@pagopa/ts-commons/lib/dates";
 
 import { RetrievedService } from "@pagopa/io-functions-commons/dist/src/models/service";
 

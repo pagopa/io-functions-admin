@@ -12,7 +12,7 @@ import {
 import { NotificationStatus } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import { Profile } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import * as t from "io-ts";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 // like Notification, but it's export-safe (the decoder removes webhook's sensitive data)
 export const SafeNotification = t.intersection([
