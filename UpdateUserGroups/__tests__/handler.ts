@@ -4,7 +4,7 @@ import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { GroupContract } from "@azure/arm-apimanagement/esm/models";
 import { left, right } from "fp-ts/lib/Either";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
-import { UserGroup } from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
+import { UserGroup } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { EmailAddress } from "../../generated/definitions/EmailAddress";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";

@@ -7,7 +7,7 @@ import {
 import { GraphRbacManagementClient } from "@azure/graph";
 import { isRight, left, right } from "fp-ts/lib/Either";
 import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { UserInfo } from "../../generated/definitions/UserInfo";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";

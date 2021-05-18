@@ -1,6 +1,6 @@
 // eslint-disable sonarjs/no-duplicate-string
 
-import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
+import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { trackEvent, trackException } from "./appinsights";
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

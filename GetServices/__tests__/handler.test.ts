@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { left, right } from "fp-ts/lib/Either";
-import * as asyncI from "io-functions-commons/dist/src/utils/async";
-import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import * as asyncI from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { aRetrievedService, aSeralizedService } from "../../__mocks__/mocks";
 import { GetServicesHandler } from "../handler";
 

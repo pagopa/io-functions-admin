@@ -2,11 +2,11 @@ import { Context } from "@azure/functions";
 import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
 import { Lazy } from "fp-ts/lib/function";
-import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { TableUtilities } from "azure-storage";
 import {
   ABORT_EVENT as ABORT_DELETE_EVENT,
@@ -184,6 +184,7 @@ const processFailedUserDataProcessing = async (
   context.bindings.FailedUserDataProcessingOut = [
     {
       PartitionKey: processable.choice,
+      Reason: processable.reason,
       RowKey: processable.fiscalCode
     }
   ];

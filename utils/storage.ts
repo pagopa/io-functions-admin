@@ -4,7 +4,7 @@ import { Either, left, right, toError } from "fp-ts/lib/Either";
 import { none, Option, some } from "fp-ts/lib/Option";
 import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
 
-import { ITuple2, Tuple2 } from "italia-ts-commons/lib/tuples";
+import { ITuple2, Tuple2 } from "@pagopa/ts-commons/lib/tuples";
 
 /**
  * A taskified version of TableService.createTableIfNotExists

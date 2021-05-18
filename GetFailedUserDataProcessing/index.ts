@@ -5,10 +5,10 @@ import { Context } from "@azure/functions";
 import {
   SERVICE_COLLECTION_NAME,
   ServiceModel
-} from "io-functions-commons/dist/src/models/service";
-import { secureExpressApp } from "io-functions-commons/dist/src/utils/express";
-import { AzureContextTransport } from "io-functions-commons/dist/src/utils/logging";
-import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
+} from "@pagopa/io-functions-commons/dist/src/models/service";
+import { secureExpressApp } from "@pagopa/io-functions-commons/dist/src/utils/express";
+import { AzureContextTransport } from "@pagopa/io-functions-commons/dist/src/utils/logging";
+import { setAppContext } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 
 import { createTableService } from "azure-storage";

@@ -3,8 +3,8 @@
  */
 
 import * as t from "io-ts";
-import { readableReport } from "italia-ts-commons/lib/reporters";
-import { WithinRangeString } from "italia-ts-commons/lib/strings";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { WithinRangeString } from "@pagopa/ts-commons/lib/strings";
 import * as randomstring from "randomstring";
 
 /* printable 7 bit ASCII, some special char removed */
