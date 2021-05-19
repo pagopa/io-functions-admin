@@ -1,7 +1,7 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
@@ -19,6 +19,9 @@ import {
 } from "../handler";
 
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { ExponentialRetryPolicyFilter } from "azure-storage";
+import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 
 const aNonSuccess = "any non-success value";
 
@@ -165,7 +168,8 @@ describe("UserDataDownloadOrchestrator", () => {
       expect.any(String),
       {
         currentRecord: expect.any(Object),
-        nextStatus: UserDataProcessingStatusEnum.FAILED
+        nextStatus: UserDataProcessingStatusEnum.FAILED,
+        failureReason: expect.any(String)
       }
     );
     expect(extractUserDataActivity).toHaveBeenCalled();
@@ -193,7 +197,8 @@ describe("UserDataDownloadOrchestrator", () => {
       expect.any(String),
       {
         currentRecord: expect.any(Object),
-        nextStatus: UserDataProcessingStatusEnum.FAILED
+        nextStatus: UserDataProcessingStatusEnum.FAILED,
+        failureReason: expect.any(String)
       }
     );
     expect(extractUserDataActivity).toHaveBeenCalled();
@@ -214,45 +219,21 @@ describe("UserDataDownloadOrchestrator", () => {
     const result = consumeOrchestrator(handler(context));
 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
-    expect(result.activityName).toBe("SetUserDataProcessingStatusActivity");
-    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled(); // any times, at least one
-    // then, set as FAILED
-    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
-      expect.any(String),
-      {
-        currentRecord: expect.any(Object),
-        nextStatus: UserDataProcessingStatusEnum.FAILED
-      }
-    );
-    expect(extractUserDataActivity).not.toHaveBeenCalled();
-    expect(sendUserDataDownloadMessageActivity).not.toHaveBeenCalled();
-  });
 
-  it("should set as FAILED when status update to WIP fails", () => {
-    setUserDataProcessingStatusActivity.mockImplementationOnce(
-      () => aNonSuccess
-    );
-
-    const document = {
-      ...aUserDataProcessing,
-      status: UserDataProcessingStatusEnum.PENDING
-    };
-    mockOrchestratorGetInput.mockReturnValueOnce(document);
-
-    const result = consumeOrchestrator(handler(context));
-
-    expect(ActivityFailure.decode(result).isRight()).toBe(true);
+    // activity failure during the first SetUserDataProcessingStatusActivity to WIP 
     expect(result.activityName).toBe("SetUserDataProcessingStatusActivity");
     expect(result.extra).toEqual({
       status: UserDataProcessingStatusEnum.WIP
     });
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalled(); // any times, at least one
-    // then, set as FAILED
+
+    // the last call to SetUserDataProcessingStatusActivity should be set as FAILED with a reason
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       {
         currentRecord: expect.any(Object),
-        nextStatus: UserDataProcessingStatusEnum.FAILED
+        nextStatus: UserDataProcessingStatusEnum.FAILED,
+        failureReason: expect.any(String)
       }
     );
     expect(extractUserDataActivity).not.toHaveBeenCalled();
@@ -279,18 +260,21 @@ describe("UserDataDownloadOrchestrator", () => {
 
     const result = consumeOrchestrator(handler(context));
 
+    // activity failure during the first SetUserDataProcessingStatusActivity to CLOSED 
     expect(ActivityFailure.decode(result).isRight()).toBe(true);
     expect(result.activityName).toBe("SetUserDataProcessingStatusActivity");
     expect(result.extra).toEqual({
       status: UserDataProcessingStatusEnum.CLOSED
     });
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalled(); // any times, at least one
-    // then, set as FAILED
+
+    // the last call to SetUserDataProcessingStatusActivity should be set as FAILED with a reason
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       {
         currentRecord: expect.any(Object),
-        nextStatus: UserDataProcessingStatusEnum.FAILED
+        nextStatus: UserDataProcessingStatusEnum.FAILED,
+        failureReason: expect.any(String)
       }
     );
     expect(extractUserDataActivity).toHaveBeenCalled();

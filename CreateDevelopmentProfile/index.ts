@@ -6,11 +6,11 @@ import * as winston from "winston";
 import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
-} from "io-functions-commons/dist/src/models/profile";
+} from "@pagopa/io-functions-commons/dist/src/models/profile";
 
-import { secureExpressApp } from "io-functions-commons/dist/src/utils/express";
-import { AzureContextTransport } from "io-functions-commons/dist/src/utils/logging";
-import { setAppContext } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
+import { secureExpressApp } from "@pagopa/io-functions-commons/dist/src/utils/express";
+import { AzureContextTransport } from "@pagopa/io-functions-commons/dist/src/utils/logging";
+import { setAppContext } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 
 import createAzureFunctionHandler from "io-functions-express/dist/src/createAzureFunctionsHandler";
 

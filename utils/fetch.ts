@@ -1,10 +1,10 @@
-import { agent } from "italia-ts-commons";
+import { agent } from "@pagopa/ts-commons";
 import {
   AbortableFetch,
   setFetchTimeout,
   toFetch
-} from "italia-ts-commons/lib/fetch";
-import { Millisecond } from "italia-ts-commons/lib/units";
+} from "@pagopa/ts-commons/lib/fetch";
+import { Millisecond } from "@pagopa/ts-commons/lib/units";
 
 // HTTP external requests timeout in milliseconds
 const DEFAULT_REQUEST_TIMEOUT_MS = 10000;

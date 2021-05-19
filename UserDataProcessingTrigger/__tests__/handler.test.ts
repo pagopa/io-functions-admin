@@ -1,9 +1,8 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-import { right } from "fp-ts/lib/Either";
-import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import {
   context,
   mockRaiseEvent,
@@ -18,6 +17,8 @@ import {
 } from "../handler";
 import { some } from "fp-ts/lib/Option";
 import { TableUtilities } from "azure-storage";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 // converts a UserDataProcessing object in a form as it would come from the database
 const toUndecoded = (doc: UserDataProcessing) => ({
@@ -58,7 +59,8 @@ const aProcessableDeleteAbort = {
 
 const aFailedUserDataProcessing = {
   ...aUserDataProcessing,
-  status: UserDataProcessingStatusEnum.FAILED
+  status: UserDataProcessingStatusEnum.FAILED,
+  reason: "any reason" as NonEmptyString
 };
 
 const aClosedUserDataProcessing = {
@@ -210,12 +212,15 @@ describe("FailedUserDataProcessing", () => {
     await handler(context, input);
 
     // check if binding to FailedUserDataProcessing has failed records
-    input.forEach(i => expect(context.bindings.FailedUserDataProcessingOut).toEqual([
-      {
-        PartitionKey: i.choice,
-        RowKey: i.fiscalCode
-      }
-    ]))
+    input.forEach((i: UserDataProcessing) =>
+      expect(context.bindings.FailedUserDataProcessingOut).toEqual([
+        {
+          PartitionKey: i.choice,
+          RowKey: i.fiscalCode,
+          Reason: i.reason
+        }
+      ])
+    );
 
     expect(deleteEntity).not.toBeCalled();
   });

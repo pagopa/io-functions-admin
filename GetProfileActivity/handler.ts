@@ -11,9 +11,9 @@ import { Context } from "@azure/functions";
 import {
   ProfileModel,
   RetrievedProfile
-} from "io-functions-commons/dist/src/models/profile";
-import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode } from "italia-ts-commons/lib/strings";
+} from "@pagopa/io-functions-commons/dist/src/models/profile";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input

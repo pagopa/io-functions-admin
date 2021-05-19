@@ -1,18 +1,18 @@
 /**
  * Collections of types and utils about managing user access rights to their data
  */
-import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
-import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
-import { MessageWithoutContent } from "io-functions-commons/dist/src/models/message";
-import { MessageStatus } from "io-functions-commons/dist/src/models/message_status";
+import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
+import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
+import { MessageWithoutContent } from "@pagopa/io-functions-commons/dist/src/models/message";
+import { MessageStatus } from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import {
   NotificationBase,
   NotificationChannelEmail
-} from "io-functions-commons/dist/src/models/notification";
-import { NotificationStatus } from "io-functions-commons/dist/src/models/notification_status";
-import { Profile } from "io-functions-commons/dist/src/models/profile";
+} from "@pagopa/io-functions-commons/dist/src/models/notification";
+import { NotificationStatus } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
+import { Profile } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import * as t from "io-ts";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 // like Notification, but it's export-safe (the decoder removes webhook's sensitive data)
 export const SafeNotification = t.intersection([

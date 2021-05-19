@@ -8,19 +8,25 @@ import { fromEither, TaskEither } from "fp-ts/lib/TaskEither";
 
 import { Context } from "@azure/functions";
 
-import { UserDataProcessingStatus } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
   UserDataProcessingModel
-} from "io-functions-commons/dist/src/models/user_data_processing";
-import { readableReport } from "italia-ts-commons/lib/reporters";
+} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input
-export const ActivityInput = t.interface({
-  currentRecord: UserDataProcessing,
-  nextStatus: UserDataProcessingStatus
-});
+export const ActivityInput = t.intersection([
+  t.interface({
+    currentRecord: UserDataProcessing,
+    nextStatus: UserDataProcessingStatus
+  }),
+  t.partial({
+    failureReason: NonEmptyString
+  })
+]);
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity result
@@ -108,15 +114,17 @@ export const createSetUserDataProcessingStatusActivityHandler = (
    * @returns either an Error or the new created record
    */
   const saveNewStatusOnDb = ({
-    currentRecord,
-    nextStatus
-  }: {
-    readonly currentRecord: UserDataProcessing;
-    readonly nextStatus: UserDataProcessingStatus;
-  }): TaskEither<ActivityResultQueryFailure, UserDataProcessing> =>
+    currentRecord: { status: _, ...currentRecord },
+    nextStatus,
+    failureReason
+  }: ActivityInput): TaskEither<
+    ActivityResultQueryFailure,
+    UserDataProcessing
+  > =>
     userDataProcessingModel
       .createOrUpdateByNewOne({
         ...currentRecord,
+        reason: failureReason,
         status: nextStatus,
         updatedAt: new Date()
       })
@@ -127,7 +135,6 @@ export const createSetUserDataProcessingStatusActivityHandler = (
           reason: `${err.kind}, ${getMessageFromCosmosErrors(err)}`
         })
       );
-
   // the actual handler
   return fromEither(ActivityInput.decode(input))
     .mapLeft<ActivityResultFailure>((reason: t.Errors) =>

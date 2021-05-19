@@ -5,7 +5,7 @@ import { TableService } from "azure-storage";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
-} from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { GetFailedUserDataProcessingHandler } from "../handler";
 
 const findEntry = (

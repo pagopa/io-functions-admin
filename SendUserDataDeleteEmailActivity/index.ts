@@ -1,5 +1,5 @@
 import * as HtmlToText from "html-to-text";
-import { getMailerTransporter } from "io-functions-commons/dist/src/mailer";
+import { getMailerTransporter } from "@pagopa/io-functions-commons/dist/src/mailer";
 import { getConfigOrThrow } from "../utils/config";
 import { getActivityFunction } from "./handler";
 

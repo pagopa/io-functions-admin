@@ -1,69 +1,69 @@
-import { HttpsUrl } from "io-functions-commons/dist/generated/definitions/HttpsUrl";
-import { MaxAllowedPaymentAmount } from "io-functions-commons/dist/generated/definitions/MaxAllowedPaymentAmount";
-import { Service as ApiService } from "io-functions-commons/dist/generated/definitions/Service";
+import { HttpsUrl } from "@pagopa/io-functions-commons/dist/generated/definitions/HttpsUrl";
+import { MaxAllowedPaymentAmount } from "@pagopa/io-functions-commons/dist/generated/definitions/MaxAllowedPaymentAmount";
+import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
-} from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import {
   UserDataProcessingStatus,
   UserDataProcessingStatusEnum
-} from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   NewNotification,
   NotificationAddressSourceEnum,
   RetrievedNotification
-} from "io-functions-commons/dist/src/models/notification";
+} from "@pagopa/io-functions-commons/dist/src/models/notification";
 import {
   Profile,
   RetrievedProfile
-} from "io-functions-commons/dist/src/models/profile";
+} from "@pagopa/io-functions-commons/dist/src/models/profile";
 import {
   NewService,
   RetrievedService,
   Service,
   toAuthorizedCIDRs,
   toAuthorizedRecipients
-} from "io-functions-commons/dist/src/models/service";
+} from "@pagopa/io-functions-commons/dist/src/models/service";
 import {
   makeUserDataProcessingId,
   UserDataProcessing,
   UserDataProcessingId
-} from "io-functions-commons/dist/src/models/user_data_processing";
+} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import {
   NonNegativeInteger,
   NonNegativeNumber
-} from "italia-ts-commons/lib/numbers";
+} from "@pagopa/ts-commons/lib/numbers";
 import {
   EmailString,
   FiscalCode,
   NonEmptyString,
   OrganizationFiscalCode
-} from "italia-ts-commons/lib/strings";
+} from "@pagopa/ts-commons/lib/strings";
 
-import { MessageBodyMarkdown } from "io-functions-commons/dist/generated/definitions/MessageBodyMarkdown";
-import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
-import { MessageStatusValueEnum } from "io-functions-commons/dist/generated/definitions/MessageStatusValue";
-import { MessageSubject } from "io-functions-commons/dist/generated/definitions/MessageSubject";
-import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
-import { NotificationChannelStatusValueEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannelStatusValue";
-import { ServiceId } from "io-functions-commons/dist/generated/definitions/ServiceId";
-import { TimeToLiveSeconds } from "io-functions-commons/dist/generated/definitions/TimeToLiveSeconds";
+import { MessageBodyMarkdown } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageBodyMarkdown";
+import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
+import { MessageStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageStatusValue";
+import { MessageSubject } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageSubject";
+import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
+import { NotificationChannelStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannelStatusValue";
+import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
+import { TimeToLiveSeconds } from "@pagopa/io-functions-commons/dist/generated/definitions/TimeToLiveSeconds";
 import {
   MessageWithContent,
   MessageWithoutContent,
   RetrievedMessageWithContent,
   RetrievedMessageWithoutContent
-} from "io-functions-commons/dist/src/models/message";
+} from "@pagopa/io-functions-commons/dist/src/models/message";
 import {
   MessageStatus,
   RetrievedMessageStatus
-} from "io-functions-commons/dist/src/models/message_status";
+} from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import {
   NotificationStatus,
   NotificationStatusId
-} from "io-functions-commons/dist/src/models/notification_status";
-import { readableReport } from "italia-ts-commons/lib/reporters";
+} from "@pagopa/io-functions-commons/dist/src/models/notification_status";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { ArchiveInfo } from "../ExtractUserDataActivity/handler";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 

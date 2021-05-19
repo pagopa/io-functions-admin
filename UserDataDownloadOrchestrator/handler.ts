@@ -3,9 +3,9 @@ import {
   RetryOptions
 } from "durable-functions/lib/src/classes";
 import { isLeft, toError } from "fp-ts/lib/Either";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import * as t from "io-ts";
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from "../ExtractUserDataActivity/handler";
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../SendUserDataDownloadMessageActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
@@ -158,10 +158,26 @@ export const handler = function*(
       toError(error),
       currentUserDataProcessing
     );
+
     context.log.error(`${logPrefix}|ERROR|${JSON.stringify(error)}`);
+
+    const orchestrationFailure = OrchestratorFailure.decode(error).getOrElse(
+      UnhanldedFailure.encode({
+        kind: "UNHANDLED",
+        reason: JSON.stringify(error)
+      })
+    );
+
+    const failureReason = `${orchestrationFailure.kind}${
+      orchestrationFailure.kind === "ACTIVITY"
+        ? `(${orchestrationFailure.activityName})`
+        : ""
+    }|${orchestrationFailure.reason}`;
+
     SetUserDataProcessingStatusActivityResultSuccess.decode(
       yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
         currentRecord: currentUserDataProcessing,
+        failureReason,
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
     ).getOrElseL(err => {
@@ -178,11 +194,6 @@ export const handler = function*(
       );
     });
 
-    return OrchestratorFailure.is(error)
-      ? error
-      : UnhanldedFailure.encode({
-          kind: "UNHANDLED",
-          reason: error.message
-        });
+    return orchestrationFailure;
   }
 };

@@ -4,7 +4,7 @@ import { Context } from "@azure/functions";
 
 import { isLeft } from "fp-ts/lib/Either";
 
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import {
   IResponseErrorConflict,
   IResponseErrorValidation,
@@ -12,30 +12,30 @@ import {
   ResponseErrorConflict,
   ResponseErrorFromValidationErrors,
   ResponseSuccessJson
-} from "italia-ts-commons/lib/responses";
-import { FiscalCode, SandboxFiscalCode } from "italia-ts-commons/lib/strings";
+} from "@pagopa/ts-commons/lib/responses";
+import { FiscalCode, SandboxFiscalCode } from "@pagopa/ts-commons/lib/strings";
 
-import { ExtendedProfile } from "io-functions-commons/dist/generated/definitions/ExtendedProfile";
+import { ExtendedProfile } from "@pagopa/io-functions-commons/dist/generated/definitions/ExtendedProfile";
 import {
   ProfileModel,
   RetrievedProfile
-} from "io-functions-commons/dist/src/models/profile";
+} from "@pagopa/io-functions-commons/dist/src/models/profile";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
   UserGroup
-} from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import { SandboxFiscalCodeMiddleware } from "io-functions-commons/dist/src/utils/middlewares/sandboxfiscalcode";
+} from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
+import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
+import { SandboxFiscalCodeMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/sandboxfiscalcode";
 import {
   IRequestMiddleware,
   withRequestMiddlewares,
   wrapRequestHandler
-} from "io-functions-commons/dist/src/utils/request_middleware";
+} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorQuery,
   ResponseErrorQuery
-} from "io-functions-commons/dist/src/utils/response";
+} from "@pagopa/io-functions-commons/dist/src/utils/response";
 
 import { DevelopmentProfile } from "../generated/definitions/DevelopmentProfile";
 

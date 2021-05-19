@@ -5,7 +5,7 @@
 import * as stream from "stream";
 import * as t from "io-ts";
 
-import { DeferredPromise } from "italia-ts-commons/lib/promises";
+import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
 
 import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
 import { array, catOptions, flatten, rights } from "fp-ts/lib/Array";
@@ -29,32 +29,32 @@ import {
 import { Context } from "@azure/functions";
 
 import { BlobService } from "azure-storage";
-import { MessageContent } from "io-functions-commons/dist/generated/definitions/MessageContent";
-import { NotificationChannelEnum } from "io-functions-commons/dist/generated/definitions/NotificationChannel";
+import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
+import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
   MessageModel,
   RetrievedMessageWithoutContent
-} from "io-functions-commons/dist/src/models/message";
+} from "@pagopa/io-functions-commons/dist/src/models/message";
 import {
   MessageStatus,
   MessageStatusModel
-} from "io-functions-commons/dist/src/models/message_status";
-import { RetrievedNotification } from "io-functions-commons/dist/src/models/notification";
-import { NotificationModel } from "io-functions-commons/dist/src/models/notification";
+} from "@pagopa/io-functions-commons/dist/src/models/message_status";
+import { RetrievedNotification } from "@pagopa/io-functions-commons/dist/src/models/notification";
+import { NotificationModel } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import {
   NotificationStatus,
   NotificationStatusModel
-} from "io-functions-commons/dist/src/models/notification_status";
+} from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import {
   Profile,
   ProfileModel
-} from "io-functions-commons/dist/src/models/profile";
-import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
+} from "@pagopa/io-functions-commons/dist/src/models/profile";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 import { fromLeft } from "fp-ts/lib/TaskEither";
-import { asyncIteratorToArray } from "io-functions-commons/dist/src/utils/async";
-import { toCosmosErrorResponse } from "io-functions-commons/dist/src/utils/cosmosdb_model";
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as yaml from "yaml";
 import { getEncryptedZipStream } from "../utils/zip";
 import { AllUserData, MessageContentWithId } from "../utils/userData";

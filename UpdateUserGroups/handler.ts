@@ -18,14 +18,14 @@ import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
   UserGroup
-} from "io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import { ContextMiddleware } from "io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import { RequiredBodyPayloadMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_body_payload";
-import { RequiredParamMiddleware } from "io-functions-commons/dist/src/utils/middlewares/required_param";
+} from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
+import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
+import { RequiredBodyPayloadMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_body_payload";
+import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
 import {
   withRequestMiddlewares,
   wrapRequestHandler
-} from "io-functions-commons/dist/src/utils/request_middleware";
+} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -34,8 +34,8 @@ import {
   ResponseErrorNotFound,
   ResponseErrorValidation,
   ResponseSuccessJson
-} from "italia-ts-commons/lib/responses";
-import { NonEmptyString } from "italia-ts-commons/lib/strings";
+} from "@pagopa/ts-commons/lib/responses";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { GroupCollection } from "../generated/definitions/GroupCollection";
 import { UserGroupsPayload } from "../generated/definitions/UserGroupsPayload";

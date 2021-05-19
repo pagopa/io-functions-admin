@@ -6,14 +6,14 @@ import {
 } from "durable-functions/lib/src/classes";
 import { isLeft, toError } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
-import { UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatusEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { RetrievedProfile } from "io-functions-commons/dist/src/models/profile";
-import { UserDataProcessing } from "io-functions-commons/dist/src/models/user_data_processing";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { RetrievedProfile } from "@pagopa/io-functions-commons/dist/src/models/profile";
+import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
-import { readableReport } from "italia-ts-commons/lib/reporters";
-import { FiscalCode, NonEmptyString } from "italia-ts-commons/lib/strings";
-import { Day, Hour } from "italia-ts-commons/lib/units";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { Day, Hour } from "@pagopa/ts-commons/lib/units";
 import {
   ActivityInput as DeleteUserDataActivityInput,
   ActivityResultSuccess as DeleteUserDataActivityResultSuccess
@@ -468,19 +468,34 @@ export const createUserDataDeleteOrchestratorHandler = (
       }
     } catch (error) {
       context.log.error(
-        `${logPrefix}|ERROR|Failed processing user data for download: ${printableError(
+        `${logPrefix}|ERROR|Failed processing user data for delete: ${printableError(
           error
         )}`
       );
+
       trackUserDataDeleteException(
         "failed",
         toError(error),
         currentUserDataProcessing
       );
 
+      const orchestrationFailure = OrchestratorFailure.decode(error).getOrElse(
+        UnhanldedFailure.encode({
+          kind: "UNHANDLED",
+          reason: printableError(error)
+        })
+      );
+
+      const failureReason = `${orchestrationFailure.kind}${
+        orchestrationFailure.kind === "ACTIVITY"
+          ? `(${orchestrationFailure.activityName})`
+          : ""
+      }|${orchestrationFailure.reason}`;
+
       SetUserDataProcessingStatusActivityResultSuccess.decode(
         yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
           currentRecord: currentUserDataProcessing,
+          failureReason,
           nextStatus: UserDataProcessingStatusEnum.FAILED
         })
       ).getOrElseL(err => {
@@ -496,11 +511,6 @@ export const createUserDataDeleteOrchestratorHandler = (
         );
       });
 
-      return OrchestratorFailure.decode(error).getOrElse(
-        UnhanldedFailure.encode({
-          kind: "UNHANDLED",
-          reason: printableError(error)
-        })
-      );
+      return orchestrationFailure;
     }
   };

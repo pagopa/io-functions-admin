@@ -3,7 +3,7 @@ import * as crypto from "crypto";
 import { AzureFunction, Context } from "@azure/functions";
 import { createTableService, TableUtilities } from "azure-storage";
 
-import { readableReport } from "italia-ts-commons/lib/reporters";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 
 import { isNone } from "fp-ts/lib/Option";
 import { getConfigOrThrow } from "../utils/config";

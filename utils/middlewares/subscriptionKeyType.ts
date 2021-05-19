@@ -1,5 +1,5 @@
-import { IRequestMiddleware } from "italia-ts-commons/lib/request_middleware";
-import { ResponseErrorFromValidationErrors } from "italia-ts-commons/lib/responses";
+import { IRequestMiddleware } from "@pagopa/ts-commons/lib/request_middleware";
+import { ResponseErrorFromValidationErrors } from "@pagopa/ts-commons/lib/responses";
 import { SubscriptionKeyTypePayload } from "../../generated/definitions/SubscriptionKeyTypePayload";
 
 /**

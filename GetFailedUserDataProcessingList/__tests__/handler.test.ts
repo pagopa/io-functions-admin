@@ -2,7 +2,7 @@
 
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
-import { UserDataProcessingChoice, UserDataProcessingChoiceEnum } from "io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingChoice, UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { GetFailedUserDataProcessingListHandler } from "../handler";
 
 const queryEntitiesFailedUserDataProcessingMock = (
