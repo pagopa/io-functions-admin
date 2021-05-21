@@ -167,13 +167,6 @@ export const handler = function*(
     failedUserDataProcessing
   );
 
-  if (failedUserDataProcessing.reason) {
-    context.log.info(
-      `${logPrefix}|INFO|Skipping record ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode} with reason ${failedUserDataProcessing.reason}`
-    );
-    return OrchestratorResult.encode({ kind: "SKIPPED" });
-  }
-
   try {
     // retrieve the last status
     const lastStatus = yield* checkLastStatus(
