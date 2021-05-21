@@ -8,12 +8,12 @@
  
  import { Context } from "@azure/functions";
  
- import { UserDataProcessingStatus } from "io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+ import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
  import {
    UserDataProcessing,
    UserDataProcessingModel
- } from "io-functions-commons/dist/src/models/user_data_processing";
- import { readableReport } from "italia-ts-commons/lib/reporters";
+ } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+ import { readableReport } from "@pagopa/ts-commons/lib/reporters";
  import { getMessageFromCosmosErrors } from "../utils/conversions";
  
  // Activity input

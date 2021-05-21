@@ -5,10 +5,15 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "route": "adm/user-data-processing/failed-delete/list",
+      "route": "adm/user-data-processing/failed-records",
       "methods": [
         "get"
       ]
+    },
+    {
+      "name": "starter",
+      "type": "orchestrationClient",
+      "direction": "in"
     },
     {
       "type": "http",
@@ -16,5 +21,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/UserDataProcessingPreviousFailedList/index.js"
+  "scriptFile": "../dist/UserDataProcessingProcessFailedRecords/index.js"
 }

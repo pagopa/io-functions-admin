@@ -4,6 +4,11 @@
       "name": "name",
       "type": "activityTrigger",
       "direction": "in"
+    },
+    {
+      "name": "starter",
+      "type": "orchestrationClient",
+      "direction": "in"
     }
   ],
   "scriptFile": "../dist/UserDataProcessingFindFailureReasonActivity/index.js"

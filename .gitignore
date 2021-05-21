@@ -4,6 +4,7 @@ csx
 .vs
 edge
 Publish
+local.setting.json
 
 *.user
 *.suo
