@@ -15,7 +15,7 @@ export const index = async (
   input: unknown
 ): Promise<ReadonlyArray<string | void>> => {
   const handler = triggerHandler(
-    insertTableEntity(tableService,failedUserDataProcessingTable),
+    insertTableEntity(tableService, failedUserDataProcessingTable),
     deleteTableEntity(tableService, failedUserDataProcessingTable)
   );
   return handler(context, input);

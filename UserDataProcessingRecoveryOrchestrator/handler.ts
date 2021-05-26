@@ -1,6 +1,5 @@
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import {
@@ -8,7 +7,7 @@ import {
   Task
 } from "durable-functions/lib/src/classes";
 import { isLeft } from "fp-ts/lib/Either";
-import { identity, toString } from "fp-ts/lib/function";
+import { toString } from "fp-ts/lib/function";
 import * as t from "io-ts";
 import {
   ActivityInput as CheckLastStatusActivityInput,
@@ -16,12 +15,10 @@ import {
 } from "../UserDataProcessingCheckLastStatusActivity/handler";
 import {
   ActivityInput as FindFailureReasonActivityInput,
-  ActivityResult as FindFailureReasonActivityResult,
   ActivityResultSuccess as FindFailureReasonActivityResultSuccess
 } from "../UserDataProcessingFindFailureReasonActivity/handler";
 import {
   ActivityInput as SetUserDataProcessingStatusActivityInput,
-  ActivityResult as SetUserDataProcessingStatusActivityResult,
   ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess
 } from "../SetUserDataProcessingStatusActivity/handler";
 import { FailedUserDataProcessing } from "../UserDataProcessingTrigger/handler";
@@ -83,7 +80,7 @@ const toActivityFailure = (
   activityName: string,
   // eslint-disable-next-line @typescript-eslint/ban-types
   extra?: object
-) =>
+): ActivityFailure =>
   ActivityFailure.encode({
     activityName,
     extra,
@@ -161,8 +158,8 @@ function* saveNewFailedRecordWithReason(
   const result = yield context.df.callActivity(
     "SetUserDataProcessingStatusActivity",
     SetUserDataProcessingStatusActivityInput.encode({
-      currentRecord: currentRecord,
-      failureReason: failureReason,
+      currentRecord,
+      failureReason,
       nextStatus: UserDataProcessingStatusEnum.FAILED
     })
   );

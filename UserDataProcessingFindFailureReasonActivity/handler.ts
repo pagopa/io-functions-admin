@@ -1,7 +1,5 @@
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
-import { makeOrchestratorId as makeDeleteOrchestratorId } from "../UserDataDeleteOrchestrator/utils";
-import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
@@ -9,10 +7,10 @@ import {
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as t from "io-ts";
 import { fromEither, tryCatch } from "fp-ts/lib/TaskEither";
-import { OrchestratorResult } from "../UserDataProcessingRecoveryOrchestrator/handler";
-import { identity, toString } from "fp-ts/lib/function";
-import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
+import { identity } from "fp-ts/lib/function";
 import { fromNullable } from "fp-ts/lib/Either";
+import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
+import { makeOrchestratorId as makeDeleteOrchestratorId } from "../UserDataDeleteOrchestrator/utils";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -88,33 +86,31 @@ export const getFindFailureReasonActivityHandler = async (
   const client = df.getClient(context);
 
   return fromEither(ActivityInput.decode(input))
-    .mapLeft(_ => {
-      return ActivityResultFailure.encode({
+    .mapLeft(_ =>
+      ActivityResultFailure.encode({
         kind: "INVALID_INPUT_FAILURE",
         reason: "Input not valid for this activity"
-      });
-    })
+      })
+    )
     .chain(({ choice, fiscalCode }) => {
       // create failed orchestrator id based on choice
       const failedUserDataProcessingOrchestratorId =
-        choice == UserDataProcessingChoiceEnum.DELETE
+        choice === UserDataProcessingChoiceEnum.DELETE
           ? makeDeleteOrchestratorId(fiscalCode)
           : makeDownloadOrchestratorId(fiscalCode);
 
       return tryCatch(
-        () => {
+        () =>
           // get the status of the failed orchestrator
-          return client.getStatus(failedUserDataProcessingOrchestratorId);
-        },
-        () => {
-          return ActivityResultFailure.encode({
+          client.getStatus(failedUserDataProcessingOrchestratorId),
+        () =>
+          ActivityResultFailure.encode({
             kind: "NOT_FOUND_FAILURE"
-          });
-        }
+          })
       );
     })
-    .fold(identity, orchestratorStatus => {
-      return fromNullable("No reason found")(orchestratorStatus.output)
+    .fold(identity, orchestratorStatus =>
+      fromNullable("No reason found")(orchestratorStatus.output)
         .map(o =>
           ActivityResultSuccess.encode({
             kind: "SUCCESS",
@@ -127,7 +123,7 @@ export const getFindFailureReasonActivityHandler = async (
             value: e as NonEmptyString
           })
         )
-        .fold<ActivityResult>(identity, identity);
-    })
+        .fold<ActivityResult>(identity, identity)
+    )
     .run();
 };

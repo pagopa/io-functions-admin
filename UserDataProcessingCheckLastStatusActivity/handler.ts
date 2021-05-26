@@ -71,7 +71,10 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 export const createUserDataProcessingCheckLastStatusActivityHandler = (
   userDataProcessingModel: UserDataProcessingModel
-) => (context: Context, input: unknown) =>
+): ((context: Context, input: unknown) => Promise<ActivityResult>) => (
+  _: Context,
+  input: unknown
+): Promise<ActivityResult> =>
   fromEither(ActivityInput.decode(input))
     .mapLeft<ActivityResultFailure>((reason: t.Errors) =>
       ActivityResultInvalidInputFailure.encode({

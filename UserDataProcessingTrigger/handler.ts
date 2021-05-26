@@ -2,10 +2,7 @@ import { Context } from "@azure/functions";
 import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
 import { Lazy } from "fp-ts/lib/function";
-import {
-  UserDataProcessingChoice,
-  UserDataProcessingChoiceEnum
-} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
@@ -23,7 +20,6 @@ import {
 import { flags } from "../utils/featureFlags";
 import { isOrchestratorRunning } from "../utils/orchestrator";
 import { DeleteTableEntity, InsertTableEntity } from "../utils/storage";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 const eg = TableUtilities.entityGenerator;
 
@@ -175,13 +171,6 @@ const raiseAbortEventOnOrchestrator = (
   return dfClient.raiseEvent(orchestratorId, ABORT_DELETE_EVENT, {});
 };
 
-const FailedRecord = t.interface({
-  PartitionKey: UserDataProcessingChoice,
-  Reason: NonEmptyString,
-  RowKey: FiscalCode
-});
-type FailedRecord = t.TypeOf<typeof FailedRecord>;
-
 const processFailedUserDataProcessing = async (
   context: Context,
   processable: FailedUserDataProcessing,
@@ -194,8 +183,8 @@ const processFailedUserDataProcessing = async (
   );
   const { e1: resultOrError, e2: sResponse } = await insertEntityFn({
     PartitionKey: eg.String(processable.choice),
-    RowKey: eg.String(processable.fiscalCode),
-    Reason: eg.String(processable.reason)
+    Reason: eg.String(processable.reason),
+    RowKey: eg.String(processable.fiscalCode)
   });
   if (resultOrError.isLeft() && sResponse.statusCode !== 409) {
     context.log.error(`${logPrefix}|ERROR=${resultOrError.value.message}`);
