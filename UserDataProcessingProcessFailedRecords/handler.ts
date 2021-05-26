@@ -3,39 +3,53 @@ import { Context } from "@azure/functions";
 import * as df from "durable-functions";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import {
-  AzureApiAuthMiddleware,
-  IAzureApiAuthorization,
-  UserGroup
-} from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
-import {
   withRequestMiddlewares,
   wrapRequestHandler
 } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorQuery,
-  ResponseErrorQuery
+  IResponseSuccessJsonIterator,
+  ResponseErrorQuery,
+  ResponseJsonIterator
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
-import {
-  IResponseSuccessAccepted,
-  ResponseSuccessAccepted
-} from "@pagopa/ts-commons/lib/responses";
 import {
   UserDataProcessing,
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { tryCatch } from "fp-ts/lib/TaskEither";
+import {
+  fromEither,
+  TaskEither,
+  taskEither,
+  tryCatch
+} from "fp-ts/lib/TaskEither";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/durableorchestrationclient";
 import { isOrchestratorRunning } from "../utils/orchestrator";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { Validation } from "fp-ts/lib/Validation";
+import { isRight, tryCatch2v } from "fp-ts/lib/Either";
+import {
+  asyncIteratorToArray,
+  filterAsyncIterator,
+  flattenAsyncIterator,
+  mapAsyncIterator
+} from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { FailedUserDataProcessing } from "../UserDataProcessingTrigger/handler";
+import { array, traverse } from "fp-ts/lib/Array";
+import {
+  HttpStatusCodeEnum,
+  IResponseErrorGeneric,
+  IResponseSuccessJson,
+  ResponseErrorGeneric
+} from "@pagopa/ts-commons/lib/responses";
+import { ResponseSuccessJson } from "italia-ts-commons/lib/responses";
+import { identity } from "fp-ts/lib/function";
 
 const logPrefix = "UserDataProcessingProcessFailedRecordsHandler";
 
 type IGetFailedUserDataProcessingHandlerResult =
-  | IResponseErrorQuery
-  | IResponseSuccessAccepted;
+  | IResponseSuccessJson<string[]>
+  | IResponseErrorQuery;
 
 type IGetFailedUserDataProcessingHandler = (
   context: Context
@@ -46,20 +60,20 @@ const startOrchestrator = async (
   orchestratorName: "UserDataProcessingRecoveryOrchestrator",
   orchestratorId: string,
   orchestratorInput: unknown
-) =>
+): Promise<string> =>
   isOrchestratorRunning(dfClient, orchestratorId)
     .fold(
       error => {
         throw error;
       },
       _ =>
-        !_.isRunning
-          ? dfClient.startNew(
+        _.isRunning
+          ? orchestratorId
+          : dfClient.startNew(
               orchestratorName,
               orchestratorId,
               orchestratorInput
             )
-          : null
     )
     .run();
 
@@ -68,7 +82,7 @@ export const makeOrchestratorId = (
   fiscalCode: FiscalCode
 ): string => `${choice}-${fiscalCode}-FAILED-USER-DATA-PROCESSING-RECOVERY`;
 
-const startUserDataProcessingRecoveryOrchestrator = (
+const startUserDataProcessingRecoveryOrchestrator = async (
   context: Context,
   processable: UserDataProcessing
 ): Promise<string> => {
@@ -80,7 +94,7 @@ const startUserDataProcessingRecoveryOrchestrator = (
     processable.choice,
     processable.fiscalCode
   );
-  return startOrchestrator(
+  return await startOrchestrator(
     dfClient,
     "UserDataProcessingRecoveryOrchestrator",
     orchestratorId,
@@ -92,34 +106,63 @@ export const processFailedUserDataProcessingHandler = (
   userDataProcessingModel: UserDataProcessingModel
 ): IGetFailedUserDataProcessingHandler => {
   return async context => {
-    return tryCatch(
+    const listOfFailedUserDataProcessing = new Set<string>();
+    return await tryCatch(
       async () =>
-        userDataProcessingModel.getQueryIterator({
-          parameters: [
-            {
-              name: "@status",
-              value: "FAILED"
-            }
-          ],
-          query: `SELECT * FROM m WHERE m.status = @status`
-        }),
+        userDataProcessingModel
+          .getQueryIterator({
+            parameters: [
+              {
+                name: "@status",
+                value: "FAILED"
+              }
+            ],
+            query: `SELECT * FROM m WHERE m.status = @status`
+          })
+          [Symbol.asyncIterator](),
       toCosmosErrorResponse
     )
-      .map(async i => {
-        for await (const failedUserDataProcessingList of i) {
-          failedUserDataProcessingList.forEach(failedUserDataProcessing => {
-            failedUserDataProcessing.map(async udp => {
-              await startUserDataProcessingRecoveryOrchestrator(context, udp);
-            });
-          });
-        }
-      })
+      .map(flattenAsyncIterator)
+      .map(asyncIteratorToArray)
+      .chain(i => tryCatch(() => i, toCosmosErrorResponse))
+      .chain(i =>
+        array.sequence(taskEither)(
+          i
+            .map(v =>
+              tryCatch(
+                async () => {
+                  if (v.isLeft()) {
+                    return;
+                  }
+
+                  if (
+                    listOfFailedUserDataProcessing.has(
+                      v.value.userDataProcessingId
+                    )
+                  ) {
+                    return;
+                  }
+
+                  listOfFailedUserDataProcessing.add(
+                    v.value.userDataProcessingId
+                  );
+                  return startUserDataProcessingRecoveryOrchestrator(
+                    context,
+                    v.value
+                  );
+                },
+                e => {
+                  context.log.error(`${logPrefix}|ERROR|${e}`);
+                  return toCosmosErrorResponse(e);
+                }
+              )
+            )
+            .filter(identity)
+        )
+      )
       .fold<IGetFailedUserDataProcessingHandlerResult>(
-        e => ResponseErrorQuery(`COSMOS|ERROR|${e.error}`, e),
-        s =>
-          ResponseSuccessAccepted(
-            "SUCCESS|Processing failed user data processing requests"
-          )
+        failure => ResponseErrorQuery(failure.kind, failure),
+        success => ResponseSuccessJson(success)
       )
       .run();
   };

@@ -43,10 +43,10 @@ app.get(
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
-export const index = async (
+export const index = (
   context: Context,
   input: unknown
-): Promise<void> => {
+): void => {
   logger = context.log;
   setAppContext(app, context);
   azureFunctionHandler(context);

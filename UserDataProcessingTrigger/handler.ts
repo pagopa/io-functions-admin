@@ -2,7 +2,10 @@ import { Context } from "@azure/functions";
 import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
 import { Lazy } from "fp-ts/lib/function";
-import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import {
+  UserDataProcessingChoice,
+  UserDataProcessingChoiceEnum
+} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
@@ -20,6 +23,7 @@ import {
 import { flags } from "../utils/featureFlags";
 import { isOrchestratorRunning } from "../utils/orchestrator";
 import { DeleteTableEntity } from "../utils/storage";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 const eg = TableUtilities.entityGenerator;
 
@@ -171,23 +175,45 @@ const raiseAbortEventOnOrchestrator = (
   return dfClient.raiseEvent(orchestratorId, ABORT_DELETE_EVENT, {});
 };
 
+const FailedRecord = t.interface({
+  PartitionKey: UserDataProcessingChoice,
+  Reason: NonEmptyString,
+  RowKey: FiscalCode
+});
+type FailedRecord = t.TypeOf<typeof FailedRecord>;
+
 const processFailedUserDataProcessing = async (
   context: Context,
   processable: FailedUserDataProcessing
 ): Promise<void> => {
-  // If a failed user_data_processing has been inserted
-  // we insert a record into FailedUserDataProcessing table storage
-  context.log.verbose(
-    `${logPrefix}|KEY=${processable.fiscalCode}|Inserting failed_user_data_processing entity`
+  // I get the existing records in the strage table via an input binding
+  // this is more efficient than a query but it gets all the records in the table
+  const existingRecords: FailedRecord[] =
+    context.bindings.FailedUserDataProcessingIn;
+  // I search for an existent record for this user to avoid inserting it again
+  const found = existingRecords.find(
+    r =>
+      r.PartitionKey == processable.choice && r.RowKey == processable.fiscalCode
   );
-  // eslint-disable-next-line functional/immutable-data
-  context.bindings.FailedUserDataProcessingOut = [
-    {
-      PartitionKey: processable.choice,
-      Reason: processable.reason,
-      RowKey: processable.fiscalCode
-    }
-  ];
+  if (found) {
+    context.log.verbose(
+      `${logPrefix}|KEY=${processable.fiscalCode}|Not inserting failed_user_data_processing entity because it is already present`
+    );
+  } else {
+    // If no record has been inserted previously
+    // I insert a new record into FailedUserDataProcessing table storage
+    context.log.verbose(
+      `${logPrefix}|KEY=${processable.fiscalCode}|Inserting failed_user_data_processing entity`
+    );
+    // eslint-disable-next-line functional/immutable-data
+    context.bindings.FailedUserDataProcessingOut = [
+      {
+        PartitionKey: processable.choice,
+        Reason: processable.reason,
+        RowKey: processable.fiscalCode
+      }
+    ];
+  }
 };
 
 const processClosedUserDataProcessing = async (

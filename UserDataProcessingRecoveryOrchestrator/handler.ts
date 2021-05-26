@@ -19,6 +19,11 @@ import {
   ActivityResult as FindFailureReasonActivityResult,
   ActivityResultSuccess as FindFailureReasonActivityResultSuccess
 } from "../UserDataProcessingFindFailureReasonActivity/handler";
+import {
+  ActivityInput as SetUserDataProcessingStatusActivityInput,
+  ActivityResult as SetUserDataProcessingStatusActivityResult,
+  ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess
+} from "../SetUserDataProcessingStatusActivity/handler";
 import { FailedUserDataProcessing } from "../UserDataProcessingTrigger/handler";
 
 const logPrefix = "UserDataProcessingRecoveryOrchestrator";
@@ -86,11 +91,15 @@ const toActivityFailure = (
     reason: err.kind
   });
 
-function* checkLastStatus(
+function* getLastRecordStatus(
   context: IOrchestrationFunctionContext,
   choice: UserDataProcessingChoice,
   fiscalCode: FiscalCode
 ): Generator<Task, CheckLastStatusActivityResultSuccess> {
+  // we call the activity that gets the last status of for the given record
+  context.log.info(
+    `${logPrefix}|INFO|Getting last status for ${choice}-${fiscalCode}`
+  );
   const result = yield context.df.callActivity(
     "UserDataProcessingCheckLastStatusActivity",
     CheckLastStatusActivityInput.encode({
@@ -111,11 +120,15 @@ function* checkLastStatus(
   });
 }
 
-function* findFailureReason(
+function* searchForFailureReason(
   context: IOrchestrationFunctionContext,
   choice: UserDataProcessingChoice,
   fiscalCode: FiscalCode
-): Generator<Task, FindFailureReasonActivityResult> {
+): Generator<Task, FindFailureReasonActivityResultSuccess> {
+  // we call the activity that search for a failure reason
+  context.log.info(
+    `${logPrefix}|INFO|Searching for failure reason of ${choice}-${fiscalCode}`
+  );
   const result = yield context.df.callActivity(
     "UserDataProcessingFindFailureReasonActivity",
     FindFailureReasonActivityInput.encode({
@@ -123,7 +136,7 @@ function* findFailureReason(
       fiscalCode
     })
   );
-  return FindFailureReasonActivityResult.decode(result).getOrElseL(e => {
+  return FindFailureReasonActivityResultSuccess.decode(result).getOrElseL(e => {
     context.log.error(
       `${logPrefix}|ERROR|UserDataProcessingFindFailureReasonActivity fail|${readableReport(
         e
@@ -132,6 +145,38 @@ function* findFailureReason(
     throw toActivityFailure(
       { kind: "USER_DATA_PROCESSING_FIND_FAILURE_REASON_ACTIVITY_RESULT" },
       "UserDataProcessingFindFailureReasonActivity"
+    );
+  });
+}
+
+function* saveNewFailedRecordWithReason(
+  context: IOrchestrationFunctionContext,
+  currentRecord: FailedUserDataProcessing,
+  failureReason: NonEmptyString
+): Generator<Task, SetUserDataProcessingStatusActivityResultSuccess> {
+  // we call the activity tha saves a new record with failed status and a failure reason
+  context.log.info(
+    `${logPrefix}|INFO|Saving reason ${failureReason} for ${currentRecord.choice}-${currentRecord.fiscalCode}`
+  );
+  const result = yield context.df.callActivity(
+    "SetUserDataProcessingStatusActivity",
+    SetUserDataProcessingStatusActivityInput.encode({
+      currentRecord: currentRecord,
+      failureReason: failureReason,
+      nextStatus: UserDataProcessingStatusEnum.FAILED
+    })
+  );
+  return SetUserDataProcessingStatusActivityResultSuccess.decode(
+    result
+  ).getOrElseL(e => {
+    context.log.error(
+      `${logPrefix}|ERROR|SetUserDataProcessingStatusActivity fail|${readableReport(
+        e
+      )}|result=${JSON.stringify(result)}`
+    );
+    throw toActivityFailure(
+      { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
+      "SetUserDataProcessingStatusActivity"
     );
   });
 }
@@ -168,42 +213,35 @@ export const handler = function*(
   );
 
   try {
-    // retrieve the last status
-    const lastStatus = yield* checkLastStatus(
+    // check the last status
+    const checkLastStatusResult = yield* getLastRecordStatus(
       context,
       failedUserDataProcessing.choice,
       failedUserDataProcessing.fiscalCode
     );
 
-    if (lastStatus.value !== UserDataProcessingStatusEnum.FAILED) {
+    if (checkLastStatusResult.value !== UserDataProcessingStatusEnum.FAILED) {
       context.log.info(
-        `${logPrefix}|INFO|Skipping record ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode} with status ${lastStatus.value}`
+        `${logPrefix}|INFO|Skipping record ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode} with status ${checkLastStatusResult.value}`
       );
       return OrchestratorResult.encode({ kind: "SKIPPED" });
     }
 
-    // search a failure reason
-    const findFailureReasonActivityResult = yield* findFailureReason(
+    // search for a failure reason
+    const findFailureReasonResult = yield* searchForFailureReason(
       context,
       failedUserDataProcessing.choice,
       failedUserDataProcessing.fiscalCode
     );
 
-    const failureReason = FindFailureReasonActivityResult.decode(
-      findFailureReasonActivityResult
-    )
-      .map(a =>
-        FindFailureReasonActivityResultSuccess.decode(a)
-          .fold(__ => `Activity error ${a.kind}` as NonEmptyString, _ => _.value)
-      )
-      .fold(_ => "Cannot decode activity result", identity);
+    const failureReason = findFailureReasonResult.value;
 
-    // set a new failed status with reason
-    yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-      currentRecord: failedUserDataProcessing,
-      failureReason: failureReason,
-      nextStatus: UserDataProcessingStatusEnum.FAILED
-    });
+    // save a new failed record with the found failure reason
+    yield* saveNewFailedRecordWithReason(
+      context,
+      failedUserDataProcessing,
+      failureReason
+    );
 
     return OrchestratorResult.encode({ kind: "SUCCESS", type: "COMPLETED" });
   } catch (error) {
