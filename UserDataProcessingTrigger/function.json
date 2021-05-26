@@ -15,20 +15,6 @@
         "name": "starter",
         "type": "orchestrationClient",
         "direction": "in"
-      },
-      {
-        "connection": "FailedUserDataProcessingStorageConnection",
-        "tableName": "%FAILED_USER_DATA_PROCESSING_TABLE%",
-        "name": "FailedUserDataProcessingIn",
-        "type": "table",
-        "direction": "in"
-      },
-      {
-        "connection": "FailedUserDataProcessingStorageConnection",
-        "tableName": "%FAILED_USER_DATA_PROCESSING_TABLE%",
-        "name": "FailedUserDataProcessingOut",
-        "type": "table",
-        "direction": "out"
       }
     ],
     "scriptFile": "../dist/UserDataProcessingTrigger/index.js"

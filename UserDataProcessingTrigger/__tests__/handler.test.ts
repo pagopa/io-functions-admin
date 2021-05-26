@@ -17,8 +17,8 @@ import {
 } from "../handler";
 import { some } from "fp-ts/lib/Option";
 import { TableUtilities } from "azure-storage";
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { right } from "fp-ts/lib/Either";
 
 // converts a UserDataProcessing object in a form as it would come from the database
 const toUndecoded = (doc: UserDataProcessing) => ({
@@ -77,6 +77,13 @@ jest.mock("../../utils/featureFlags", () => ({
 
 const eg = TableUtilities.entityGenerator;
 
+const insertEntity = jest.fn<any, any[]>(
+  () =>
+    ({
+      e1: right("inserted")
+    } as any)
+);
+
 const deleteEntity = jest.fn<any, any[]>(
   () =>
     ({
@@ -94,7 +101,7 @@ describe("UserDataProcessingTrigger", () => {
     const input = "invalid";
 
     try {
-      const handler = triggerHandler(deleteEntity);
+      const handler = triggerHandler(insertEntity, deleteEntity);
       await handler(context, input);
       fail("it should throw");
     } catch (error) {
@@ -115,7 +122,7 @@ describe("UserDataProcessingTrigger", () => {
       aNonProcessableDeleteWrongStatus
     ];
 
-    const handler = triggerHandler(deleteEntity);
+    const handler = triggerHandler(insertEntity, deleteEntity);
     await handler(context, input);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
@@ -140,7 +147,7 @@ describe("UserDataProcessingTrigger", () => {
       aNonProcessableDeleteWrongStatus
     ].map(toUndecoded);
 
-    const handler = triggerHandler(deleteEntity);
+    const handler = triggerHandler(insertEntity, deleteEntity);
     await handler(context, input);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
@@ -208,20 +215,16 @@ describe("FailedUserDataProcessing", () => {
       toUndecoded
     );
 
-    const handler = triggerHandler(deleteEntity);
+    const handler = triggerHandler(insertEntity, deleteEntity);
     await handler(context, input);
 
-    // check if binding to FailedUserDataProcessing has failed records
-    input.forEach((i: UserDataProcessing) =>
-      expect(context.bindings.FailedUserDataProcessingOut).toEqual([
-        {
-          PartitionKey: i.choice,
-          RowKey: i.fiscalCode,
-          Reason: i.reason
-        }
-      ])
-    );
-
+    expect(insertEntity).toBeCalled();
+    expect(insertEntity).toBeCalledTimes(1);
+    expect(insertEntity).toBeCalledWith({
+      PartitionKey: eg.String(failedUserDataProcessing[0].choice),
+      RowKey: eg.String(failedUserDataProcessing[0].fiscalCode),
+      Reason: eg.String(failedUserDataProcessing[0].reason)
+    });
     expect(deleteEntity).not.toBeCalled();
   });
 });
@@ -236,7 +239,7 @@ describe("ClosedUserDataProcessing", () => {
       toUndecoded
     );
 
-    const handler = triggerHandler(deleteEntity);
+    const handler = triggerHandler(insertEntity, deleteEntity);
     await handler(context, input);
 
     expect(deleteEntity).toBeCalled();
