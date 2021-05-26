@@ -1,7 +1,6 @@
-import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import {
   IOrchestrationFunctionContext,
   Task
@@ -90,18 +89,17 @@ const toActivityFailure = (
 
 function* getLastRecordStatus(
   context: IOrchestrationFunctionContext,
-  choice: UserDataProcessingChoice,
-  fiscalCode: FiscalCode
+  failedUserDataProcessing: FailedUserDataProcessing
 ): Generator<Task, CheckLastStatusActivityResultSuccess> {
   // we call the activity that gets the last status of for the given record
   context.log.info(
-    `${logPrefix}|INFO|Getting last status for ${choice}-${fiscalCode}`
+    `${logPrefix}|INFO|Getting last status for ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode}`
   );
   const result = yield context.df.callActivity(
     "UserDataProcessingCheckLastStatusActivity",
     CheckLastStatusActivityInput.encode({
-      choice,
-      fiscalCode
+      choice: failedUserDataProcessing.choice,
+      fiscalCode: failedUserDataProcessing.fiscalCode
     })
   );
   return CheckLastStatusActivityResultSuccess.decode(result).getOrElseL(e => {
@@ -119,18 +117,27 @@ function* getLastRecordStatus(
 
 function* searchForFailureReason(
   context: IOrchestrationFunctionContext,
-  choice: UserDataProcessingChoice,
-  fiscalCode: FiscalCode
+  failedUserDataProcessing: FailedUserDataProcessing
 ): Generator<Task, FindFailureReasonActivityResultSuccess> {
-  // we call the activity that search for a failure reason
+  // we return the reason of the failed record if there is one
+  // we need this to recover any request that had a reason of failure
+  // but was not tracked into FailedUserDataProcessing table storage
+  if (failedUserDataProcessing.reason) {
+    return FindFailureReasonActivityResultSuccess.encode({
+      kind: "SUCCESS",
+      value: failedUserDataProcessing.reason
+    });
+  }
+  // if there is no reason in the failed record
+  // we call the activity that searchs for one
   context.log.info(
-    `${logPrefix}|INFO|Searching for failure reason of ${choice}-${fiscalCode}`
+    `${logPrefix}|INFO|Searching for failure reason of ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode}`
   );
   const result = yield context.df.callActivity(
     "UserDataProcessingFindFailureReasonActivity",
     FindFailureReasonActivityInput.encode({
-      choice,
-      fiscalCode
+      choice: failedUserDataProcessing.choice,
+      fiscalCode: failedUserDataProcessing.fiscalCode
     })
   );
   return FindFailureReasonActivityResultSuccess.decode(result).getOrElseL(e => {
@@ -213,8 +220,7 @@ export const handler = function*(
     // check the last status
     const checkLastStatusResult = yield* getLastRecordStatus(
       context,
-      failedUserDataProcessing.choice,
-      failedUserDataProcessing.fiscalCode
+      failedUserDataProcessing
     );
 
     if (checkLastStatusResult.value !== UserDataProcessingStatusEnum.FAILED) {
@@ -227,19 +233,24 @@ export const handler = function*(
     // search for a failure reason
     const findFailureReasonResult = yield* searchForFailureReason(
       context,
-      failedUserDataProcessing.choice,
-      failedUserDataProcessing.fiscalCode
+      failedUserDataProcessing
     );
 
     const failureReason = findFailureReasonResult.value;
 
     // save a new failed record with the found failure reason
+    // we duplicate failed records adding another one with reason
+    // this is not a problem because the set of pending failed requests
+    // is relatively small and this function will be called ideally only once
     yield* saveNewFailedRecordWithReason(
       context,
       failedUserDataProcessing,
       failureReason
     );
 
+    context.log.info(
+      `${logPrefix}|INFO|Recovery finished for failed record ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode}`
+    );
     return OrchestratorResult.encode({ kind: "SUCCESS", type: "COMPLETED" });
   } catch (error) {
     context.log.error(
