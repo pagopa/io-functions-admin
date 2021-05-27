@@ -25,7 +25,7 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { array } from "fp-ts/lib/Array";
 import { IResponseSuccessJson } from "@pagopa/ts-commons/lib/responses";
-import { ResponseSuccessJson } from "italia-ts-commons/lib/responses";
+import { ResponseSuccessJson } from "@pagopa/ts-commons/lib/responses";
 import { identity } from "fp-ts/lib/function";
 import { isOrchestratorRunning } from "../utils/orchestrator";
 
@@ -61,7 +61,7 @@ const startOrchestrator = async (
     )
     .run();
 
-export const makeOrchestratorId = (
+const makeOrchestratorId = (
   choice: UserDataProcessingChoiceEnum,
   fiscalCode: FiscalCode
 ): string => `${choice}-${fiscalCode}-FAILED-USER-DATA-PROCESSING-RECOVERY`;
