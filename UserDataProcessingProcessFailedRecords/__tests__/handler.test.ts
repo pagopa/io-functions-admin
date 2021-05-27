@@ -64,12 +64,12 @@ const userDataProcessingRecords = [
   {
     choice: UserDataProcessingChoiceEnum.DELETE,
     fiscalCode: "ICNLFF02A39Y185X" as FiscalCode,
-    status: UserDataProcessingStatusEnum.FAILED
+    status: UserDataProcessingStatusEnum.PENDING
   },
   {
     choice: UserDataProcessingChoiceEnum.DELETE,
     fiscalCode: "CMFYIL20A76Y100X" as FiscalCode,
-    status: UserDataProcessingStatusEnum.FAILED
+    status: UserDataProcessingStatusEnum.WIP
   },
   {
     choice: UserDataProcessingChoiceEnum.DELETE,
@@ -129,13 +129,15 @@ const recordMock = (
   createdAt: new Date()
 });
 
-const recordsIterator = query => ({
+const recordsIterator = (query: string | SqlQuerySpec) => ({
   async *[Symbol.asyncIterator]() {
-    const queriedRecords = userDataProcessingRecords.filter(
-      r => r.status === query.parameters[0].value
+    // I don't care for string queries, but I manage it to keep signatures coherent
+    const queriedRecords = userDataProcessingRecords.filter(r =>
+      typeof query === "string" ? false : r.status === query.parameters[0].value
     );
     for (const record of queriedRecords) {
-      // make a pause between values, wait for something
+      // wait for 100ms to not pass the 5000ms limit of jest
+      // and keep the asynchrounous behaviour
       await new Promise(resolve => setTimeout(resolve, 100));
       yield [
         tryCatch2v(
@@ -161,6 +163,8 @@ const getQueryIteratorMock = jest.fn(
     recordsIterator(query)
 );
 
+// this mocked model returnss an async iterable for getQueryIterator
+// that returns only records that respect a query by status value
 const userDataProcessingModelMock = ({
   getQueryIterator: getQueryIteratorMock
 } as unknown) as UserDataProcessingModel;
@@ -182,6 +186,7 @@ describe("FindFailedRecords", () => {
     const results = await processFailedUserDataProcessingHandler(
       userDataProcessingModelMock
     )(contextMock);
+
     expect(getQueryIteratorMock).toHaveBeenCalled();
 
     // expect result to contain only orchestrator ids for failed records
@@ -193,8 +198,6 @@ describe("FindFailedRecords", () => {
           "DELETE-IOOWZZ43A99Y618X-FAILED-USER-DATA-PROCESSING-RECOVERY",
           "DELETE-RLDBSV36A78Y792X-FAILED-USER-DATA-PROCESSING-RECOVERY",
           "DELETE-UEEFON48A55Y758T-FAILED-USER-DATA-PROCESSING-RECOVERY",
-          "DELETE-ICNLFF02A39Y185X-FAILED-USER-DATA-PROCESSING-RECOVERY",
-          "DELETE-CMFYIL20A76Y100X-FAILED-USER-DATA-PROCESSING-RECOVERY",
           "DOWNLOAD-LVDNGK37A81Y071X-FAILED-USER-DATA-PROCESSING-RECOVERY",
           "DOWNLOAD-MMPPLG60A34Y945X-FAILED-USER-DATA-PROCESSING-RECOVERY",
           "DOWNLOAD-GDNNWA12H81Y874F-FAILED-USER-DATA-PROCESSING-RECOVERY",
