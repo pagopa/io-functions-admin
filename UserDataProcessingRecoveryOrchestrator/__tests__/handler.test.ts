@@ -85,6 +85,8 @@ const consumeOrchestrator = (orch: any) => {
 };
 
 const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
+const choice = "DELETE" as UserDataProcessingChoice;
+const fiscalCode = "DQFCOC07A82Y456X" as FiscalCode;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -94,7 +96,23 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
   it("should fail on invalid input", () => {
     const document = "invalid";
     mockOrchestratorGetInput.mockReturnValueOnce(document);
+    const result = consumeOrchestrator(handler(context));
 
+    expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
+    expect(checkLastStatusActivity).not.toHaveBeenCalled();
+    expect(findFailureReasonActivity).not.toHaveBeenCalled();
+    expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
+  });
+
+  it("should fail on not failed record", () => {
+    const aNotFailedUserDataProcessing = {
+      choice: choice,
+      createdAt: "2020-10-02T15:12:36.006Z",
+      fiscalCode: fiscalCode,
+      status: "CLOSED",
+      userDataProcessingId: "DQFCOC07A82Y456X-DELETE"
+    };
+    mockOrchestratorGetInput.mockReturnValueOnce(aNotFailedUserDataProcessing);
     const result = consumeOrchestrator(handler(context));
 
     expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
@@ -104,9 +122,6 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
   });
 
   it("should fail when checkLastStatusActivity throws exception", () => {
-    const choice = "DELETE" as UserDataProcessingChoice;
-    const fiscalCode = "DQFCOC07A82Y456X" as FiscalCode;
-
     const aFailedUserDataProcessing = {
       choice: choice,
       createdAt: "2020-10-02T15:12:36.006Z",
@@ -131,15 +146,13 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
       kind: "UNHANDLED",
       reason: '"any error"'
     });
+
     expect(checkLastStatusActivity).toHaveBeenCalled();
     expect(findFailureReasonActivity).not.toHaveBeenCalled();
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
   });
 
   it("should fail when findFailureReasonActivity throws exception", () => {
-    const choice = "DELETE" as UserDataProcessingChoice;
-    const fiscalCode = "DQFCOC07A82Y456X" as FiscalCode;
-
     const aFailedUserDataProcessing = {
       choice: choice,
       createdAt: "2020-10-02T15:12:36.006Z",
@@ -164,15 +177,13 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
       kind: "UNHANDLED",
       reason: '"any error"'
     });
+
     expect(checkLastStatusActivity).toHaveBeenCalled();
     expect(findFailureReasonActivity).toHaveBeenCalled();
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
   });
 
   it("should fail when setUserDataProcessingStatusActivity throws exception", () => {
-    const choice = "DELETE" as UserDataProcessingChoice;
-    const fiscalCode = "DQFCOC07A82Y456X" as FiscalCode;
-
     const aFailedUserDataProcessing = {
       choice: choice,
       createdAt: "2020-10-02T15:12:36.006Z",
@@ -197,15 +208,13 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
       kind: "UNHANDLED",
       reason: '"any error"'
     });
+
     expect(checkLastStatusActivity).toHaveBeenCalled();
     expect(findFailureReasonActivity).toHaveBeenCalled();
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
   });
 
   it("should SKIP when valid input is given but last status is not failed", () => {
-    const choice = "DELETE" as UserDataProcessingChoice;
-    const fiscalCode = "DQFCOC07A82Y456X" as FiscalCode;
-
     const aFailedUserDataProcessing = {
       choice: choice,
       createdAt: "2020-10-02T15:12:36.006Z",
@@ -238,14 +247,12 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
         fiscalCode: fiscalCode
       }
     );
+
     expect(findFailureReasonActivity).not.toHaveBeenCalled();
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
   });
 
   it("should set processing status as FAILED with a reason when valid input is given", () => {
-    const choice = "DELETE" as UserDataProcessingChoice;
-    const fiscalCode = "DQFCOC07A82Y456X" as FiscalCode;
-
     const aFailedUserDataProcessing = {
       choice: choice,
       createdAt: "2020-10-02T15:12:36.006Z",

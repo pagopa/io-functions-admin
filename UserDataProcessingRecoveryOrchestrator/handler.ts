@@ -87,7 +87,7 @@ const toActivityFailure = (
     reason: err.kind
   });
 
-function* getLastRecordStatus(
+function* getLastStatus(
   context: IOrchestrationFunctionContext,
   failedUserDataProcessing: FailedUserDataProcessing
 ): Generator<Task, CheckLastStatusActivityResultSuccess> {
@@ -218,7 +218,7 @@ export const handler = function*(
 
   try {
     // check the last status
-    const checkLastStatusResult = yield* getLastRecordStatus(
+    const checkLastStatusResult = yield* getLastStatus(
       context,
       failedUserDataProcessing
     );
