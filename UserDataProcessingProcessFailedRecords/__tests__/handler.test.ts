@@ -2,10 +2,7 @@ import {
   UserDataProcessing,
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import {
-  UserDataProcessingChoice,
-  UserDataProcessingChoiceEnum
-} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { processFailedUserDataProcessingHandler } from "../handler";
@@ -14,7 +11,7 @@ import { tryCatch2v } from "fp-ts/lib/Either";
 import { Branded } from "io-ts";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import * as t from "io-ts";
-import { Context } from "@azure/functions";
+import { context } from "../../__mocks__/functions";
 import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
 
 jest.mock("durable-functions", () => ({
@@ -163,19 +160,11 @@ const getQueryIteratorMock = jest.fn(
     recordsIterator(query)
 );
 
-// this mocked model returnss an async iterable for getQueryIterator
+// this mocked model returns an async iterable for getQueryIterator
 // that returns only records that respect a query by status value
 const userDataProcessingModelMock = ({
   getQueryIterator: getQueryIteratorMock
 } as unknown) as UserDataProcessingModel;
-
-const contextMock = ({
-  log: {
-    error: a => console.log(a),
-    info: a => console.log(a),
-    verbose: a => console.log(a)
-  }
-} as unknown) as Context;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -185,7 +174,7 @@ describe("FindFailedRecords", () => {
   it("should start orchestrator only for failed results", async () => {
     const results = await processFailedUserDataProcessingHandler(
       userDataProcessingModelMock
-    )(contextMock);
+    )(context);
 
     expect(getQueryIteratorMock).toHaveBeenCalled();
 
