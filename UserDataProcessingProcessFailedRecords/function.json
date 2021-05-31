@@ -1,0 +1,25 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "route": "adm/user-data-processing/failed-records",
+      "methods": [
+        "get"
+      ]
+    },
+    {
+      "name": "starter",
+      "type": "orchestrationClient",
+      "direction": "in"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    }
+  ],
+  "scriptFile": "../dist/UserDataProcessingProcessFailedRecords/index.js"
+}

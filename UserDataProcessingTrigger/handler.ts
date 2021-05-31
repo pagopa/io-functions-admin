@@ -19,7 +19,7 @@ import {
 } from "../utils/appinsightsEvents";
 import { flags } from "../utils/featureFlags";
 import { isOrchestratorRunning } from "../utils/orchestrator";
-import { DeleteTableEntity } from "../utils/storage";
+import { DeleteTableEntity, InsertTableEntity } from "../utils/storage";
 
 const eg = TableUtilities.entityGenerator;
 
@@ -173,21 +173,22 @@ const raiseAbortEventOnOrchestrator = (
 
 const processFailedUserDataProcessing = async (
   context: Context,
-  processable: FailedUserDataProcessing
+  processable: FailedUserDataProcessing,
+  insertEntityFn: InsertTableEntity
 ): Promise<void> => {
   // If a failed user_data_processing has been inserted
-  // we insert a record into FailedUserDataProcessing table storage
+  // we insert a record into failed_user_data_processing table storage
   context.log.verbose(
-    `${logPrefix}|KEY=${processable.fiscalCode}|Inserting failed_user_data_processing entity`
+    `${logPrefix}|KEY=${processable.fiscalCode}|Inserting a failed_user_data_processing record`
   );
-  // eslint-disable-next-line functional/immutable-data
-  context.bindings.FailedUserDataProcessingOut = [
-    {
-      PartitionKey: processable.choice,
-      Reason: processable.reason,
-      RowKey: processable.fiscalCode
-    }
-  ];
+  const { e1: resultOrError, e2: sResponse } = await insertEntityFn({
+    PartitionKey: eg.String(processable.choice),
+    Reason: eg.String(processable.reason),
+    RowKey: eg.String(processable.fiscalCode)
+  });
+  if (resultOrError.isLeft() && sResponse.statusCode !== 409) {
+    context.log.error(`${logPrefix}|ERROR=${resultOrError.value.message}`);
+  }
 };
 
 const processClosedUserDataProcessing = async (
@@ -198,7 +199,7 @@ const processClosedUserDataProcessing = async (
   // If a completed user_data_processing has been inserted
   // we delete any record from FailedUserDataProcessing table storage
   context.log.verbose(
-    `${logPrefix}|KEY=${processable.fiscalCode}|Deleting any failed_user_data_processing entity`
+    `${logPrefix}|KEY=${processable.fiscalCode}|Deleting any failed_user_data_processing record`
   );
   const { e1: maybeError, e2: uResponse } = await deleteEntityFn({
     PartitionKey: eg.String(processable.choice),
@@ -212,7 +213,10 @@ const processClosedUserDataProcessing = async (
 };
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions, sonarjs/cognitive-complexity
-export const triggerHandler = (removeFailure: DeleteTableEntity) => (
+export const triggerHandler = (
+  insertFailure: InsertTableEntity,
+  removeFailure: DeleteTableEntity
+) => (
   context: Context,
   input: unknown // eslint-disable-next-line sonarjs/cognitive-complexity
 ): Promise<ReadonlyArray<string | void>> => {
@@ -245,7 +249,11 @@ export const triggerHandler = (removeFailure: DeleteTableEntity) => (
                   raiseAbortEventOnOrchestrator(context, processable)
               : FailedUserDataProcessing.is(processable)
               ? (): Promise<void> =>
-                  processFailedUserDataProcessing(context, processable)
+                  processFailedUserDataProcessing(
+                    context,
+                    processable,
+                    insertFailure
+                  )
               : ClosedUserDataProcessing.is(processable)
               ? (): Promise<void> =>
                   processClosedUserDataProcessing(

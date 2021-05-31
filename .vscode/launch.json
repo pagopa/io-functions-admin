@@ -48,6 +48,13 @@
       "skipFiles": [
         "<node_internals>/**/*.js"
       ]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Node Functions",
+      "port": 9229,
+      "preLaunchTask": "func: host start"
     }
   ]
 }
