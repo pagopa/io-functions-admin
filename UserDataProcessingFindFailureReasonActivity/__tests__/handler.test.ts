@@ -62,7 +62,7 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
     expect(decodedResult.isRight()).toBe(true);
     expect(decodedResult.value).toEqual({
       kind: "SUCCESS",
-      value: failedOrchestratorOutput
+      value: JSON.stringify(failedOrchestratorOutput, (key, value) => value)
     });
   });
 

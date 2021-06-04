@@ -114,13 +114,13 @@ export const getFindFailureReasonActivityHandler = async (
         .map(o =>
           ActivityResultSuccess.encode({
             kind: "SUCCESS",
-            value: o as NonEmptyString
+            value: JSON.stringify(o, (key, value) => value) as NonEmptyString
           })
         )
         .mapLeft(e =>
           ActivityResultSuccess.encode({
             kind: "SUCCESS",
-            value: e as NonEmptyString
+            value: JSON.stringify(e, (key, value) => value) as NonEmptyString
           })
         )
         .fold<ActivityResult>(identity, identity)
