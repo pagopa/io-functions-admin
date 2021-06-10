@@ -62,7 +62,8 @@
     "@azure/graph": "^4.0.1",
     "@azure/ms-rest-js": "^2.2.3",
     "@azure/ms-rest-nodeauth": "^2.0.5",
-    "@pagopa/io-functions-commons": "^20.3.6",
+    "@pagopa/express-azure-functions": "^2.0.0",
+    "@pagopa/io-functions-commons": "^20.5.3",
     "@pagopa/ts-commons": "^9.1.0",
     "@types/archiver": "^3.1.0",
     "@types/randomstring": "^1.1.6",
@@ -77,7 +78,6 @@
     "express": "^4.17.1",
     "fp-ts": "1.17.4",
     "html-to-text": "^5.1.1",
-    "io-functions-express": "^1.1.0",
     "io-ts": "1.8.5",
     "italia-ts-commons": "^8.5.0",
     "node-fetch": "^2.6.1",
@@ -92,7 +92,6 @@
     "yaml": "^1.10.0"
   },
   "resolutions": {
-    "handlebars": "~4.5.3",
-    "io-functions-express": "^1.1.0"
+    "handlebars": "~4.5.3"
   }
 }
