@@ -1,8 +1,9 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-jest.mock('@azure/ms-rest-nodeauth', () => ({
+jest.mock("@azure/ms-rest-nodeauth", () => ({
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   __esModule: true,
-  ...jest.requireActual('@azure/ms-rest-nodeauth')
+  ...jest.requireActual("@azure/ms-rest-nodeauth")
 }));
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
