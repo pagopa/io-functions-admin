@@ -1,5 +1,10 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
+jest.mock('@azure/ms-rest-nodeauth', () => ({
+  __esModule: true,
+  ...jest.requireActual('@azure/ms-rest-nodeauth')
+}));
+
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
@@ -85,6 +90,7 @@ describe("UpdateUser", () => {
       undefined as any
     );
 
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
@@ -104,6 +110,7 @@ describe("UpdateUser", () => {
       aUserEmail,
       fakeRequestPayload
     );
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(mockUsersUpdate).toBeCalledTimes(1);
     expect(response).toEqual({
       apply: expect.any(Function),
@@ -151,6 +158,7 @@ describe("UpdateUser", () => {
       aUserEmail,
       fakeRequestPayload
     );
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",

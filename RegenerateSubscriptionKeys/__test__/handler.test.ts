@@ -1,5 +1,10 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
+jest.mock('@azure/ms-rest-nodeauth', () => ({
+  __esModule: true,
+  ...jest.requireActual('@azure/ms-rest-nodeauth')
+}));
+
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
@@ -105,6 +110,7 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       aNotExistingSubscriptionId,
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorNotFound");
   });
 
@@ -121,6 +127,7 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       aBreakingApimSubscriptionId,
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
@@ -138,6 +145,7 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       aValidSubscriptionId,
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(firstResponse).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",
