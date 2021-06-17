@@ -319,7 +319,10 @@ const backupAndDeleteAllNotificationsData = ({
                 userDataBackup
               })
             )
-            .bimap(e => toQueryFailure(new Error(e.reason)), () => true)
+            .bimap(
+              e => toQueryFailure(new Error(e.reason)),
+              () => true
+            )
       )
   );
 

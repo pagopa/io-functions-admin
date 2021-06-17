@@ -1,5 +1,10 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
+jest.mock('@azure/ms-rest-nodeauth', () => ({
+  __esModule: true,
+  ...jest.requireActual('@azure/ms-rest-nodeauth')
+}));
+
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
@@ -121,6 +126,7 @@ describe("GetUsers", () => {
       undefined as any,
       undefined
     );
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
@@ -149,6 +155,7 @@ describe("GetUsers", () => {
       undefined as any,
       undefined
     );
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
@@ -215,7 +222,8 @@ describe("GetUsers", () => {
       undefined as any,
       undefined
     );
-
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
+    
     expect(responseWithNext).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",

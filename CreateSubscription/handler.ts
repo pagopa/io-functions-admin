@@ -195,12 +195,13 @@ export function CreateSubscriptionHandler(
       )
       .chain(subscriptionResponse =>
         fromEither(
-          subscriptionContractToApiSubscription(subscriptionResponse).mapLeft(
-            error =>
-              internalErrorHandler(
-                "Invalid subscription contract from APIM.",
-                error
-              )
+          subscriptionContractToApiSubscription(
+            subscriptionResponse
+          ).mapLeft(error =>
+            internalErrorHandler(
+              "Invalid subscription contract from APIM.",
+              error
+            )
           )
         )
       )

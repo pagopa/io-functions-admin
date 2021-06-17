@@ -1,5 +1,10 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
+jest.mock('@azure/ms-rest-nodeauth', () => ({
+  __esModule: true,
+  ...jest.requireActual('@azure/ms-rest-nodeauth')
+}));
+
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
@@ -87,6 +92,7 @@ describe("CreateUser", () => {
       undefined as any
     );
 
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
@@ -108,6 +114,7 @@ describe("CreateUser", () => {
       fakeRequestPayload
     );
 
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
@@ -134,6 +141,7 @@ describe("CreateUser", () => {
       fakeRequestPayload
     );
 
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
@@ -158,6 +166,7 @@ describe("CreateUser", () => {
       fakeRequestPayload
     );
 
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
@@ -204,6 +213,7 @@ describe("CreateUser", () => {
       fakeRequestPayload
     );
 
+    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",

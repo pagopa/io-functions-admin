@@ -12,7 +12,10 @@ import { fromLeft, taskEither } from "fp-ts/lib/TaskEither";
 import * as HtmlToText from "html-to-text";
 
 import { EmailAddress } from "@pagopa/io-functions-commons/dist/generated/definitions/EmailAddress";
-import * as mail from "@pagopa/io-functions-commons/dist/src/mailer";
+
+// imported all /mailer/transports instead of /mailer to allow spyOn() to work
+// https://stackoverflow.com/questions/53162001/typeerror-during-jests-spyon-cannot-set-property-getrequest-of-object-which
+import * as mail from "@pagopa/io-functions-commons/dist/src/mailer/transports";
 
 beforeEach(() => jest.clearAllMocks());
 
