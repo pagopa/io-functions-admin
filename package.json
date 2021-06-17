@@ -63,8 +63,8 @@
     "@azure/ms-rest-js": "^2.5.1",
     "@azure/ms-rest-nodeauth": "^2.0.6",
     "@pagopa/express-azure-functions": "^2.0.0",
-    "@pagopa/io-functions-commons": "^20.5.3",
-    "@pagopa/ts-commons": "^9.5.0",
+    "@pagopa/io-functions-commons": "^20.5.4",
+    "@pagopa/ts-commons": "^9.5.1",
     "@types/archiver": "^3.1.1",
     "@types/randomstring": "^1.1.6",
     "applicationinsights": "^1.8.10",
@@ -92,6 +92,7 @@
     "yaml": "^1.10.2"
   },
   "resolutions": {
-    "handlebars": "~4.5.3"
+    "handlebars": "~4.5.3",
+    "fp-ts": "1.17.4"
   }
 }
