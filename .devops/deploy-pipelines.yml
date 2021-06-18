@@ -77,7 +77,7 @@ stages:
       - job: 'prepare_artifact_and_deploy'
         steps:
           # Build application
-          - template: azure-templates/setup-project.yml
+          - template: templates/node-job-setup/template.yaml@pagopaCommons
             parameters:
               # On the assumption that this stage is executed only when Relase stage is,
               #  with this parameter we set the reference the deploy script must pull changes from.
@@ -88,7 +88,6 @@ stages:
           - script: |
               yarn predeploy
             displayName: 'Build'
-  
           # Install functions extensions
           - task: DotNetCoreCLI@2
             inputs:
