@@ -145,7 +145,7 @@ stages:
     jobs:
       - job: 'do_healthcheck'       
         steps:  
-          - template: templates/rest-healthcheck/template.yaml@pagopaCommonsLegacy 
+          - template: templates/rest-healthcheck/template.yaml@pagopaCommons
             parameters:
               azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
               appName: '$(PRODUCTION_APP_NAME)'
@@ -153,7 +153,7 @@ stages:
               endpointType: 'private'
               containerInstanceResourceGroup: 'io-p-rg-common'
               containerInstanceVNet: 'io-p-vnet-common'
-              containerInstanceSubnet: 'azure-devops' 
+              containerInstanceSubnet: 'azure-devops'
 
   # Promote the staging instance to production
   - stage: Deploy_production
