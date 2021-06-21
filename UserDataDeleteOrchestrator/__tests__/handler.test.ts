@@ -191,6 +191,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
@@ -213,6 +214,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
@@ -235,6 +237,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
@@ -266,6 +269,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
@@ -293,6 +297,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
@@ -313,12 +318,14 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.WIP
       })
     );
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.CLOSED
       })
@@ -357,6 +364,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.CLOSED
       })
@@ -473,6 +481,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })

@@ -5,19 +5,15 @@ import {
   mockOrchestratorGetInput
 } from "../../__mocks__/durable-functions";
 import {
-  ActivityInput as CheckLastStatusActivityInput,
   ActivityResultSuccess as CheckLastStatusActivityResultSuccess
 } from "../../UserDataProcessingCheckLastStatusActivity/handler";
 import {
-  ActivityInput as FindFailureReasonActivityInput,
   ActivityResultSuccess as FindFailureReasonActivityResultSuccess
 } from "../../UserDataProcessingFindFailureReasonActivity/handler";
 import {
-  ActivityInput as SetUserDataProcessingStatusActivityInput,
   ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess
 } from "../../SetUserDataProcessingStatusActivity/handler";
 import {
-  ActivityFailure,
   handler,
   InvalidInputFailure,
   OrchestratorFailure,
@@ -295,6 +291,7 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       "SetUserDataProcessingStatusActivity",
+      expect.any(Object),
       {
         currentRecord: aFailedUserDataProcessing,
         failureReason: "Any found reason",

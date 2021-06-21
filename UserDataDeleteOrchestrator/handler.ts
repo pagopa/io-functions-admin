@@ -1,8 +1,8 @@
-import * as df from "durable-functions";
 import {
   IOrchestrationFunctionContext,
   Task,
-  TaskSet
+  TaskSet,
+  RetryOptions
 } from "durable-functions/lib/src/classes";
 import { isLeft, toError } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
@@ -99,6 +99,10 @@ export const OrchestratorResult = t.union([
   OrchestratorSuccess
 ]);
 
+const retryOptions = new RetryOptions(5000, 10);
+// eslint-disable-next-line functional/immutable-data
+retryOptions.backoffCoefficient = 1.5;
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const toActivityFailure = (
   err: { readonly kind: string },
@@ -147,8 +151,9 @@ function* setUserDataProcessingStatus(
   currentRecord: UserDataProcessing,
   nextStatus: UserDataProcessingStatusEnum
 ): Generator<Task> {
-  const result = yield context.df.callActivity(
+  const result = yield context.df.callActivityWithRetry(
     "SetUserDataProcessingStatusActivity",
+    retryOptions,
     {
       currentRecord,
       nextStatus
@@ -251,7 +256,7 @@ function* sendUserDataDeleteEmail(
       );
       throw toActivityFailure(
         { kind: "SEND_USER_DELETE_EMAIL_ACTIVITY_RESULT" },
-        "SetUserDataProcessingStatusActivity"
+        "SendUserDataDeleteEmailActivity"
       );
     }
   );
@@ -291,7 +296,6 @@ function* updateSubscriptionFeed(
     updatedAt: context.df.currentUtcDateTime.getTime(),
     version
   });
-  const retryOptions = new df.RetryOptions(5000, 10);
   const result = yield context.df.callActivityWithRetry(
     "UpdateSubscriptionsFeedActivity",
     retryOptions,
@@ -315,6 +319,7 @@ function* updateSubscriptionFeed(
  * @param waitForAbortInterval Indicates how many days the request must be left pending, waiting for an eventual abort request
  * @param waitForDownloadInterval Indicates how many hours the request must be postponed in case a download request is being processing meanwhile
  */
+// eslint-disable-next-line max-lines-per-function
 export const createUserDataDeleteOrchestratorHandler = (
   waitForAbortInterval: Day,
   waitForDownloadInterval: Hour = 12 as Hour
@@ -493,11 +498,15 @@ export const createUserDataDeleteOrchestratorHandler = (
       }|${orchestrationFailure.reason}`;
 
       SetUserDataProcessingStatusActivityResultSuccess.decode(
-        yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-          currentRecord: currentUserDataProcessing,
-          failureReason,
-          nextStatus: UserDataProcessingStatusEnum.FAILED
-        })
+        yield context.df.callActivityWithRetry(
+          "SetUserDataProcessingStatusActivity",
+          retryOptions,
+          {
+            currentRecord: currentUserDataProcessing,
+            failureReason,
+            nextStatus: UserDataProcessingStatusEnum.FAILED
+          }
+        )
       ).getOrElseL(err => {
         trackUserDataDeleteException(
           "unhandled_failed_status",

@@ -19,9 +19,6 @@ import {
 } from "../handler";
 
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { ExponentialRetryPolicyFilter } from "azure-storage";
-import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 
 const aNonSuccess = "any non-success value";
 
@@ -132,6 +129,7 @@ describe("UserDataDownloadOrchestrator", () => {
     // first, set as WIP
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       {
         currentRecord: expect.any(Object),
         nextStatus: UserDataProcessingStatusEnum.WIP
@@ -140,6 +138,7 @@ describe("UserDataDownloadOrchestrator", () => {
     // then, set as CLOSED
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       {
         currentRecord: expect.any(Object),
         nextStatus: UserDataProcessingStatusEnum.CLOSED
@@ -166,6 +165,7 @@ describe("UserDataDownloadOrchestrator", () => {
     // then, set as FAILED
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       {
         currentRecord: expect.any(Object),
         nextStatus: UserDataProcessingStatusEnum.FAILED,
@@ -195,6 +195,7 @@ describe("UserDataDownloadOrchestrator", () => {
     // then, set as FAILED
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       {
         currentRecord: expect.any(Object),
         nextStatus: UserDataProcessingStatusEnum.FAILED,
@@ -230,6 +231,7 @@ describe("UserDataDownloadOrchestrator", () => {
     // the last call to SetUserDataProcessingStatusActivity should be set as FAILED with a reason
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       {
         currentRecord: expect.any(Object),
         nextStatus: UserDataProcessingStatusEnum.FAILED,
@@ -271,6 +273,7 @@ describe("UserDataDownloadOrchestrator", () => {
     // the last call to SetUserDataProcessingStatusActivity should be set as FAILED with a reason
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expect.any(Object),
       {
         currentRecord: expect.any(Object),
         nextStatus: UserDataProcessingStatusEnum.FAILED,
