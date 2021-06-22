@@ -28,71 +28,85 @@ import {
   IAzureUserAttributes
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
-import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { Option } from "fp-ts/lib/Option";
+import * as t from "io-ts/lib/index";
 
-const logPrefix = "SetUserDataProcessingProcessStatusHandler";
-
-type Response = ResponseSuccess | ResponseError;
+export type Response = ResponseSuccess | ResponseError;
 
 type ResponseSuccess = IResponseSuccessAccepted;
 
 type ResponseError = IResponseErrorInternal | IResponseErrorNotFound;
 
+const AllowedUserDataProcessingStatus = t.union([
+  t.literal(UserDataProcessingStatusEnum.CLOSED),
+  t.literal(UserDataProcessingStatusEnum.PENDING)
+]);
+type AllowedUserDataProcessingStatus = t.TypeOf<
+  typeof AllowedUserDataProcessingStatus
+>;
+
 type IHttpHandler = (
   context: Context,
+  userAttrs: IAzureUserAttributes,
   param1: UserDataProcessingChoice,
   param2: FiscalCode,
-  param3: UserDataProcessingStatus
+  param3: AllowedUserDataProcessingStatus
 ) => Promise<Response>;
 
 export const setUserDataProcessingStatusHandler = (
   userDataProcessingModel: UserDataProcessingModel
 ): IHttpHandler => async (
   _,
+  __,
   choice,
   fiscalCode,
   newStatus
-): Promise<Response> => {
-  const findLastVersionByModelIdTask: TaskEither<
-    Response,
-    Option<UserDataProcessing>
-  > = userDataProcessingModel
-    .findLastVersionByModelId([
-      makeUserDataProcessingId(choice, fiscalCode),
-      fiscalCode
-    ])
-    .mapLeft(e => ResponseErrorInternal(e.kind));
+): Promise<Response> =>
+  AllowedUserDataProcessingStatus.decode(newStatus).fold(
+    async ___ => ResponseErrorInternal("Status not allowed"),
+    status => {
+      const findLastVersionByModelIdTask: TaskEither<
+        Response,
+        Option<UserDataProcessing>
+      > = userDataProcessingModel
+        .findLastVersionByModelId([
+          makeUserDataProcessingId(choice, fiscalCode),
+          fiscalCode
+        ])
+        .mapLeft(e => ResponseErrorInternal(e.kind));
 
-  const updateStatusTask: (
-    a: UserDataProcessing
-  ) => TaskEither<Response, UserDataProcessing> = (
-    lastVersionedUserDataProcessing: UserDataProcessing
-  ) =>
-    userDataProcessingModel
-      .createOrUpdateByNewOne({
-        ...lastVersionedUserDataProcessing,
-        status: newStatus,
-        updatedAt: new Date()
-      })
-      .mapLeft(e => ResponseErrorInternal(e.kind));
+      const updateStatusTask: (
+        a: UserDataProcessing
+      ) => TaskEither<Response, UserDataProcessing> = (
+        lastVersionedUserDataProcessing: UserDataProcessing
+      ) =>
+        userDataProcessingModel
+          .createOrUpdateByNewOne({
+            ...lastVersionedUserDataProcessing,
+            status,
+            updatedAt: new Date()
+          })
+          .mapLeft(e => ResponseErrorInternal(e.kind));
 
-  return findLastVersionByModelIdTask
-    .mapLeft(identity)
-    .chain(o =>
-      o
-        .map(updateStatusTask)
-        .getOrElse(
-          fromLeft(
-            ResponseErrorNotFound("Not Found", "No user data processing found")
-          )
+      return findLastVersionByModelIdTask
+        .chain(maybeUserDataProcessing =>
+          maybeUserDataProcessing
+            .map(updateStatusTask)
+            .getOrElse(
+              fromLeft(
+                ResponseErrorNotFound(
+                  "Not Found",
+                  "No user data processing found"
+                )
+              )
+            )
         )
-    )
-    .map<IResponseSuccessAccepted>(s => ResponseSuccessAccepted())
-    .mapLeft(identity)
-    .fold(identity, identity)
-    .run();
-};
+        .map<IResponseSuccessAccepted>(____ => ResponseSuccessAccepted())
+        .fold(identity, identity)
+        .run();
+    }
+  );
 
 export const setUserDataProcessingStatus = (
   serviceModel: ServiceModel,
@@ -102,9 +116,10 @@ export const setUserDataProcessingStatus = (
 
   const middlewaresWrap = withRequestMiddlewares(
     ContextMiddleware(),
+    AzureUserAttributesMiddleware(serviceModel),
     RequiredParamMiddleware("choice", UserDataProcessingChoice),
     RequiredParamMiddleware("fiscalCode", FiscalCode),
-    RequiredParamMiddleware("newStatus", UserDataProcessingStatus)
+    RequiredParamMiddleware("newStatus", AllowedUserDataProcessingStatus)
   );
 
   return wrapRequestHandler(middlewaresWrap(handler));
