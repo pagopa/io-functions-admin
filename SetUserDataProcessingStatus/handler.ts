@@ -22,11 +22,6 @@ import {
   ResponseErrorNotFound
 } from "@pagopa/ts-commons/lib/responses";
 import { identity } from "fp-ts/lib/function";
-import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
-import {
-  AzureUserAttributesMiddleware,
-  IAzureUserAttributes
-} from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { Option } from "fp-ts/lib/Option";
@@ -48,7 +43,6 @@ type AllowedUserDataProcessingStatus = t.TypeOf<
 
 type IHttpHandler = (
   context: Context,
-  userAttrs: IAzureUserAttributes,
   param1: UserDataProcessingChoice,
   param2: FiscalCode,
   param3: AllowedUserDataProcessingStatus
@@ -58,7 +52,6 @@ export const setUserDataProcessingStatusHandler = (
   userDataProcessingModel: UserDataProcessingModel
 ): IHttpHandler => async (
   _,
-  __,
   choice,
   fiscalCode,
   newStatus
@@ -109,14 +102,12 @@ export const setUserDataProcessingStatusHandler = (
   );
 
 export const setUserDataProcessingStatus = (
-  serviceModel: ServiceModel,
   userDataProcessingModel: UserDataProcessingModel
 ): express.RequestHandler => {
   const handler = setUserDataProcessingStatusHandler(userDataProcessingModel);
 
   const middlewaresWrap = withRequestMiddlewares(
     ContextMiddleware(),
-    AzureUserAttributesMiddleware(serviceModel),
     RequiredParamMiddleware("choice", UserDataProcessingChoice),
     RequiredParamMiddleware("fiscalCode", FiscalCode),
     RequiredParamMiddleware("newStatus", AllowedUserDataProcessingStatus)

@@ -73,7 +73,6 @@ describe("GetFailedUserDataProcessingListHandler", () => {
 
     const result = await getFailedUserDataProcessingListHandler(
       {} as any,
-      {} as any,
       UserDataProcessingChoiceEnum.DELETE as NonEmptyString
     );
 
@@ -96,7 +95,6 @@ describe("GetFailedUserDataProcessingListHandler", () => {
     );
 
     const result = await getFailedUserDataProcessingListHandler(
-      {} as any,
       {} as any,
       UserDataProcessingChoiceEnum.DELETE as NonEmptyString
     );
@@ -121,7 +119,6 @@ describe("GetFailedUserDataProcessingListHandler", () => {
 
     const result = await getFailedUserDataProcessingListHandler(
       {} as any,
-      {} as any,
       UserDataProcessingChoiceEnum.DELETE as NonEmptyString
     );
 
@@ -144,7 +141,6 @@ describe("GetFailedUserDataProcessingListHandler", () => {
     );
 
     const result = await getFailedUserDataProcessingListHandler(
-      {} as any,
       {} as any,
       UserDataProcessingChoiceEnum.DOWNLOAD as NonEmptyString
     );
@@ -169,7 +165,6 @@ describe("GetFailedUserDataProcessingListHandler", () => {
 
     const result = await getFailedUserDataProcessingListHandler(
       {} as any,
-      {} as any,
       UserDataProcessingChoiceEnum.DOWNLOAD as NonEmptyString
     );
 
@@ -192,7 +187,6 @@ describe("GetFailedUserDataProcessingListHandler", () => {
     );
 
     const result = await getFailedUserDataProcessingListHandler(
-      {} as any,
       {} as any,
       UserDataProcessingChoiceEnum.DELETE as NonEmptyString
     );
@@ -218,7 +212,6 @@ describe("GetFailedUserDataProcessingListHandler", () => {
     );
 
     const result = await getFailedUserDataProcessingListHandler(
-      {} as any,
       {} as any,
       UserDataProcessingChoiceEnum.DOWNLOAD as NonEmptyString
     );

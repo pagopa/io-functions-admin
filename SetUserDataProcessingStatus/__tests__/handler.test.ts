@@ -60,7 +60,6 @@ describe("setUserDataProcessingStatusHandler", () => {
       mockUserDataProcessingModel
     )(
       null,
-      null,
       aUserDataProcessingChoice,
       notExistingFiscalCode,
       UserDataProcessingStatusEnum.CLOSED
@@ -92,7 +91,6 @@ describe("setUserDataProcessingStatusHandler", () => {
     const result = await setUserDataProcessingStatusHandler(
       mockUserDataProcessingModel
     )(
-      null,
       null,
       aUserDataProcessingChoice,
       aFiscalCode,
@@ -140,7 +138,6 @@ describe("setUserDataProcessingStatusHandler", () => {
       mockUserDataProcessingModel
     )(
       null,
-      null,
       aUserDataProcessingChoice,
       aFiscalCode,
       UserDataProcessingStatusEnum.CLOSED
@@ -186,7 +183,6 @@ describe("setUserDataProcessingStatusHandler", () => {
     const result = await setUserDataProcessingStatusHandler(
       mockUserDataProcessingModel
     )(
-      null,
       null,
       aUserDataProcessingChoice,
       aFiscalCode,
