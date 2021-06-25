@@ -277,6 +277,8 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
       }
     );
 
+    const expectedRetryOptions = expect.any(Object);
+
     expect(findFailureReasonActivity).toHaveBeenCalled();
     expect(findFailureReasonActivity).toHaveBeenCalledTimes(1);
     expect(findFailureReasonActivity).toHaveBeenCalledWith(
@@ -291,7 +293,7 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       "SetUserDataProcessingStatusActivity",
-      expect.any(Object),
+      expectedRetryOptions,
       {
         currentRecord: aFailedUserDataProcessing,
         failureReason: "Any found reason",

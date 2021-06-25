@@ -151,6 +151,8 @@ const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionCo
 const waitForAbortInterval = 0 as Day;
 const waitForDownloadInterval = 0 as Hour;
 
+const expectedRetryOptions = expect.any(Object);
+
 // eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("createUserDataDeleteOrchestratorHandler", () => {
   beforeEach(() => {
@@ -191,7 +193,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Object),
+      expectedRetryOptions,
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
@@ -214,7 +216,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Object),
+      expectedRetryOptions,
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
@@ -237,7 +239,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Object),
+      expectedRetryOptions,
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
@@ -269,7 +271,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Object),
+      expectedRetryOptions,
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
@@ -297,7 +299,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Object),
+      expectedRetryOptions,
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
@@ -318,14 +320,14 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Object),
+      expectedRetryOptions,
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.WIP
       })
     );
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Object),
+      expectedRetryOptions,
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.CLOSED
       })
@@ -364,7 +366,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Object),
+      expectedRetryOptions,
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.CLOSED
       })
@@ -481,7 +483,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Object),
+      expectedRetryOptions,
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
