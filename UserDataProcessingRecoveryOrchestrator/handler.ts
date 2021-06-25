@@ -3,6 +3,7 @@ import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import {
   IOrchestrationFunctionContext,
+  RetryOptions,
   Task
 } from "durable-functions/lib/src/classes";
 import { isLeft } from "fp-ts/lib/Either";
@@ -73,6 +74,10 @@ export const OrchestratorResult = t.union([
   SkippedDocument,
   OrchestratorSuccess
 ]);
+
+const retryOptions = new RetryOptions(5000, 10);
+// eslint-disable-next-line functional/immutable-data
+retryOptions.backoffCoefficient = 1.5;
 
 const toActivityFailure = (
   err: { readonly kind: string },
@@ -162,8 +167,9 @@ function* saveNewFailedRecordWithReason(
   context.log.info(
     `${logPrefix}|INFO|Saving reason ${failureReason} for ${currentRecord.choice}-${currentRecord.fiscalCode}`
   );
-  const result = yield context.df.callActivity(
+  const result = yield context.df.callActivityWithRetry(
     "SetUserDataProcessingStatusActivity",
+    retryOptions,
     SetUserDataProcessingStatusActivityInput.encode({
       currentRecord,
       failureReason,
