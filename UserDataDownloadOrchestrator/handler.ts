@@ -63,6 +63,10 @@ export const OrchestratorResult = t.union([
   OrchestratorSuccess
 ]);
 
+const retryOptions = new RetryOptions(5000, 10);
+// eslint-disable-next-line functional/immutable-data
+retryOptions.backoffCoefficient = 1.5;
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const toActivityFailure = (
   err: t.Errors,
@@ -106,10 +110,14 @@ export const handler = function*(
 
   try {
     SetUserDataProcessingStatusActivityResultSuccess.decode(
-      yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-        currentRecord: currentUserDataProcessing,
-        nextStatus: UserDataProcessingStatusEnum.WIP
-      })
+      yield context.df.callActivityWithRetry(
+        "SetUserDataProcessingStatusActivity",
+        retryOptions,
+        {
+          currentRecord: currentUserDataProcessing,
+          nextStatus: UserDataProcessingStatusEnum.WIP
+        }
+      )
     ).getOrElseL(err => {
       throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
         status: UserDataProcessingStatusEnum.WIP
@@ -139,10 +147,14 @@ export const handler = function*(
     });
 
     SetUserDataProcessingStatusActivityResultSuccess.decode(
-      yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-        currentRecord: currentUserDataProcessing,
-        nextStatus: UserDataProcessingStatusEnum.CLOSED
-      })
+      yield context.df.callActivityWithRetry(
+        "SetUserDataProcessingStatusActivity",
+        retryOptions,
+        {
+          currentRecord: currentUserDataProcessing,
+          nextStatus: UserDataProcessingStatusEnum.CLOSED
+        }
+      )
     ).getOrElseL(err => {
       throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
         status: UserDataProcessingStatusEnum.CLOSED
@@ -175,11 +187,15 @@ export const handler = function*(
     }|${orchestrationFailure.reason}`;
 
     SetUserDataProcessingStatusActivityResultSuccess.decode(
-      yield context.df.callActivity("SetUserDataProcessingStatusActivity", {
-        currentRecord: currentUserDataProcessing,
-        failureReason,
-        nextStatus: UserDataProcessingStatusEnum.FAILED
-      })
+      yield context.df.callActivityWithRetry(
+        "SetUserDataProcessingStatusActivity",
+        retryOptions,
+        {
+          currentRecord: currentUserDataProcessing,
+          failureReason,
+          nextStatus: UserDataProcessingStatusEnum.FAILED
+        }
+      )
     ).getOrElseL(err => {
       trackUserDataDownloadException(
         "unhandled_failed_status",
