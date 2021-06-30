@@ -1,22 +1,31 @@
 import * as express from "express";
 import * as winston from "winston";
+
 import { Context } from "@azure/functions";
 import { secureExpressApp } from "@pagopa/io-functions-commons/dist/src/utils/express";
 import { AzureContextTransport } from "@pagopa/io-functions-commons/dist/src/utils/logging";
 import { setAppContext } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import createAzureFunctionHandler from "@pagopa/express-azure-functions/dist/src/createAzureFunctionsHandler";
-import { createTableService } from "azure-storage";
+import {
+  UserDataProcessingModel,
+  USER_DATA_PROCESSING_COLLECTION_NAME
+} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { getConfigOrThrow } from "../utils/config";
-import { GetFailedUserDataProcessingList } from "./handler";
+import { cosmosdbClient } from "../utils/cosmosdb";
+import { setUserDataProcessingStatus } from "./handler";
+
+const config = getConfigOrThrow();
 
 /**
- * Table service
+ * UserDataProcessing collection
  */
-const config = getConfigOrThrow();
-const storageConnectionString =
-  config.FailedUserDataProcessingStorageConnection;
-const failedUserDataProcessingTable = config.FAILED_USER_DATA_PROCESSING_TABLE;
-const tableService = createTableService(storageConnectionString);
+const userDataProcessingContainer = cosmosdbClient
+  .database(config.COSMOSDB_NAME)
+  .container(USER_DATA_PROCESSING_COLLECTION_NAME);
+
+const userDataProcessingModel = new UserDataProcessingModel(
+  userDataProcessingContainer
+);
 
 // eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
@@ -30,9 +39,9 @@ const app = express();
 secureExpressApp(app);
 
 // Add express route
-app.get(
-  "/adm/user-data-processing/failed/:choice",
-  GetFailedUserDataProcessingList(tableService, failedUserDataProcessingTable)
+app.put(
+  "/adm/user-data-processing/:choice/:fiscalCode/status/:newStatus",
+  setUserDataProcessingStatus(userDataProcessingModel)
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);

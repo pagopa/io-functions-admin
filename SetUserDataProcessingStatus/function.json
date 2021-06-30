@@ -1,0 +1,20 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "route": "adm/user-data-processing/{choice}/{fiscalCode}/status/{newStatus}",
+      "methods": [
+        "PUT"
+      ]
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    }
+  ],
+  "scriptFile": "../dist/SetUserDataProcessingStatus/index.js"
+}

@@ -96,7 +96,6 @@ describe("GetFailedUserDataProcessingHandler", () => {
 
     const result = await getFailedUserDataProcessingHandler(
       {} as any,
-      {} as any,
       UserDataProcessingChoiceEnum.DELETE,
       fiscalCode1
     );
@@ -118,7 +117,6 @@ describe("GetFailedUserDataProcessingHandler", () => {
 
     const result = await getFailedUserDataProcessingHandler(
       {} as any,
-      {} as any,
       UserDataProcessingChoiceEnum.DELETE,
       fiscalCode1
     );
@@ -137,7 +135,6 @@ describe("GetFailedUserDataProcessingHandler", () => {
     );
 
     const result = await getFailedUserDataProcessingHandler(
-      {} as any,
       {} as any,
       UserDataProcessingChoiceEnum.DELETE,
       fiscalCode1

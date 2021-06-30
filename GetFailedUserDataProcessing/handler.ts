@@ -1,11 +1,5 @@
 import * as express from "express";
-
 import { Context } from "@azure/functions";
-import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
-import {
-  AzureUserAttributesMiddleware,
-  IAzureUserAttributes
-} from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_user_attributes";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
 import {
@@ -39,7 +33,6 @@ type ResultSet = Readonly<{
 
 type IHttpHandler = (
   context: Context,
-  userAttrs: IAzureUserAttributes,
   param1: UserDataProcessingChoice,
   param2: FiscalCode
 ) => Promise<
@@ -53,7 +46,6 @@ export const GetFailedUserDataProcessingHandler = (
   failedUserDataProcessingTable: NonEmptyString
 ): IHttpHandler => async (
   _,
-  __,
   choice,
   fiscalCode
 ): Promise<
@@ -100,7 +92,6 @@ export const GetFailedUserDataProcessingHandler = (
     .run();
 
 export const GetFailedUserDataProcessing = (
-  serviceModel: ServiceModel,
   tableService: TableService,
   failedUserDataProcessingTable: NonEmptyString
 ): express.RequestHandler => {
@@ -111,7 +102,6 @@ export const GetFailedUserDataProcessing = (
 
   const middlewaresWrap = withRequestMiddlewares(
     ContextMiddleware(),
-    AzureUserAttributesMiddleware(serviceModel),
     RequiredParamMiddleware("choice", UserDataProcessingChoice),
     RequiredParamMiddleware("fiscalCode", FiscalCode)
   );
