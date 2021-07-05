@@ -1,12 +1,18 @@
+import {
+  CosmosErrors,
+  toCosmosErrorResponse
+} from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { BlobService } from "azure-storage";
-import { right } from "fp-ts/lib/Either";
+import { left, right } from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
-import { taskEither, fromLeft } from "fp-ts/lib/TaskEither";
+import { taskEither, fromLeft, fromEither } from "fp-ts/lib/TaskEither";
+import { ValidationError } from "io-ts";
 import { MessageDeletableModel } from "../../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../../utils/extensions/models/profile";
+import { ServicePreferencesDeletableModel } from "../../utils/extensions/models/service_preferences";
 import {
   aFiscalCode,
   aMessageContent,
@@ -14,7 +20,8 @@ import {
   aRetrievedMessageWithContent,
   aRetrievedNotification,
   aRetrievedNotificationStatus,
-  aRetrievedProfile
+  aRetrievedProfile,
+  aRetrievedServicePreferences
 } from "../../__mocks__/mocks";
 import { backupAndDeleteAllUserData } from "../backupAndDelete";
 import { IBlobServiceInfo } from "../types";
@@ -50,6 +57,16 @@ const messageModel = ({
   deleteContentFromBlob: mockDeleteContentFromBlob,
   deleteMessage: mockDeleteMessage
 } as unknown) as MessageDeletableModel;
+
+// ServicePreferences Model
+const mockDeleteServicePreferences = jest.fn(() => taskEither.of(true));
+const mockFindAllServPreferencesByFiscalCode = jest.fn(() =>
+  asyncIteratorOf([right(aRetrievedServicePreferences)])
+);
+const servicePreferencesModel = ({
+  delete: mockDeleteServicePreferences,
+  findAllByFiscalCode: mockFindAllServPreferencesByFiscalCode
+} as unknown) as ServicePreferencesDeletableModel;
 
 // MessageStatusModel
 const mockMessageStatusFindAllVersionsByModelId = jest.fn(() =>
@@ -104,6 +121,7 @@ const userDataBackup = {
 } as IBlobServiceInfo;
 
 describe(`backupAndDeleteAllUserData`, () => {
+  beforeEach(() => jest.clearAllMocks());
   it("should work if there are no errors", async () => {
     const result = await backupAndDeleteAllUserData({
       messageContentBlobService,
@@ -112,11 +130,19 @@ describe(`backupAndDeleteAllUserData`, () => {
       notificationModel,
       notificationStatusModel,
       profileModel,
+      servicePreferencesModel,
       userDataBackup,
       fiscalCode: aFiscalCode
     }).run();
 
     expect(result.isRight()).toBe(true);
+
+    expect(mockDeleteProfileVersion).toHaveBeenCalled();
+    expect(mockDeleteServicePreferences).toHaveBeenCalled();
+    expect(mockDeleteMessage).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+    expect(mockDeleteNotification).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
   });
 
   it("should not stop if a content is not found for a message", async () => {
@@ -129,10 +155,18 @@ describe(`backupAndDeleteAllUserData`, () => {
       notificationStatusModel,
       profileModel,
       userDataBackup,
+      servicePreferencesModel,
       fiscalCode: aFiscalCode
     }).run();
 
     expect(result.isRight()).toBe(true);
+
+    expect(mockDeleteProfileVersion).toHaveBeenCalled();
+    expect(mockDeleteServicePreferences).toHaveBeenCalled();
+    expect(mockDeleteMessage).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+    expect(mockDeleteNotification).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
   });
 
   it("should not stop if  there is an error while looking for a message content", async () => {
@@ -147,6 +181,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       notificationStatusModel,
       profileModel,
       userDataBackup,
+      servicePreferencesModel,
       fiscalCode: aFiscalCode
     }).run();
 
@@ -165,6 +200,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       notificationStatusModel,
       profileModel,
       userDataBackup,
+      servicePreferencesModel,
       fiscalCode: aFiscalCode
     }).run();
 
@@ -183,9 +219,87 @@ describe(`backupAndDeleteAllUserData`, () => {
       notificationStatusModel,
       profileModel,
       userDataBackup,
+      servicePreferencesModel,
       fiscalCode: aFiscalCode
     }).run();
 
     expect(result.isRight()).toBe(true);
+  });
+
+  it("should not stop if no servicePreferences were found", async () => {
+    mockFindAllServPreferencesByFiscalCode.mockImplementationOnce(() =>
+      asyncIteratorOf([])
+    );
+    const result = await backupAndDeleteAllUserData({
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      notificationModel,
+      notificationStatusModel,
+      profileModel,
+      userDataBackup,
+      servicePreferencesModel,
+      fiscalCode: aFiscalCode
+    }).run();
+
+    expect(result.isRight()).toBe(true);
+
+    expect(mockDeleteProfileVersion).toHaveBeenCalled();
+    expect(mockDeleteServicePreferences).not.toHaveBeenCalled();
+    expect(mockDeleteMessage).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+    expect(mockDeleteNotification).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+  });
+
+  it("should not stop if service Preferences asyncIterator returns an error", async () => {
+    mockFindAllServPreferencesByFiscalCode.mockImplementationOnce(() =>
+      asyncIteratorOf([left([{} as ValidationError])])
+    );
+    const result = await backupAndDeleteAllUserData({
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      notificationModel,
+      notificationStatusModel,
+      profileModel,
+      userDataBackup,
+      servicePreferencesModel,
+      fiscalCode: aFiscalCode
+    }).run();
+
+    expect(result.isRight()).toBe(true);
+
+    expect(mockDeleteProfileVersion).toHaveBeenCalled();
+    expect(mockDeleteServicePreferences).not.toHaveBeenCalled();
+    expect(mockDeleteMessage).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+    expect(mockDeleteNotification).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+  });
+
+  it("should not stop if a CosmosError is raised for delete", async () => {
+    mockDeleteServicePreferences.mockImplementationOnce(() =>
+      fromLeft(toCosmosErrorResponse("") as CosmosErrors)
+    );
+    const result = await backupAndDeleteAllUserData({
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      notificationModel,
+      notificationStatusModel,
+      profileModel,
+      userDataBackup,
+      servicePreferencesModel,
+      fiscalCode: aFiscalCode
+    }).run();
+
+    expect(result.isRight()).toBe(true);
+
+    expect(mockDeleteProfileVersion).toHaveBeenCalled();
+    expect(mockDeleteMessage).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+    expect(mockDeleteNotification).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
   });
 });

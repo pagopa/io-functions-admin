@@ -67,6 +67,10 @@ import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { ArchiveInfo } from "../ExtractUserDataActivity/handler";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
+import {
+  makeServicesPreferencesDocumentId,
+  RetrievedServicePreference
+} from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
 
@@ -314,3 +318,26 @@ export const aArchiveInfo = ArchiveInfo.decode({
   const error = readableReport(errs);
   throw new Error("Fix ArchiveInfo mock: " + error);
 });
+
+export const aServicePreferenceVersion = 0 as NonNegativeInteger;
+
+export const aRetrievedServicePreferences: RetrievedServicePreference = {
+  ...{
+    _etag: "_etag",
+    _rid: "_rid",
+    _self: "_self",
+    _ts: 1
+  },
+  isEmailEnabled: true,
+  isInboxEnabled: true,
+  isWebhookEnabled: true,
+  settingsVersion: aServicePreferenceVersion,
+  fiscalCode: aFiscalCode,
+  serviceId: aServiceId,
+  kind: "IRetrievedServicePreference",
+  id: makeServicesPreferencesDocumentId(
+    aFiscalCode,
+    aServiceId,
+    aServicePreferenceVersion
+  )
+};

@@ -4,6 +4,7 @@ import { MESSAGE_STATUS_COLLECTION_NAME } from "@pagopa/io-functions-commons/dis
 import { NOTIFICATION_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import { NOTIFICATION_STATUS_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import { PROFILE_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/profile";
+import { SERVICE_PREFERENCES_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { cosmosdbClient } from "../utils/cosmosdb";
 import { getConfigOrThrow } from "../utils/config";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
@@ -11,6 +12,7 @@ import { MessageStatusDeletableModel } from "../utils/extensions/models/message_
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
+import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
 import { createDeleteUserDataActivityHandler } from "./handler";
 
 const config = getConfigOrThrow();
@@ -58,6 +60,13 @@ const userDataBackupBlobService = createBlobService(
   config.UserDataBackupStorageConnection
 );
 
+const servicePreferencesModel = new ServicePreferencesDeletableModel(
+  cosmosdbClient
+    .database(config.COSMOSDB_NAME)
+    .container(SERVICE_PREFERENCES_COLLECTION_NAME),
+  SERVICE_PREFERENCES_COLLECTION_NAME
+);
+
 const messageContentBlobService = createBlobService(config.StorageConnection);
 
 const userDataBackupContainerName = config.USER_DATA_BACKUP_CONTAINER_NAME;
@@ -69,6 +78,7 @@ const activityFunctionHandler = createDeleteUserDataActivityHandler({
   notificationModel,
   notificationStatusModel,
   profileModel,
+  servicePreferencesModel,
   userDataBackupBlobService,
   userDataBackupContainerName
 });
