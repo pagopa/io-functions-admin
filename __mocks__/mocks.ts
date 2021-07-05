@@ -66,6 +66,7 @@ import {
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { ArchiveInfo } from "../ExtractUserDataActivity/handler";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
 
@@ -157,7 +158,11 @@ export const aProfile: Profile = {
   isEmailEnabled: true,
   isEmailValidated: true,
   isInboxEnabled: false,
-  isWebhookEnabled: false
+  isWebhookEnabled: false,
+  servicePreferencesSettings: {
+    mode: ServicesPreferencesModeEnum.AUTO,
+    version: 0 as NonNegativeInteger
+  }
 };
 
 export const aRetrievedProfile: RetrievedProfile = {

@@ -17,6 +17,7 @@ import { FiscalCode, SandboxFiscalCode } from "@pagopa/ts-commons/lib/strings";
 
 import { ExtendedProfile } from "@pagopa/io-functions-commons/dist/generated/definitions/ExtendedProfile";
 import {
+  NewProfile,
   ProfileModel,
   RetrievedProfile
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
@@ -37,6 +38,8 @@ import {
   ResponseErrorQuery
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
 
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
+import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import { DevelopmentProfile } from "../generated/definitions/DevelopmentProfile";
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
@@ -50,6 +53,7 @@ export function toExtendedProfile(profile: RetrievedProfile): ExtendedProfile {
     is_inbox_enabled: profile.isInboxEnabled === true,
     is_webhook_enabled: profile.isWebhookEnabled === true,
     preferred_languages: profile.preferredLanguages,
+    service_preferences_settings: profile.servicePreferencesSettings,
     version: profile.version
   };
 }
@@ -105,12 +109,16 @@ export function CreateDevelopmentProfileHandler(
 
     const fiscalCode = errorOrFiscalCode.value;
 
-    const newProfile = {
+    const newProfile: NewProfile = {
       email: developmentProfilePayload.email,
       fiscalCode,
       isInboxEnabled: true,
       isWebhookEnabled: true,
-      kind: "INewProfile" as const
+      kind: "INewProfile" as const,
+      servicePreferencesSettings: {
+        mode: ServicesPreferencesModeEnum.AUTO,
+        version: 0 as NonNegativeInteger
+      }
     };
 
     const errorOrCreatedProfile = await profileModel.create(newProfile).run();
