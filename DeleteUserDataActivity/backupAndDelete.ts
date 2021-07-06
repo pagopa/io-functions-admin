@@ -10,6 +10,7 @@ import {
   taskEitherSeq,
   tryCatch
 } from "fp-ts/lib/TaskEither";
+import * as te from "fp-ts/lib/TaskEither";
 
 import { array, flatten, rights } from "fp-ts/lib/Array";
 import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
@@ -22,11 +23,13 @@ import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";
+import { RetrievedServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
+import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
 import { DataFailure, IBlobServiceInfo, QueryFailure } from "./types";
 import { saveDataToBlob } from "./utils";
 import { toDocumentDeleteFailure, toQueryFailure } from "./utils";
@@ -102,10 +105,12 @@ const executeRecursiveBackupAndDelete = <T>(
 const backupAndDeleteProfile = ({
   fiscalCode,
   profileModel,
+  servicePreferencesModel,
   userDataBackup
 }: {
   readonly profileModel: ProfileDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
+  readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly fiscalCode: FiscalCode;
 }) =>
   executeRecursiveBackupAndDelete<RetrievedProfile>(
@@ -113,6 +118,16 @@ const backupAndDeleteProfile = ({
     userDataBackup,
     item => `profile/${item.id}.json`,
     profileModel.findAllVersionsByModelId(fiscalCode)
+  ).chain(_ =>
+    executeRecursiveBackupAndDelete<RetrievedServicePreference>(
+      item => servicePreferencesModel.delete(item.id, item.fiscalCode),
+      userDataBackup,
+      item => `service-settings/${item.id}.json`,
+      servicePreferencesModel.findAllByFiscalCode(fiscalCode)
+    ).foldTaskEither<DataFailure, ReadonlyArray<RetrievedServicePreference>>(
+      _df => te.taskEither.of([]),
+      te.taskEither.of
+    )
   );
 
 /**
@@ -426,6 +441,7 @@ export const backupAndDeleteAllUserData = ({
   notificationModel,
   notificationStatusModel,
   profileModel,
+  servicePreferencesModel,
   userDataBackup,
   fiscalCode
 }: {
@@ -435,6 +451,7 @@ export const backupAndDeleteAllUserData = ({
   readonly notificationModel: NotificationDeletableModel;
   readonly notificationStatusModel: NotificationStatusDeletableModel;
   readonly profileModel: ProfileDeletableModel;
+  readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
   readonly fiscalCode: FiscalCode;
 }) =>
@@ -448,5 +465,10 @@ export const backupAndDeleteAllUserData = ({
     userDataBackup
   }).chain(_ =>
     // eslint-disable-next-line sort-keys
-    backupAndDeleteProfile({ profileModel, userDataBackup, fiscalCode })
+    backupAndDeleteProfile({
+      fiscalCode,
+      profileModel,
+      servicePreferencesModel,
+      userDataBackup
+    })
   );

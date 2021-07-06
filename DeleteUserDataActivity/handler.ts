@@ -17,6 +17,7 @@ import { MessageStatusDeletableModel } from "../utils/extensions/models/message_
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
+import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
 import { backupAndDeleteAllUserData } from "./backupAndDelete";
 import {
   ActivityInput,
@@ -35,6 +36,7 @@ export interface IActivityHandlerInput {
   readonly notificationModel: NotificationDeletableModel;
   readonly notificationStatusModel: NotificationStatusDeletableModel;
   readonly profileModel: ProfileDeletableModel;
+  readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly messageContentBlobService: BlobService;
   readonly userDataBackupBlobService: BlobService;
   readonly userDataBackupContainerName: NonEmptyString;
@@ -51,6 +53,7 @@ export function createDeleteUserDataActivityHandler({
   notificationModel,
   notificationStatusModel,
   profileModel,
+  servicePreferencesModel,
   userDataBackupBlobService,
   userDataBackupContainerName
 }: IActivityHandlerInput): (
@@ -79,6 +82,7 @@ export function createDeleteUserDataActivityHandler({
           notificationModel,
           notificationStatusModel,
           profileModel,
+          servicePreferencesModel,
           userDataBackup: {
             blobService: userDataBackupBlobService,
             containerName: userDataBackupContainerName,
