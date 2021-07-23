@@ -396,6 +396,10 @@ export const createUserDataDeleteOrchestratorHandler = (
         currentUserDataProcessing
       );
 
+      context.log.verbose(
+        `${logPrefix}|VERBOSE|isFailedUserDataProcessingRequest=${isFailedUserDataProcessingRequest}`
+      );
+
       // we calculate the grace period: if this is a failed request => 0 days
       const gracePeriod = isFailedUserDataProcessingRequest
         ? (0 as Day)

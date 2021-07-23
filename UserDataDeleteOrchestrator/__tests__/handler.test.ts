@@ -28,7 +28,7 @@ import {
   ActivityResultSuccess as GetUserDataProcessingActivityResultSuccess
 } from "../../GetUserDataProcessingActivity/handler";
 import {
-  ActivityInput as IsFailedUserDataProcessingActivityInput,
+  ActivityResultFailure as IsFailedUserDataProcessingActivityResultFailure,
   ActivityResultSuccess as IsFailedUserDataProcessingActivityResultSuccess
 } from "../../IsFailedUserDataProcessingActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
@@ -1128,6 +1128,59 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
 
     expect(updateSubscriptionFeed).toHaveBeenCalled();
     expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
+  });
+
+  it("failed processing requests: should set status as FAILED if error occurs in checking failed request", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
+    isFailedUserDataProcessingActivity.mockImplementationOnce(() =>
+      IsFailedUserDataProcessingActivityResultFailure.encode({
+        kind: "FAILURE",
+        reason: "Any reason"
+      })
+    );
+
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
+    );
+
+    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+    expect(getProfileActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      })
+    );
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+
+    expect(context.df.createTimer).not.toHaveBeenCalled();
+
+    expect(setUserSessionLockActivity).not.toHaveBeenCalled();
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.FAILED
+      })
+    );
+
+    expect(getUserDataProcessingActivity).not.toHaveBeenCalled();
+
+    expect(deleteUserDataActivity).not.toHaveBeenCalled();
+
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).not.toHaveBeenCalled();
   });
 
   it("failed processing requests: should set status as CLOSED without sending email and with a 0 grace period", () => {
