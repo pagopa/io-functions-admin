@@ -21,7 +21,7 @@ import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/uti
 
 const aChoice = aUserDataProcessing.choice;
 
-describe("SetUserDataProcessingStatusActivityHandler", () => {
+describe("GetUserDataProcessingActivityHandler", () => {
   it("should handle a result", async () => {
     const mockModel = ({
       findLastVersionByModelId: jest.fn(() =>
