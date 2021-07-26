@@ -1,5 +1,3 @@
-// eslint-disable @typescript-eslint/no-explicit-any
-
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 import {
   mockOrchestratorCallActivity,
@@ -29,12 +27,20 @@ import {
   ActivityResultNotFoundFailure as GetUserDataProcessingActivityResultNotFoundFailure,
   ActivityResultSuccess as GetUserDataProcessingActivityResultSuccess
 } from "../../GetUserDataProcessingActivity/handler";
+import {
+  ActivityResultFailure as IsFailedUserDataProcessingActivityResultFailure,
+  ActivityResultSuccess as IsFailedUserDataProcessingActivityResultSuccess
+} from "../../IsFailedUserDataProcessingActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import { ActivityResultSuccess as SetUserSessionLockActivityResultSuccess } from "../../SetUserSessionLockActivity/handler";
 import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler";
-import { ActivityResultSuccess as GetProfileActivityResultSuccess } from "../../GetProfileActivity/handler";
+import {
+  ActivityResultSuccess as GetProfileActivityResultSuccess,
+  ActivityResultNotFoundFailure as GetProfileActivityResultNotFoundFailure
+} from "../../GetProfileActivity/handler";
 import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger/handler";
 import { ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess } from "../../SendUserDataDeleteEmailActivity/handler";
+import { addDays, addHours } from "../utils";
 
 const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
   ...aUserDataProcessing,
@@ -61,6 +67,15 @@ const aUserDataDownloadClosed = {
   choice: UserDataProcessingChoiceEnum.DOWNLOAD,
   status: UserDataProcessingStatusEnum.CLOSED
 };
+
+// this mock will default to a not failed request to be transparent for old tests
+// we will override this just to test new logic for failed requests
+const isFailedUserDataProcessingActivity = jest.fn().mockImplementation(() =>
+  IsFailedUserDataProcessingActivityResultSuccess.encode({
+    kind: "SUCCESS",
+    value: false
+  })
+);
 
 const setUserDataProcessingStatusActivity = jest.fn().mockImplementation(() =>
   SetUserDataProcessingStatusActivityResultSuccess.encode({
@@ -117,6 +132,8 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
     ? getProfileActivity
     : name === "UpdateSubscriptionsFeedActivity"
     ? updateSubscriptionFeed
+    : name === "IsFailedUserDataProcessingActivity"
+    ? isFailedUserDataProcessingActivity
     : jest.fn())(name, ...args);
 
 // I assign switchMockImplementation to both because
@@ -134,7 +151,6 @@ mockOrchestratorCallActivityWithRetry.mockImplementation(
  * @returns the last value yielded by the orchestrator
  */
 const consumeOrchestrator = (orch: any) => {
-  // eslint-disable-next-line functional/no-let
   let prevValue: unknown;
   while (true) {
     const { done, value } = orch.next(prevValue);
@@ -148,18 +164,19 @@ const consumeOrchestrator = (orch: any) => {
 // just a convenient cast, good for every test case
 const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
 
-const waitForAbortInterval = 0 as Day;
-const waitForDownloadInterval = 0 as Hour;
+// timer are not delayed for test, but we set default values
+// to test any override, i.e. the grace period for failed requests
+const waitForAbortInterval = 1 as Day;
+const waitForDownloadInterval = 1 as Hour;
 
 const expectedRetryOptions = expect.any(Object);
 
-// eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("createUserDataDeleteOrchestratorHandler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("should fail on invalid input", () => {
+  it("all requests: should fail on invalid input", () => {
     mockOrchestratorGetInput.mockReturnValueOnce("invalid input");
 
     const result = consumeOrchestrator(
@@ -171,15 +188,80 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
 
     expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
 
-    expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
-    expect(deleteUserDataActivity).not.toHaveBeenCalled();
+    expect(getProfileActivity).not.toHaveBeenCalled();
+
+    expect(isFailedUserDataProcessingActivity).not.toHaveBeenCalled();
+
+    expect(context.df.createTimer).not.toHaveBeenCalled();
+
     expect(setUserSessionLockActivity).not.toHaveBeenCalled();
+
+    expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
+
+    expect(getUserDataProcessingActivity).not.toHaveBeenCalled();
+
+    expect(deleteUserDataActivity).not.toHaveBeenCalled();
+
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).not.toHaveBeenCalled();
   });
 
-  it("should set processing ad FAILED if fails to lock the user session", () => {
+  it("all requests: should set status as FAILED if user profile does not exist", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
+    getProfileActivity.mockImplementationOnce(() =>
+      GetProfileActivityResultNotFoundFailure.encode({
+        kind: "NOT_FOUND_FAILURE"
+      })
+    );
+
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
+    );
+
+    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+    expect(getProfileActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      })
+    );
+
+    expect(isFailedUserDataProcessingActivity).not.toHaveBeenCalled();
+
+    expect(context.df.createTimer).not.toHaveBeenCalled();
+
+    expect(setUserSessionLockActivity).not.toHaveBeenCalled();
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.FAILED
+      })
+    );
+
+    expect(getUserDataProcessingActivity).not.toHaveBeenCalled();
+
+    expect(deleteUserDataActivity).not.toHaveBeenCalled();
+
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).not.toHaveBeenCalled();
+  });
+
+  it("new processing requests: should set status as FAILED if fails to lock the user session", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
     setUserSessionLockActivity.mockImplementationOnce(
-      // eslint-disable-next-line sonarjs/no-duplicate-string
       () => "any unsuccessful value"
     );
 
@@ -191,6 +273,31 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalled();
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    // if session lock fails WIP status is never set, we just put it in FAILED
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       expectedRetryOptions,
@@ -198,10 +305,19 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
     );
+
+    expect(getUserDataProcessingActivity).not.toHaveBeenCalled();
+
+    expect(deleteUserDataActivity).not.toHaveBeenCalled();
+
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).not.toHaveBeenCalled();
   });
 
-  it("should set processing ad FAILED if fails to set the operation as WIP", () => {
+  it("new processing requests: should set status as FAILED if fails to set the operation as WIP", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
     setUserDataProcessingStatusActivity.mockImplementationOnce(
       () => "any unsuccessful value"
     );
@@ -214,6 +330,37 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalled();
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       expectedRetryOptions,
@@ -221,10 +368,19 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
     );
+
+    expect(getUserDataProcessingActivity).not.toHaveBeenCalled();
+
+    expect(deleteUserDataActivity).not.toHaveBeenCalled();
+
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).not.toHaveBeenCalled();
   });
 
-  it("should set processing ad FAILED if fails delete user data", () => {
+  it("new processing requests: should set status as FAILED if fails delete user data", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
     deleteUserDataActivity.mockImplementationOnce(
       () => "any unsuccessful value"
     );
@@ -237,6 +393,37 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalled();
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       expectedRetryOptions,
@@ -244,15 +431,26 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
     );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(deleteUserDataActivity).toHaveBeenCalledTimes(1);
+
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).not.toHaveBeenCalled();
   });
 
-  it("should set processing ad FAILED if fails to unlock the user session", () => {
+  it("new processing requests: should set status as FAILED if fails to unlock the user session", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
     setUserSessionLockActivity.mockImplementationOnce(() =>
       SetUserSessionLockActivityResultSuccess.encode({
         kind: "SUCCESS"
       })
     );
+
     setUserSessionLockActivity.mockImplementationOnce(
       () => "any unsuccessful value"
     );
@@ -265,10 +463,51 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
-    // data has been deletes
-    expect(deleteUserDataActivity).toHaveBeenCalled();
-    // the email has been sent
-    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
+
+    expect(getProfileActivity).toHaveBeenCalled();
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalled();
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "UNLOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(3);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
+      })
+    );
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       expectedRetryOptions,
@@ -276,15 +515,36 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
     );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+
+    // data has been deletes
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+
+    // the email has been sent
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledTimes(1);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.FAILED
+      })
+    );
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
+    expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
   });
 
-  it("should set processing ad FAILED if fails to set the operation as WIP", () => {
+  it("new processing requests: should set status as FAILED if fails to set the operation as CLOSED", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
     setUserDataProcessingStatusActivity.mockImplementationOnce(() =>
       SetUserDataProcessingStatusActivityResultSuccess.encode({
         kind: "SUCCESS"
       })
     );
+
     setUserDataProcessingStatusActivity.mockImplementationOnce(
       () => "any unsuccessful value"
     );
@@ -297,6 +557,44 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalled();
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(3);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
+      })
+    );
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       expectedRetryOptions,
@@ -304,9 +602,17 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         nextStatus: UserDataProcessingStatusEnum.FAILED
       })
     );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
   });
 
-  it("should set status as CLOSED if wait interval expires", () => {
+  it("new processing requests: should delete profile, send email and set status as CLOSED if wait interval expires", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
 
     const result = consumeOrchestrator(
@@ -317,6 +623,35 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "UNLOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
@@ -332,23 +667,21 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         nextStatus: UserDataProcessingStatusEnum.CLOSED
       })
     );
-    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
-    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        action: "LOCK"
-      })
-    );
-    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        action: "UNLOCK"
-      })
-    );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+    expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    expect(deleteUserDataActivity).toHaveBeenCalled();
     expect(deleteUserDataActivity).toHaveBeenCalledTimes(1);
+
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledTimes(1);
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
+    expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
   });
 
-  it("should set status as CLOSED if abort request comes before wait interval expires", () => {
+  it("new processing requests: should not delete profile and set status as CLOSED if abort request comes before wait interval expires", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
 
     // I trick the implementation of Task.any to return the second event, not the first
@@ -362,7 +695,26 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
     expect(mockOrchestratorCancelTimer).toHaveBeenCalledTimes(1);
+
+    expect(setUserSessionLockActivity).not.toHaveBeenCalled();
+
+    // if abort event is sent no WIP status is set, only CLOSED
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
@@ -371,11 +723,17 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         nextStatus: UserDataProcessingStatusEnum.CLOSED
       })
     );
-    expect(setUserSessionLockActivity).not.toHaveBeenCalled();
+
+    expect(getUserDataProcessingActivity).not.toHaveBeenCalled();
+
     expect(deleteUserDataActivity).not.toHaveBeenCalled();
+
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).not.toHaveBeenCalled();
   });
 
-  it("should wait if there are pending downloads", () => {
+  it("new processing requests: should wait if there are pending downloads, then delete profile, send email and set status as CLOSED", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
 
     // call 1: it's pending
@@ -410,19 +768,139 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    // test timers
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(3);
+    // test that grace period is respected for abort
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+    // test that we wait for pending download
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addHours(context.df.currentUtcDateTime, waitForDownloadInterval)
+    );
+    // test that we wait for wip download
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addHours(context.df.currentUtcDateTime, waitForDownloadInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "UNLOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
+      })
+    );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
     expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(3);
+
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(deleteUserDataActivity).toHaveBeenCalledTimes(1);
+
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledTimes(1);
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
+    expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
   });
 
-  it("should send a confirmation email if the operation succeeded", () => {
+  it("new processing requests: should send a confirmation email if the operation succeeded", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
         waitForDownloadInterval
       )(context)
     );
+
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "UNLOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
+      })
+    );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+    expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
     expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(deleteUserDataActivity).toHaveBeenCalledTimes(1);
+
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledTimes(1);
     expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
@@ -430,16 +908,21 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
         fiscalCode: aProcessableUserDataDelete.fiscalCode
       })
     );
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
+    expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
   });
 
-  it("should not send a confirmation email if the email is not present", () => {
+  it("new processing requests: should not send a confirmation email if the email is not present", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
     getProfileActivity.mockImplementationOnce(() =>
       GetProfileActivityResultSuccess.encode({
         kind: "SUCCESS",
         value: { ...aRetrievedProfile, email: undefined }
       })
     );
+
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
@@ -448,18 +931,74 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "UNLOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
+      })
+    );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+    expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
     expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(deleteUserDataActivity).toHaveBeenCalledTimes(1);
+
     expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
+    expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
   });
 
-  it("should not send a confirmation email if the email is not enabled", () => {
+  it("new processing requests: should not send a confirmation email if the email is not enabled", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
     getProfileActivity.mockImplementationOnce(() =>
       GetProfileActivityResultSuccess.encode({
         kind: "SUCCESS",
         value: { ...aRetrievedProfile, isEmailEnabled: false }
       })
     );
+
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
@@ -468,24 +1007,259 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
 
     expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "UNLOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
+      })
+    );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+    expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
     expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(deleteUserDataActivity).toHaveBeenCalledTimes(1);
+
     expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
+    expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
   });
-  it("should set processing ad FAILED if subscription feed fails to update", () => {
+
+  it("new processing requests: should set status as FAILED if subscription feed fails to update", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
     updateSubscriptionFeed.mockImplementationOnce(() => "FAILURE");
+
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
         waitForDownloadInterval
       )(context)
     );
+
     expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
       expect.any(String),
       expectedRetryOptions,
       expect.objectContaining({
         nextStatus: UserDataProcessingStatusEnum.FAILED
+      })
+    );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+    expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(deleteUserDataActivity).toHaveBeenCalledTimes(1);
+
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledTimes(1);
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
+    expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
+  });
+
+  it("failed processing requests: should set status as FAILED if error occurs in checking failed request", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
+    isFailedUserDataProcessingActivity.mockImplementationOnce(() =>
+      IsFailedUserDataProcessingActivityResultFailure.encode({
+        kind: "FAILURE",
+        reason: "Any reason"
+      })
+    );
+
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
+    );
+
+    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+    expect(getProfileActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      })
+    );
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+
+    expect(context.df.createTimer).not.toHaveBeenCalled();
+
+    expect(setUserSessionLockActivity).not.toHaveBeenCalled();
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(1);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.FAILED
+      })
+    );
+
+    expect(getUserDataProcessingActivity).not.toHaveBeenCalled();
+
+    expect(deleteUserDataActivity).not.toHaveBeenCalled();
+
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).not.toHaveBeenCalled();
+  });
+
+  it("failed processing requests: should set status as CLOSED without sending email and with a 0 grace period", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
+    isFailedUserDataProcessingActivity.mockImplementationOnce(() =>
+      IsFailedUserDataProcessingActivityResultSuccess.encode({
+        kind: "SUCCESS",
+        value: true
+      })
+    );
+
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
+    );
+
+    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+    expect(getProfileActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      })
+    );
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+
+    // test that no grace period has been given
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, 0 as Day)
+    ); // this works because mocked context has the same currentUtcDateTime
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+
+    expect(setUserSessionLockActivity).toHaveBeenCalled();
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "UNLOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+
+    // test that no email has been sent
+    expect(sendUserDataDeleteEmailActivity).not.toHaveBeenCalled();
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalled();
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
       })
     );
   });

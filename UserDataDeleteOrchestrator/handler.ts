@@ -39,6 +39,11 @@ import {
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
 
+import {
+  ActivityInput as IsFailedUserDataProcessingActivityInput,
+  ActivityResultSuccess as IsFailedUserDataProcessingActivityResultSuccess
+} from "../IsFailedUserDataProcessingActivity/handler";
+
 import { ActivityInput as UpdateServiceSubscriptionFeedActivityInput } from "../UpdateSubscriptionsFeedActivity/types";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger/handler";
 import {
@@ -144,6 +149,28 @@ function* setUserSessionLock(
       );
     }
   );
+}
+
+function* isFailedUserDataProcessing(
+  context: IOrchestrationFunctionContext,
+  currentRecord: UserDataProcessing
+): Generator<Task, boolean> {
+  const result = yield context.df.callActivityWithRetry(
+    "IsFailedUserDataProcessingActivity",
+    retryOptions,
+    IsFailedUserDataProcessingActivityInput.encode({
+      choice: currentRecord.choice,
+      fiscalCode: currentRecord.fiscalCode
+    })
+  );
+  return IsFailedUserDataProcessingActivityResultSuccess.decode(
+    result
+  ).getOrElseL(_ => {
+    throw toActivityFailure(
+      { kind: "IS_FAILED_USER_DATA_PROCESSING_ACTIVITY_RESULT" },
+      "IsFailedUserDataProcessingActivity"
+    );
+  }).value;
 }
 
 function* setUserDataProcessingStatus(
@@ -324,6 +351,7 @@ export const createUserDataDeleteOrchestratorHandler = (
   waitForAbortInterval: Day,
   waitForDownloadInterval: Hour = 12 as Hour
 ) =>
+  // eslint-disable-next-line max-lines-per-function
   function*(context: IOrchestrationFunctionContext): Generator<Task | TaskSet> {
     const document = context.df.getInput();
     // This check has been done on the trigger, so it should never fail.
@@ -355,16 +383,38 @@ export const createUserDataDeleteOrchestratorHandler = (
     );
 
     try {
+      // retrieve user profile
+      const profile = yield* getProfile(
+        context,
+        currentUserDataProcessing.fiscalCode
+      );
+
+      // if profile exists, we check if this is a failed processing request because failed requests
+      // are managed without waiting any abort event and without sending any email
+      const isFailedUserDataProcessingRequest = yield* isFailedUserDataProcessing(
+        context,
+        currentUserDataProcessing
+      );
+
+      context.log.verbose(
+        `${logPrefix}|VERBOSE|isFailedUserDataProcessingRequest=${isFailedUserDataProcessingRequest}`
+      );
+
+      // we calculate the grace period: if this is a failed request => 0 days
+      const gracePeriod = isFailedUserDataProcessingRequest
+        ? (0 as Day)
+        : waitForAbortInterval;
+
       // we have an interval on which we wait for eventual cancellation by the user
       const intervalExpiredEvent = context.df.createTimer(
-        addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+        addDays(context.df.currentUtcDateTime, gracePeriod)
       );
 
       // we wait for eventually abort message from the user
       const canceledRequestEvent = context.df.waitForExternalEvent(ABORT_EVENT);
 
       context.log.verbose(
-        `${logPrefix}|VERBOSE|Operation stopped for ${waitForAbortInterval} days`
+        `${logPrefix}|VERBOSE|Operation stopped for ${gracePeriod} days`
       );
 
       trackUserDataDeleteEvent("paused", currentUserDataProcessing);
@@ -377,7 +427,7 @@ export const createUserDataDeleteOrchestratorHandler = (
 
       if (triggeredEvent === intervalExpiredEvent) {
         context.log.verbose(
-          `${logPrefix}|VERBOSE|Operation resumed after ${waitForAbortInterval} days`
+          `${logPrefix}|VERBOSE|Operation resumed after ${gracePeriod} days`
         );
 
         // lock user session
@@ -411,12 +461,6 @@ export const createUserDataDeleteOrchestratorHandler = (
           yield waitForDownloadEvent;
         }
 
-        // retrieve user profile
-        const profile = yield* getProfile(
-          context,
-          currentUserDataProcessing.fiscalCode
-        );
-
         // eslint-disable-next-line extra-rules/no-commented-out-code
         // backup&delete data
         yield* deleteUserData(context, currentUserDataProcessing);
@@ -425,7 +469,8 @@ export const createUserDataDeleteOrchestratorHandler = (
         if (
           profile.email &&
           profile.isEmailValidated &&
-          profile.isEmailEnabled
+          profile.isEmailEnabled &&
+          !isFailedUserDataProcessingRequest
         ) {
           // send confirm email
           yield* sendUserDataDeleteEmail(
