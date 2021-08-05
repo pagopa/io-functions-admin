@@ -6,5 +6,5 @@
         "direction": "in"
       }
     ],
-    "scriptFile": "../dist/UserDataDeleteOrchestrator/index.js"
+    "scriptFile": "../dist/UserDataDeleteOrchestratorV2/index.js"
 }
