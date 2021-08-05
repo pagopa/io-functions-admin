@@ -331,7 +331,14 @@ function* updateSubscriptionFeed(
     version
   };
 
+  // eslint-disable-next-line functional/no-let
+  let result;
+
   if (servicePreferencesSettings.mode !== ServicesPreferencesModeEnum.LEGACY) {
+    context.log.verbose(
+      `${logPrefix}|VERBOSE|Executing updateSubscriptionFeed - NO LEGACY MODE`
+    );
+
     // Execute a new version of the orchestrator
     const activityResult = yield context.df.callActivityWithRetry(
       "GetServicesPreferencesActivity",
@@ -369,29 +376,34 @@ function* updateSubscriptionFeed(
       previousPreferences: maybeServicesPreferences
     });
 
-    yield context.df.callActivityWithRetry(
+    result = yield context.df.callActivityWithRetry(
       "UpdateSubscriptionsFeedActivity",
       retryOptions,
       input
     );
   } else {
+    context.log.verbose(
+      `${logPrefix}|VERBOSE|Executing updateSubscriptionFeed - LEGACY MODE`
+    );
+
     const input = UpdateServiceSubscriptionFeedActivityInput.encode(
       commonInput
     );
-    const result = yield context.df.callActivityWithRetry(
+    result = yield context.df.callActivityWithRetry(
       "UpdateSubscriptionsFeedActivity",
       retryOptions,
       input
     );
-    if (result === "FAILURE") {
-      context.log.error(
-        `${logPrefix}|ERROR|UpdateSubscriptionsFeedActivity fail`
-      );
-      throw toActivityFailure(
-        { kind: "UPDATE_SUBSCRIPTIONS_FEED" },
-        "UpdateSubscriptionsFeedActivity"
-      );
-    }
+  }
+
+  if (result === "FAILURE") {
+    context.log.error(
+      `${logPrefix}|ERROR|UpdateSubscriptionsFeedActivity fail`
+    );
+    throw toActivityFailure(
+      { kind: "UPDATE_SUBSCRIPTIONS_FEED" },
+      "UpdateSubscriptionsFeedActivity"
+    );
   }
 
   return "SUCCESS";

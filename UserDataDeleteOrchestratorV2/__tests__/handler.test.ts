@@ -20,7 +20,8 @@ import { Day, Hour } from "@pagopa/ts-commons/lib/units";
 import {
   aUserDataProcessing,
   aProfile,
-  aRetrievedProfile
+  aRetrievedProfile,
+  aRetrievedServicePreferences
 } from "../../__mocks__/mocks";
 import { ActivityResultSuccess as DeleteUserDataActivityResultSuccess } from "../../DeleteUserDataActivity/types";
 import {
@@ -38,9 +39,12 @@ import {
   ActivityResultSuccess as GetProfileActivityResultSuccess,
   ActivityResultNotFoundFailure as GetProfileActivityResultNotFoundFailure
 } from "../../GetProfileActivity/handler";
+import { ActivityResultSuccess as GetServicesPreferencesActivityResultSuccess } from "../../GetServicesPreferencesActivity/handler";
 import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger/handler";
 import { ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess } from "../../SendUserDataDeleteEmailActivity/handler";
 import { addDays, addHours } from "../utils";
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
+import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 
 const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
   ...aUserDataProcessing,
@@ -114,6 +118,13 @@ const getProfileActivity = jest.fn().mockImplementation(() =>
   })
 );
 
+const getServicePreferencesActivity = jest.fn().mockImplementation(() =>
+  GetServicesPreferencesActivityResultSuccess.encode({
+    kind: "SUCCESS",
+    preferences: [aRetrievedServicePreferences]
+  })
+);
+
 const updateSubscriptionFeed = jest.fn().mockImplementation(() => "SUCCESS");
 
 // A mock implementation proxy for df.callActivity/df.df.callActivityWithRetry that routes each call to the correct mock implentation
@@ -130,6 +141,8 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
     ? sendUserDataDeleteEmailActivity
     : name === "GetProfileActivity"
     ? getProfileActivity
+    : name === "GetServicesPreferencesActivity"
+    ? getServicePreferencesActivity
     : name === "UpdateSubscriptionsFeedActivity"
     ? updateSubscriptionFeed
     : name === "IsFailedUserDataProcessingActivity"
@@ -1065,7 +1078,86 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
   });
 
-  it("new processing requests: should set status as FAILED if subscription feed fails to update", () => {
+  it("new processing requests: should set status as FAILED if subscription feed fails to update (LEGACY Mode)", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+
+    getProfileActivity.mockImplementationOnce(() =>
+      GetProfileActivityResultSuccess.encode({
+        kind: "SUCCESS",
+        value: {
+          ...aRetrievedProfile,
+          servicePreferencesSettings: {
+            ...aRetrievedProfile.servicePreferencesSettings,
+            mode: ServicesPreferencesModeEnum.LEGACY,
+            version: -1
+          }
+        }
+      })
+    );
+
+    updateSubscriptionFeed.mockImplementationOnce(() => "FAILURE");
+
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        waitForDownloadInterval
+      )(context)
+    );
+
+    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalled();
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    // test that grace period is respected
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      addDays(context.df.currentUtcDateTime, waitForAbortInterval)
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.FAILED
+      })
+    );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+    expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(deleteUserDataActivity).toHaveBeenCalledTimes(1);
+
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledTimes(1);
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
+    expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
+  });
+
+  it("new processing requests: should set status as FAILED if subscription feed fails to update (no LEGACY Mode)", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
 
     updateSubscriptionFeed.mockImplementationOnce(() => "FAILURE");

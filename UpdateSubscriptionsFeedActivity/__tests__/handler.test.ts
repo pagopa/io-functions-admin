@@ -5,8 +5,10 @@ import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
 
 import { context as contextMock } from "../../__mocks__/durable-functions";
-import { aFiscalCode } from "../../__mocks__/mocks";
-import { aRetrievedServicePreference } from "../../__mocks__/mocks.service_preference";
+import {
+  aFiscalCode,
+  aRetrievedServicePreferences
+} from "../../__mocks__/mocks";
 
 import { Input, updateSubscriptionFeed } from "../handler";
 
@@ -205,7 +207,7 @@ describe("UpdateSubscriptionsFeedActivity - Profile with preferences", () => {
     const input: Input = {
       fiscalCode: aFiscalCode,
       operation: "SUBSCRIBED",
-      previousPreferences: [aRetrievedServicePreference],
+      previousPreferences: [aRetrievedServicePreferences],
       subscriptionKind: "PROFILE",
       updatedAt: today.getTime(),
       version: 1
@@ -234,7 +236,7 @@ describe("UpdateSubscriptionsFeedActivity - Profile with preferences", () => {
       expect.objectContaining({
         PartitionKey: expect.objectContaining({
           _: `S-${today.toISOString().substring(0, 10)}-${
-            aRetrievedServicePreference.serviceId
+            aRetrievedServicePreferences.serviceId
           }-U`
         })
       }),
@@ -246,7 +248,7 @@ describe("UpdateSubscriptionsFeedActivity - Profile with preferences", () => {
       expect.objectContaining({
         PartitionKey: expect.objectContaining({
           _: `S-${today.toISOString().substring(0, 10)}-${
-            aRetrievedServicePreference.serviceId
+            aRetrievedServicePreferences.serviceId
           }-S`
         })
       }),

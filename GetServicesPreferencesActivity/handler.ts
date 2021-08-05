@@ -45,8 +45,8 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 export const GetServicesPreferencesActivityHandler = (
   servicePreferences: ServicesPreferencesModel
-) => async (context: Context, input: unknown): Promise<ActivityResult> => {
-  return fromEither<t.Errors, ActivityInput>(ActivityInput.decode(input))
+) => async (context: Context, input: unknown): Promise<ActivityResult> =>
+  fromEither<t.Errors, ActivityInput>(ActivityInput.decode(input))
     .mapLeft<InvalidInputFailure | CosmosErrors>(_ =>
       InvalidInputFailure.encode({ kind: "INVALID_INPUT" })
     )
@@ -101,4 +101,3 @@ export const GetServicesPreferencesActivityHandler = (
         })
     )
     .run();
-};
