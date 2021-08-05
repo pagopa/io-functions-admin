@@ -4,7 +4,7 @@ import {
   TaskSet,
   RetryOptions
 } from "durable-functions/lib/src/classes";
-import { isLeft, toError } from "fp-ts/lib/Either";
+import { fromPredicate, isLeft, toError } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
@@ -14,6 +14,7 @@ import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { Day, Hour } from "@pagopa/ts-commons/lib/units";
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
 import {
   ActivityInput as DeleteUserDataActivityInput,
   ActivityResultSuccess as DeleteUserDataActivityResultSuccess
@@ -33,6 +34,12 @@ import {
   ActivityInput as SendUserDataDeleteEmailActivityInput,
   ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess
 } from "../SendUserDataDeleteEmailActivity/handler";
+
+import {
+  ActivityResult as GetServicesPreferencesActivityResult,
+  ActivityResultSuccess as GetServicesPreferencesActivityResultSuccess
+} from "../GetServicesPreferencesActivity/handler";
+
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import {
   ActivityInput as SetUserSessionLockActivityInput,
@@ -314,29 +321,79 @@ function* getProfile(
 
 function* updateSubscriptionFeed(
   context: IOrchestrationFunctionContext,
-  { fiscalCode, version }: RetrievedProfile
+  { fiscalCode, version, servicePreferencesSettings }: RetrievedProfile
 ): Generator<Task, "SUCCESS"> {
-  const input = UpdateServiceSubscriptionFeedActivityInput.encode({
+  const commonInput = {
     fiscalCode,
-    operation: "UNSUBSCRIBED",
-    subscriptionKind: "PROFILE",
+    operation: "UNSUBSCRIBED" as const,
+    subscriptionKind: "PROFILE" as const,
     updatedAt: context.df.currentUtcDateTime.getTime(),
     version
-  });
-  const result = yield context.df.callActivityWithRetry(
-    "UpdateSubscriptionsFeedActivity",
-    retryOptions,
-    input
-  );
-  if (result === "FAILURE") {
-    context.log.error(
-      `${logPrefix}|ERROR|UpdateSubscriptionsFeedActivity fail`
+  };
+
+  if (servicePreferencesSettings.mode !== ServicesPreferencesModeEnum.LEGACY) {
+    // Execute a new version of the orchestrator
+    const activityResult = yield context.df.callActivityWithRetry(
+      "GetServicesPreferencesActivity",
+      retryOptions,
+      {
+        fiscalCode,
+        settingsVersion: servicePreferencesSettings.version
+      }
     );
-    throw toActivityFailure(
-      { kind: "UPDATE_SUBSCRIPTIONS_FEED" },
-      "UpdateSubscriptionsFeedActivity"
+
+    const maybeServicesPreferences = GetServicesPreferencesActivityResult.decode(
+      activityResult
+    )
+      .mapLeft(_ => new Error(readableReport(_)))
+      .chain(
+        fromPredicate(
+          (_): _ is GetServicesPreferencesActivityResultSuccess =>
+            _.kind === "SUCCESS",
+          _ => new Error(_.kind)
+        )
+      )
+      .fold(
+        err => {
+          // Invalid Activity input. The orchestration fail
+          context.log.error(
+            `${logPrefix}|GetServicesPreferencesActivity|ERROR=${err.message}`
+          );
+          throw err;
+        },
+        _ => _.preferences
+      );
+
+    const input = UpdateServiceSubscriptionFeedActivityInput.encode({
+      ...commonInput,
+      previousPreferences: maybeServicesPreferences
+    });
+
+    yield context.df.callActivityWithRetry(
+      "UpdateSubscriptionsFeedActivity",
+      retryOptions,
+      input
     );
+  } else {
+    const input = UpdateServiceSubscriptionFeedActivityInput.encode(
+      commonInput
+    );
+    const result = yield context.df.callActivityWithRetry(
+      "UpdateSubscriptionsFeedActivity",
+      retryOptions,
+      input
+    );
+    if (result === "FAILURE") {
+      context.log.error(
+        `${logPrefix}|ERROR|UpdateSubscriptionsFeedActivity fail`
+      );
+      throw toActivityFailure(
+        { kind: "UPDATE_SUBSCRIPTIONS_FEED" },
+        "UpdateSubscriptionsFeedActivity"
+      );
+    }
   }
+
   return "SUCCESS";
 }
 
