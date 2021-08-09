@@ -48,7 +48,7 @@ export const updateSubscriptionStatus = (
   deleteEntity: SubscriptionFeedEntitySelector,
   deleteOtherEntities: ReadonlyArray<SubscriptionFeedEntitySelector>,
   insertEntity: SubscriptionFeedEntitySelector,
-  doesntInsertIfDeleted: boolean
+  allowInsertIfDeleted: boolean
   // eslint-disable-next-line max-params
 ): Promise<true> => {
   const insertEntityHandler = insertTableEntity(tableService, tableName);
@@ -85,7 +85,7 @@ export const updateSubscriptionStatus = (
   // previously made an opposite choice (in the same day).
   // Since we're going to expose only the delta for this day,
   // and we've just deleted the opposite operation, we go on here.
-  if (doesntInsertIfDeleted && isNone(deleteResults[0].maybeError)) {
+  if (!allowInsertIfDeleted && isNone(deleteResults[0].maybeError)) {
     return true;
   }
 
