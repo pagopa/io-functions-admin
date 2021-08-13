@@ -4,7 +4,7 @@ import {
   TaskSet,
   RetryOptions
 } from "durable-functions/lib/src/classes";
-import { isLeft, toError } from "fp-ts/lib/Either";
+import { fromPredicate, isLeft, toError } from "fp-ts/lib/Either";
 import { toString } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
@@ -14,6 +14,8 @@ import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { Day, Hour } from "@pagopa/ts-commons/lib/units";
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
+import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import {
   ActivityInput as DeleteUserDataActivityInput,
   ActivityResultSuccess as DeleteUserDataActivityResultSuccess
@@ -33,6 +35,12 @@ import {
   ActivityInput as SendUserDataDeleteEmailActivityInput,
   ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess
 } from "../SendUserDataDeleteEmailActivity/handler";
+
+import {
+  ActivityResult as GetServicesPreferencesActivityResult,
+  ActivityResultSuccess as GetServicesPreferencesActivityResultSuccess
+} from "../GetServicesPreferencesActivity/handler";
+
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import {
   ActivityInput as SetUserSessionLockActivityInput,
@@ -314,20 +322,50 @@ function* getProfile(
 
 function* updateSubscriptionFeed(
   context: IOrchestrationFunctionContext,
-  { fiscalCode, version }: RetrievedProfile
+  { fiscalCode, version, servicePreferencesSettings }: RetrievedProfile,
+  servicesPreferences: ReadonlyArray<ServicePreference>
 ): Generator<Task, "SUCCESS"> {
-  const input = UpdateServiceSubscriptionFeedActivityInput.encode({
+  const commonInput = {
     fiscalCode,
-    operation: "UNSUBSCRIBED",
-    subscriptionKind: "PROFILE",
+    operation: "UNSUBSCRIBED" as const,
+    subscriptionKind: "PROFILE" as const,
     updatedAt: context.df.currentUtcDateTime.getTime(),
     version
-  });
-  const result = yield context.df.callActivityWithRetry(
-    "UpdateSubscriptionsFeedActivity",
-    retryOptions,
-    input
-  );
+  };
+
+  // eslint-disable-next-line functional/no-let
+  let result;
+
+  if (servicePreferencesSettings.mode !== ServicesPreferencesModeEnum.LEGACY) {
+    context.log.verbose(
+      `${logPrefix}|VERBOSE|Executing updateSubscriptionFeed - NO LEGACY MODE`
+    );
+
+    const input = UpdateServiceSubscriptionFeedActivityInput.encode({
+      ...commonInput,
+      previousPreferences: servicesPreferences
+    });
+
+    result = yield context.df.callActivityWithRetry(
+      "UpdateSubscriptionsFeedActivity",
+      retryOptions,
+      input
+    );
+  } else {
+    context.log.verbose(
+      `${logPrefix}|VERBOSE|Executing updateSubscriptionFeed - LEGACY MODE`
+    );
+
+    const input = UpdateServiceSubscriptionFeedActivityInput.encode(
+      commonInput
+    );
+    result = yield context.df.callActivityWithRetry(
+      "UpdateSubscriptionsFeedActivity",
+      retryOptions,
+      input
+    );
+  }
+
   if (result === "FAILURE") {
     context.log.error(
       `${logPrefix}|ERROR|UpdateSubscriptionsFeedActivity fail`
@@ -337,7 +375,65 @@ function* updateSubscriptionFeed(
       "UpdateSubscriptionsFeedActivity"
     );
   }
+
   return "SUCCESS";
+}
+
+/**
+ *
+ * @param context
+ * @param param1
+ * @returns
+ */
+function* getServicesPreferences(
+  context: IOrchestrationFunctionContext,
+  { fiscalCode, servicePreferencesSettings }: RetrievedProfile
+): Generator<Task, ReadonlyArray<ServicePreference>> {
+  // eslint-disable-next-line functional/no-let
+  let result: ReadonlyArray<ServicePreference>;
+
+  if (servicePreferencesSettings.mode !== ServicesPreferencesModeEnum.LEGACY) {
+    context.log.verbose(
+      `${logPrefix}|VERBOSE|Executing getServicesPreferences - NO LEGACY MODE`
+    );
+
+    const activityResult = yield context.df.callActivityWithRetry(
+      "GetServicesPreferencesActivity",
+      retryOptions,
+      {
+        fiscalCode,
+        settingsVersion: servicePreferencesSettings.version
+      }
+    );
+
+    result = GetServicesPreferencesActivityResult.decode(activityResult)
+      .mapLeft(_ => new Error(readableReport(_)))
+      .chain(
+        fromPredicate(
+          (_): _ is GetServicesPreferencesActivityResultSuccess =>
+            _.kind === "SUCCESS",
+          _ => new Error(_.kind)
+        )
+      )
+      .fold(
+        err => {
+          // Invalid Activity input. The orchestration fail
+          context.log.error(
+            `${logPrefix}|GetServicesPreferencesActivity|ERROR=${err.message}`
+          );
+          throw err;
+        },
+        _ => _.preferences
+      );
+  } else {
+    context.log.verbose(
+      `${logPrefix}|VERBOSE|Executing getServicesPreferences - LEGACY MODE`
+    );
+
+    result = [];
+  }
+
+  return result;
 }
 
 /**
@@ -387,6 +483,12 @@ export const createUserDataDeleteOrchestratorHandler = (
       const profile = yield* getProfile(
         context,
         currentUserDataProcessing.fiscalCode
+      );
+
+      // retrieve last services preferences before deleting them
+      const servicesPreferences = yield* getServicesPreferences(
+        context,
+        profile
       );
 
       // if profile exists, we check if this is a failed processing request because failed requests
@@ -481,7 +583,7 @@ export const createUserDataDeleteOrchestratorHandler = (
         }
 
         // update subscription feed
-        yield* updateSubscriptionFeed(context, profile);
+        yield* updateSubscriptionFeed(context, profile, servicesPreferences);
 
         // set as closed
         yield* setUserDataProcessingStatus(

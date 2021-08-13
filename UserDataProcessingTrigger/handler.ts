@@ -102,7 +102,7 @@ const startOrchestrator = async (
   dfClient: DurableOrchestrationClient,
   orchestratorName:
     | "UserDataDownloadOrchestrator"
-    | "UserDataDeleteOrchestrator",
+    | "UserDataDeleteOrchestratorV2",
   orchestratorId: string,
   orchestratorInput: unknown
 ) =>
@@ -152,7 +152,7 @@ const startUserDataDeleteOrchestrator = (
   const orchestratorId = makeDeleteOrchestratorId(processable.fiscalCode);
   return startOrchestrator(
     dfClient,
-    "UserDataDeleteOrchestrator",
+    "UserDataDeleteOrchestratorV2",
     orchestratorId,
     processable
   );
