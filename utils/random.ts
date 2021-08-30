@@ -9,7 +9,7 @@ import * as randomstring from "randomstring";
 
 /* printable 7 bit ASCII, some special char removed */
 const RANDOM_CHARSET =
-  "ABCDEFGHIJKLMNOPQRSTUVWYZabcdefghijklmnopqrstuvwyz0123456789!#$%&()*+-/=?@";
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+-/=?@";
 
 export const StrongPassword = WithinRangeString(18, 19);
 export type StrongPassword = t.TypeOf<typeof StrongPassword>;
