@@ -26,7 +26,7 @@ export const userDataDownloadMessage = (
   
   Per aprire il file ZIP, usa questa password:
   
-  ${password}
+  \`${password}\`
   
   I dati contenuti nello zip sono in formato yaml: un formato standard che in informatica consente lo scambio di dati fra applicazioni diverse.
   
