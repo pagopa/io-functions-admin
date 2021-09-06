@@ -1,10 +1,12 @@
 import { Context } from "@azure/functions";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService, TableUtilities } from "azure-storage";
-import { array } from "fp-ts/lib/Array";
-import { isNone, isSome } from "fp-ts/lib/Option";
-import { taskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import * as A from "fp-ts/lib/Array";
+import * as O from "fp-ts/lib/Option";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
+import { pipe } from "fp-ts/lib/function";
 import { deleteTableEntity, insertTableEntity } from "./storage";
 
 const eg = TableUtilities.entityGenerator;
@@ -55,10 +57,10 @@ export const updateSubscriptionStatus = (
   const deleteEntityHandler = deleteTableEntity(tableService, tableName);
   // First we try to delete a previous (un)subscriptions operation
   // from the subscription feed entries for the current day
-  const deleteResults = await array
-    .sequence(taskEither)(
+  const deleteResults = await pipe(
+    A.sequence(TE.ApplicativePar)(
       [deleteEntity, ...deleteOtherEntities].map(_ =>
-        tryCatch(
+        TE.tryCatch(
           async () => {
             // First we try to delete a previous (un)subscriptions operation
             // from the subscription feed entries for the current day
@@ -75,30 +77,30 @@ export const updateSubscriptionStatus = (
           () => new Error("Error calling the delete entity handler")
         )
       )
-    )
-    .getOrElseL(error => {
+    ),
+    TE.getOrElse(error => {
       throw error;
     })
-    .run();
+  )();
 
   // If deleteEntity is successful it means the user
   // previously made an opposite choice (in the same day).
   // Since we're going to expose only the delta for this day,
   // and we've just deleted the opposite operation, we go on here.
-  if (!allowInsertIfDeleted && isNone(deleteResults[0].maybeError)) {
+  if (!allowInsertIfDeleted && O.isNone(deleteResults[0].maybeError)) {
     return true;
   }
 
   if (
     deleteResults.some(
-      _ => _.maybeError.isSome() && _.uResponse.statusCode !== 404
+      _ => O.isSome(_.maybeError) && _.uResponse.statusCode !== 404
     )
   ) {
     // retry
     const errors = new Error(
       deleteResults
         .map(_ => _.maybeError)
-        .filter(isSome)
+        .filter(O.isSome)
         .map(_ => _.value.message)
         .join("|")
     );
@@ -116,10 +118,10 @@ export const updateSubscriptionStatus = (
     RowKey: eg.String(insertEntity.rowKey),
     version: eg.Int32(version)
   });
-  if (resultOrError.isLeft() && sResponse.statusCode !== 409) {
+  if (E.isLeft(resultOrError) && sResponse.statusCode !== 409) {
     // retry
-    context.log.error(`${logPrefix}|ERROR=${resultOrError.value.message}`);
-    throw resultOrError.value;
+    context.log.error(`${logPrefix}|ERROR=${resultOrError.left.message}`);
+    throw resultOrError.left;
   }
 
   return true;
