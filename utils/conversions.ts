@@ -3,7 +3,7 @@ import {
   SubscriptionContract,
   UserContract
 } from "@azure/arm-apimanagement/esm/models";
-import { Either } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
 import { ServiceMetadata as ApiServiceMetadata } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceMetadata";
 import {
@@ -18,6 +18,7 @@ import { toApiServiceMetadata as toServiceMetadata } from "@pagopa/io-functions-
 import { Errors } from "io-ts";
 import { errorsToReadableMessages } from "@pagopa/ts-commons/lib/reporters";
 import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { pipe } from "fp-ts/lib/function";
 import { CIDR } from "../generated/definitions/CIDR";
 import { Group, Group as ApiGroup } from "../generated/definitions/Group";
 import {
@@ -27,6 +28,26 @@ import {
 import { User, User as ApiUser } from "../generated/definitions/User";
 import { UserCreated as ApiUserCreated } from "../generated/definitions/UserCreated";
 import { UserStateEnum } from "../generated/definitions/UserState";
+
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+function errorsToError(errors: Errors): Error {
+  return new Error(errorsToReadableMessages(errors).join(" / "));
+}
+
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+function removeNullProperties<T>(obj: T): unknown {
+  if (typeof obj !== "object" || obj === null) {
+    return obj;
+  }
+  return Object.keys(obj).reduce<unknown>(
+    (filteredObj, key) =>
+      obj[key] === null
+        ? filteredObj
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { ...(filteredObj as any), [key]: obj[key] },
+    {}
+  );
+}
 
 /**
  * Converts an API Service to an internal Service model
@@ -132,86 +153,74 @@ export function retrievedServiceToVisibleService(
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function userContractToApiUser(
   user: UserContract
-): Either<Error, ApiUser> {
-  return User.decode({
-    email: user.email as EmailString,
-    first_name: user.firstName,
-    id: user.id,
-    identities: user.identities,
-    last_name: user.lastName,
-    name: user.name,
-    note: user.note || undefined, // the value from Apim can be null, but the property note must be string or undefined
-    registration_date: user.registrationDate,
-    state: user.state as UserStateEnum,
-    type: user.type
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  }).mapLeft(errorsToError);
+): E.Either<Error, ApiUser> {
+  return pipe(
+    {
+      email: user.email as EmailString,
+      first_name: user.firstName,
+      id: user.id,
+      identities: user.identities,
+      last_name: user.lastName,
+      name: user.name,
+      note: user.note || undefined, // the value from Apim can be null, but the property note must be string or undefined
+      registration_date: user.registrationDate,
+      state: user.state as UserStateEnum,
+      type: user.type
+    },
+    User.decode,
+    E.mapLeft(errorsToError)
+  );
 }
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function userContractToApiUserCreated(
   user: UserContract
-): Either<Error, ApiUserCreated> {
-  return ApiUserCreated.decode({
-    email: user.email,
-    first_name: user.firstName,
-    id: user.name,
-    last_name: user.lastName
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  }).mapLeft(errorsToError);
+): E.Either<Error, ApiUserCreated> {
+  return pipe(
+    {
+      email: user.email,
+      first_name: user.firstName,
+      id: user.name,
+      last_name: user.lastName
+    },
+    ApiUserCreated.decode,
+    E.mapLeft(errorsToError)
+  );
 }
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function groupContractToApiGroup(
   group: GroupContract
-): Either<Error, ApiGroup> {
-  return Group.decode(
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    removeNullProperties({
+): E.Either<Error, ApiGroup> {
+  return pipe(
+    {
       display_name: group.displayName,
       id: group.id,
       name: group.name
-    })
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  ).mapLeft(errorsToError);
+    },
+    removeNullProperties,
+    Group.decode,
+    E.mapLeft(errorsToError)
+  );
 }
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function subscriptionContractToApiSubscription(
   subscription: SubscriptionContract
-): Either<Error, ApiSubscription> {
-  return Subscription.decode(
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    removeNullProperties({
+): E.Either<Error, ApiSubscription> {
+  return pipe(
+    {
       id: subscription.id
         ? subscription.id.substr(subscription.id.lastIndexOf("/") + 1)
         : subscription.id,
       primary_key: subscription.primaryKey,
       scope: subscription.scope,
       secondary_key: subscription.secondaryKey
-    })
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  ).mapLeft(errorsToError);
-}
-
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-function removeNullProperties<T>(obj: T): unknown {
-  if (typeof obj !== "object" || obj === null) {
-    return obj;
-  }
-  return Object.keys(obj).reduce<unknown>(
-    (filteredObj, key) =>
-      obj[key] === null
-        ? filteredObj
-        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          { ...(filteredObj as any), [key]: obj[key] },
-    {}
+    },
+    removeNullProperties,
+    Subscription.decode,
+    E.mapLeft(errorsToError)
   );
-}
-
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-function errorsToError(errors: Errors): Error {
-  return new Error(errorsToReadableMessages(errors).join(" / "));
 }
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
