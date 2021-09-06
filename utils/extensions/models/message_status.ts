@@ -1,4 +1,4 @@
-import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
 import {
   MESSAGE_STATUS_MODEL_ID_FIELD,
   MESSAGE_STATUS_MODEL_PK_FIELD,
@@ -11,6 +11,7 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as t from "io-ts";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { pipe } from "fp-ts/lib/function";
 import * as DocumentDbUtils from "../documentdb";
 
 /**
@@ -20,11 +21,14 @@ export class MessageStatusDeletableModel extends MessageStatusModelBase {
   public deleteMessageStatusVersion(
     messageId: NonEmptyString,
     documentId: NonEmptyString
-  ): TaskEither<CosmosErrors, string> {
-    return tryCatch(
-      () => this.container.item(documentId, messageId).delete(),
-      toCosmosErrorResponse
-    ).map(_ => _.item.id);
+  ): TE.TaskEither<CosmosErrors, string> {
+    return pipe(
+      TE.tryCatch(
+        () => this.container.item(documentId, messageId).delete(),
+        toCosmosErrorResponse
+      ),
+      TE.map(_ => _.item.id)
+    );
   }
 
   /**
