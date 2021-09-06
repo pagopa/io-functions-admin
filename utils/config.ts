@@ -9,6 +9,8 @@ import { MailerConfig } from "@pagopa/io-functions-commons/dist/src/mailer";
 import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 
 // global app configuration
 export type IConfig = t.TypeOf<typeof IConfig>;
@@ -90,7 +92,10 @@ export function getConfig(): t.Validation<IConfig> {
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getConfigOrThrow(): IConfig {
-  return errorOrConfig.getOrElseL(errors => {
-    throw new Error(`Invalid configuration: ${readableReport(errors)}`);
-  });
+  return pipe(
+    errorOrConfig,
+    E.getOrElse(errors => {
+      throw new Error(`Invalid configuration: ${readableReport(errors)}`);
+    })
+  );
 }
