@@ -1,3 +1,6 @@
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+
 import { IRequestMiddleware } from "@pagopa/ts-commons/lib/request_middleware";
 import { ResponseErrorFromValidationErrors } from "@pagopa/ts-commons/lib/responses";
 import { SubscriptionKeyTypePayload } from "../../generated/definitions/SubscriptionKeyTypePayload";
@@ -8,9 +11,8 @@ import { SubscriptionKeyTypePayload } from "../../generated/definitions/Subscrip
 export const SubscriptionKeyTypeMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
   SubscriptionKeyTypePayload
-> = request =>
-  Promise.resolve(
-    SubscriptionKeyTypePayload.decode(request.body).mapLeft(
-      ResponseErrorFromValidationErrors(SubscriptionKeyTypePayload)
-    )
+> = async request =>
+  pipe(
+    SubscriptionKeyTypePayload.decode(request.body),
+    E.mapLeft(ResponseErrorFromValidationErrors(SubscriptionKeyTypePayload))
   );

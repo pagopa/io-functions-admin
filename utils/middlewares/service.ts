@@ -1,3 +1,6 @@
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+
 import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
 import { IRequestMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import { ResponseErrorFromValidationErrors } from "@pagopa/ts-commons/lib/responses";
@@ -10,11 +13,10 @@ import { Logo as ApiLogo } from "../../generated/definitions/Logo";
 export const ServicePayloadMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
   ApiService
-> = request =>
-  Promise.resolve(
-    ApiService.decode(request.body).mapLeft(
-      ResponseErrorFromValidationErrors(ApiService)
-    )
+> = async request =>
+  pipe(
+    ApiService.decode(request.body),
+    E.mapLeft(ResponseErrorFromValidationErrors(ApiService))
   );
 
 /**
@@ -23,9 +25,8 @@ export const ServicePayloadMiddleware: IRequestMiddleware<
 export const LogoPayloadMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
   ApiLogo
-> = request =>
-  Promise.resolve(
-    ApiLogo.decode(request.body).mapLeft(
-      ResponseErrorFromValidationErrors(ApiService)
-    )
+> = async request =>
+  pipe(
+    ApiLogo.decode(request.body),
+    E.mapLeft(ResponseErrorFromValidationErrors(ApiService))
   );
