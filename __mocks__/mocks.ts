@@ -71,6 +71,8 @@ import {
   makeServicesPreferencesDocumentId,
   RetrievedServicePreference
 } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
 
@@ -271,12 +273,14 @@ export const aSerializedNotificationStatus = {
   updatedAt: new Date().toISOString()
 };
 
-export const aNotificationStatus = NotificationStatus.decode(
-  aSerializedNotificationStatus
-).getOrElseL(errs => {
-  const error = readableReport(errs);
-  throw new Error("Fix NotificationStatus mock: " + error);
-});
+export const aNotificationStatus = pipe(
+  aSerializedNotificationStatus,
+  NotificationStatus.decode,
+  E.getOrElseW(errs => {
+    const error = readableReport(errs);
+    throw new Error("Fix NotificationStatus mock: " + error);
+  })
+);
 
 export const aRetrievedNotificationStatus = {
   ...aNotificationStatus,
@@ -289,12 +293,14 @@ export const aSerializedMessageStatus = {
   updatedAt: new Date().toISOString()
 };
 
-export const aMessageStatus = MessageStatus.decode(
-  aSerializedMessageStatus
-).getOrElseL(errs => {
-  const error = readableReport(errs);
-  throw new Error("Fix MessageStatus mock: " + error);
-});
+export const aMessageStatus = pipe(
+  aSerializedMessageStatus,
+  MessageStatus.decode,
+  E.getOrElseW(errs => {
+    const error = readableReport(errs);
+    throw new Error("Fix MessageStatus mock: " + error);
+  })
+);
 
 export const aSerializedRetrievedMessageStatus = {
   ...aSerializedMessageStatus,
@@ -303,21 +309,29 @@ export const aSerializedRetrievedMessageStatus = {
   version: 0 as NonNegativeInteger
 };
 
-export const aRetrievedMessageStatus = RetrievedMessageStatus.decode({
-  ...aSerializedRetrievedMessageStatus,
-  ...retrievedMetadata
-}).getOrElseL(errs => {
-  const error = readableReport(errs);
-  throw new Error("Fix MessageStatus mock: " + error);
-});
+export const aRetrievedMessageStatus = pipe(
+  {
+    ...aSerializedRetrievedMessageStatus,
+    ...retrievedMetadata
+  },
+  RetrievedMessageStatus.decode,
+  E.getOrElseW(errs => {
+    const error = readableReport(errs);
+    throw new Error("Fix MessageStatus mock: " + error);
+  })
+);
 
-export const aArchiveInfo = ArchiveInfo.decode({
-  blobName: "blobname",
-  password: "A".repeat(18)
-}).getOrElseL(errs => {
-  const error = readableReport(errs);
-  throw new Error("Fix ArchiveInfo mock: " + error);
-});
+export const aArchiveInfo = pipe(
+  {
+    blobName: "blobname",
+    password: "A".repeat(18)
+  },
+  ArchiveInfo.decode,
+  E.getOrElseW(errs => {
+    const error = readableReport(errs);
+    throw new Error("Fix ArchiveInfo mock: " + error);
+  })
+);
 
 export const aServicePreferenceVersion = 0 as NonNegativeInteger;
 
