@@ -1,5 +1,5 @@
 // eslint-disable @typescript-eslint/no-explicit-any
-
+import * as E from "fp-ts/lib/Either";
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
@@ -92,7 +92,7 @@ describe("UserDataDownloadOrchestrator", () => {
 
     const result = consumeOrchestrator(handler(context));
 
-    expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(InvalidInputFailure.decode(result))).toBe(true);
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
     expect(extractUserDataActivity).not.toHaveBeenCalled();
     expect(sendUserDataDownloadMessageActivity).not.toHaveBeenCalled();
@@ -111,7 +111,7 @@ describe("UserDataDownloadOrchestrator", () => {
 
     const result = consumeOrchestrator(handler(context));
 
-    expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(InvalidInputFailure.decode(result))).toBe(true);
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
     expect(extractUserDataActivity).not.toHaveBeenCalled();
     expect(sendUserDataDownloadMessageActivity).not.toHaveBeenCalled();
@@ -126,7 +126,7 @@ describe("UserDataDownloadOrchestrator", () => {
 
     const result = consumeOrchestrator(handler(context));
 
-    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorSuccess.decode(result))).toBe(true);
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
     // first, set as WIP
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
@@ -161,7 +161,7 @@ describe("UserDataDownloadOrchestrator", () => {
 
     const result = consumeOrchestrator(handler(context));
 
-    expect(ActivityFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(ActivityFailure.decode(result))).toBe(true);
     expect(result.activityName).toBe("ExtractUserDataActivity");
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalled(); // any times, at least one
     // then, set as FAILED
@@ -191,7 +191,7 @@ describe("UserDataDownloadOrchestrator", () => {
 
     const result = consumeOrchestrator(handler(context));
 
-    expect(ActivityFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(ActivityFailure.decode(result))).toBe(true);
     expect(result.activityName).toBe("SendUserDataDownloadMessageActivity");
     expect(setUserDataProcessingStatusActivity).toHaveBeenCalled(); // any times, at least one
     // then, set as FAILED
@@ -221,9 +221,9 @@ describe("UserDataDownloadOrchestrator", () => {
 
     const result = consumeOrchestrator(handler(context));
 
-    expect(ActivityFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(ActivityFailure.decode(result))).toBe(true);
 
-    // activity failure during the first SetUserDataProcessingStatusActivity to WIP 
+    // activity failure during the first SetUserDataProcessingStatusActivity to WIP
     expect(result.activityName).toBe("SetUserDataProcessingStatusActivity");
     expect(result.extra).toEqual({
       status: UserDataProcessingStatusEnum.WIP
@@ -264,8 +264,8 @@ describe("UserDataDownloadOrchestrator", () => {
 
     const result = consumeOrchestrator(handler(context));
 
-    // activity failure during the first SetUserDataProcessingStatusActivity to CLOSED 
-    expect(ActivityFailure.decode(result).isRight()).toBe(true);
+    // activity failure during the first SetUserDataProcessingStatusActivity to CLOSED
+    expect(E.isRight(ActivityFailure.decode(result))).toBe(true);
     expect(result.activityName).toBe("SetUserDataProcessingStatusActivity");
     expect(result.extra).toEqual({
       status: UserDataProcessingStatusEnum.CLOSED

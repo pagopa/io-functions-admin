@@ -2,10 +2,11 @@ import {
   IOrchestrationFunctionContext,
   RetryOptions
 } from "durable-functions/lib/src/classes";
-import { isLeft, toError } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { pipe } from "fp-ts/lib/function";
 import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from "../ExtractUserDataActivity/handler";
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../SendUserDataDownloadMessageActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
@@ -87,29 +88,31 @@ export const handler = function*(
   const document = context.df.getInput();
   // This check has been done on the trigger, so it should never fail.
   // However, it's worth the effort to check it twice
-  const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataDownload.decode(
-    document
-  ).mapLeft<InvalidInputFailure>(err => {
-    context.log.error(
-      `${logPrefix}|WARN|Cannot decode ProcessableUserDataDownload document: ${readableReport(
-        err
-      )}`
-    );
-    return InvalidInputFailure.encode({
-      kind: "INVALID_INPUT",
-      reason: readableReport(err)
-    });
-  });
+  const invalidInputOrCurrentUserDataProcessing = pipe(
+    document,
+    ProcessableUserDataDownload.decode,
+    E.mapLeft(err => {
+      context.log.error(
+        `${logPrefix}|WARN|Cannot decode ProcessableUserDataDownload document: ${readableReport(
+          err
+        )}`
+      );
+      return InvalidInputFailure.encode({
+        kind: "INVALID_INPUT",
+        reason: readableReport(err)
+      });
+    })
+  );
 
-  if (isLeft(invalidInputOrCurrentUserDataProcessing)) {
-    return invalidInputOrCurrentUserDataProcessing.value;
+  if (E.isLeft(invalidInputOrCurrentUserDataProcessing)) {
+    return invalidInputOrCurrentUserDataProcessing.left;
   }
 
   const currentUserDataProcessing =
-    invalidInputOrCurrentUserDataProcessing.value;
+    invalidInputOrCurrentUserDataProcessing.right;
 
   try {
-    SetUserDataProcessingStatusActivityResultSuccess.decode(
+    pipe(
       yield context.df.callActivityWithRetry(
         "SetUserDataProcessingStatusActivity",
         retryOptions,
@@ -117,22 +120,27 @@ export const handler = function*(
           currentRecord: currentUserDataProcessing,
           nextStatus: UserDataProcessingStatusEnum.WIP
         }
-      )
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
-        status: UserDataProcessingStatusEnum.WIP
-      });
-    });
+      ),
+      SetUserDataProcessingStatusActivityResultSuccess.decode,
+      E.getOrElse(err => {
+        throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
+          status: UserDataProcessingStatusEnum.WIP
+        });
+      })
+    );
 
-    const bundle = ExtractUserDataActivityResultSuccess.decode(
+    const bundle = pipe(
       yield context.df.callActivity("ExtractUserDataActivity", {
         fiscalCode: currentUserDataProcessing.fiscalCode
-      })
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "ExtractUserDataActivity");
-    });
+      }),
+      ExtractUserDataActivityResultSuccess.decode,
+      E.mapLeft(err => {
+        throw toActivityFailure(err, "ExtractUserDataActivity");
+      }),
+      E.toUnion
+    );
 
-    SendUserDataDownloadMessageActivityResultSuccess.decode(
+    pipe(
       yield context.df.callActivityWithRetry(
         "SendUserDataDownloadMessageActivity",
         new RetryOptions(5000, 10),
@@ -141,12 +149,14 @@ export const handler = function*(
           fiscalCode: currentUserDataProcessing.fiscalCode,
           password: bundle.value.password
         }
-      )
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "SendUserDataDownloadMessageActivity");
-    });
+      ),
+      SendUserDataDownloadMessageActivityResultSuccess.decode,
+      E.getOrElse(err => {
+        throw toActivityFailure(err, "SendUserDataDownloadMessageActivity");
+      })
+    );
 
-    SetUserDataProcessingStatusActivityResultSuccess.decode(
+    pipe(
       yield context.df.callActivityWithRetry(
         "SetUserDataProcessingStatusActivity",
         retryOptions,
@@ -154,12 +164,14 @@ export const handler = function*(
           currentRecord: currentUserDataProcessing,
           nextStatus: UserDataProcessingStatusEnum.CLOSED
         }
-      )
-    ).getOrElseL(err => {
-      throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
-        status: UserDataProcessingStatusEnum.CLOSED
-      });
-    });
+      ),
+      SetUserDataProcessingStatusActivityResultSuccess.decode,
+      E.getOrElse(err => {
+        throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
+          status: UserDataProcessingStatusEnum.CLOSED
+        });
+      })
+    );
 
     trackUserDataDownloadEvent("done", currentUserDataProcessing);
 
@@ -167,17 +179,21 @@ export const handler = function*(
   } catch (error) {
     trackUserDataDownloadException(
       "failed",
-      toError(error),
+      E.toError(error),
       currentUserDataProcessing
     );
 
     context.log.error(`${logPrefix}|ERROR|${JSON.stringify(error)}`);
 
-    const orchestrationFailure = OrchestratorFailure.decode(error).getOrElse(
-      UnhanldedFailure.encode({
-        kind: "UNHANDLED",
-        reason: JSON.stringify(error)
-      })
+    const orchestrationFailure = pipe(
+      error,
+      OrchestratorFailure.decode,
+      E.getOrElseW(() =>
+        UnhanldedFailure.encode({
+          kind: "UNHANDLED",
+          reason: JSON.stringify(error)
+        })
+      )
     );
 
     const failureReason = `${orchestrationFailure.kind}${
@@ -186,7 +202,7 @@ export const handler = function*(
         : ""
     }|${orchestrationFailure.reason}`;
 
-    SetUserDataProcessingStatusActivityResultSuccess.decode(
+    pipe(
       yield context.df.callActivityWithRetry(
         "SetUserDataProcessingStatusActivity",
         retryOptions,
@@ -195,20 +211,22 @@ export const handler = function*(
           failureReason,
           nextStatus: UserDataProcessingStatusEnum.FAILED
         }
-      )
-    ).getOrElseL(err => {
-      trackUserDataDownloadException(
-        "unhandled_failed_status",
-        new Error(readableReport(err)),
-        currentUserDataProcessing
-      );
+      ),
+      SetUserDataProcessingStatusActivityResultSuccess.decode,
+      E.getOrElse(err => {
+        trackUserDataDownloadException(
+          "unhandled_failed_status",
+          new Error(readableReport(err)),
+          currentUserDataProcessing
+        );
 
-      throw new Error(
-        `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
-          err
-        )}`
-      );
-    });
+        throw new Error(
+          `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
+            err
+          )}`
+        );
+      })
+    );
 
     return orchestrationFailure;
   }
