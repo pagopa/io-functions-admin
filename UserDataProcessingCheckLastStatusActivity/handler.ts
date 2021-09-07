@@ -7,8 +7,10 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { identity } from "fp-ts/lib/function";
-import { fromEither, fromLeft, taskEither } from "fp-ts/lib/TaskEither";
+import { flow, pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
@@ -75,45 +77,47 @@ export const createUserDataProcessingCheckLastStatusActivityHandler = (
   _: Context,
   input: unknown
 ): Promise<ActivityResult> =>
-  fromEither(ActivityInput.decode(input))
-    .mapLeft<ActivityResultFailure>((reason: t.Errors) =>
+  pipe(
+    input,
+    ActivityInput.decode,
+    E.mapLeft((reason: t.Errors) =>
       ActivityResultInvalidInputFailure.encode({
         kind: "INVALID_INPUT_FAILURE",
         reason: readableReport(reason)
       })
-    )
-    .chain(({ choice, fiscalCode }) =>
-      userDataProcessingModel
-        .findLastVersionByModelId([
+    ),
+    TE.fromEither,
+    TE.chainW(({ choice, fiscalCode }) =>
+      pipe(
+        userDataProcessingModel.findLastVersionByModelId([
           makeUserDataProcessingId(choice, fiscalCode),
           fiscalCode
-        ])
-        .foldTaskEither<ActivityResultFailure, UserDataProcessingStatus>(
-          error =>
-            fromLeft(
-              ActivityResultQueryFailure.encode({
-                kind: "QUERY_FAILURE",
-                query: "findOneUserDataProcessingById",
-                reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
+        ]),
+        TE.mapLeft(error =>
+          ActivityResultQueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            query: "findOneUserDataProcessingById",
+            reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
+          })
+        ),
+        TE.chainW(
+          flow(
+            O.map(r => r.status),
+            E.fromOption(() =>
+              ActivityResultNotFoundFailure.encode({
+                kind: "NOT_FOUND_FAILURE"
               })
             ),
-          maybeRecord =>
-            maybeRecord.fold(
-              fromLeft(
-                ActivityResultNotFoundFailure.encode({
-                  kind: "NOT_FOUND_FAILURE"
-                })
-              ),
-              r => taskEither.of(r.status)
-            )
+            TE.fromEither
+          )
         )
-    )
-    .map(status =>
+      )
+    ),
+    TE.map(status =>
       ActivityResultSuccess.encode({
         kind: "SUCCESS",
         value: status
       })
-    )
-    .mapLeft(identity)
-    .run()
-    .then(e => e.value);
+    ),
+    TE.toUnion
+  )();

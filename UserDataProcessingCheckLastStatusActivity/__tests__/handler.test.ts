@@ -16,7 +16,8 @@ import {
 } from "../handler";
 
 import { none, some } from "fp-ts/lib/Option";
-import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
 import { UserDataProcessingModel } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 
@@ -26,7 +27,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
   it("should handle a result", async () => {
     const mockModel = ({
       findLastVersionByModelId: jest.fn(() =>
-        fromEither(right(some(aUserDataProcessing)))
+        TE.fromEither(right(some(aUserDataProcessing)))
       )
     } as any) as UserDataProcessingModel;
 
@@ -40,16 +41,18 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
     const result = await handler(contextMock, input);
 
     const decodedResult = ActivityResultSuccess.decode(result);
-    expect(decodedResult.isRight()).toBe(true);
-    expect(decodedResult.value).toEqual({
-      kind: "SUCCESS",
-      value: aUserDataProcessingStatus
-    });
+    expect(E.isRight(decodedResult)).toBe(true);
+    if (E.isRight(decodedResult)) {
+      expect(decodedResult.right).toEqual({
+        kind: "SUCCESS",
+        value: aUserDataProcessingStatus
+      });
+    }
   });
 
   it("should handle a record not found failure", async () => {
     const mockModel = ({
-      findLastVersionByModelId: jest.fn(() => fromEither(right(none)))
+      findLastVersionByModelId: jest.fn(() => TE.fromEither(right(none)))
     } as any) as UserDataProcessingModel;
 
     const handler = createUserDataProcessingCheckLastStatusActivityHandler(
@@ -61,13 +64,13 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
     };
     const result = await handler(contextMock, input);
 
-    expect(ActivityResultNotFoundFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(ActivityResultNotFoundFailure.decode(result))).toBe(true);
   });
 
   it("should handle a query error", async () => {
     const mockModel = ({
       findLastVersionByModelId: jest.fn(() =>
-        fromLeft(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
+        TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
     } as any) as UserDataProcessingModel;
 
@@ -80,12 +83,12 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
     };
     const result = await handler(contextMock, input);
 
-    expect(ActivityResultQueryFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(ActivityResultQueryFailure.decode(result))).toBe(true);
   });
 
   it("should handle a rejection", async () => {
     const mockModel = ({
-      findLastVersionByModelId: jest.fn(() => fromEither(right(none)))
+      findLastVersionByModelId: jest.fn(() => TE.fromEither(right(none)))
     } as any) as UserDataProcessingModel;
 
     const handler = createUserDataProcessingCheckLastStatusActivityHandler(
@@ -97,7 +100,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
     };
     const result = await handler(contextMock, input);
 
-    expect(ActivityResultNotFoundFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(ActivityResultNotFoundFailure.decode(result))).toBe(true);
   });
 
   it("should handle an invalid input", async () => {
@@ -112,7 +115,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
       invalid: "input"
     });
 
-    expect(ActivityResultInvalidInputFailure.decode(result).isRight()).toBe(
+    expect(E.isRight(ActivityResultInvalidInputFailure.decode(result))).toBe(
       true
     );
   });
