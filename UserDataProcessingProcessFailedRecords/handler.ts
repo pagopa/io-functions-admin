@@ -14,7 +14,6 @@ import {
   UserDataProcessing,
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { taskEither, tryCatch } from "fp-ts/lib/TaskEither";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/durableorchestrationclient";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
@@ -23,10 +22,12 @@ import {
   asyncIteratorToArray,
   flattenAsyncIterator
 } from "@pagopa/io-functions-commons/dist/src/utils/async";
-import { array } from "fp-ts/lib/Array";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as A from "fp-ts/lib/Array";
 import { IResponseSuccessJson } from "@pagopa/ts-commons/lib/responses";
 import { ResponseSuccessJson } from "@pagopa/ts-commons/lib/responses";
-import { identity } from "fp-ts/lib/function";
+import { pipe } from "fp-ts/lib/function";
 import { isOrchestratorRunning } from "../utils/orchestrator";
 
 const logPrefix = "UserDataProcessingProcessFailedRecordsHandler";
@@ -39,27 +40,36 @@ type IGetFailedUserDataProcessingHandler = (
   context: Context
 ) => Promise<IGetFailedUserDataProcessingHandlerResult>;
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const startOrchestrator = async (
   dfClient: DurableOrchestrationClient,
   orchestratorName: "UserDataProcessingRecoveryOrchestrator",
   orchestratorId: string,
   orchestratorInput: unknown
 ): Promise<string> =>
-  isOrchestratorRunning(dfClient, orchestratorId)
-    .fold(
-      error => {
-        throw error;
-      },
-      _ =>
-        _.isRunning
-          ? orchestratorId
-          : dfClient.startNew(
-              orchestratorName,
-              orchestratorId,
-              orchestratorInput
-            )
-    )
-    .run();
+  pipe(
+    isOrchestratorRunning(dfClient, orchestratorId),
+    TE.chain(_ =>
+      !_.isRunning
+        ? TE.tryCatch(
+            () =>
+              dfClient.startNew(
+                orchestratorName,
+                orchestratorId,
+                orchestratorInput
+              ),
+            E.toError
+          )
+        : // if the orchestrator is already running, just return the id
+          TE.of(orchestratorId)
+    ),
+
+    // if something wrong, just raise the error
+    TE.mapLeft(error => {
+      throw error;
+    }),
+    TE.toUnion
+  )();
 
 const makeOrchestratorId = (
   choice: UserDataProcessingChoiceEnum,
@@ -92,49 +102,51 @@ export const processFailedUserDataProcessingHandler = (
   context: Context
 ): Promise<IGetFailedUserDataProcessingHandlerResult> => {
   const listOfFailedUserDataProcessing = new Set<string>();
-  return await tryCatch(
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    async () =>
-      userDataProcessingModel
-        .getQueryIterator({
-          parameters: [
-            {
-              name: "@status",
-              value: "FAILED"
-            }
-          ],
-          query: `SELECT * FROM m WHERE m.status = @status`
-        })
-        [Symbol.asyncIterator](),
-    toCosmosErrorResponse
-  )
-    .map(flattenAsyncIterator)
-    .map(asyncIteratorToArray)
-    .chain(i => tryCatch(() => i, toCosmosErrorResponse))
-    .chain(i =>
-      array.sequence(taskEither)(
+  return pipe(
+    TE.tryCatch(
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      async () =>
+        userDataProcessingModel
+          .getQueryIterator({
+            parameters: [
+              {
+                name: "@status",
+                value: "FAILED"
+              }
+            ],
+            query: `SELECT * FROM m WHERE m.status = @status`
+          })
+          [Symbol.asyncIterator](),
+      toCosmosErrorResponse
+    ),
+    TE.map(flattenAsyncIterator),
+    TE.map(asyncIteratorToArray),
+    // type lift from promise to task either
+    TE.chain(i => TE.tryCatch(() => i, toCosmosErrorResponse)),
+    TE.chain(i =>
+      A.sequence(TE.ApplicativePar)(
         i
           .map(v =>
-            tryCatch(
+            TE.tryCatch(
               async () => {
-                if (v.isLeft()) {
+                if (E.isLeft(v)) {
                   return;
                 }
 
                 if (
                   listOfFailedUserDataProcessing.has(
-                    v.value.userDataProcessingId
+                    v.right.userDataProcessingId
                   )
                 ) {
                   return;
                 }
 
                 listOfFailedUserDataProcessing.add(
-                  v.value.userDataProcessingId
+                  v.right.userDataProcessingId
                 );
                 return startUserDataProcessingRecoveryOrchestrator(
                   context,
-                  v.value
+                  v.right
                 );
               },
               e => {
@@ -143,14 +155,13 @@ export const processFailedUserDataProcessingHandler = (
               }
             )
           )
-          .filter(identity)
+          .filter(Boolean)
       )
-    )
-    .fold<IGetFailedUserDataProcessingHandlerResult>(
-      failure => ResponseErrorQuery(failure.kind, failure),
-      success => ResponseSuccessJson(success)
-    )
-    .run();
+    ),
+    TE.mapLeft(failure => ResponseErrorQuery(failure.kind, failure)),
+    TE.map(success => ResponseSuccessJson(success)),
+    TE.toUnion
+  )();
 };
 
 export const processFailedUserDataProcessing = (
