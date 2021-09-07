@@ -3,7 +3,8 @@ import { GroupContract } from "@azure/arm-apimanagement/esm/models";
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { toError } from "fp-ts/lib/Either";
-import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
 
 export interface IServicePrincipalCreds {
   readonly clientId: string;
@@ -21,36 +22,42 @@ export interface IAzureApimConfig {
 export function getApiClient(
   servicePrincipalCreds: IServicePrincipalCreds,
   subscriptionId: string
-): TaskEither<Error, ApiManagementClient> {
-  return tryCatch(
-    () =>
-      msRestNodeAuth.loginWithServicePrincipalSecret(
-        servicePrincipalCreds.clientId,
-        servicePrincipalCreds.secret,
-        servicePrincipalCreds.tenantId
-      ),
-    toError
-  ).map(credentials => new ApiManagementClient(credentials, subscriptionId));
+): TE.TaskEither<Error, ApiManagementClient> {
+  return pipe(
+    TE.tryCatch(
+      () =>
+        msRestNodeAuth.loginWithServicePrincipalSecret(
+          servicePrincipalCreds.clientId,
+          servicePrincipalCreds.secret,
+          servicePrincipalCreds.tenantId
+        ),
+      toError
+    ),
+    TE.map(credentials => new ApiManagementClient(credentials, subscriptionId))
+  );
 }
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getGraphRbacManagementClient(
   adb2cCreds: IServicePrincipalCreds
-): TaskEither<Error, GraphRbacManagementClient> {
-  return tryCatch(
-    () =>
-      msRestNodeAuth.loginWithServicePrincipalSecret(
-        adb2cCreds.clientId,
-        adb2cCreds.secret,
-        adb2cCreds.tenantId,
-        { tokenAudience: "graph" }
-      ),
-    toError
-  ).map(
-    credentials =>
-      new GraphRbacManagementClient(credentials, adb2cCreds.tenantId, {
-        baseUri: "https://graph.windows.net"
-      })
+): TE.TaskEither<Error, GraphRbacManagementClient> {
+  return pipe(
+    TE.tryCatch(
+      () =>
+        msRestNodeAuth.loginWithServicePrincipalSecret(
+          adb2cCreds.clientId,
+          adb2cCreds.secret,
+          adb2cCreds.tenantId,
+          { tokenAudience: "graph" }
+        ),
+      toError
+    ),
+    TE.map(
+      credentials =>
+        new GraphRbacManagementClient(credentials, adb2cCreds.tenantId, {
+          baseUri: "https://graph.windows.net"
+        })
+    )
   );
 }
 
@@ -60,25 +67,27 @@ export function getUserGroups(
   apimResourceGroup: string,
   apim: string,
   userName: string
-): TaskEither<Error, ReadonlyArray<GroupContract>> {
-  return tryCatch(async () => {
-    // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
-    const groupList: GroupContract[] = [];
-    const groupListResponse = await apimClient.userGroup.list(
-      apimResourceGroup,
-      apim,
-      userName
-    );
-    // eslint-disable-next-line functional/immutable-data
-    groupList.push(...groupListResponse);
-    // eslint-disable-next-line functional/no-let
-    let nextLink = groupListResponse.nextLink;
-    while (nextLink) {
-      const nextGroupList = await apimClient.userGroup.listNext(nextLink);
+): TE.TaskEither<Error, ReadonlyArray<GroupContract>> {
+  return pipe(
+    TE.tryCatch(async () => {
+      // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
+      const groupList: GroupContract[] = [];
+      const groupListResponse = await apimClient.userGroup.list(
+        apimResourceGroup,
+        apim,
+        userName
+      );
       // eslint-disable-next-line functional/immutable-data
-      groupList.push(...nextGroupList);
-      nextLink = nextGroupList.nextLink;
-    }
-    return groupList;
-  }, toError);
+      groupList.push(...groupListResponse);
+      // eslint-disable-next-line functional/no-let
+      let nextLink = groupListResponse.nextLink;
+      while (nextLink) {
+        const nextGroupList = await apimClient.userGroup.listNext(nextLink);
+        // eslint-disable-next-line functional/immutable-data
+        groupList.push(...nextGroupList);
+        nextLink = nextGroupList.nextLink;
+      }
+      return groupList;
+    }, toError)
+  );
 }
