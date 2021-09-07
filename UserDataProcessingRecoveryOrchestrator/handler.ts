@@ -6,8 +6,9 @@ import {
   RetryOptions,
   Task
 } from "durable-functions/lib/src/classes";
-import { isLeft } from "fp-ts/lib/Either";
-import { toString } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+
 import * as t from "io-ts";
 import {
   ActivityInput as CheckLastStatusActivityInput,
@@ -25,8 +26,12 @@ import { FailedUserDataProcessing } from "../UserDataProcessingTrigger/handler";
 
 const logPrefix = "UserDataProcessingRecoveryOrchestrator";
 
-const printableError = (error: Error | unknown): string =>
-  error instanceof Error ? error.message : toString(error);
+const printableError = (error: Error | t.Errors | unknown): string =>
+  error instanceof Error
+    ? error.message
+    : Array.isArray(error)
+    ? readableReport(error)
+    : String(error);
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 export const InvalidInputFailure = t.interface({
@@ -107,17 +112,22 @@ function* getLastStatus(
       fiscalCode: failedUserDataProcessing.fiscalCode
     })
   );
-  return CheckLastStatusActivityResultSuccess.decode(result).getOrElseL(e => {
-    context.log.error(
-      `${logPrefix}|ERROR|UserDataProcessingCheckLastStatusActivity fail|${readableReport(
-        e
-      )}|result=${JSON.stringify(result)}`
-    );
-    throw toActivityFailure(
-      { kind: "USER_DATA_PROCESSING_CHECK_LAST_STATUS_ACTIVITY_RESULT" },
-      "UserDataProcessingCheckLastStatusActivity"
-    );
-  });
+
+  return pipe(
+    result,
+    CheckLastStatusActivityResultSuccess.decode,
+    E.getOrElse(e => {
+      context.log.error(
+        `${logPrefix}|ERROR|UserDataProcessingCheckLastStatusActivity fail|${readableReport(
+          e
+        )}|result=${JSON.stringify(result)}`
+      );
+      throw toActivityFailure(
+        { kind: "USER_DATA_PROCESSING_CHECK_LAST_STATUS_ACTIVITY_RESULT" },
+        "UserDataProcessingCheckLastStatusActivity"
+      );
+    })
+  );
 }
 
 function* searchForFailureReason(
@@ -145,17 +155,22 @@ function* searchForFailureReason(
       fiscalCode: failedUserDataProcessing.fiscalCode
     })
   );
-  return FindFailureReasonActivityResultSuccess.decode(result).getOrElseL(e => {
-    context.log.error(
-      `${logPrefix}|ERROR|UserDataProcessingFindFailureReasonActivity fail|${readableReport(
-        e
-      )}|result=${JSON.stringify(result)}`
-    );
-    throw toActivityFailure(
-      { kind: "USER_DATA_PROCESSING_FIND_FAILURE_REASON_ACTIVITY_RESULT" },
-      "UserDataProcessingFindFailureReasonActivity"
-    );
-  });
+
+  return pipe(
+    result,
+    FindFailureReasonActivityResultSuccess.decode,
+    E.getOrElse(e => {
+      context.log.error(
+        `${logPrefix}|ERROR|UserDataProcessingFindFailureReasonActivity fail|${readableReport(
+          e
+        )}|result=${JSON.stringify(result)}`
+      );
+      throw toActivityFailure(
+        { kind: "USER_DATA_PROCESSING_FIND_FAILURE_REASON_ACTIVITY_RESULT" },
+        "UserDataProcessingFindFailureReasonActivity"
+      );
+    })
+  );
 }
 
 function* saveNewFailedRecordWithReason(
@@ -176,19 +191,21 @@ function* saveNewFailedRecordWithReason(
       nextStatus: UserDataProcessingStatusEnum.FAILED
     })
   );
-  return SetUserDataProcessingStatusActivityResultSuccess.decode(
-    result
-  ).getOrElseL(e => {
-    context.log.error(
-      `${logPrefix}|ERROR|SetUserDataProcessingStatusActivity fail|${readableReport(
-        e
-      )}|result=${JSON.stringify(result)}`
-    );
-    throw toActivityFailure(
-      { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
-      "SetUserDataProcessingStatusActivity"
-    );
-  });
+  return pipe(
+    result,
+    SetUserDataProcessingStatusActivityResultSuccess.decode,
+    E.getOrElse(e => {
+      context.log.error(
+        `${logPrefix}|ERROR|SetUserDataProcessingStatusActivity fail|${readableReport(
+          e
+        )}|result=${JSON.stringify(result)}`
+      );
+      throw toActivityFailure(
+        { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
+        "SetUserDataProcessingStatusActivity"
+      );
+    })
+  );
 }
 
 export const handler = function*(
@@ -196,26 +213,28 @@ export const handler = function*(
 ): Generator<unknown, OrchestratorResult> {
   const document = context.df.getInput();
 
-  const failedUserDataProcessingOrError = FailedUserDataProcessing.decode(
-    document
-  ).mapLeft<InvalidInputFailure>(err => {
-    context.log.error(
-      `${logPrefix}|WARN|Cannot decode FailedUserDataProcessing document: ${readableReport(
-        err
-      )}`
-    );
-    return InvalidInputFailure.encode({
-      kind: "INVALID_INPUT",
-      reason: readableReport(err)
-    });
-  });
+  const failedUserDataProcessingOrError = pipe(
+    document,
+    FailedUserDataProcessing.decode,
+    E.mapLeft(err => {
+      context.log.error(
+        `${logPrefix}|WARN|Cannot decode FailedUserDataProcessing document: ${readableReport(
+          err
+        )}`
+      );
+      return InvalidInputFailure.encode({
+        kind: "INVALID_INPUT",
+        reason: readableReport(err)
+      });
+    })
+  );
 
   // I have to unbox value because yield* does not work inside map
-  if (isLeft(failedUserDataProcessingOrError)) {
-    return failedUserDataProcessingOrError.value;
+  if (E.isLeft(failedUserDataProcessingOrError)) {
+    return failedUserDataProcessingOrError.left;
   }
 
-  const failedUserDataProcessing = failedUserDataProcessingOrError.value;
+  const failedUserDataProcessing = failedUserDataProcessingOrError.right;
 
   context.log.verbose(
     `${logPrefix}|VERBOSE|Recovery started for failed record ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode}`,
@@ -265,11 +284,15 @@ export const handler = function*(
       }-${failedUserDataProcessing.fiscalCode}: ${printableError(error)}`
     );
 
-    return OrchestratorFailure.decode(error).getOrElse(
-      UnhandledFailure.encode({
-        kind: "UNHANDLED",
-        reason: printableError(error)
-      })
+    return pipe(
+      error,
+      OrchestratorFailure.decode,
+      E.getOrElse(_ =>
+        UnhandledFailure.encode({
+          kind: "UNHANDLED",
+          reason: printableError(error)
+        })
+      )
     );
   }
 };
