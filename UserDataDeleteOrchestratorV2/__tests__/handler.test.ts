@@ -44,14 +44,18 @@ import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger/handl
 import { ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess } from "../../SendUserDataDeleteEmailActivity/handler";
 import { addDays, addHours } from "../utils";
 import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
-import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 
-const aProcessableUserDataDelete = ProcessableUserDataDelete.decode({
-  ...aUserDataProcessing,
-  choice: UserDataProcessingChoiceEnum.DELETE,
-  status: UserDataProcessingStatusEnum.PENDING
-}).getOrElseL(e =>
-  fail(`Failed creating a mock input document: ${readableReport(e)}`)
+const aProcessableUserDataDelete = pipe(
+  {
+    ...aUserDataProcessing,
+    choice: UserDataProcessingChoiceEnum.DELETE,
+    status: UserDataProcessingStatusEnum.PENDING
+  },
+  ProcessableUserDataDelete.decode,
+  E.mapLeft(readableReport),
+  E.getOrElseW(e => fail(`Failed creating a mock input document: ${e}`))
 );
 
 const aUserDataDownloadPending = {
@@ -199,7 +203,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(InvalidInputFailure.decode(result))).toBe(true);
 
     expect(getProfileActivity).not.toHaveBeenCalled();
 
@@ -236,7 +240,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorFailure.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
@@ -285,7 +289,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorFailure.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
 
@@ -342,7 +346,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorFailure.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
 
@@ -405,7 +409,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorFailure.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
 
@@ -475,7 +479,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorFailure.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
 
@@ -569,7 +573,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorFailure.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
 
@@ -635,7 +639,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorSuccess.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
@@ -707,7 +711,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorSuccess.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
@@ -780,7 +784,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorSuccess.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
@@ -859,7 +863,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorSuccess.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
@@ -943,7 +947,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorSuccess.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
@@ -1019,7 +1023,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorSuccess.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
@@ -1104,7 +1108,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorFailure.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
@@ -1169,7 +1173,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorFailure.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
@@ -1239,7 +1243,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorFailure.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
@@ -1292,7 +1296,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
       )(context)
     );
 
-    expect(OrchestratorSuccess.decode(result).isRight()).toBe(true);
+    expect(E.isRight(OrchestratorSuccess.decode(result))).toBe(true);
 
     expect(getProfileActivity).toHaveBeenCalled();
     expect(getProfileActivity).toHaveBeenCalledTimes(1);
