@@ -18,7 +18,9 @@ import {
 import { some } from "fp-ts/lib/Option";
 import { TableUtilities } from "azure-storage";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { right } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 
 // converts a UserDataProcessing object in a form as it would come from the database
 const toUndecoded = (doc: UserDataProcessing) => ({
@@ -80,7 +82,7 @@ const eg = TableUtilities.entityGenerator;
 const insertEntity = jest.fn<any, any[]>(
   () =>
     ({
-      e1: right("inserted")
+      e1: E.right("inserted")
     } as any)
 );
 
@@ -157,9 +159,12 @@ describe("UserDataProcessingTrigger", () => {
 
 describe("ProcessableUserDataDownload", () => {
   it("should map processable download records", () => {
-    expect(
-      ProcessableUserDataDownload.decode(aProcessableDownload).isRight()
-    ).toBe(true);
+    const result = pipe(
+      aProcessableDownload,
+      ProcessableUserDataDownload.decode,
+      E.isRight
+    );
+    expect(result).toBe(true);
   });
   it.each`
     name                       | value
@@ -167,15 +172,19 @@ describe("ProcessableUserDataDownload", () => {
     ${"download wrong status"} | ${aNonProcessableDownloadWrongStatus}
     ${"processable delete"}    | ${aProcessableDelete}
   `("should not map unprocessable record '$name'", ({ value }) => {
-    expect(ProcessableUserDataDownload.decode(value).isLeft()).toBe(true);
+    const result = pipe(value, ProcessableUserDataDownload.decode, E.isLeft);
+    expect(result).toBe(true);
   });
 });
 
 describe("ProcessableUserDataDelete", () => {
   it("should map processable delete records", () => {
-    expect(ProcessableUserDataDelete.decode(aProcessableDelete).isRight()).toBe(
-      true
+    const result = pipe(
+      aProcessableDelete,
+      ProcessableUserDataDelete.decode,
+      E.isRight
     );
+    expect(result).toBe(true);
   });
   it.each`
     name                          | value
@@ -184,15 +193,19 @@ describe("ProcessableUserDataDelete", () => {
     ${"processable download"}     | ${aProcessableDownload}
     ${"processable delete abort"} | ${aProcessableDeleteAbort}
   `("should not map unprocessable record '$name'", ({ value }) => {
-    expect(ProcessableUserDataDelete.decode(value).isLeft()).toBe(true);
+    const result = pipe(value, ProcessableUserDataDelete.decode, E.isLeft);
+    expect(result).toBe(true);
   });
 });
 
 describe("ProcessableUserDataDeleteAbort", () => {
   it("should map processable delete records", () => {
-    expect(
-      ProcessableUserDataDeleteAbort.decode(aProcessableDeleteAbort).isRight()
-    ).toBe(true);
+    const result = pipe(
+      aProcessableDeleteAbort,
+      ProcessableUserDataDeleteAbort.decode,
+      E.isRight
+    );
+    expect(result).toBe(true);
   });
   it.each`
     name                       | value
@@ -201,7 +214,8 @@ describe("ProcessableUserDataDeleteAbort", () => {
     ${"processable download"}  | ${aProcessableDownload}
     ${"processable delete"}    | ${aProcessableDelete}
   `("should not map unprocessable record '$name'", ({ value }) => {
-    expect(ProcessableUserDataDeleteAbort.decode(value).isLeft()).toBe(true);
+    const result = pipe(value, ProcessableUserDataDeleteAbort.decode, E.isLeft);
+    expect(result).toBe(true);
   });
 });
 
