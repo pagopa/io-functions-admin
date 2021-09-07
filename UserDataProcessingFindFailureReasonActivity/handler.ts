@@ -6,9 +6,9 @@ import {
 } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as t from "io-ts";
-import { fromEither, tryCatch } from "fp-ts/lib/TaskEither";
-import { identity } from "fp-ts/lib/function";
-import { fromNullable } from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
 import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
 import { makeOrchestratorId as makeDeleteOrchestratorId } from "../UserDataDeleteOrchestrator/utils";
 
@@ -82,48 +82,54 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 export const getFindFailureReasonActivityHandler = async (
   context: Context,
   input: unknown
-): Promise<ActivityResult> => {
-  const client = df.getClient(context);
-
-  return fromEither(ActivityInput.decode(input))
-    .mapLeft(_ =>
+): Promise<ActivityResult> =>
+  pipe(
+    input,
+    ActivityInput.decode,
+    TE.fromEither,
+    TE.mapLeft(_ =>
       ActivityResultFailure.encode({
         kind: "INVALID_INPUT_FAILURE",
         reason: "Input not valid for this activity"
       })
-    )
-    .chain(({ choice, fiscalCode }) => {
+    ),
+    TE.chain(({ choice, fiscalCode }) => {
       // create failed orchestrator id based on choice
       const failedUserDataProcessingOrchestratorId =
         choice === UserDataProcessingChoiceEnum.DELETE
           ? makeDeleteOrchestratorId(fiscalCode)
           : makeDownloadOrchestratorId(fiscalCode);
 
-      return tryCatch(
+      return TE.tryCatch(
         () =>
           // get the status of the failed orchestrator
-          client.getStatus(failedUserDataProcessingOrchestratorId),
+          df
+            .getClient(context)
+            .getStatus(failedUserDataProcessingOrchestratorId),
         () =>
           ActivityResultFailure.encode({
             kind: "NOT_FOUND_FAILURE"
           })
       );
-    })
-    .fold(identity, orchestratorStatus =>
-      fromNullable("No reason found")(orchestratorStatus.output)
-        .map(o =>
+    }),
+    TE.map(orchestratorStatus =>
+      pipe(
+        orchestratorStatus.output,
+        E.fromNullable("No reason found"),
+        E.map(o =>
           ActivityResultSuccess.encode({
             kind: "SUCCESS",
-            value: JSON.stringify(o, (key, value) => value) as NonEmptyString
+            value: JSON.stringify(o, (_, value) => value) as NonEmptyString
           })
-        )
-        .mapLeft(e =>
+        ),
+        E.mapLeft(e =>
           ActivityResultSuccess.encode({
             kind: "SUCCESS",
-            value: JSON.stringify(e, (key, value) => value) as NonEmptyString
+            value: JSON.stringify(e, (_, value) => value) as NonEmptyString
           })
-        )
-        .fold<ActivityResult>(identity, identity)
-    )
-    .run();
-};
+        ),
+        E.toUnion
+      )
+    ),
+    TE.toUnion
+  )();
