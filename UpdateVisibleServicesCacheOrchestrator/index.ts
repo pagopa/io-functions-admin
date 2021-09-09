@@ -10,7 +10,7 @@ import {
 } from "durable-functions/lib/src/classes";
 
 import * as df from "durable-functions";
-import { isLeft } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 import { VisibleServices } from "../UpdateVisibleServicesCache";
 
 const UpdateVisibleServicesCacheOrchestrator = df.orchestrator(function*(
@@ -19,13 +19,13 @@ const UpdateVisibleServicesCacheOrchestrator = df.orchestrator(function*(
   const visibleServicesJson = context.df.getInput();
   const errorOrVisibleServices = VisibleServices.decode(visibleServicesJson);
 
-  if (isLeft(errorOrVisibleServices)) {
+  if (E.isLeft(errorOrVisibleServices)) {
     context.log.error(
       "UpdateVisibleServicesCacheOrchestrator|Error decoding visible services JSON."
     );
     return;
   }
-  const visibleServices = errorOrVisibleServices.value;
+  const visibleServices = errorOrVisibleServices.right;
 
   for (const visibleServiceId of Object.keys(visibleServices)) {
     yield context.df.callActivity(
