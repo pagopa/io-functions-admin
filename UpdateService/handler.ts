@@ -4,8 +4,8 @@ import * as express from "express";
 
 import * as df from "durable-functions";
 
-import { isLeft } from "fp-ts/lib/Either";
-import { isNone } from "fp-ts/lib/Option";
+import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
 
 import {
   IResponseErrorInternal,
@@ -70,18 +70,18 @@ export function UpdateServiceHandler(
       );
     }
 
-    const errorOrMaybeRetrievedService = await serviceModel
-      .findOneByServiceId(serviceId)
-      .run();
-    if (isLeft(errorOrMaybeRetrievedService)) {
+    const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
+      serviceId
+    )();
+    if (E.isLeft(errorOrMaybeRetrievedService)) {
       return ResponseErrorQuery(
         "Error trying to retrieve existing service",
-        errorOrMaybeRetrievedService.value
+        errorOrMaybeRetrievedService.left
       );
     }
 
-    const maybeService = errorOrMaybeRetrievedService.value;
-    if (isNone(maybeService)) {
+    const maybeService = errorOrMaybeRetrievedService.right;
+    if (O.isNone(maybeService)) {
       return ResponseErrorNotFound(
         "Error",
         "Could not find a service with the provided serviceId"
@@ -90,21 +90,19 @@ export function UpdateServiceHandler(
 
     const existingService = maybeService.value;
 
-    const errorOrUpdatedService = await serviceModel
-      .update({
-        ...existingService,
-        ...apiServiceToService(servicePayload)
-      })
-      .run();
+    const errorOrUpdatedService = await serviceModel.update({
+      ...existingService,
+      ...apiServiceToService(servicePayload)
+    })();
 
-    if (isLeft(errorOrUpdatedService)) {
+    if (E.isLeft(errorOrUpdatedService)) {
       return ResponseErrorQuery(
         "Error while updating the existing service",
-        errorOrUpdatedService.value
+        errorOrUpdatedService.left
       );
     }
 
-    const updatedService = errorOrUpdatedService.value;
+    const updatedService = errorOrUpdatedService.right;
 
     const upsertServiceEvent = UpsertServiceEvent.encode({
       newService: updatedService,

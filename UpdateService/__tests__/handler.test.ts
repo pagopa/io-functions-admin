@@ -4,13 +4,12 @@
 import * as df from "durable-functions";
 import * as lolex from "lolex";
 
-import { left, right } from "fp-ts/lib/Either";
-import { none, some } from "fp-ts/lib/Option";
-
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
-import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   aRetrievedService,
@@ -28,7 +27,7 @@ const anUpdatedApiService = apiServiceToService({
 });
 
 const leftErrorFn = jest.fn(() => {
-  return fromLeft(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }));
+  return TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }));
 });
 
 // eslint-disable-next-line functional/no-let
@@ -48,12 +47,12 @@ describe("UpdateServiceHandler", () => {
     const aServiceId = "DifferentSubscriptionId" as ServiceId;
     const serviceModelMock = {
       findOneByServiceId: jest.fn(() => {
-        return fromEither(right(some(aRetrievedService)));
+        return TE.fromEither(E.right(O.some(aRetrievedService)));
       }),
       upsert: jest.fn(() =>
-        fromEither(
-          right(
-            some({
+        TE.fromEither(
+          E.right(
+            O.some({
               ...aRetrievedService,
               ...anUpdatedApiService
             })
@@ -105,7 +104,7 @@ describe("UpdateServiceHandler", () => {
   it("should return a not found error if the service with the requested serviceid is not found", async () => {
     const serviceModelMock = {
       findOneByServiceId: jest.fn(() => {
-        return fromEither(right(none));
+        return TE.fromEither(E.right(O.none));
       })
     };
 
@@ -130,7 +129,7 @@ describe("UpdateServiceHandler", () => {
   it("should return a query error if the exixting service fails to be updated", async () => {
     const serviceModelMock = {
       findOneByServiceId: jest.fn(() => {
-        return fromEither(right(some(aRetrievedService)));
+        return TE.fromEither(E.right(O.some(aRetrievedService)));
       }),
       update: leftErrorFn
     };
@@ -157,11 +156,11 @@ describe("UpdateServiceHandler", () => {
   it("should update an existing service using the payload and return the updated service", async () => {
     const serviceModelMock = {
       findOneByServiceId: jest.fn(() => {
-        return fromEither(right(some(aRetrievedService)));
+        return TE.fromEither(E.right(O.some(aRetrievedService)));
       }),
       update: jest.fn(() =>
-        fromEither(
-          right({
+        TE.fromEither(
+          E.right({
             ...aRetrievedService,
             ...anUpdatedApiService
           })
@@ -197,11 +196,11 @@ describe("UpdateServiceHandler", () => {
   it("should start the orchestrator with an appropriate event after the service is updated", async () => {
     const serviceModelMock = {
       findOneByServiceId: jest.fn(() => {
-        return fromEither(right(some(aRetrievedService)));
+        return TE.fromEither(E.right(O.some(aRetrievedService)));
       }),
       update: jest.fn(() =>
-        fromEither(
-          right({
+        TE.fromEither(
+          E.right({
             ...aRetrievedService,
             ...anUpdatedApiService
           })
