@@ -1,5 +1,7 @@
 import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { pipe } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
 
 // TODO: switch text based on user's preferred_language
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -8,9 +10,10 @@ export const userDataDownloadMessage = (
   password: string,
   publicDownloadBaseUrl: string
 ) =>
-  NewMessage.decode({
-    content: {
-      markdown: `Ciao,
+  pipe(
+    {
+      content: {
+        markdown: `Ciao,
   abbiamo completato la gestione della richiesta di accesso ai tuoi dati.
   
   Qui trovi il link per scaricare i dati personali che trattiamo tramite l’App IO.
@@ -79,8 +82,11 @@ export const userDataDownloadMessage = (
   Il Team Privacy di PagoPA S.p.A.
     
   `,
-      subject: `IO App - richiesta di accesso ai dati`
-    }
-  }).getOrElseL(errs => {
-    throw new Error(`Invalid MessageContent: ${readableReport(errs)}`);
-  });
+        subject: `IO App - richiesta di accesso ai dati`
+      }
+    },
+    NewMessage.decode,
+    E.getOrElseW(errs => {
+      throw new Error(`Invalid MessageContent: ${readableReport(errs)}`);
+    })
+  );

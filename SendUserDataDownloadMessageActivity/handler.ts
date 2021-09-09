@@ -3,7 +3,10 @@ import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definiti
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 
 import * as t from "io-ts";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { pipe } from "fp-ts/lib/function";
 import { userDataDownloadMessage } from "./messages";
 
 /**
@@ -76,42 +79,52 @@ export const getActivityFunction = (
       kind: "SUCCESS"
     });
 
-  return ActivityInput.decode(input).fold<Promise<ActivityResult>>(
-    async errs =>
+  return pipe(
+    input,
+    ActivityInput.decode,
+    E.mapLeft(errs =>
       failure(
         `SendUserDataDownloadMessageActivity|Cannot decode input|ERROR=${readableReport(
           errs
         )}|INPUT=${JSON.stringify(input)}`
-      ),
-    async ({ blobName, fiscalCode, password }) => {
+      )
+    ),
+    TE.fromEither,
+    TE.chainW(({ blobName, fiscalCode, password }) => {
       const logPrefix = `SendUserDataDownloadMessageActivity|PROFILE=${fiscalCode}`;
       context.log.verbose(`${logPrefix}|Sending user data download message`);
 
-      // throws in case of timeout so
-      // the orchestrator can schedule a retry
-      const response = await sendMessage(
-        fiscalCode,
-        publicApiUrl,
-        publicApiKey,
-        userDataDownloadMessage(blobName, password, publicDownloadBaseUrl),
-        timeoutFetch
+      return TE.tryCatch(
+        async () => {
+          // throws in case of timeout so
+          // the orchestrator can schedule a retry
+          const response = await sendMessage(
+            fiscalCode,
+            publicApiUrl,
+            publicApiKey,
+            userDataDownloadMessage(blobName, password, publicDownloadBaseUrl),
+            timeoutFetch
+          );
+
+          const status = response.status;
+
+          if (status !== 201) {
+            const msg = `${logPrefix}|ERROR=${status},${await response.text()}`;
+            if (status >= 500) {
+              throw new Error(msg);
+            } else {
+              return failure(msg);
+            }
+          }
+
+          context.log.verbose(`${logPrefix}|RESPONSE=${status}`);
+          return success();
+        },
+        e => failure(E.toError(e).message)
       );
-
-      const status = response.status;
-
-      if (status !== 201) {
-        const msg = `${logPrefix}|ERROR=${status},${await response.text()}`;
-        if (status >= 500) {
-          throw new Error(msg);
-        } else {
-          return failure(msg);
-        }
-      }
-
-      context.log.verbose(`${logPrefix}|RESPONSE=${status}`);
-      return success();
-    }
-  );
+    }),
+    TE.toUnion
+  )();
 };
 
 export default getActivityFunction;
