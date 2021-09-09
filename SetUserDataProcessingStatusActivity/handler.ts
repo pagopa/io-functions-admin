@@ -4,7 +4,8 @@
 
 import * as t from "io-ts";
 
-import { fromEither, TaskEither } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
 
 import { Context } from "@azure/functions";
 
@@ -117,42 +118,46 @@ export const createSetUserDataProcessingStatusActivityHandler = (
     currentRecord: { status: _, ...currentRecord },
     nextStatus,
     failureReason
-  }: ActivityInput): TaskEither<
+  }: ActivityInput): TE.TaskEither<
     ActivityResultQueryFailure,
     UserDataProcessing
   > =>
-    userDataProcessingModel
-      .createOrUpdateByNewOne({
+    pipe(
+      userDataProcessingModel.createOrUpdateByNewOne({
         ...currentRecord,
         reason: failureReason,
         status: nextStatus,
         updatedAt: new Date()
-      })
-      .mapLeft(err =>
+      }),
+      TE.mapLeft(err =>
         ActivityResultQueryFailure.encode({
           kind: "QUERY_FAILURE",
           query: "userDataProcessingModel.createOrUpdateByNewOne",
           reason: `${err.kind}, ${getMessageFromCosmosErrors(err)}`
         })
-      );
+      )
+    );
   // the actual handler
-  return fromEither(ActivityInput.decode(input))
-    .mapLeft<ActivityResultFailure>((reason: t.Errors) =>
+  return pipe(
+    input,
+    ActivityInput.decode,
+    TE.fromEither,
+    TE.mapLeft((reason: t.Errors) =>
       ActivityResultInvalidInputFailure.encode({
         kind: "INVALID_INPUT_FAILURE",
         reason: readableReport(reason)
       })
-    )
-    .chain(saveNewStatusOnDb)
-    .map(_ =>
+    ),
+    TE.chainW(saveNewStatusOnDb),
+    TE.map(_ =>
       ActivityResultSuccess.encode({
         kind: "SUCCESS"
       })
-    )
-    .mapLeft(failure => {
+    ),
+    TE.mapLeft(failure => {
       logFailure(context)(failure);
       return failure;
-    })
-    .run()
-    .then(e => e.value);
+    }),
+    TE.toUnion
+  )();
 };
