@@ -15,14 +15,18 @@ import {
   InvalidInputFailure,
   TransientFailure
 } from "../handler";
+import { pipe } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
 
 // dummy but effective
 const aDecodingFailure = t.number.decode("abc");
 
-const aSuccessResponse = SuccessResponse.decode({ message: "ok" }).getOrElseL(
-  err => {
+const aSuccessResponse = pipe(
+  { message: "ok" },
+  SuccessResponse.decode,
+  E.getOrElseW(err => {
     throw new Error(`Invalid mock fr SuccessResponse: ${readableReport(err)}`);
-  }
+  })
 );
 
 const mockLockUserSession = jest.fn().mockImplementation(async () =>
@@ -52,7 +56,7 @@ describe("createSetUserSessionLockActivityHandler", () => {
     const handler = createSetUserSessionLockActivityHandler(mockClient);
 
     const result = await handler(context, "invalid");
-    expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(InvalidInputFailure.decode(result))).toBe(true);
   });
 
   it("should execute correct api operation when action is LOCK", async () => {
@@ -100,11 +104,11 @@ describe("createSetUserSessionLockActivityHandler", () => {
           fiscalCode: aFiscalCode
         })
       );
-      expect(TransientFailure.decode(result).isRight()).toBe(false);
-      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+      expect(E.isRight(TransientFailure.decode(result))).toBe(false);
+      expect(E.isRight(ApiCallFailure.decode(result))).toBe(true);
     } catch (result) {
-      expect(TransientFailure.decode(result).isRight()).toBe(true);
-      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+      expect(E.isRight(TransientFailure.decode(result))).toBe(true);
+      expect(E.isRight(ApiCallFailure.decode(result))).toBe(true);
     }
   });
 
@@ -123,11 +127,11 @@ describe("createSetUserSessionLockActivityHandler", () => {
           fiscalCode: aFiscalCode
         })
       );
-      expect(TransientFailure.decode(result).isRight()).toBe(false);
-      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+      expect(E.isRight(TransientFailure.decode(result))).toBe(false);
+      expect(E.isRight(ApiCallFailure.decode(result))).toBe(true);
     } catch (result) {
-      expect(TransientFailure.decode(result).isRight()).toBe(true);
-      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+      expect(E.isRight(TransientFailure.decode(result))).toBe(true);
+      expect(E.isRight(ApiCallFailure.decode(result))).toBe(true);
     }
   });
 
@@ -150,11 +154,11 @@ describe("createSetUserSessionLockActivityHandler", () => {
           fiscalCode: aFiscalCode
         })
       );
-      expect(TransientFailure.decode(result).isRight()).toBe(false);
-      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+      expect(E.isRight(TransientFailure.decode(result))).toBe(false);
+      expect(E.isRight(ApiCallFailure.decode(result))).toBe(true);
     } catch (result) {
-      expect(TransientFailure.decode(result).isRight()).toBe(true);
-      expect(ApiCallFailure.decode(result).isRight()).toBe(true);
+      expect(E.isRight(TransientFailure.decode(result))).toBe(true);
+      expect(E.isRight(ApiCallFailure.decode(result))).toBe(true);
     }
   });
 
@@ -177,11 +181,11 @@ describe("createSetUserSessionLockActivityHandler", () => {
           fiscalCode: aFiscalCode
         })
       );
-      expect(TransientFailure.decode(result).isRight()).toBe(false);
-      expect(BadApiRequestFailure.decode(result).isRight()).toBe(true);
+      expect(E.isRight(TransientFailure.decode(result))).toBe(false);
+      expect(E.isRight(BadApiRequestFailure.decode(result))).toBe(true);
     } catch (result) {
-      expect(TransientFailure.decode(result).isRight()).toBe(true);
-      expect(BadApiRequestFailure.decode(result).isRight()).toBe(true);
+      expect(E.isRight(TransientFailure.decode(result))).toBe(true);
+      expect(E.isRight(BadApiRequestFailure.decode(result))).toBe(true);
     }
   });
 });
