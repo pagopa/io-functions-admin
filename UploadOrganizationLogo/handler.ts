@@ -2,8 +2,9 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import { left, right } from "fp-ts/lib/Either";
-import { fromNullable } from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
 
 import {
   IResponseErrorInternal,
@@ -26,16 +27,8 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 
 import { BlobService } from "azure-storage";
-import { identity } from "fp-ts/lib/function";
-import { Option, tryCatch } from "fp-ts/lib/Option";
-import {
-  fromLeft,
-  fromPredicate as fromPredicateT,
-  taskEither,
-  TaskEither,
-  taskify
-} from "fp-ts/lib/TaskEither";
-import { fromEither } from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
+
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
 import { OrganizationFiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as UPNG from "upng-js";
@@ -66,10 +59,13 @@ const upsertBlobFromImageBuffer = (
   containerName: string,
   blobName: string,
   content: Buffer
-): TaskEither<Error, Option<BlobService.BlobResult>> =>
-  taskify<Error, BlobService.BlobResult>(cb =>
-    blobService.createBlockBlobFromText(containerName, blobName, content, cb)
-  )().map(fromNullable);
+): TE.TaskEither<Error, O.Option<BlobService.BlobResult>> =>
+  pipe(
+    TE.taskify<Error, BlobService.BlobResult>(cb =>
+      blobService.createBlockBlobFromText(containerName, blobName, content, cb)
+    )(),
+    TE.map(O.fromNullable)
+  );
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UploadOrganizationLogoHandler(
@@ -83,65 +79,51 @@ export function UploadOrganizationLogoHandler(
       /^0+/,
       ""
     );
-    return fromEither(
-      tryCatch(() => UPNG.decode(bufferImage)).foldL(
-        () =>
-          left<IResponseErrorValidation, UPNG.Image>(
-            imageValidationErrorResponse()
-          ),
-        img => right<IResponseErrorValidation, UPNG.Image>(img)
-      )
-    )
-      .chain(image =>
-        fromPredicateT(
+    return pipe(
+      O.tryCatch(() => UPNG.decode(bufferImage)),
+      E.fromOption(() => imageValidationErrorResponse()),
+      TE.fromEither,
+      TE.chain(image =>
+        TE.fromPredicate(
           (img: UPNG.Image) => img.width > 0 && img.height > 0,
           () => imageValidationErrorResponse()
         )(image)
-      )
-      .foldTaskEither<
-        IResponseErrorValidation | IResponseErrorInternal,
-        // eslint-disable-next-line @typescript-eslint/ban-types
-        IResponseSuccessRedirectToResource<{}, {}>
-      >(
-        imageValidationError => fromLeft(imageValidationError),
-        () =>
+      ),
+      TE.chainW(() =>
+        pipe(
           upsertBlobFromImageBuffer(
             blobService,
             "services",
             `${cleanedOrganizationFiscalCode}.png`,
             bufferImage
-          )
-            .mapLeft(err =>
-              ResponseErrorInternal(
-                `Error trying to connect to storage ${err.message}`
-              )
+          ),
+          TE.mapLeft(err =>
+            ResponseErrorInternal(
+              `Error trying to connect to storage ${err.message}`
             )
-            .chain(maybeResult =>
-              maybeResult.foldL(
-                () =>
-                  fromLeft(
-                    ResponseErrorInternal(
-                      "Error trying to upload image logo on storage"
-                    )
-                  ),
-                () =>
-                  taskEither.of(
-                    ResponseSuccessRedirectToResource(
-                      {},
-                      `${logosUrl}/services/${cleanedOrganizationFiscalCode}.png`,
-                      {}
-                    )
+          ),
+          TE.chain(
+            O.fold(
+              () =>
+                TE.left(
+                  ResponseErrorInternal(
+                    "Error trying to upload image logo on storage"
                   )
-              )
+                ),
+              () =>
+                TE.of(
+                  ResponseSuccessRedirectToResource(
+                    {},
+                    `${logosUrl}/services/${cleanedOrganizationFiscalCode}.png`,
+                    {}
+                  )
+                )
             )
-      )
-      .fold<
-        | IResponseErrorValidation
-        | IResponseErrorInternal
-        // eslint-disable-next-line @typescript-eslint/ban-types
-        | IResponseSuccessRedirectToResource<{}, {}>
-      >(identity, identity)
-      .run();
+          )
+        )
+      ),
+      TE.toUnion
+    )();
   };
 }
 
