@@ -10,7 +10,9 @@ import {
   UserDataProcessing,
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { fromLeft, TaskEither } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import {
@@ -21,7 +23,7 @@ import {
   ResponseErrorInternal,
   ResponseErrorNotFound
 } from "@pagopa/ts-commons/lib/responses";
-import { identity } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/lib/function";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { Option } from "fp-ts/lib/Option";
@@ -56,50 +58,57 @@ export const setUserDataProcessingStatusHandler = (
   fiscalCode,
   newStatus
 ): Promise<Response> =>
-  AllowedUserDataProcessingStatus.decode(newStatus).fold(
-    async ___ => ResponseErrorInternal("Status not allowed"),
-    status => {
-      const findLastVersionByModelIdTask: TaskEither<
+  pipe(
+    newStatus,
+    AllowedUserDataProcessingStatus.decode,
+    E.mapLeft(() => ResponseErrorInternal("Status not allowed")),
+    TE.fromEither,
+    TE.chainW(status => {
+      const findLastVersionByModelIdTask: TE.TaskEither<
         Response,
         Option<UserDataProcessing>
-      > = userDataProcessingModel
-        .findLastVersionByModelId([
+      > = pipe(
+        userDataProcessingModel.findLastVersionByModelId([
           makeUserDataProcessingId(choice, fiscalCode),
           fiscalCode
-        ])
-        .mapLeft(e => ResponseErrorInternal(e.kind));
+        ]),
+        TE.mapLeft(e => ResponseErrorInternal(e.kind))
+      );
 
       const updateStatusTask: (
         a: UserDataProcessing
-      ) => TaskEither<Response, UserDataProcessing> = (
+      ) => TE.TaskEither<Response, UserDataProcessing> = (
         lastVersionedUserDataProcessing: UserDataProcessing
       ) =>
-        userDataProcessingModel
-          .createOrUpdateByNewOne({
+        pipe(
+          userDataProcessingModel.createOrUpdateByNewOne({
             ...lastVersionedUserDataProcessing,
             status,
             updatedAt: new Date()
-          })
-          .mapLeft(e => ResponseErrorInternal(e.kind));
+          }),
+          TE.mapLeft(e => ResponseErrorInternal(e.kind))
+        );
 
-      return findLastVersionByModelIdTask
-        .chain(maybeUserDataProcessing =>
-          maybeUserDataProcessing
-            .map(updateStatusTask)
-            .getOrElse(
-              fromLeft(
+      return pipe(
+        findLastVersionByModelIdTask,
+        TE.chain(
+          flow(
+            O.map(updateStatusTask),
+            O.getOrElse(() =>
+              TE.left(
                 ResponseErrorNotFound(
                   "Not Found",
                   "No user data processing found"
                 )
               )
             )
-        )
-        .map<IResponseSuccessAccepted>(____ => ResponseSuccessAccepted())
-        .fold(identity, identity)
-        .run();
-    }
-  );
+          )
+        ),
+        TE.map(() => ResponseSuccessAccepted<undefined>())
+      );
+    }),
+    TE.toUnion
+  )();
 
 export const setUserDataProcessingStatus = (
   userDataProcessingModel: UserDataProcessingModel
