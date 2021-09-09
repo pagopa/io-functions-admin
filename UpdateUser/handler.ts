@@ -3,8 +3,10 @@ import { GraphRbacManagementClient } from "@azure/graph";
 import { User } from "@azure/graph/esm/models";
 import * as express from "express";
 import { toError } from "fp-ts/lib/Either";
-import { identity } from "fp-ts/lib/function";
-import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -41,13 +43,16 @@ type IUpdateUserHandler = (
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const getUserFromList = (client: GraphRbacManagementClient, email: string) =>
-  tryCatch(
-    () =>
-      client.users.list({
-        filter: `signInNames/any(x:x/value eq '${email}')`
-      }),
-    toError
-  ).map(userList => userList[0]);
+  pipe(
+    TE.tryCatch(
+      () =>
+        client.users.list({
+          filter: `signInNames/any(x:x/value eq '${email}')`
+        }),
+      toError
+    ),
+    TE.map(userList => userList[0])
+  );
 
 const updateUser = (
   client: GraphRbacManagementClient,
@@ -55,37 +60,47 @@ const updateUser = (
   user: User,
   adb2cTokenAttributeName: string,
   userPayload: UserUpdatePayload
-): TaskEither<Error, UserUpdated> =>
-  tryCatch(
-    () =>
-      client.users.update(
-        user.userPrincipalName,
-        withoutUndefinedValues({
-          displayName:
-            userPayload.first_name && userPayload.last_name
-              ? `${userPayload.first_name} ${userPayload.last_name}`
-              : undefined,
-          givenName: userPayload.first_name,
-          surname: userPayload.last_name,
-          // eslint-disable-next-line sort-keys
-          [adb2cTokenAttributeName]: userPayload.token_name
-        })
-      ),
-    toError
-  ).chain(() =>
-    getUserFromList(client, email).chain(userResponse =>
-      fromEither(
-        UserUpdated.decode({
-          email,
-          first_name: userPayload.first_name,
-          id: userResponse.objectId,
-          last_name: userPayload.last_name,
-          token_name: userPayload.token_name
-        }).mapLeft(
-          errs =>
-            new Error(
-              `Error decoding UserUpdated ERROR=${readableReport(errs)}`
+): TE.TaskEither<Error, UserUpdated> =>
+  pipe(
+    TE.tryCatch(
+      () =>
+        client.users.update(
+          user.userPrincipalName,
+          withoutUndefinedValues({
+            displayName:
+              userPayload.first_name && userPayload.last_name
+                ? `${userPayload.first_name} ${userPayload.last_name}`
+                : undefined,
+            givenName: userPayload.first_name,
+            surname: userPayload.last_name,
+            // eslint-disable-next-line sort-keys
+            [adb2cTokenAttributeName]: userPayload.token_name
+          })
+        ),
+      toError
+    ),
+    TE.chain(() =>
+      pipe(
+        getUserFromList(client, email),
+        TE.chain(userResponse =>
+          TE.fromEither(
+            pipe(
+              {
+                email,
+                first_name: userPayload.first_name,
+                id: userResponse.objectId,
+                last_name: userPayload.last_name,
+                token_name: userPayload.token_name
+              },
+              UserUpdated.decode,
+              E.mapLeft(
+                errs =>
+                  new Error(
+                    `Error decoding UserUpdated ERROR=${readableReport(errs)}`
+                  )
+              )
             )
+          )
         )
       )
     )
@@ -106,38 +121,42 @@ export function UpdateUserHandler(
         error,
         errorMessage
       );
-    return getGraphRbacManagementClient(adb2cCredentials)
-      .mapLeft(error =>
+    return pipe(
+      getGraphRbacManagementClient(adb2cCredentials),
+      TE.mapLeft(error =>
         internalErrorHandler("Could not get the ADB2C client", error)
-      )
-      .chain(graphRbacManagementClient =>
-        getUserFromList(graphRbacManagementClient, email)
-          .mapLeft(userFromListError =>
+      ),
+      TE.chain(graphRbacManagementClient =>
+        pipe(
+          getUserFromList(graphRbacManagementClient, email),
+          TE.mapLeft(userFromListError =>
             internalErrorHandler(
               "Could not retrieve user from list on the ADB2C",
               userFromListError
             )
-          )
-          .chain(user =>
-            updateUser(
-              graphRbacManagementClient,
-              email,
-              user,
-              adb2cTokenAttributeName,
-              userPayload
-            ).mapLeft(updateUserError =>
-              internalErrorHandler(
-                "Could not update the user on the ADB2C",
-                new Error(JSON.stringify(updateUserError))
+          ),
+          TE.chain(user =>
+            pipe(
+              updateUser(
+                graphRbacManagementClient,
+                email,
+                user,
+                adb2cTokenAttributeName,
+                userPayload
+              ),
+              TE.mapLeft(updateUserError =>
+                internalErrorHandler(
+                  "Could not update the user on the ADB2C",
+                  new Error(JSON.stringify(updateUserError))
+                )
               )
             )
           )
-      )
-      .fold<IResponseSuccessJson<UserUpdated> | IResponseErrorInternal>(
-        identity,
-        updatedUser => ResponseSuccessJson(updatedUser)
-      )
-      .run();
+        )
+      ),
+      TE.map(updatedUser => ResponseSuccessJson(updatedUser)),
+      TE.toUnion
+    )();
   };
 }
 
