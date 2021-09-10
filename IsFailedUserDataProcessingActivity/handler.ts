@@ -1,12 +1,12 @@
 import { Context } from "@azure/functions";
 import { ServiceResponse, TableService } from "azure-storage";
-import { fromOption } from "fp-ts/lib/Either";
 import { NonEmptyString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { fromEither, tryCatch } from "fp-ts/lib/TaskEither";
-import { none, Option, some } from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
 import * as t from "io-ts";
-import { identity } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/lib/function";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -45,17 +45,20 @@ export const IsFailedUserDataProcessing = (
   tableService: TableService,
   failedUserDataProcessingTable: NonEmptyString
 ) => (context: Context, input: unknown): Promise<ActivityResult> =>
-  fromEither(ActivityInput.decode(input))
-    .mapLeft<ActivityResult>(_ =>
+  pipe(
+    input,
+    ActivityInput.decode,
+    E.mapLeft(_ =>
       ActivityResultFailure.encode({
         kind: "FAILURE",
         reason: "Invalid input"
       })
-    )
-    .chain(i =>
-      tryCatch(
+    ),
+    TE.fromEither,
+    TE.chainW(i =>
+      TE.tryCatch(
         () =>
-          new Promise<Option<TableEntry>>((resolve, reject) =>
+          new Promise<O.Option<TableEntry>>((resolve, reject) =>
             tableService.retrieveEntity(
               failedUserDataProcessingTable,
               i.choice,
@@ -63,9 +66,9 @@ export const IsFailedUserDataProcessing = (
               null,
               (error: Error, result: TableEntry, response: ServiceResponse) =>
                 response.isSuccessful
-                  ? resolve(some(result))
+                  ? resolve(O.some(result))
                   : response.statusCode === 404
-                  ? resolve(none)
+                  ? resolve(O.none)
                   : reject(error)
             )
           ),
@@ -75,22 +78,23 @@ export const IsFailedUserDataProcessing = (
             reason: "ERROR|tableService.retrieveEntity|Cannot retrieve entity"
           })
       )
-    )
-    .chain(maybeTableEntry =>
-      fromEither(
-        fromOption(
+    ),
+    TE.chainW(
+      flow(
+        E.fromOption(() =>
           ActivityResultSuccess.encode({
             kind: "SUCCESS",
             value: false
           })
-        )(maybeTableEntry)
+        ),
+        TE.fromEither
       )
-    )
-    .map(_ =>
+    ),
+    TE.map(_ =>
       ActivityResultSuccess.encode({
         kind: "SUCCESS",
         value: true
       })
-    )
-    .fold<ActivityResult>(identity, identity)
-    .run();
+    ),
+    TE.toUnion
+  )();

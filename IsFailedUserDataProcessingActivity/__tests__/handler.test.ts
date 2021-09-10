@@ -9,6 +9,7 @@ import {
   ActivityResultSuccess,
   IsFailedUserDataProcessing
 } from "../handler";
+import * as E from "fp-ts/lib/Either";
 
 const findEntry = (
   entries: ReadonlyArray<{
@@ -104,9 +105,9 @@ describe("IsFailedUserDataProcessingHandler", () => {
 
     expect(ActivityResultFailure.is(result)).toBe(true);
     const decodedResult = ActivityResultFailure.decode(result);
-    expect(decodedResult.isRight()).toBe(true);
-    if (decodedResult.isRight()) {
-      expect(JSON.stringify(decodedResult.value)).toBe(
+    expect(E.isRight(decodedResult)).toBe(true);
+    if (E.isRight(decodedResult)) {
+      expect(JSON.stringify(decodedResult.right)).toBe(
         JSON.stringify({
           kind: "FAILURE",
           reason: "Invalid input"
@@ -134,9 +135,9 @@ describe("IsFailedUserDataProcessingHandler", () => {
 
     expect(ActivityResultFailure.is(result)).toBe(true);
     const decodedResult = ActivityResultFailure.decode(result);
-    expect(decodedResult.isRight()).toBe(true);
-    if (decodedResult.isRight()) {
-      expect(JSON.stringify(decodedResult.value)).toBe(
+    expect(E.isRight(decodedResult)).toBe(true);
+    if (E.isRight(decodedResult)) {
+      expect(JSON.stringify(decodedResult.right)).toBe(
         JSON.stringify({
           kind: "FAILURE",
           reason: "ERROR|tableService.retrieveEntity|Cannot retrieve entity"
@@ -164,9 +165,9 @@ describe("IsFailedUserDataProcessingHandler", () => {
 
     expect(ActivityResultSuccess.is(result)).toBe(true);
     const decodedResult = ActivityResultSuccess.decode(result);
-    expect(decodedResult.isRight()).toBe(true);
-    if (decodedResult.isRight()) {
-      expect(JSON.stringify(decodedResult.value)).toBe(
+    expect(E.isRight(decodedResult)).toBe(true);
+    if (E.isRight(decodedResult)) {
+      expect(JSON.stringify(decodedResult.right)).toBe(
         JSON.stringify({ kind: "SUCCESS", value: false })
       );
     }
@@ -189,9 +190,9 @@ describe("IsFailedUserDataProcessingHandler", () => {
 
     expect(ActivityResultSuccess.is(result)).toBe(true);
     const decodedResult = ActivityResultSuccess.decode(result);
-    expect(decodedResult.isRight()).toBe(true);
-    if (decodedResult.isRight()) {
-      expect(JSON.stringify(decodedResult.value)).toBe(
+    expect(E.isRight(decodedResult)).toBe(true);
+    if (E.isRight(decodedResult)) {
+      expect(JSON.stringify(decodedResult.right)).toBe(
         JSON.stringify({ kind: "SUCCESS", value: true })
       );
     }
