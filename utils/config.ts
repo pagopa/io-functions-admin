@@ -66,11 +66,14 @@ export const IConfig = t.intersection([
   MailerConfig
 ]);
 
-// No need to re-evaluate this object for each call
-const errorOrConfig: t.Validation<IConfig> = IConfig.decode({
+// raw config object, basically the env object enriched with custom fields
+export const envConfig = {
   ...process.env,
   isProduction: process.env.NODE_ENV === "production"
-});
+};
+
+// No need to re-evaluate this object for each call
+const errorOrConfig: t.Validation<IConfig> = IConfig.decode(envConfig);
 
 /**
  * Read the application configuration and check for invalid values.
