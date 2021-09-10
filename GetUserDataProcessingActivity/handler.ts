@@ -4,7 +4,8 @@
 
 import * as t from "io-ts";
 
-import { fromEither, fromLeft, taskEither } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
 
 import { Context } from "@azure/functions";
 
@@ -16,6 +17,7 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { flow, pipe } from "fp-ts/lib/function";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input
@@ -116,48 +118,50 @@ export const createSetUserDataProcessingStatusActivityHandler = (
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => (context: Context, input: unknown) =>
   // the actual handler
-  fromEither(ActivityInput.decode(input))
-    .mapLeft<ActivityResultFailure>((reason: t.Errors) =>
+  pipe(
+    input,
+    ActivityInput.decode,
+    E.mapLeft(reason =>
       ActivityResultInvalidInputFailure.encode({
         kind: "INVALID_INPUT_FAILURE",
         reason: readableReport(reason)
       })
-    )
-    .chain(({ fiscalCode, choice }) =>
-      userDataProcessingModel
-        .findLastVersionByModelId([
+    ),
+    TE.fromEither,
+    TE.chainW(({ fiscalCode, choice }) =>
+      pipe(
+        userDataProcessingModel.findLastVersionByModelId([
           makeUserDataProcessingId(choice, fiscalCode),
           fiscalCode
-        ])
-        .foldTaskEither<ActivityResultFailure, UserDataProcessing>(
-          error =>
-            fromLeft(
-              ActivityResultQueryFailure.encode({
-                kind: "QUERY_FAILURE",
-                query: "findOneUserDataProcessingById",
-                reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
+        ]),
+        TE.mapLeft(error =>
+          ActivityResultQueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            query: "findOneUserDataProcessingById",
+            reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
+          })
+        ),
+        TE.chainW(
+          flow(
+            E.fromOption(() =>
+              ActivityResultNotFoundFailure.encode({
+                kind: "NOT_FOUND_FAILURE"
               })
             ),
-          maybeRecord =>
-            maybeRecord.fold(
-              fromLeft(
-                ActivityResultNotFoundFailure.encode({
-                  kind: "NOT_FOUND_FAILURE"
-                })
-              ),
-              _ => taskEither.of(_)
-            )
+            TE.fromEither
+          )
         )
-    )
-    .map(record =>
+      )
+    ),
+    TE.map(record =>
       ActivityResultSuccess.encode({
         kind: "SUCCESS",
         value: record
       })
-    )
-    .mapLeft(failure => {
+    ),
+    TE.mapLeft(failure => {
       logFailure(context)(failure);
       return failure;
-    })
-    .run()
-    .then(e => e.value);
+    }),
+    TE.toUnion
+  )();
