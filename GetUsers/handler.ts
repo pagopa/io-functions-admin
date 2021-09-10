@@ -1,8 +1,8 @@
 import { Context } from "@azure/functions";
 import * as express from "express";
-import { array } from "fp-ts/lib/Array";
-import { either, toError } from "fp-ts/lib/Either";
-import { tryCatch } from "fp-ts/lib/TaskEither";
+import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -18,6 +18,7 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 
+import { pipe } from "fp-ts/lib/function";
 import { UserCollection } from "../generated/definitions/UserCollection";
 import {
   getApiClient,
@@ -40,13 +41,11 @@ export function GetUsersHandler(
   azureApimHost: string
 ): IGetSubscriptionKeysHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  return async (context, _, cursor = 0) => {
-    const response = await getApiClient(
-      servicePrincipalCreds,
-      azureApimConfig.subscriptionId
-    )
-      .chain(apiClient =>
-        tryCatch(
+  return async (context, _, cursor = 0) =>
+    pipe(
+      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      TE.chain(apiClient =>
+        TE.tryCatch(
           () =>
             apiClient.user.listByService(
               azureApimConfig.apimResourceGroup,
@@ -55,22 +54,18 @@ export function GetUsersHandler(
                 skip: cursor
               }
             ),
-          toError
+          E.toError
         )
-      )
-      .map(userSubscriptionList => {
-        const errorOrUsers = array.traverse(either)(
+      ),
+      TE.chainW(userSubscriptionList =>
+        pipe(
           userSubscriptionList,
-          userContractToApiUser
-        );
-        return errorOrUsers.fold<
-          IResponseErrorInternal | IResponseSuccessJson<UserCollection>
-        >(
-          error => {
+          A.traverse(E.Applicative)(userContractToApiUser),
+          E.mapLeft(error => {
             context.log.error("GetUsers | ", error);
             return ResponseErrorInternal("Validation error");
-          },
-          users =>
+          }),
+          E.map(users =>
             ResponseSuccessJson({
               items: users,
               next: userSubscriptionList.nextLink
@@ -78,15 +73,16 @@ export function GetUsersHandler(
                     users.length}`
                 : undefined
             })
-        );
-      })
-      .mapLeft(error => {
+          ),
+          TE.fromEither
+        )
+      ),
+      TE.mapLeft(error => {
         context.log.error("GetUsers | ", error);
         return ResponseErrorInternal("Internal server error");
-      })
-      .run();
-    return response.value;
-  };
+      }),
+      TE.toUnion
+    )();
 }
 
 /**
