@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { right } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 import { some } from "fp-ts/lib/Option";
 
 import * as stream from "stream";
@@ -22,7 +22,7 @@ import {
 
 import archiver = require("archiver");
 import { BlobService } from "azure-storage";
-import { fromEither, taskEither } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
 import { MessageModel } from "@pagopa/io-functions-commons/dist/src/models/message";
 import { MessageStatusModel } from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import {
@@ -42,6 +42,7 @@ import {
 } from "../../__mocks__/mocks";
 import { AllUserData } from "../../utils/userData";
 import { none } from "fp-ts/lib/Option";
+import { pipe } from "fp-ts/lib/function";
 
 const anotherRetrievedNotification: RetrievedNotification = {
   ...aRetrievedNotification,
@@ -51,7 +52,7 @@ const anotherRetrievedNotification: RetrievedNotification = {
 const messageIteratorMock = {
   next: jest.fn(() =>
     Promise.resolve({
-      value: jest.fn(() => [right(aRetrievedMessageWithoutContent)])
+      value: jest.fn(() => [E.right(aRetrievedMessageWithoutContent)])
     })
   )
 };
@@ -66,8 +67,8 @@ const notificationIteratorMock = {
   next: jest.fn(() =>
     Promise.resolve({
       value: jest.fn(() => [
-        right(aRetrievedNotification),
-        right(anotherRetrievedNotification)
+        E.right(aRetrievedNotification),
+        E.right(anotherRetrievedNotification)
       ])
     })
   )
@@ -83,8 +84,8 @@ jest
   .spyOn(asyncI, "asyncIterableToArray")
   .mockImplementationOnce(() =>
     Promise.resolve([
-      [right(aRetrievedNotification)],
-      [right(anotherRetrievedNotification)]
+      [E.right(aRetrievedNotification)],
+      [E.right(anotherRetrievedNotification)]
     ])
   );
 
@@ -98,29 +99,29 @@ jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
 jest
   .spyOn(asyncI, "asyncIteratorToArray")
   .mockImplementation(() =>
-    Promise.resolve([[right(aRetrievedMessageWithoutContent)]])
+    Promise.resolve([[E.right(aRetrievedMessageWithoutContent)]])
   );
 
-const mockGetContentFromBlob = jest.fn(() =>
-  taskEither.of(some(aMessageContent))
-);
+const mockGetContentFromBlob = jest.fn(() => TE.of(some(aMessageContent)));
 const messageModelMock = ({
-  findMessages: jest.fn(() => fromEither(right(messageIteratorMock))),
+  findMessages: jest.fn(() => TE.fromEither(E.right(messageIteratorMock))),
   getContentFromBlob: mockGetContentFromBlob
 } as any) as MessageModel;
 
 const messageStatusModelMock = ({
   findLastVersionByModelId: jest.fn(() =>
-    fromEither(right(some(aRetrievedMessageStatus)))
+    TE.fromEither(E.right(some(aRetrievedMessageStatus)))
   )
 } as any) as MessageStatusModel;
 
 const profileModelMock = ({
-  findLastVersionByModelId: jest.fn(() => fromEither(right(some(aProfile))))
+  findLastVersionByModelId: jest.fn(() =>
+    TE.fromEither(E.right(some(aProfile)))
+  )
 } as any) as ProfileModel;
 
 const mockFindNotificationForMessage = jest.fn(() =>
-  taskEither.of(some(aRetrievedNotification))
+  TE.of(some(aRetrievedNotification))
 );
 const notificationModelMock = ({
   findNotificationForMessage: mockFindNotificationForMessage,
@@ -129,7 +130,7 @@ const notificationModelMock = ({
 
 const notificationStatusModelMock = ({
   findOneNotificationStatusByNotificationChannel: jest.fn(() =>
-    fromEither(right(some(aRetrievedNotificationStatus)))
+    TE.fromEither(E.right(some(aRetrievedNotificationStatus)))
   )
 } as any) as NotificationStatusModel;
 
@@ -182,10 +183,14 @@ describe("createExtractUserDataActivityHandler", () => {
     };
 
     const result = await handler(contextMock, input);
-
-    ActivityResultSuccess.decode(result).fold(
-      err => fail(`Failing decoding result, response: ${readableReport(err)}`),
-      e => expect(e.kind).toBe("SUCCESS")
+    pipe(
+      result,
+      ActivityResultSuccess.decode,
+      E.fold(
+        err =>
+          fail(`Failing decoding result, response: ${readableReport(err)}`),
+        e => expect(e.kind).toBe("SUCCESS")
+      )
     );
   });
 
@@ -195,7 +200,7 @@ describe("createExtractUserDataActivityHandler", () => {
 
     const notificationWebhookModelMock = ({
       findNotificationForMessage: jest.fn(() =>
-        fromEither(right(some(aRetrievedNotification)))
+        TE.fromEither(E.right(some(aRetrievedNotification)))
       ),
       getQueryIterator: jest.fn(() => notificationIteratorMock)
     } as any) as NotificationModel;
@@ -271,9 +276,7 @@ describe("createExtractUserDataActivityHandler", () => {
 
   it("should handle export when some messages have no notification", async () => {
     const { blobServiceMock } = setupStreamMocks();
-    mockFindNotificationForMessage.mockImplementationOnce(() =>
-      taskEither.of(none)
-    );
+    mockFindNotificationForMessage.mockImplementationOnce(() => TE.of(none));
     const handler = createExtractUserDataActivityHandler({
       messageContentBlobService: blobServiceMock,
       messageModel: messageModelMock,
@@ -290,12 +293,12 @@ describe("createExtractUserDataActivityHandler", () => {
 
     const result = await handler(contextMock, input);
 
-    expect(ActivityResultSuccess.decode(result).isRight()).toBe(true);
+    expect(E.isRight(ActivityResultSuccess.decode(result))).toBe(true);
   });
 
   it("should handle export when some messages have no message content", async () => {
     const { blobServiceMock } = setupStreamMocks();
-    mockGetContentFromBlob.mockImplementationOnce(() => taskEither.of(none));
+    mockGetContentFromBlob.mockImplementationOnce(() => TE.of(none));
     const handler = createExtractUserDataActivityHandler({
       messageContentBlobService: blobServiceMock,
       messageModel: messageModelMock,
@@ -312,6 +315,6 @@ describe("createExtractUserDataActivityHandler", () => {
 
     const result = await handler(contextMock, input);
 
-    expect(ActivityResultSuccess.decode(result).isRight()).toBe(true);
+    expect(E.isRight(ActivityResultSuccess.decode(result))).toBe(true);
   });
 });
