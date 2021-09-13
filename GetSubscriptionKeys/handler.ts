@@ -13,8 +13,9 @@ import {
   wrapRequestHandler
 } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 
-import { toError } from "fp-ts/lib/Either";
-import { tryCatch } from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -50,29 +51,27 @@ export function GetSubscriptionKeysHandler(
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  return async (context, _, serviceId) => {
-    const response = await getApiClient(
-      servicePrincipalCreds,
-      azureApimConfig.subscriptionId
-    )
-      .chain(apiClient =>
-        tryCatch(
+  return async (context, _, serviceId) =>
+    pipe(
+      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      TE.chain(apiClient =>
+        TE.tryCatch(
           () =>
             apiClient.subscription.get(
               azureApimConfig.apimResourceGroup,
               azureApimConfig.apim,
               serviceId
             ),
-          toError
+          E.toError
         )
-      )
-      .map(subscription =>
+      ),
+      TE.map(subscription =>
         ResponseSuccessJson({
           primary_key: subscription.primaryKey,
           secondary_key: subscription.secondaryKey
         })
-      )
-      .mapLeft(error => {
+      ),
+      TE.mapLeft(error => {
         context.log.error(error);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const anyError = error as any;
@@ -83,10 +82,9 @@ export function GetSubscriptionKeysHandler(
           );
         }
         return ResponseErrorInternal("Internal server error");
-      })
-      .run();
-    return response.value;
-  };
+      }),
+      TE.toUnion
+    )();
 }
 
 /**
