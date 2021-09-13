@@ -2,16 +2,11 @@ import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { SubscriptionContract } from "@azure/arm-apimanagement/esm/models";
 import { Context } from "@azure/functions";
 import * as express from "express";
+import { pipe } from "fp-ts/lib/function";
 import { sequenceT } from "fp-ts/lib/Apply";
-import { array } from "fp-ts/lib/Array";
-import { either, isRight, toError } from "fp-ts/lib/Either";
-import {
-  fromEither,
-  fromPredicate,
-  taskEither,
-  TaskEither,
-  tryCatch
-} from "fp-ts/lib/TaskEither";
+import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -65,8 +60,8 @@ function getUserSubscriptions(
   apimResourceGroup: string,
   apim: string,
   userName: string
-): TaskEither<Error, ReadonlyArray<SubscriptionContract>> {
-  return tryCatch(async () => {
+): TE.TaskEither<Error, ReadonlyArray<SubscriptionContract>> {
+  return TE.tryCatch(async () => {
     // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
     const subscriptionList: SubscriptionContract[] = [];
     const subscriptionListResponse = await apimClient.userSubscription.list(
@@ -87,7 +82,7 @@ function getUserSubscriptions(
       nextLink = nextSubscriptionList.nextLink;
     }
     return subscriptionList;
-  }, toError);
+  }, E.toError);
 }
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
@@ -118,15 +113,13 @@ export function GetUserHandler(
         errors,
         errorMessage
       );
-    const response = await getApiClient(
-      servicePrincipalCreds,
-      azureApimConfig.subscriptionId
-    )
-      .mapLeft<IResponseErrorInternal | IResponseErrorNotFound>(error =>
+    return pipe(
+      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      TE.mapLeft(error =>
         internalErrorHandler("Could not get the APIM client.", error)
-      )
-      .chain(apiClient =>
-        tryCatch(
+      ),
+      TE.chain(apiClient =>
+        TE.tryCatch(
           () =>
             apiClient.user
               .listByService(
@@ -146,9 +139,9 @@ export function GetUserHandler(
               error as Error
             )
         )
-      )
-      .chain(
-        fromPredicate(
+      ),
+      TE.chainW(
+        TE.fromPredicate(
           taskResults => taskResults.userList.length !== 0,
           () =>
             ResponseErrorNotFound(
@@ -156,60 +149,66 @@ export function GetUserHandler(
               "The required resource does not exist"
             )
         )
-      )
-      .chain(taskResults =>
-        fromEither(NonEmptyString.decode(taskResults.userList[0].name))
-          .mapLeft(errors =>
+      ),
+      TE.chain(taskResults =>
+        pipe(
+          taskResults.userList[0].name,
+          NonEmptyString.decode,
+          E.mapLeft(errors =>
             internalValidationErrorHandler(
               "Could not get user name from user contract.",
               errors
             )
-          )
-          .map(userName => ({
+          ),
+          E.map(userName => ({
             apiClient: taskResults.apiClient,
             userName
-          }))
-      )
-      .chain(taskResults =>
-        sequenceT(taskEither)(
-          getUserGroups(
-            taskResults.apiClient,
-            azureApimConfig.apimResourceGroup,
-            azureApimConfig.apim,
-            taskResults.userName
+          })),
+          TE.fromEither
+        )
+      ),
+      TE.chain(taskResults =>
+        pipe(
+          sequenceT(TE.ApplicativePar)(
+            getUserGroups(
+              taskResults.apiClient,
+              azureApimConfig.apimResourceGroup,
+              azureApimConfig.apim,
+              taskResults.userName
+            ),
+            getUserSubscriptions(
+              taskResults.apiClient,
+              azureApimConfig.apimResourceGroup,
+              azureApimConfig.apim,
+              taskResults.userName
+            )
           ),
-          getUserSubscriptions(
-            taskResults.apiClient,
-            azureApimConfig.apimResourceGroup,
-            azureApimConfig.apim,
-            taskResults.userName
-          )
-        ).mapLeft<IResponseErrorInternal | IResponseErrorNotFound>(error =>
-          internalErrorHandler(
-            "Could not get user groups and subscriptions from APIM.",
-            error
+          TE.mapLeft(error =>
+            internalErrorHandler(
+              "Could not get user groups and subscriptions from APIM.",
+              error
+            )
           )
         )
-      )
-      .map(contractLists => {
+      ),
+      TE.map(contractLists => {
         const [groupContracts, subscriptionContracts] = contractLists;
-        const errorOrGroups = array.traverse(either)(
-          [...groupContracts],
+        const errorOrGroups = A.traverse(E.Applicative)(
           groupContractToApiGroup
-        );
-        const errorOrSubscriptions = array.traverse(either)(
-          [...subscriptionContracts],
+        )([...groupContracts]);
+        const errorOrSubscriptions = A.traverse(E.Applicative)(
           subscriptionContractToApiSubscription
-        );
+        )([...subscriptionContracts]);
         return { errorOrGroups, errorOrSubscriptions };
-      })
-      .chain(taskResults =>
-        getGraphRbacManagementClient(adb2cCredentials)
-          .mapLeft(error =>
+      }),
+      TE.chain(taskResults =>
+        pipe(
+          getGraphRbacManagementClient(adb2cCredentials),
+          TE.mapLeft(error =>
             internalErrorHandler("Could not get the ADB2C client", error)
-          )
-          .chain(client =>
-            tryCatch(
+          ),
+          TE.chain(client =>
+            TE.tryCatch(
               () =>
                 client.users.list({
                   filter: `signInNames/any(x:x/value eq '${email}')`
@@ -219,51 +218,53 @@ export function GetUserHandler(
                   "Could not get user by email.",
                   error as Error
                 )
-            ).map(userList => userList[0])
-          )
-          .map(adb2User => ({
+            )
+          ),
+          TE.map(([adb2User]) => ({
             ...taskResults,
             token_name: adb2User[`${adb2cTokenAttributeName}`]
           }))
-      )
-      .chain(
-        fromPredicate(
-          userInfo => isRight(userInfo.errorOrGroups),
-          userInfoWithError =>
-            internalErrorHandler(
-              "Invalid group contract from APIM.",
-              userInfoWithError.errorOrGroups.value as Error
-            )
         )
-      )
-      .chain(
-        fromPredicate(
-          userInfo => isRight(userInfo.errorOrSubscriptions),
-          userInfoWithError =>
-            internalErrorHandler(
-              "Invalid subscription contract from APIM.",
-              userInfoWithError.errorOrSubscriptions.value as Error
-            )
-        )
-      )
-      .chain(userInfo =>
-        fromEither(
-          UserInfo.decode({
-            groups: userInfo.errorOrGroups.value,
-            subscriptions: userInfo.errorOrSubscriptions.value,
-            token_name: userInfo.token_name
-          })
-            .mapLeft(errors =>
-              internalValidationErrorHandler(
-                "Invalid response payload.",
-                errors
+      ),
+      TE.chain(userInfo =>
+        E.isRight(userInfo.errorOrGroups)
+          ? TE.of(userInfo)
+          : TE.left(
+              internalErrorHandler(
+                "Invalid group contract from APIM.",
+                userInfo.errorOrGroups.left
               )
             )
-            .map(ResponseSuccessJson)
+      ),
+      TE.chain(userInfo =>
+        E.isRight(userInfo.errorOrSubscriptions)
+          ? TE.of(userInfo)
+          : TE.left(
+              internalErrorHandler(
+                "Invalid subscription contract from APIM.",
+                userInfo.errorOrSubscriptions.left
+              )
+            )
+      ),
+      TE.chain(userInfo =>
+        pipe(
+          {
+            // TODO: as both errorOrGroups and errorOrSubscriptions cannot be Left because of the previous checks,
+            //  let's refactor to include such info in the type system
+            groups: E.toUnion(userInfo.errorOrGroups),
+            subscriptions: E.toUnion(userInfo.errorOrSubscriptions),
+            token_name: userInfo.token_name
+          },
+          UserInfo.decode,
+          E.mapLeft(errors =>
+            internalValidationErrorHandler("Invalid response payload.", errors)
+          ),
+          E.map(ResponseSuccessJson),
+          TE.fromEither
         )
-      )
-      .run();
-    return response.value;
+      ),
+      TE.toUnion
+    )();
   };
 }
 
