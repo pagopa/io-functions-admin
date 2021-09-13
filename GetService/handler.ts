@@ -2,7 +2,7 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import { isRight } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 import { isNone } from "fp-ts/lib/Option";
 
 import {
@@ -49,12 +49,12 @@ export function GetServiceHandler(
 ): IGetServiceHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (_, __, serviceId) => {
-    const errorOrMaybeRetrievedService = await serviceModel
-      .findOneByServiceId(serviceId)
-      .run();
+    const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
+      serviceId
+    )();
 
-    if (isRight(errorOrMaybeRetrievedService)) {
-      const maybeRetrievedService = errorOrMaybeRetrievedService.value;
+    if (E.isRight(errorOrMaybeRetrievedService)) {
+      const maybeRetrievedService = errorOrMaybeRetrievedService.right;
       if (isNone(maybeRetrievedService)) {
         return ResponseErrorNotFound(
           "Service not found",
@@ -68,7 +68,7 @@ export function GetServiceHandler(
     } else {
       return ResponseErrorQuery(
         "Error while retrieving the service",
-        errorOrMaybeRetrievedService.value
+        errorOrMaybeRetrievedService.left
       );
     }
   };
