@@ -14,12 +14,13 @@ import {
   IResponseErrorNotFound
 } from "@pagopa/ts-commons/lib/responses";
 import { ServiceResponse, TableService } from "azure-storage";
-import { fromOption, toError } from "fp-ts/lib/Either";
 import { NonEmptyString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { fromEither, tryCatch } from "fp-ts/lib/TaskEither";
-import { none, Option, some } from "fp-ts/lib/Option";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as O from "fp-ts/lib/Option";
 import { ResponseErrorNotFound } from "@pagopa/ts-commons/lib/responses";
+import { flow, pipe } from "fp-ts/lib/function";
 
 type TableEntry = Readonly<{
   readonly RowKey: Readonly<{
@@ -53,43 +54,40 @@ export const GetFailedUserDataProcessingHandler = (
   | IResponseErrorInternal
   | IResponseErrorNotFound
 > =>
-  tryCatch(
-    () =>
-      new Promise<Option<TableEntry>>((resolve, reject) =>
-        tableService.retrieveEntity(
-          failedUserDataProcessingTable,
-          choice,
-          fiscalCode,
-          null,
-          (error: Error, result: TableEntry, response: ServiceResponse) =>
-            response.isSuccessful
-              ? resolve(some(result))
-              : response.statusCode === 404
-              ? resolve(none)
-              : reject(error)
-        )
-      ),
-    toError
-  )
-    .mapLeft<IResponseErrorInternal | IResponseErrorNotFound>(er =>
-      ResponseErrorInternal(er.message)
-    )
-    .chain(maybeTableEntry =>
-      fromEither(
-        fromOption(ResponseErrorNotFound("Not found!", "No record found."))(
-          maybeTableEntry
-        )
+  pipe(
+    TE.tryCatch(
+      () =>
+        new Promise<O.Option<TableEntry>>((resolve, reject) =>
+          tableService.retrieveEntity(
+            failedUserDataProcessingTable,
+            choice,
+            fiscalCode,
+            null,
+            (error: Error, result: TableEntry, response: ServiceResponse) =>
+              response.isSuccessful
+                ? resolve(O.some(result))
+                : response.statusCode === 404
+                ? resolve(O.none)
+                : reject(error)
+          )
+        ),
+      E.toError
+    ),
+    TE.mapLeft(er => ResponseErrorInternal(er.message)),
+    TE.chainW(
+      flow(
+        E.fromOption(() =>
+          ResponseErrorNotFound("Not found!", "No record found.")
+        ),
+        E.map(rs => ({
+          failedDataProcessingUser: rs.RowKey._
+        })),
+        TE.fromEither
       )
-    )
-    .map(rs => ({
-      failedDataProcessingUser: rs.RowKey._
-    }))
-    .fold<
-      | IResponseSuccessJson<ResultSet>
-      | IResponseErrorInternal
-      | IResponseErrorNotFound
-    >(er => er, ResponseSuccessJson)
-    .run();
+    ),
+    TE.map(ResponseSuccessJson),
+    TE.toUnion
+  )();
 
 export const GetFailedUserDataProcessing = (
   tableService: TableService,
