@@ -1,16 +1,9 @@
 import { BlobService } from "azure-storage";
 import { sequenceT } from "fp-ts/lib/Apply";
-import { Either, fromOption, isLeft, toError } from "fp-ts/lib/Either";
-import { none, Option, some } from "fp-ts/lib/Option";
-import {
-  fromEither,
-  fromLeft,
-  TaskEither,
-  taskEither,
-  taskEitherSeq,
-  tryCatch
-} from "fp-ts/lib/TaskEither";
-import * as te from "fp-ts/lib/TaskEither";
+import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
 
 import { array, flatten, rights } from "fp-ts/lib/Array";
 import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
@@ -24,6 +17,7 @@ import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/util
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";
 import { RetrievedServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
+import { flow, pipe } from "fp-ts/lib/function";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
@@ -43,42 +37,41 @@ import { toDocumentDeleteFailure, toQueryFailure } from "./utils";
  * @param iterator an iterator of every result from the db
  */
 const executeRecursiveBackupAndDelete = <T>(
-  deleteSingle: (item: T) => TaskEither<CosmosErrors, string>,
+  deleteSingle: (item: T) => TE.TaskEither<CosmosErrors, string>,
   userDataBackup: IBlobServiceInfo,
   makeBackupBlobName: (item: T) => string,
-  iterator: AsyncIterator<ReadonlyArray<Either<Errors, T>>>
-): TaskEither<DataFailure, ReadonlyArray<T>> =>
-  tryCatch(() => iterator.next(), toError)
-    // this is just type lifting
-    // eslint-disable-next-line functional/prefer-readonly-type
-    .foldTaskEither<DataFailure, ReadonlyArray<T>>(
-      e => fromLeft(toQueryFailure(e)),
-      e =>
-        e.done
-          ? taskEither.of([])
-          : e.value.some(isLeft)
-          ? fromLeft(
-              toQueryFailure(new Error("Some elements are not typed correctly"))
-            )
-          : taskEither.of(rights(e.value))
-    )
-    .chain(items =>
-      // executes backup&delete for this set of items
-      array
-        .sequence(taskEither)(
-          items.map((item: T) =>
-            sequenceT(taskEitherSeq)<
+  iterator: AsyncIterator<ReadonlyArray<E.Either<Errors, T>>>
+): TE.TaskEither<DataFailure, ReadonlyArray<T>> =>
+  pipe(
+    TE.tryCatch(() => iterator.next(), E.toError),
+    TE.mapLeft(toQueryFailure),
+    TE.chainW(e =>
+      e.done
+        ? TE.of([])
+        : e.value.some(E.isLeft)
+        ? TE.left(
+            toQueryFailure(new Error("Some elements are not typed correctly"))
+          )
+        : TE.of(rights(e.value))
+    ),
+    // executes backup&delete for this set of items
+    TE.chainW(items =>
+      pipe(
+        items,
+        A.map((item: T) =>
+          pipe(
+            sequenceT(TE.ApplicativeSeq)<
               DataFailure,
               // eslint-disable-next-line functional/prefer-readonly-type
               [
-                TaskEither<DataFailure, T>,
-                TaskEither<DataFailure, string>,
+                TE.TaskEither<DataFailure, T>,
+                TE.TaskEither<DataFailure, string>,
                 // eslint-disable-next-line functional/prefer-readonly-type
-                TaskEither<DataFailure, ReadonlyArray<T>>
+                TE.TaskEither<DataFailure, ReadonlyArray<T>>
               ]
             >(
               saveDataToBlob<T>(userDataBackup, makeBackupBlobName(item), item),
-              deleteSingle(item).mapLeft(toDocumentDeleteFailure),
+              pipe(item, deleteSingle, TE.mapLeft(toDocumentDeleteFailure)),
               // recursive step
               executeRecursiveBackupAndDelete<T>(
                 deleteSingle,
@@ -86,13 +79,16 @@ const executeRecursiveBackupAndDelete = <T>(
                 makeBackupBlobName,
                 iterator
               )
-            )
-              // aggregates the results at the end of the recursion
-              .map(([_, __, nextResults]) => [item, ...nextResults])
+            ),
+            // aggregates the results at the end of the recursion
+            TE.map(([_, __, nextResults]) => [item, ...nextResults])
           )
-        )
-        .map(flatten)
-    );
+        ),
+        A.sequence(TE.ApplicativePar),
+        TE.map(flatten)
+      )
+    )
+  );
 
 /**
  * Backup and delete every version of the profile
@@ -112,21 +108,25 @@ const backupAndDeleteProfile = ({
   readonly userDataBackup: IBlobServiceInfo;
   readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly fiscalCode: FiscalCode;
-}) =>
-  executeRecursiveBackupAndDelete<RetrievedProfile>(
-    item => profileModel.deleteProfileVersion(item.fiscalCode, item.id),
-    userDataBackup,
-    item => `profile/${item.id}.json`,
-    profileModel.findAllVersionsByModelId(fiscalCode)
-  ).chain(_ =>
-    executeRecursiveBackupAndDelete<RetrievedServicePreference>(
-      item => servicePreferencesModel.delete(item.id, item.fiscalCode),
+}): TE.TaskEither<DataFailure, true> =>
+  pipe(
+    executeRecursiveBackupAndDelete<RetrievedProfile>(
+      item => profileModel.deleteProfileVersion(item.fiscalCode, item.id),
       userDataBackup,
-      item => `service-settings/${item.id}.json`,
-      servicePreferencesModel.findAllByFiscalCode(fiscalCode)
-    ).foldTaskEither<DataFailure, ReadonlyArray<RetrievedServicePreference>>(
-      _df => te.taskEither.of([]),
-      te.taskEither.of
+      item => `profile/${item.id}.json`,
+      profileModel.findAllVersionsByModelId(fiscalCode)
+    ),
+    TE.chainW(_ =>
+      executeRecursiveBackupAndDelete<RetrievedServicePreference>(
+        item => servicePreferencesModel.delete(item.id, item.fiscalCode),
+        userDataBackup,
+        item => `service-settings/${item.id}.json`,
+        servicePreferencesModel.findAllByFiscalCode(fiscalCode)
+      )
+    ),
+    TE.foldW(
+      () => TE.of(true as const),
+      _ => TE.of(true as const)
     )
   );
 
@@ -145,25 +145,32 @@ const backupAndDeleteNotification = ({
   readonly notificationModel: NotificationDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
   readonly notification: RetrievedNotification;
-}): TaskEither<DataFailure, RetrievedNotification> =>
-  sequenceT(taskEitherSeq)<
-    DataFailure,
-    // eslint-disable-next-line functional/prefer-readonly-type
-    [
-      TaskEither<DataFailure, RetrievedNotification>,
-      TaskEither<DataFailure, string>
-    ]
-  >(
-    saveDataToBlob(
-      userDataBackup,
-      `notification/${notification.id}.json`,
-      notification
-    ),
+}): TE.TaskEither<DataFailure, RetrievedNotification> =>
+  pipe(
+    sequenceT(TE.ApplicativeSeq)<
+      DataFailure,
+      // eslint-disable-next-line functional/prefer-readonly-type
+      [
+        TE.TaskEither<DataFailure, RetrievedNotification>,
+        TE.TaskEither<DataFailure, string>
+      ]
+    >(
+      saveDataToBlob(
+        userDataBackup,
+        `notification/${notification.id}.json`,
+        notification
+      ),
 
-    notificationModel
-      .deleteNotification(notification.messageId, notification.id)
-      .mapLeft(toDocumentDeleteFailure)
-  ).map(_ => notification);
+      pipe(
+        notificationModel.deleteNotification(
+          notification.messageId,
+          notification.id
+        ),
+        TE.mapLeft(toDocumentDeleteFailure)
+      )
+    ),
+    TE.map(_ => notification)
+  );
 
 /**
  * Find all versions of a notification status, then backup and delete each document
@@ -181,7 +188,7 @@ const backupAndDeleteNotificationStatus = ({
   readonly notificationStatusModel: NotificationStatusDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
   readonly notification: RetrievedNotification;
-}): TaskEither<DataFailure, ReadonlyArray<RetrievedNotificationStatus>> =>
+}): TE.TaskEither<DataFailure, ReadonlyArray<RetrievedNotificationStatus>> =>
   executeRecursiveBackupAndDelete<RetrievedNotificationStatus>(
     item =>
       notificationStatusModel.deleteNotificationStatusVersion(
@@ -208,25 +215,29 @@ const backupAndDeleteMessage = ({
   readonly messageModel: MessageDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
   readonly message: RetrievedMessageWithoutContent;
-}): TaskEither<DataFailure, RetrievedMessageWithoutContent> =>
-  sequenceT(taskEitherSeq)<
-    DataFailure,
-    // eslint-disable-next-line functional/prefer-readonly-type
-    [
-      TaskEither<DataFailure, RetrievedMessageWithoutContent>,
-      TaskEither<DataFailure, string>
-    ]
-  >(
-    saveDataToBlob<RetrievedMessageWithoutContent>(
-      userDataBackup,
-      `message/${message.id}.json`,
-      message
-    ),
+}): TE.TaskEither<DataFailure, RetrievedMessageWithoutContent> =>
+  pipe(
+    sequenceT(TE.ApplicativeSeq)<
+      DataFailure,
+      // eslint-disable-next-line functional/prefer-readonly-type
+      [
+        TE.TaskEither<DataFailure, RetrievedMessageWithoutContent>,
+        TE.TaskEither<DataFailure, string>
+      ]
+    >(
+      saveDataToBlob<RetrievedMessageWithoutContent>(
+        userDataBackup,
+        `message/${message.id}.json`,
+        message
+      ),
 
-    messageModel
-      .deleteMessage(message.fiscalCode, message.id)
-      .mapLeft(toDocumentDeleteFailure)
-  ).map(_ => message);
+      pipe(
+        messageModel.deleteMessage(message.fiscalCode, message.id),
+        TE.mapLeft(toDocumentDeleteFailure)
+      )
+    ),
+    TE.map(_ => message)
+  );
 
 const backupAndDeleteMessageContent = ({
   messageContentBlobService,
@@ -238,31 +249,39 @@ const backupAndDeleteMessageContent = ({
   readonly messageModel: MessageDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
   readonly message: RetrievedMessageWithoutContent;
-}): TaskEither<DataFailure, Option<MessageContent>> =>
-  messageModel
-    .getContentFromBlob(messageContentBlobService, message.id)
-    .chain(e => fromEither(fromOption(undefined)(e)))
-    .foldTaskEither<DataFailure, Option<MessageContent>>(
+}): TE.TaskEither<DataFailure, O.Option<MessageContent>> =>
+  pipe(
+    messageModel.getContentFromBlob(messageContentBlobService, message.id),
+    TE.chain(
+      flow(
+        E.fromOption(() => undefined),
+        TE.fromEither
+      )
+    ),
+    TE.foldW(
       _ =>
         // unfortunately, a document not found is threated like a query error
-        taskEither.of(none),
+        TE.of(O.none),
       content =>
-        taskEither
-          .of<DataFailure, void>(void 0)
-          .chain(_ =>
-            saveDataToBlob(
-              userDataBackup,
-              `message-content/${message.id}.json`,
-              content
+        pipe(
+          saveDataToBlob(
+            userDataBackup,
+            `message-content/${message.id}.json`,
+            content
+          ),
+          TE.chainW(_ =>
+            pipe(
+              messageModel.deleteContentFromBlob(
+                messageContentBlobService,
+                message.id
+              ),
+              TE.mapLeft(toDocumentDeleteFailure)
             )
-          )
-          .chain(_ =>
-            messageModel
-              .deleteContentFromBlob(messageContentBlobService, message.id)
-              .mapLeft(toDocumentDeleteFailure)
-          )
-          .map(_ => some(content))
-    );
+          ),
+          TE.map(_ => O.some(content))
+        )
+    )
+  );
 
 /**
  * Find all versions of a message status, then backup and delete each document
@@ -280,7 +299,7 @@ const backupAndDeleteMessageStatus = ({
   readonly messageStatusModel: MessageStatusDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
   readonly message: RetrievedMessageWithoutContent;
-}): TaskEither<DataFailure, ReadonlyArray<RetrievedMessageStatus>> =>
+}): TE.TaskEither<DataFailure, ReadonlyArray<RetrievedMessageStatus>> =>
   executeRecursiveBackupAndDelete<RetrievedMessageStatus>(
     item =>
       messageStatusModel.deleteMessageStatusVersion(item.messageId, item.id),
@@ -307,38 +326,49 @@ const backupAndDeleteAllNotificationsData = ({
   readonly notificationModel: NotificationDeletableModel;
   readonly notificationStatusModel: NotificationStatusDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
-}): TaskEither<QueryFailure, true> =>
-  notificationModel.findNotificationForMessage(message.id).foldTaskEither(
-    failure =>
+}): TE.TaskEither<QueryFailure, true> =>
+  pipe(
+    notificationModel.findNotificationForMessage(message.id),
+    TE.fold(
       // There are cases in which a message has no notification.
       // We just consider the notification to be deleted
-      failure.kind === "COSMOS_ERROR_RESPONSE" && failure.error.code === 404
-        ? taskEither.of(true)
-        : fromLeft(toQueryFailure(failure)),
-    maybeNotification =>
-      maybeNotification.fold(
-        // There are cases in which a message has no notification.
-        // We just consider the notification to be deleted
-        taskEither.of(true),
-        // For the found notification, we delete its statuses before deleting the notification itself
-        notification =>
-          backupAndDeleteNotificationStatus({
-            notification,
-            notificationStatusModel,
-            userDataBackup
-          })
-            .chain(() =>
-              backupAndDeleteNotification({
-                notification,
-                notificationModel,
-                userDataBackup
-              })
-            )
-            .bimap(
-              e => toQueryFailure(new Error(e.reason)),
-              () => true
-            )
-      )
+      failure =>
+        failure.kind === "COSMOS_ERROR_RESPONSE" && failure.error.code === 404
+          ? TE.of(true)
+          : TE.left(toQueryFailure(failure)),
+
+      maybeNotification =>
+        pipe(
+          maybeNotification,
+          E.fromOption(() => void 0 /* anything will do */),
+          TE.fromEither,
+          TE.fold(
+            // There are cases in which a message has no notification.
+            // We just consider the notification to be deleted
+            () => TE.of(true),
+            // For the found notification, we delete its statuses before deleting the notification itself
+            notification =>
+              pipe(
+                backupAndDeleteNotificationStatus({
+                  notification,
+                  notificationStatusModel,
+                  userDataBackup
+                }),
+                TE.chain(() =>
+                  backupAndDeleteNotification({
+                    notification,
+                    notificationModel,
+                    userDataBackup
+                  })
+                ),
+                TE.bimap(
+                  e => toQueryFailure(new Error(e.reason)),
+                  () => true
+                )
+              )
+          )
+        )
+    )
   );
 
 /**
@@ -368,27 +398,28 @@ const backupAndDeleteAllMessagesData = ({
   readonly notificationStatusModel: NotificationStatusDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
   readonly fiscalCode: FiscalCode;
-}): TaskEither<DataFailure, unknown> =>
-  messageModel
-    .findMessages(fiscalCode)
-    .mapLeft(toQueryFailure)
-    .chain(iter => tryCatch(() => asyncIteratorToArray(iter), toQueryFailure))
-    .map(flatten)
-    .foldTaskEither(
-      e => fromLeft(e),
-      results =>
-        results.some(isLeft)
-          ? fromLeft(
-              toQueryFailure(
-                new Error("Cannot decode some element due to decoding errors")
-              )
+}): TE.TaskEither<DataFailure, unknown> =>
+  pipe(
+    messageModel.findMessages(fiscalCode),
+    TE.mapLeft(toQueryFailure),
+    TE.chain(iter =>
+      TE.tryCatch(() => asyncIteratorToArray(iter), toQueryFailure)
+    ),
+    TE.map(flatten),
+    TE.chainW(results =>
+      results.some(E.isLeft)
+        ? TE.left(
+            toQueryFailure(
+              new Error("Cannot decode some element due to decoding errors")
             )
-          : array.sequence(taskEitherSeq)(
-              rights(results).map(message => {
-                // cast needed because findMessages has a wrong signature
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
-                return sequenceT(taskEitherSeq)(
+          )
+        : array.sequence(TE.ApplicativeSeq)(
+            rights(results).map(message => {
+              // cast needed because findMessages has a wrong signature
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
+              return pipe(
+                sequenceT(TE.ApplicativeSeq)(
                   backupAndDeleteMessageContent({
                     message: retrievedMessage,
                     messageContentBlobService,
@@ -406,16 +437,19 @@ const backupAndDeleteAllMessagesData = ({
                     notificationStatusModel,
                     userDataBackup
                   })
-                ).chain(() =>
+                ),
+                TE.chain(() =>
                   backupAndDeleteMessage({
                     message: retrievedMessage,
                     messageModel,
                     userDataBackup
                   })
-                );
-              })
-            )
-    );
+                )
+              );
+            })
+          )
+    )
+  );
 
 /**
  * Explores the user data structures and deletes all documents and blobs. Before that saves a blob for every found document in a dedicated storage folder
@@ -455,20 +489,23 @@ export const backupAndDeleteAllUserData = ({
   readonly userDataBackup: IBlobServiceInfo;
   readonly fiscalCode: FiscalCode;
 }) =>
-  backupAndDeleteAllMessagesData({
-    fiscalCode,
-    messageContentBlobService,
-    messageModel,
-    messageStatusModel,
-    notificationModel,
-    notificationStatusModel,
-    userDataBackup
-  }).chain(_ =>
-    // eslint-disable-next-line sort-keys
-    backupAndDeleteProfile({
+  pipe(
+    backupAndDeleteAllMessagesData({
       fiscalCode,
-      profileModel,
-      servicePreferencesModel,
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      notificationModel,
+      notificationStatusModel,
       userDataBackup
-    })
+    }),
+    TE.chainW(_ =>
+      // eslint-disable-next-line sort-keys
+      backupAndDeleteProfile({
+        fiscalCode,
+        profileModel,
+        servicePreferencesModel,
+        userDataBackup
+      })
+    )
   );

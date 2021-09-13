@@ -2,9 +2,7 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
-import * as t from "io-ts";
-
-import { fromEither } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
 
 import { Context } from "@azure/functions";
 
@@ -12,6 +10,7 @@ import { BlobService } from "azure-storage";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
+import { pipe } from "fp-ts/lib/function";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
@@ -22,7 +21,6 @@ import { backupAndDeleteAllUserData } from "./backupAndDelete";
 import {
   ActivityInput,
   ActivityResult,
-  ActivityResultFailure,
   ActivityResultSuccess,
   InvalidInputFailure
 } from "./types";
@@ -62,45 +60,47 @@ export function createDeleteUserDataActivityHandler({
 ) => Promise<ActivityResult> {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return (context: Context, input: unknown) =>
-    // validates the input
-    fromEither(
-      ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
-        (reason: t.Errors) =>
-          InvalidInputFailure.encode({
-            kind: "INVALID_INPUT_FAILURE",
-            reason: readableReport(reason)
-          })
-      )
-    )
-      // then perform backup&delete on all user data
-      .chain(({ fiscalCode, backupFolder }) =>
-        backupAndDeleteAllUserData({
-          fiscalCode,
-          messageContentBlobService,
-          messageModel,
-          messageStatusModel,
-          notificationModel,
-          notificationStatusModel,
-          profileModel,
-          servicePreferencesModel,
-          userDataBackup: {
-            blobService: userDataBackupBlobService,
-            containerName: userDataBackupContainerName,
-            folder: backupFolder
-          }
+    pipe(
+      input,
+      ActivityInput.decode,
+      // validates the input
+      TE.fromEither,
+      TE.mapLeft(reason =>
+        InvalidInputFailure.encode({
+          kind: "INVALID_INPUT_FAILURE",
+          reason: readableReport(reason)
         })
-      )
-      .bimap(
-        failure => {
-          logFailure(context, logPrefix)(failure);
-          return failure;
-        },
-        _ =>
-          ActivityResultSuccess.encode({
-            kind: "SUCCESS"
+      ),
+
+      // then perform backup&delete on all user data
+      TE.chainW(({ fiscalCode, backupFolder }) =>
+        pipe(
+          backupAndDeleteAllUserData({
+            fiscalCode,
+            messageContentBlobService,
+            messageModel,
+            messageStatusModel,
+            notificationModel,
+            notificationStatusModel,
+            profileModel,
+            servicePreferencesModel,
+            userDataBackup: {
+              blobService: userDataBackupBlobService,
+              containerName: userDataBackupContainerName,
+              folder: backupFolder
+            }
+          }),
+          TE.mapLeft(failure => {
+            logFailure(context, logPrefix)(failure);
+            return failure;
           })
-      )
-      .run()
-      // unfold the value from the either
-      .then(e => e.value);
+        )
+      ),
+      TE.map(_ =>
+        ActivityResultSuccess.encode({
+          kind: "SUCCESS"
+        })
+      ),
+      TE.toUnion
+    )();
 }
