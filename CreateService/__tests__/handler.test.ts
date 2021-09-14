@@ -6,7 +6,7 @@ import * as lolex from "lolex";
 
 import { left, right } from "fp-ts/lib/Either";
 
-import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   aNewService,
@@ -33,7 +33,7 @@ describe("CreateServiceHandler", () => {
   it("should return a query error if the service fails to be created", async () => {
     const mockServiceModel = {
       create: jest.fn(_ => {
-        return fromLeft(
+        return TE.left(
           toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" })
         );
       })
@@ -54,7 +54,7 @@ describe("CreateServiceHandler", () => {
   it("should create a new service using the payload and return the created service", async () => {
     const mockServiceModel = {
       create: jest.fn(_ => {
-        return fromEither(right(aRetrievedService));
+        return TE.fromEither(right(aRetrievedService));
       })
     };
 
@@ -76,7 +76,7 @@ describe("CreateServiceHandler", () => {
   it("should start the orchestrator with an appropriate event after the service is created", async () => {
     const mockServiceModel = {
       create: jest.fn(_ => {
-        return fromEither(right(aRetrievedService));
+        return TE.fromEither(right(aRetrievedService));
       })
     };
 
