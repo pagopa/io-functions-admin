@@ -1,6 +1,6 @@
 import { Context } from "@azure/functions";
 import * as express from "express";
-import { fromEither, fromPredicate, tryCatch } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -22,6 +22,7 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { flow, pipe } from "fp-ts/lib/function";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { ProductNamePayload } from "../generated/definitions/ProductNamePayload";
 import { Subscription } from "../generated/definitions/Subscription";
@@ -75,15 +76,13 @@ export function CreateSubscriptionHandler(
         errors,
         errorMessage
       );
-    const response = await getApiClient(
-      servicePrincipalCreds,
-      azureApimConfig.subscriptionId
-    )
-      .mapLeft<IResponseErrorInternal | IResponseErrorNotFound>(error =>
+    return pipe(
+      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      TE.mapLeft(error =>
         internalErrorHandler("Could not get the APIM client.", error)
-      )
-      .chain(apimClient =>
-        tryCatch(
+      ),
+      TE.chainW(apimClient =>
+        TE.tryCatch(
           () =>
             apimClient.user
               .listByService(
@@ -103,9 +102,9 @@ export function CreateSubscriptionHandler(
               error as Error
             )
         )
-      )
-      .chain(
-        fromPredicate(
+      ),
+      TE.chainW(
+        TE.fromPredicate(
           taskResults => taskResults.userList.length !== 0,
           () =>
             ResponseErrorNotFound(
@@ -113,43 +112,50 @@ export function CreateSubscriptionHandler(
               "The provided user does not exist"
             )
         )
-      )
-      .chain(taskResults =>
-        fromEither(NonEmptyString.decode(taskResults.userList[0].id))
-          .mapLeft(errors =>
+      ),
+      TE.chainW(taskResults =>
+        pipe(
+          taskResults.userList[0].id,
+          NonEmptyString.decode,
+          TE.fromEither,
+          TE.mapLeft(errors =>
             internalValidationErrorHandler(
               "Could not get user id from user contract.",
               errors
             )
-          )
-          .map(userId => ({
+          ),
+          TE.map(userId => ({
             apimClient: taskResults.apimClient,
             userId
           }))
-      )
-      .chain(taskResults =>
-        tryCatch(
-          () =>
-            taskResults.apimClient.product.listByService(
-              azureApimConfig.apimResourceGroup,
-              azureApimConfig.apim,
-              {
-                filter: `name eq '${productNamePayload.product_name}'`
-              }
-            ),
-          error =>
-            internalErrorHandler(
-              "Could not list the products by name.",
-              error as Error
-            )
-        ).map(productList => ({
-          apimClient: taskResults.apimClient,
-          productList,
-          userId: taskResults.userId
-        }))
-      )
-      .chain(
-        fromPredicate(
+        )
+      ),
+      TE.chainW(taskResults =>
+        pipe(
+          TE.tryCatch(
+            () =>
+              taskResults.apimClient.product.listByService(
+                azureApimConfig.apimResourceGroup,
+                azureApimConfig.apim,
+                {
+                  filter: `name eq '${productNamePayload.product_name}'`
+                }
+              ),
+            error =>
+              internalErrorHandler(
+                "Could not list the products by name.",
+                error as Error
+              )
+          ),
+          TE.map(productList => ({
+            apimClient: taskResults.apimClient,
+            productList,
+            userId: taskResults.userId
+          }))
+        )
+      ),
+      TE.chainW(
+        TE.fromPredicate(
           taskResults => taskResults.productList.length !== 0,
           () =>
             ResponseErrorNotFound(
@@ -157,23 +163,27 @@ export function CreateSubscriptionHandler(
               "The provided product does not exist"
             )
         )
-      )
-      .chain(taskResults =>
-        fromEither(NonEmptyString.decode(taskResults.productList[0].id))
-          .mapLeft(errors =>
+      ),
+      TE.chainW(taskResults =>
+        pipe(
+          taskResults.productList[0].id,
+          NonEmptyString.decode,
+          TE.fromEither,
+          TE.mapLeft(errors =>
             internalValidationErrorHandler(
               "Could not get product id from product contract.",
               errors
             )
-          )
-          .map(productId => ({
+          ),
+          TE.map(productId => ({
             apimClient: taskResults.apimClient,
             productId,
             userId: taskResults.userId
           }))
-      )
-      .chain(taskResults =>
-        tryCatch(
+        )
+      ),
+      TE.chainW(taskResults =>
+        TE.tryCatch(
           () =>
             taskResults.apimClient.subscription.createOrUpdate(
               azureApimConfig.apimResourceGroup,
@@ -192,22 +202,22 @@ export function CreateSubscriptionHandler(
               error as Error
             )
         )
-      )
-      .chain(subscriptionResponse =>
-        fromEither(
-          subscriptionContractToApiSubscription(
-            subscriptionResponse
-          ).mapLeft(error =>
+      ),
+      TE.chainW(
+        flow(
+          subscriptionContractToApiSubscription,
+          TE.fromEither,
+          TE.mapLeft(error =>
             internalErrorHandler(
               "Invalid subscription contract from APIM.",
               error
             )
           )
         )
-      )
-      .map(ResponseSuccessJson)
-      .run();
-    return response.value;
+      ),
+      TE.map(ResponseSuccessJson),
+      TE.toUnion
+    )();
   };
 }
 

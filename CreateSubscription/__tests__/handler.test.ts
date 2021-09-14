@@ -6,8 +6,8 @@ import {
   SubscriptionContract,
   UserContract
 } from "@azure/arm-apimanagement/esm/models";
-import { isRight, left, right } from "fp-ts/lib/Either";
-import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import { ProductNamePayload } from "../../generated/definitions/ProductNamePayload";
 import { UserInfo } from "../../generated/definitions/UserInfo";
 import * as ApimUtils from "../../utils/apim";
@@ -85,7 +85,7 @@ mockApiManagementClient.mockImplementation(() => ({
 
 const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
 spyOnGetApiClient.mockImplementation(() =>
-  fromEither(right(new mockApiManagementClient()))
+  TE.of(new mockApiManagementClient())
 );
 
 const mockLog = jest.fn();
@@ -95,7 +95,7 @@ const mockedContext = { log: { error: mockLog } };
 describe("CreateSubscription", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
-      fromLeft(Error("Error from ApiManagementClient constructor"))
+      TE.left(Error("Error from ApiManagementClient constructor"))
     );
 
     const createSubscriptionHandler = CreateSubscriptionHandler(
@@ -309,10 +309,10 @@ describe("CreateSubscription", () => {
     expect(response).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",
-      value: subscriptionContractToApiSubscription(
-        aFakeApimSubscriptionContract
-      ).value
+      value: E.toUnion(
+        subscriptionContractToApiSubscription(aFakeApimSubscriptionContract)
+      )
     });
-    expect(isRight(UserInfo.decode((response as any).value))).toBeTruthy();
+    expect(E.isRight(UserInfo.decode((response as any).value))).toBeTruthy();
   });
 });
