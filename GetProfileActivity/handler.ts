@@ -137,13 +137,10 @@ export const createGetProfileActivityHandler = (profileModel: ProfileModel) => (
           })
         ),
         TE.chainW(
-          flow(
-            E.fromOption(() =>
-              ActivityResultNotFoundFailure.encode({
-                kind: "NOT_FOUND_FAILURE"
-              })
-            ),
-            TE.fromEither
+          TE.fromOption(() =>
+            ActivityResultNotFoundFailure.encode({
+              kind: "NOT_FOUND_FAILURE"
+            })
           )
         )
       )
