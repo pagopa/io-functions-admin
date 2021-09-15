@@ -194,13 +194,10 @@ export const getProfile = (
       })
     ),
     TE.chainW(
-      flow(
-        E.fromOption(() =>
-          ActivityResultUserNotFound.encode({
-            kind: "USER_NOT_FOUND_FAILURE"
-          })
-        ),
-        TE.fromEither
+      TE.fromOption(() =>
+        ActivityResultUserNotFound.encode({
+          kind: "USER_NOT_FOUND_FAILURE"
+        })
       )
     )
   );
