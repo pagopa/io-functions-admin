@@ -49,10 +49,10 @@ const executeRecursiveBackupAndDelete = <T>(
       e.done
         ? TE.of([])
         : e.value.some(E.isLeft)
-          ? TE.left(
+        ? TE.left(
             toQueryFailure(new Error("Some elements are not typed correctly"))
           )
-          : TE.of(rights(e.value))
+        : TE.of(rights(e.value))
     ),
     // executes backup&delete for this set of items
     TE.chainW(items =>
@@ -251,12 +251,7 @@ const backupAndDeleteMessageContent = ({
 }): TE.TaskEither<DataFailure, O.Option<MessageContent>> =>
   pipe(
     messageModel.getContentFromBlob(messageContentBlobService, message.id),
-    TE.chain(
-      flow(
-        E.fromOption(() => undefined),
-        TE.fromEither
-      )
-    ),
+    TE.chain(TE.fromOption(() => undefined)),
     TE.foldW(
       _ =>
         // unfortunately, a document not found is threated like a query error
@@ -336,37 +331,34 @@ const backupAndDeleteAllNotificationsData = ({
           ? TE.of(true)
           : TE.left(toQueryFailure(failure)),
 
-      maybeNotification =>
-        pipe(
-          maybeNotification,
-          E.fromOption(() => void 0 /* anything will do */),
-          TE.fromEither,
-          TE.fold(
-            // There are cases in which a message has no notification.
-            // We just consider the notification to be deleted
-            () => TE.of(true),
-            // For the found notification, we delete its statuses before deleting the notification itself
-            notification =>
-              pipe(
-                backupAndDeleteNotificationStatus({
+      flow(
+        TE.fromOption(() => void 0 /* anything will do */),
+        TE.fold(
+          // There are cases in which a message has no notification.
+          // We just consider the notification to be deleted
+          () => TE.of(true),
+          // For the found notification, we delete its statuses before deleting the notification itself
+          notification =>
+            pipe(
+              backupAndDeleteNotificationStatus({
+                notification,
+                notificationStatusModel,
+                userDataBackup
+              }),
+              TE.chain(() =>
+                backupAndDeleteNotification({
                   notification,
-                  notificationStatusModel,
+                  notificationModel,
                   userDataBackup
-                }),
-                TE.chain(() =>
-                  backupAndDeleteNotification({
-                    notification,
-                    notificationModel,
-                    userDataBackup
-                  })
-                ),
-                TE.bimap(
-                  e => toQueryFailure(new Error(e.reason)),
-                  () => true
-                )
+                })
+              ),
+              TE.bimap(
+                e => toQueryFailure(new Error(e.reason)),
+                () => true
               )
-          )
+            )
         )
+      )
     )
   );
 
@@ -408,45 +400,45 @@ const backupAndDeleteAllMessagesData = ({
     TE.chainW(results =>
       results.some(E.isLeft)
         ? TE.left(
-          toQueryFailure(
-            new Error("Cannot decode some element due to decoding errors")
+            toQueryFailure(
+              new Error("Cannot decode some element due to decoding errors")
+            )
           )
-        )
         : array.sequence(TE.ApplicativeSeq)(
-          rights(results).map(message => {
-            // cast needed because findMessages has a wrong signature
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
-            return pipe(
-              sequenceT(TE.ApplicativeSeq)(
-                backupAndDeleteMessageContent({
-                  message: retrievedMessage,
-                  messageContentBlobService,
-                  messageModel,
-                  userDataBackup
-                }),
-                backupAndDeleteMessageStatus({
-                  message: retrievedMessage,
-                  messageStatusModel,
-                  userDataBackup
-                }),
-                backupAndDeleteAllNotificationsData({
-                  message: retrievedMessage,
-                  notificationModel,
-                  notificationStatusModel,
-                  userDataBackup
-                })
-              ),
-              TE.chain(() =>
-                backupAndDeleteMessage({
-                  message: retrievedMessage,
-                  messageModel,
-                  userDataBackup
-                })
-              )
-            );
-          })
-        )
+            rights(results).map(message => {
+              // cast needed because findMessages has a wrong signature
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
+              return pipe(
+                sequenceT(TE.ApplicativeSeq)(
+                  backupAndDeleteMessageContent({
+                    message: retrievedMessage,
+                    messageContentBlobService,
+                    messageModel,
+                    userDataBackup
+                  }),
+                  backupAndDeleteMessageStatus({
+                    message: retrievedMessage,
+                    messageStatusModel,
+                    userDataBackup
+                  }),
+                  backupAndDeleteAllNotificationsData({
+                    message: retrievedMessage,
+                    notificationModel,
+                    notificationStatusModel,
+                    userDataBackup
+                  })
+                ),
+                TE.chain(() =>
+                  backupAndDeleteMessage({
+                    message: retrievedMessage,
+                    messageModel,
+                    userDataBackup
+                  })
+                )
+              );
+            })
+          )
     )
   );
 
