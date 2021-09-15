@@ -220,12 +220,11 @@ export const getAllMessageContents = (
         messageModel.getContentFromBlob(messageContentBlobService, messageId),
         TE.chainW(
           flow(
-            E.fromOption(() => void 0 /* anything will do */),
-            E.map(content => ({
+            TE.fromOption(() => void 0 /* anything will do */),
+            TE.map(content => ({
               content,
               messageId
-            })),
-            TE.fromEither
+            }))
           )
         ),
         TE.fold(
@@ -259,12 +258,7 @@ export const getAllMessagesStatuses = (
             }, ${getMessageFromCosmosErrors(failure)}`
           })
         ),
-        TE.chainW(
-          flow(
-            E.fromOption(() => void 0 /* anything will do */),
-            TE.fromEither
-          )
-        ),
+        TE.chainW(TE.fromOption(() => void 0 /* anything will do */)),
         TE.fold(
           // in case of failure retrieving the single message, just live a placeholder
           () => TE.of({ messageId } as MessageStatus),
