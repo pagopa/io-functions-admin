@@ -49,15 +49,14 @@ const executeRecursiveBackupAndDelete = <T>(
       e.done
         ? TE.of([])
         : e.value.some(E.isLeft)
-        ? TE.left(
+          ? TE.left(
             toQueryFailure(new Error("Some elements are not typed correctly"))
           )
-        : TE.of(rights(e.value))
+          : TE.of(rights(e.value))
     ),
     // executes backup&delete for this set of items
     TE.chainW(items =>
-      pipe(
-        items,
+      flow(
         A.map((item: T) =>
           pipe(
             sequenceT(TE.ApplicativeSeq)<
@@ -409,45 +408,45 @@ const backupAndDeleteAllMessagesData = ({
     TE.chainW(results =>
       results.some(E.isLeft)
         ? TE.left(
-            toQueryFailure(
-              new Error("Cannot decode some element due to decoding errors")
-            )
+          toQueryFailure(
+            new Error("Cannot decode some element due to decoding errors")
           )
+        )
         : array.sequence(TE.ApplicativeSeq)(
-            rights(results).map(message => {
-              // cast needed because findMessages has a wrong signature
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
-              return pipe(
-                sequenceT(TE.ApplicativeSeq)(
-                  backupAndDeleteMessageContent({
-                    message: retrievedMessage,
-                    messageContentBlobService,
-                    messageModel,
-                    userDataBackup
-                  }),
-                  backupAndDeleteMessageStatus({
-                    message: retrievedMessage,
-                    messageStatusModel,
-                    userDataBackup
-                  }),
-                  backupAndDeleteAllNotificationsData({
-                    message: retrievedMessage,
-                    notificationModel,
-                    notificationStatusModel,
-                    userDataBackup
-                  })
-                ),
-                TE.chain(() =>
-                  backupAndDeleteMessage({
-                    message: retrievedMessage,
-                    messageModel,
-                    userDataBackup
-                  })
-                )
-              );
-            })
-          )
+          rights(results).map(message => {
+            // cast needed because findMessages has a wrong signature
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
+            return pipe(
+              sequenceT(TE.ApplicativeSeq)(
+                backupAndDeleteMessageContent({
+                  message: retrievedMessage,
+                  messageContentBlobService,
+                  messageModel,
+                  userDataBackup
+                }),
+                backupAndDeleteMessageStatus({
+                  message: retrievedMessage,
+                  messageStatusModel,
+                  userDataBackup
+                }),
+                backupAndDeleteAllNotificationsData({
+                  message: retrievedMessage,
+                  notificationModel,
+                  notificationStatusModel,
+                  userDataBackup
+                })
+              ),
+              TE.chain(() =>
+                backupAndDeleteMessage({
+                  message: retrievedMessage,
+                  messageModel,
+                  userDataBackup
+                })
+              )
+            );
+          })
+        )
     )
   );
 
