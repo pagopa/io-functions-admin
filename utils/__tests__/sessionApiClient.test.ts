@@ -6,22 +6,30 @@ import { createMockFetch } from "../../__mocks__/node-fetch";
 import { ProblemJson } from "../../generated/session-api/ProblemJson";
 import { SuccessResponse } from "../../generated/session-api/SuccessResponse";
 import { createClient, WithDefaultsT } from "../sessionApiClient";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 
 const baseUrl = "";
 
 const anApyKey = "QWERTTYUIP12334";
 
-const aSuccessResponse = SuccessResponse.decode({ message: "ok" }).getOrElseL(
-  err => {
+const aSuccessResponse = pipe(
+  { message: "ok" },
+  SuccessResponse.decode,
+  E.getOrElseW(err => {
     throw new Error(`Invalid mock fr SuccessResponse: ${readableReport(err)}`);
-  }
+  })
 );
-const aProblemJson500 = ProblemJson.decode({
-  status: 400,
-  title: "Server Error"
-}).getOrElseL(err => {
-  throw new Error(`Invalid mock fr ProblemJson400: ${readableReport(err)}`);
-});
+const aProblemJson500 = pipe(
+  {
+    status: 400,
+    title: "Server Error"
+  },
+  ProblemJson.decode,
+  E.getOrElseW(err => {
+    throw new Error(`Invalid mock fr ProblemJson400: ${readableReport(err)}`);
+  })
+);
 
 const withDefaultApiKey: WithDefaultsT<"token"> = apiOperation => ({
   fiscalcode
@@ -47,11 +55,13 @@ describe("sessionApiClient#lockUserSession", () => {
       token: anApyKey
     });
 
-    expect(result.isRight()).toBe(true);
-    expect(result.value).toEqual({
-      status,
-      value: payload
-    });
+    expect(E.isRight(result)).toBe(true);
+    if (E.isRight(result)) {
+      expect(result.right).toEqual({
+        status,
+        value: payload
+      });
+    }
   });
 
   it("should work with a default parameter", async () => {
@@ -105,11 +115,13 @@ describe("sessionApiClient#unlockUserSession", () => {
       token: anApyKey
     });
 
-    expect(result.isRight()).toBe(true);
-    expect(result.value).toEqual({
-      status,
-      value: payload
-    });
+    expect(E.isRight(result)).toBe(true);
+    if (E.isRight(result)) {
+      expect(result.right).toEqual({
+        status,
+        value: payload
+      });
+    }
   });
 
   it("should work with a default parameter", async () => {
