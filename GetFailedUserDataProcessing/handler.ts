@@ -54,40 +54,39 @@ export const GetFailedUserDataProcessingHandler = (
   | IResponseErrorInternal
   | IResponseErrorNotFound
 > =>
-  pipe(
-    TE.tryCatch(
-      () =>
-        new Promise<O.Option<TableEntry>>((resolve, reject) =>
-          tableService.retrieveEntity(
-            failedUserDataProcessingTable,
-            choice,
-            fiscalCode,
-            null,
-            (error: Error, result: TableEntry, response: ServiceResponse) =>
-              response.isSuccessful
-                ? resolve(O.some(result))
-                : response.statusCode === 404
-                ? resolve(O.none)
-                : reject(error)
-          )
-        ),
-      E.toError
-    ),
-    TE.mapLeft(er => ResponseErrorInternal(er.message)),
-    TE.chainW(
-      flow(
-        E.fromOption(() =>
-          ResponseErrorNotFound("Not found!", "No record found.")
-        ),
-        E.map(rs => ({
-          failedDataProcessingUser: rs.RowKey._
-        })),
-        TE.fromEither
-      )
-    ),
-    TE.map(ResponseSuccessJson),
-    TE.toUnion
-  )();
+    pipe(
+      TE.tryCatch(
+        () =>
+          new Promise<O.Option<TableEntry>>((resolve, reject) =>
+            tableService.retrieveEntity(
+              failedUserDataProcessingTable,
+              choice,
+              fiscalCode,
+              null,
+              (error: Error, result: TableEntry, response: ServiceResponse) =>
+                response.isSuccessful
+                  ? resolve(O.some(result))
+                  : response.statusCode === 404
+                    ? resolve(O.none)
+                    : reject(error)
+            )
+          ),
+        E.toError
+      ),
+      TE.mapLeft(er => ResponseErrorInternal(er.message)),
+      TE.chainW(
+        flow(
+          TE.fromOption(() =>
+            ResponseErrorNotFound("Not found!", "No record found.")
+          ),
+          TE.map(rs => ({
+            failedDataProcessingUser: rs.RowKey._
+          }))
+        )
+      ),
+      TE.map(ResponseSuccessJson),
+      TE.toUnion
+    )();
 
 export const GetFailedUserDataProcessing = (
   tableService: TableService,
