@@ -54,7 +54,7 @@ describe("CreateServiceHandler", () => {
   it("should create a new service using the payload and return the created service", async () => {
     const mockServiceModel = {
       create: jest.fn(_ => {
-        return TE.fromEither(right(aRetrievedService));
+        return TE.right(aRetrievedService);
       })
     };
 
@@ -76,7 +76,7 @@ describe("CreateServiceHandler", () => {
   it("should start the orchestrator with an appropriate event after the service is created", async () => {
     const mockServiceModel = {
       create: jest.fn(_ => {
-        return TE.fromEither(right(aRetrievedService));
+        return TE.right(aRetrievedService);
       })
     };
 

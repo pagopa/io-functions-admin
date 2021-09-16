@@ -298,7 +298,7 @@ export const findNotificationsForAllMessages = (
     TE.map(
       flow(
         A.filter(O.isSome),
-        A.map(_ => _.value)
+        A.map(maybeNotification => maybeNotification.value)
       )
     )
   );
@@ -343,7 +343,7 @@ export const findAllNotificationStatuses = (
     TE.map(
       flow(
         A.filter(O.isSome),
-        A.map(_ => _.value)
+        A.map(someNotificationStatus => someNotificationStatus.value)
       )
     )
   );

@@ -27,7 +27,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
   it("should handle a result", async () => {
     const mockModel = ({
       findLastVersionByModelId: jest.fn(() =>
-        TE.fromEither(right(some(aUserDataProcessing)))
+        TE.right(some(aUserDataProcessing))
       )
     } as any) as UserDataProcessingModel;
 
@@ -52,7 +52,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
 
   it("should handle a record not found failure", async () => {
     const mockModel = ({
-      findLastVersionByModelId: jest.fn(() => TE.fromEither(right(none)))
+      findLastVersionByModelId: jest.fn(() => TE.right(none))
     } as any) as UserDataProcessingModel;
 
     const handler = createUserDataProcessingCheckLastStatusActivityHandler(
@@ -88,7 +88,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
 
   it("should handle a rejection", async () => {
     const mockModel = ({
-      findLastVersionByModelId: jest.fn(() => TE.fromEither(right(none)))
+      findLastVersionByModelId: jest.fn(() => TE.right(none))
     } as any) as UserDataProcessingModel;
 
     const handler = createUserDataProcessingCheckLastStatusActivityHandler(

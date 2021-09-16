@@ -103,12 +103,11 @@ export const createUserDataProcessingCheckLastStatusActivityHandler = (
         TE.chainW(
           flow(
             O.map(r => r.status),
-            E.fromOption(() =>
+            TE.fromOption(() =>
               ActivityResultNotFoundFailure.encode({
                 kind: "NOT_FOUND_FAILURE"
               })
-            ),
-            TE.fromEither
+            )
           )
         )
       )

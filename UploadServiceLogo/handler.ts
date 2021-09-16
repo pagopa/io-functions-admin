@@ -112,11 +112,11 @@ export function UpdateServiceLogoHandler(
         img => E.right<IResponseErrorValidation, UPNG.Image>(img)
       ),
       TE.fromEither,
-      TE.chain(image =>
+      TE.chain(
         TE.fromPredicate(
           (img: UPNG.Image) => img.width > 0 && img.height > 0,
           () => imageValidationErrorResponse()
-        )(image)
+        )
       ),
       TE.chainW(() =>
         pipe(

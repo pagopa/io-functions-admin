@@ -63,10 +63,7 @@ const messageModel = ({
 const mockDeleteServicePreferences = jest.fn<
   ReturnType<InstanceType<typeof ServicePreferencesDeletableModel>["delete"]>,
   Parameters<InstanceType<typeof ServicePreferencesDeletableModel>["delete"]>
->(() =>
-  // @ts-ignore
-  TE.of(true)
-);
+>(() => TE.of("anything"));
 const mockFindAllServPreferencesByFiscalCode = jest.fn<
   ReturnType<
     InstanceType<typeof ServicePreferencesDeletableModel>["findAllByFiscalCode"]

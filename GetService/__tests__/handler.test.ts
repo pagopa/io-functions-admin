@@ -16,7 +16,7 @@ describe("GetServiceHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const mockServiceModel = {
       findOneByServiceId: jest.fn(() => {
-        return TE.fromEither(right(none));
+        return TE.right(none);
       })
     };
 
@@ -60,7 +60,7 @@ describe("GetServiceHandler", () => {
     const aServiceId = "MySubscriptionId" as NonEmptyString;
     const mockServiceModel = {
       findOneByServiceId: jest.fn(() => {
-        return TE.fromEither(right(some(aRetrievedService)));
+        return TE.right(some(aRetrievedService));
       })
     };
 

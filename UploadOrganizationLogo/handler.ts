@@ -3,7 +3,6 @@ import { Context } from "@azure/functions";
 import * as express from "express";
 
 import * as TE from "fp-ts/lib/TaskEither";
-import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 
 import {
@@ -81,8 +80,7 @@ export function UploadOrganizationLogoHandler(
     );
     return pipe(
       O.tryCatch(() => UPNG.decode(bufferImage)),
-      E.fromOption(() => imageValidationErrorResponse()),
-      TE.fromEither,
+      TE.fromOption(() => imageValidationErrorResponse()),
       TE.chain(image =>
         TE.fromPredicate(
           (img: UPNG.Image) => img.width > 0 && img.height > 0,

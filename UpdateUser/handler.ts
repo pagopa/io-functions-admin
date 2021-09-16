@@ -83,23 +83,22 @@ const updateUser = (
       pipe(
         getUserFromList(client, email),
         TE.chain(userResponse =>
-          TE.fromEither(
-            pipe(
-              {
-                email,
-                first_name: userPayload.first_name,
-                id: userResponse.objectId,
-                last_name: userPayload.last_name,
-                token_name: userPayload.token_name
-              },
-              UserUpdated.decode,
-              E.mapLeft(
-                errs =>
-                  new Error(
-                    `Error decoding UserUpdated ERROR=${readableReport(errs)}`
-                  )
-              )
-            )
+          pipe(
+            {
+              email,
+              first_name: userPayload.first_name,
+              id: userResponse.objectId,
+              last_name: userPayload.last_name,
+              token_name: userPayload.token_name
+            },
+            UserUpdated.decode,
+            E.mapLeft(
+              errs =>
+                new Error(
+                  `Error decoding UserUpdated ERROR=${readableReport(errs)}`
+                )
+            ),
+            TE.fromEither
           )
         )
       )

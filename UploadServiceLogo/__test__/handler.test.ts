@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { right } from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
 
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
@@ -16,7 +15,7 @@ describe("UpdateServiceLogoHandler", () => {
   it("should return a not found error when the service is not found in the db", async () => {
     const aServiceId = "1" as NonEmptyString;
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => TE.fromEither(right(none)))
+      findOneByServiceId: jest.fn(() => TE.right(none))
     };
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
@@ -79,7 +78,7 @@ describe("UpdateServiceLogoHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => TE.fromEither(right(some({}))))
+      findOneByServiceId: jest.fn(() => TE.right(some({})))
     };
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
@@ -110,7 +109,7 @@ describe("UpdateServiceLogoHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => TE.fromEither(right(some({}))))
+      findOneByServiceId: jest.fn(() => TE.right(some({})))
     };
     const blobServiceMock = ({
       createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb(null, "any"))
@@ -143,7 +142,7 @@ describe("UpdateServiceLogoHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => TE.fromEither(right(some({}))))
+      findOneByServiceId: jest.fn(() => TE.right(some({})))
     };
     const blobServiceMock = ({
       createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb("any", null))
