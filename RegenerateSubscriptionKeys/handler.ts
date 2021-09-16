@@ -36,6 +36,14 @@ import {
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 import { SubscriptionKeyTypeMiddleware } from "../utils/middlewares/subscriptionKeyType";
 
+/**
+ * To be used for exhaustive checks
+ */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function assertNever(_: never): never {
+  throw new Error("should not have executed this");
+}
+
 type IGetSubscriptionKeysHandler = (
   context: Context,
   auth: IAzureApiAuthorization,
@@ -59,25 +67,22 @@ export function RegenerateSubscriptionKeysHandler(
       TE.chain(apiClient =>
         pipe(
           TE.tryCatch(() => {
-            if (
-              keyTypePayload.key_type === SubscriptionKeyTypeEnum.PRIMARY_KEY
-            ) {
-              return apiClient.subscription.regeneratePrimaryKey(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                serviceId
-              );
+            switch (keyTypePayload.key_type) {
+              case SubscriptionKeyTypeEnum.PRIMARY_KEY:
+                return apiClient.subscription.regeneratePrimaryKey(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  serviceId
+                );
+              case SubscriptionKeyTypeEnum.SECONDARY_KEY:
+                return apiClient.subscription.regenerateSecondaryKey(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  serviceId
+                );
+              default:
+                assertNever(keyTypePayload.key_type);
             }
-            if (
-              keyTypePayload.key_type === SubscriptionKeyTypeEnum.SECONDARY_KEY
-            ) {
-              return apiClient.subscription.regenerateSecondaryKey(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                serviceId
-              );
-            }
-            throw new Error("Unhandled key type");
           }, E.toError),
           TE.chain(() =>
             TE.tryCatch(
