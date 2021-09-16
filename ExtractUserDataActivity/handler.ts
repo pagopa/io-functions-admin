@@ -533,8 +533,7 @@ export const saveDataToBlob = (
       onZipStreamFinalized,
       onBlobStreamWritten
     ),
-    // keep only the blob stream result
-    TE.map(_ => _[2])
+    TE.map(([, , blobStreamResult]) => blobStreamResult)
   );
 };
 
