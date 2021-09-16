@@ -56,7 +56,8 @@ const executeRecursiveBackupAndDelete = <T>(
     ),
     // executes backup&delete for this set of items
     TE.chainW(items =>
-      flow(
+      pipe(
+        items,
         A.map((item: T) =>
           pipe(
             sequenceT(TE.ApplicativeSeq)<
