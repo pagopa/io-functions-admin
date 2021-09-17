@@ -4,8 +4,6 @@
 import * as df from "durable-functions";
 import * as lolex from "lolex";
 
-import { left, right } from "fp-ts/lib/Either";
-
 import * as TE from "fp-ts/lib/TaskEither";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
