@@ -2,8 +2,8 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import * as E from "fp-ts/lib/Either";
-import { isNone } from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
 
 import {
   IResponseErrorNotFound,
@@ -48,30 +48,24 @@ export function GetServiceHandler(
   serviceModel: ServiceModel
 ): IGetServiceHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  return async (_, __, serviceId) => {
-    const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
-      serviceId
+  return async (_, __, serviceId) =>
+    pipe(
+      serviceModel.findOneByServiceId(serviceId),
+      TE.mapLeft(e =>
+        ResponseErrorQuery("Error while retrieving the service", e)
+      ),
+      TE.chainW(
+        TE.fromOption(() =>
+          ResponseErrorNotFound(
+            "Service not found",
+            "The service you requested was not found in the system."
+          )
+        )
+      ),
+      TE.map(retrievedServiceToApiService),
+      TE.map(ResponseSuccessJson),
+      TE.toUnion
     )();
-
-    if (E.isRight(errorOrMaybeRetrievedService)) {
-      const maybeRetrievedService = errorOrMaybeRetrievedService.right;
-      if (isNone(maybeRetrievedService)) {
-        return ResponseErrorNotFound(
-          "Service not found",
-          "The service you requested was not found in the system."
-        );
-      } else {
-        return ResponseSuccessJson(
-          retrievedServiceToApiService(maybeRetrievedService.value)
-        );
-      }
-    } else {
-      return ResponseErrorQuery(
-        "Error while retrieving the service",
-        errorOrMaybeRetrievedService.left
-      );
-    }
-  };
 }
 
 /**
