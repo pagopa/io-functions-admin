@@ -1,13 +1,16 @@
 import { Context } from "@azure/functions";
 import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
-import { Lazy } from "fp-ts/lib/function";
+import { Lazy, pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { TableUtilities } from "azure-storage";
+import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
 import {
   ABORT_EVENT as ABORT_DELETE_EVENT,
   makeOrchestratorId as makeDeleteOrchestratorId
@@ -105,22 +108,30 @@ const startOrchestrator = async (
     | "UserDataDeleteOrchestratorV2",
   orchestratorId: string,
   orchestratorInput: unknown
-) =>
-  isOrchestratorRunning(dfClient, orchestratorId)
-    .fold(
-      error => {
-        throw error;
-      },
-      _ =>
-        !_.isRunning
-          ? dfClient.startNew(
-              orchestratorName,
-              orchestratorId,
-              orchestratorInput
-            )
-          : null
-    )
-    .run();
+): Promise<string> =>
+  pipe(
+    isOrchestratorRunning(dfClient, orchestratorId),
+    TE.chain(_ =>
+      !_.isRunning
+        ? TE.tryCatch(
+            () =>
+              dfClient.startNew(
+                orchestratorName,
+                orchestratorId,
+                orchestratorInput
+              ),
+            E.toError
+          )
+        : // if the orchestrator is already running, just return the id
+          TE.of(orchestratorId)
+    ),
+
+    // if something wrong, just raise the error
+    TE.mapLeft(error => {
+      throw error;
+    }),
+    TE.toUnion
+  )();
 
 const startUserDataDownloadOrchestrator = (
   context: Context,
@@ -186,8 +197,8 @@ const processFailedUserDataProcessing = async (
     Reason: eg.String(processable.reason),
     RowKey: eg.String(processable.fiscalCode)
   });
-  if (resultOrError.isLeft() && sResponse.statusCode !== 409) {
-    context.log.error(`${logPrefix}|ERROR=${resultOrError.value.message}`);
+  if (E.isLeft(resultOrError) && sResponse.statusCode !== 409) {
+    context.log.error(`${logPrefix}|ERROR=${resultOrError.left.message}`);
   }
 };
 
@@ -205,12 +216,44 @@ const processClosedUserDataProcessing = async (
     PartitionKey: eg.String(processable.choice),
     RowKey: eg.String(processable.fiscalCode)
   });
-  if (maybeError.isSome() && uResponse.statusCode !== 404) {
+  if (O.isSome(maybeError) && uResponse.statusCode !== 404) {
     context.log.error(
       `${logPrefix}|processClosedUserDataProcessing|ERROR=${maybeError.value.message}`
     );
   }
 };
+
+type Processable = t.TypeOf<typeof Processable>;
+const Processable = t.union([
+  ProcessableUserDataDownload,
+  ProcessableUserDataDelete,
+  ProcessableUserDataDeleteAbort,
+  FailedUserDataProcessing,
+  ClosedUserDataProcessing
+]);
+
+const getAction = (
+  context: Context,
+  insertFailure: InsertTableEntity,
+  removeFailure: DeleteTableEntity
+  // eslint-disable-next-line sonarjs/cognitive-complexity
+) => (processable: Processable): Lazy<Promise<string | void>> =>
+  flags.ENABLE_USER_DATA_DOWNLOAD && ProcessableUserDataDownload.is(processable)
+    ? (): Promise<string> =>
+        startUserDataDownloadOrchestrator(context, processable)
+    : flags.ENABLE_USER_DATA_DELETE && ProcessableUserDataDelete.is(processable)
+    ? (): Promise<string> =>
+        startUserDataDeleteOrchestrator(context, processable)
+    : ProcessableUserDataDeleteAbort.is(processable)
+    ? (): Promise<void> => raiseAbortEventOnOrchestrator(context, processable)
+    : FailedUserDataProcessing.is(processable)
+    ? (): Promise<void> =>
+        processFailedUserDataProcessing(context, processable, insertFailure)
+    : ClosedUserDataProcessing.is(processable)
+    ? (): Promise<void> =>
+        processClosedUserDataProcessing(context, processable, removeFailure)
+    : // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      () => void 0;
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions, sonarjs/cognitive-complexity
 export const triggerHandler = (
@@ -220,63 +263,38 @@ export const triggerHandler = (
   context: Context,
   input: unknown // eslint-disable-next-line sonarjs/cognitive-complexity
 ): Promise<ReadonlyArray<string | void>> => {
-  const operations = CosmosDbDocumentCollection.decode(input)
-    .getOrElseL(err => {
-      throw Error(`${logPrefix}: cannot decode input [${readableReport(err)}]`);
-    })
-    .reduce(
-      (lazyOperations, processableOrNot) =>
-        t
-          .union([
-            ProcessableUserDataDownload,
-            ProcessableUserDataDelete,
-            ProcessableUserDataDeleteAbort,
-            FailedUserDataProcessing,
-            ClosedUserDataProcessing
-          ])
-          .decode(processableOrNot)
-          .map(processable =>
-            flags.ENABLE_USER_DATA_DOWNLOAD &&
-            ProcessableUserDataDownload.is(processable)
-              ? (): Promise<string> =>
-                  startUserDataDownloadOrchestrator(context, processable)
-              : flags.ENABLE_USER_DATA_DELETE &&
-                ProcessableUserDataDelete.is(processable)
-              ? (): Promise<string> =>
-                  startUserDataDeleteOrchestrator(context, processable)
-              : ProcessableUserDataDeleteAbort.is(processable)
-              ? (): Promise<void> =>
-                  raiseAbortEventOnOrchestrator(context, processable)
-              : FailedUserDataProcessing.is(processable)
-              ? (): Promise<void> =>
-                  processFailedUserDataProcessing(
-                    context,
-                    processable,
-                    insertFailure
-                  )
-              : ClosedUserDataProcessing.is(processable)
-              ? (): Promise<void> =>
-                  processClosedUserDataProcessing(
-                    context,
-                    processable,
-                    removeFailure
-                  )
-              : // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-                () => void 0
-          )
-          .fold(
-            _ => {
-              context.log.warn(
-                `${logPrefix}: skipping document [${JSON.stringify(
-                  processableOrNot
-                )}]`
-              );
-              return lazyOperations;
-            },
-            lazyOp => [...lazyOperations, lazyOp]
-          ),
-      [] as ReadonlyArray<Lazy<Promise<string | void>>>
-    );
+  const operations = pipe(
+    input,
+    CosmosDbDocumentCollection.decode,
+    E.fold(
+      err => {
+        throw Error(
+          `${logPrefix}: cannot decode input [${readableReport(err)}]`
+        );
+      },
+      docs =>
+        docs.reduce(
+          (lazyOperations, processableOrNot) =>
+            pipe(
+              processableOrNot,
+              Processable.decode,
+              E.map(getAction(context, insertFailure, removeFailure)),
+              E.fold(
+                _ => {
+                  context.log.warn(
+                    `${logPrefix}: skipping document [${JSON.stringify(
+                      processableOrNot
+                    )}]`
+                  );
+                  return lazyOperations;
+                },
+                lazyOp => [...lazyOperations, lazyOp]
+              )
+            ),
+          [] as ReadonlyArray<Lazy<Promise<string | void>>>
+        )
+    )
+  );
 
   context.log.info(
     `${logPrefix}: processing ${operations.length} document${

@@ -5,21 +5,28 @@ import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import * as HtmlToText from "html-to-text";
 import { markdownToHtml } from "@pagopa/io-functions-commons/dist/src/utils/markdown";
 import * as t from "io-ts";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as NodeMailer from "nodemailer";
 import { sendMail } from "@pagopa/io-functions-commons/dist/src/mailer";
+import { pipe } from "fp-ts/lib/function";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 
 // TODO: switch text based on user's preferred_language
-const userDataDeleteMessage = NewMessage.decode({
-  content: {
-    markdown: `Ciao, come da te richiesto abbiamo eseguito la tua richiesta di cancellazione.
+const userDataDeleteMessage = pipe(
+  {
+    content: {
+      markdown: `Ciao, come da te richiesto abbiamo eseguito la tua richiesta di cancellazione.
 Potrai iscriverti nuovamente all’App IO in ogni momento effettuando una nuova procedura di registrazione. Grazie per aver utilizzato IO`,
-    subject: `Eliminazione del tuo profilo su IO`
-  }
-}).getOrElseL(errs => {
-  throw new Error("Invalid MessageContent: " + readableReport(errs));
-});
+      subject: `Eliminazione del tuo profilo su IO`
+    }
+  },
+  NewMessage.decode,
+  E.getOrElseW(errs => {
+    throw new Error("Invalid MessageContent: " + readableReport(errs));
+  })
+);
 
 // Activity result
 export const ActivityResultSuccess = t.interface({
@@ -71,49 +78,55 @@ export const getActivityFunction = (
       kind: "SUCCESS"
     });
 
-  return ActivityInput.decode(input).fold<Promise<ActivityResult>>(
-    async errs =>
+  return pipe(
+    input,
+    ActivityInput.decode,
+    E.mapLeft(errs =>
       failure(
         `SendUserDataDeleteEmailActivity|Cannot decode input|ERROR=${readableReport(
           errs
         )}|INPUT=${JSON.stringify(input)}`
-      ),
-    async ({ toAddress, fiscalCode }) => {
+      )
+    ),
+    TE.fromEither,
+    TE.chainW(({ toAddress, fiscalCode }) => {
       const logPrefix = `SendUserDataDeleteEmailActivity|PROFILE=${fiscalCode}`;
       context.log.verbose(`${logPrefix}|Sending user data delete email`);
 
       const { content } = userDataDeleteMessage;
+      return pipe(
+        TE.tryCatch(async () => {
+          const documentHtml = await markdownToHtml
+            .process(content.markdown)
+            .then(e => e.toString());
 
-      const documentHtml = await markdownToHtml
-        .process(content.markdown)
-        .then(e => e.toString());
+          // converts the HTML to pure text to generate the text version of the message
+          const bodyText = HtmlToText.fromString(
+            documentHtml,
+            notificationDefaultParams.HTML_TO_TEXT_OPTIONS
+          );
 
-      // converts the HTML to pure text to generate the text version of the message
-      const bodyText = HtmlToText.fromString(
-        documentHtml,
-        notificationDefaultParams.HTML_TO_TEXT_OPTIONS
+          return { bodyText, documentHtml };
+        }, E.toError),
+        TE.chain(({ bodyText, documentHtml }) =>
+          sendMail(lMailerTransporter, {
+            from: notificationDefaultParams.MAIL_FROM,
+            html: documentHtml,
+            subject: content.subject,
+            text: bodyText,
+            to: toAddress
+          })
+        ),
+        TE.map(() => context.log.verbose(`${logPrefix}|RESULT=SUCCESS`)),
+        TE.mapLeft(error => {
+          context.log.error(`${logPrefix}|ERROR=${error.message}`);
+          throw new Error(`Error while sending email: ${error.message}`);
+        })
       );
-
-      // trigger email delivery
-      await sendMail(lMailerTransporter, {
-        from: notificationDefaultParams.MAIL_FROM,
-        html: documentHtml,
-        subject: content.subject,
-        text: bodyText,
-        to: toAddress
-      })
-        .bimap(
-          error => {
-            context.log.error(`${logPrefix}|ERROR=${error.message}`);
-            throw new Error(`Error while sending email: ${error.message}`);
-          },
-          () => context.log.verbose(`${logPrefix}|RESULT=SUCCESS`)
-        )
-        .run();
-
-      return success();
-    }
-  );
+    }),
+    TE.map(() => success()),
+    TE.toUnion
+  )();
 };
 
 export default getActivityFunction;

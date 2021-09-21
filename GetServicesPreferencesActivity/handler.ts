@@ -7,15 +7,12 @@ import {
   asyncIteratorToArray,
   flattenAsyncIterator
 } from "@pagopa/io-functions-commons/dist/src/utils/async";
-import {
-  CosmosErrors,
-  toCosmosErrorResponse
-} from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { isRight } from "fp-ts/lib/Either";
-import { fromEither, tryCatch } from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
 
 const ActivityInput = t.interface({
@@ -46,12 +43,13 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 export const GetServicesPreferencesActivityHandler = (
   servicePreferences: ServicesPreferencesModel
 ) => async (context: Context, input: unknown): Promise<ActivityResult> =>
-  fromEither<t.Errors, ActivityInput>(ActivityInput.decode(input))
-    .mapLeft<InvalidInputFailure | CosmosErrors>(_ =>
-      InvalidInputFailure.encode({ kind: "INVALID_INPUT" })
-    )
-    .chain(({ fiscalCode, settingsVersion }) =>
-      tryCatch(
+  pipe(
+    input,
+    ActivityInput.decode,
+    E.mapLeft(_ => InvalidInputFailure.encode({ kind: "INVALID_INPUT" })),
+    TE.fromEither,
+    TE.chainW(({ fiscalCode, settingsVersion }) =>
+      TE.tryCatch(
         async () =>
           servicePreferences
             .getQueryIterator({
@@ -70,34 +68,28 @@ export const GetServicesPreferencesActivityHandler = (
             [Symbol.asyncIterator](),
         toCosmosErrorResponse
       )
-    )
-    .map(flattenAsyncIterator)
-    .map(asyncIteratorToArray)
-    .chain(i => tryCatch(() => i, toCosmosErrorResponse))
-    .map(values => values.filter(isRight).map(_ => _.value))
-    .fold<ActivityResult>(
-      err => {
-        if (err.kind === "INVALID_INPUT") {
-          context.log.error(
-            `GetServicesPreferencesActivityHandler|ERROR|Invalid activity input [${err}]`
-          );
-          return err;
-        }
+    ),
+    TE.map(flattenAsyncIterator),
+    TE.map(asyncIteratorToArray),
+    TE.chainW(i => TE.tryCatch(() => i, toCosmosErrorResponse)),
+    TE.map(values => values.filter(E.isRight).map(_ => _.right)),
+    TE.mapLeft(err => {
+      if (err.kind === "INVALID_INPUT") {
         context.log.error(
-          `GetServicesPreferencesActivityHandler|ERROR|Cosmos error [${
-            err.kind === "COSMOS_DECODING_ERROR"
-              ? readableReport(err.error)
-              : err.kind === "COSMOS_ERROR_RESPONSE"
-              ? err.error.message
-              : err.kind
-          }]`
+          `GetServicesPreferencesActivityHandler|ERROR|Invalid activity input [${err}]`
         );
-        throw new Error(err.kind);
-      },
-      preferences =>
-        ActivityResultSuccess.encode({
-          kind: "SUCCESS",
-          preferences
-        })
-    )
-    .run();
+        return err;
+      }
+      context.log.error(
+        `GetServicesPreferencesActivityHandler|ERROR|Cosmos error [${err.error.message}]`
+      );
+      throw new Error(err.kind);
+    }),
+    TE.map(preferences =>
+      ActivityResultSuccess.encode({
+        kind: "SUCCESS",
+        preferences
+      })
+    ),
+    TE.toUnion
+  )();

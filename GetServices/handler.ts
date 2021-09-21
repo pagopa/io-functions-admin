@@ -19,19 +19,21 @@ import {
   ResponseErrorQuery
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
 
-import { isLeft } from "fp-ts/lib/Either";
-import { collect, StrMap } from "fp-ts/lib/StrMap";
-import { tryCatch } from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as RMAP from "fp-ts/lib/ReadonlyMap";
+import * as RA from "fp-ts/lib/ReadonlyArray";
 import {
   asyncIteratorToArray,
   flattenAsyncIterator
 } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import {
   IResponseSuccessJson,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
+import { Ord } from "fp-ts/lib/string";
 import { ServiceIdWithVersion } from "../generated/definitions/ServiceIdWithVersion";
 
 type IGetServicesHandlerResult =
@@ -56,44 +58,49 @@ export function GetServicesHandler(
       .getCollectionIterator()
       [Symbol.asyncIterator]();
 
-    return tryCatch(
-      () =>
-        asyncIteratorToArray(
-          flattenAsyncIterator(allRetrievedServicesIterator)
-        ),
-      toCosmosErrorResponse
-    )
-      .fold<IGetServicesHandlerResult>(
-        error => ResponseErrorQuery("Cannot get services", error),
-        results => {
-          const reducedResults = results.reduce((prev, maybeCurr) => {
-            if (isLeft(maybeCurr)) {
-              return prev;
-            }
-            const curr = maybeCurr.value;
-            // keep only the latest version
-            const isNewer =
-              !prev[curr.serviceId] || curr.version > prev[curr.serviceId];
-            return {
-              ...prev,
-              ...(isNewer ? { [curr.serviceId]: curr.version } : {})
-            };
-          }, {});
-          const items = collect(
-            new StrMap(reducedResults),
-            (serviceId, v: NonNegativeInteger) => ({
-              id: serviceId,
-              version: v
+    return pipe(
+      TE.tryCatch(
+        () =>
+          asyncIteratorToArray(
+            flattenAsyncIterator(allRetrievedServicesIterator)
+          ),
+        toCosmosErrorResponse
+      ),
+      TE.mapLeft(error => ResponseErrorQuery("Cannot get services", error)),
+      TE.map(results =>
+        pipe(
+          results,
+          RA.filter(E.isRight),
+          RA.map(e => e.right),
+          // create a Map (serviceId, lastVersionNumber)
+          items =>
+            RA.reduce(
+              new Map<
+                typeof items[0]["serviceId"],
+                typeof items[0]["version"]
+              >(),
+              (prev, curr: typeof items[0]) => {
+                // keep only the latest version
+                const isNewer =
+                  !prev.has(curr.serviceId) ||
+                  curr.version > prev.get(curr.serviceId);
+                return isNewer ? prev.set(curr.serviceId, curr.version) : prev;
+              }
+            )(items),
+          // format into an array of { id, version }
+          RMAP.collect(Ord)((serviceId, version) => ({
+            id: serviceId,
+            version
+          })),
+          items =>
+            ResponseSuccessJson({
+              items,
+              page_size: items.length
             })
-          );
-          // FIXME: make response iterable over results pages
-          return ResponseSuccessJson({
-            items,
-            page_size: items.length
-          });
-        }
-      )
-      .run();
+        )
+      ),
+      TE.toUnion
+    )();
   };
 }
 

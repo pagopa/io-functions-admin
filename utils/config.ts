@@ -9,6 +9,8 @@ import { MailerConfig } from "@pagopa/io-functions-commons/dist/src/mailer";
 import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 
 // global app configuration
 export type IConfig = t.TypeOf<typeof IConfig>;
@@ -64,11 +66,14 @@ export const IConfig = t.intersection([
   MailerConfig
 ]);
 
-// No need to re-evaluate this object for each call
-const errorOrConfig: t.Validation<IConfig> = IConfig.decode({
+// raw config object, basically the env object enriched with custom fields
+export const envConfig = {
   ...process.env,
   isProduction: process.env.NODE_ENV === "production"
-});
+};
+
+// No need to re-evaluate this object for each call
+const errorOrConfig: t.Validation<IConfig> = IConfig.decode(envConfig);
 
 /**
  * Read the application configuration and check for invalid values.
@@ -90,7 +95,10 @@ export function getConfig(): t.Validation<IConfig> {
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getConfigOrThrow(): IConfig {
-  return errorOrConfig.getOrElseL(errors => {
-    throw new Error(`Invalid configuration: ${readableReport(errors)}`);
-  });
+  return pipe(
+    errorOrConfig,
+    E.getOrElse(errors => {
+      throw new Error(`Invalid configuration: ${readableReport(errors)}`);
+    })
+  );
 }

@@ -1,6 +1,6 @@
 import * as express from "express";
 
-import { isLeft, isRight } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 
 import { aServicePayload } from "../../../__mocks__/mocks";
 import { ServicePayloadMiddleware } from "../service";
@@ -13,7 +13,7 @@ describe("ServicePayloadMiddleware", () => {
 
     const result = await ServicePayloadMiddleware(request);
 
-    expect(isLeft(result)).toBe(true);
+    expect(E.isLeft(result)).toBe(true);
   });
 
   it("should return the Service if the request.body is a valid Service", async () => {
@@ -23,9 +23,9 @@ describe("ServicePayloadMiddleware", () => {
 
     const result = await ServicePayloadMiddleware(request);
 
-    expect(isRight(result)).toBe(true);
-    if (isRight(result)) {
-      expect(result.value).toEqual(aServicePayload);
+    expect(E.isRight(result)).toBe(true);
+    if (E.isRight(result)) {
+      expect(result.right).toEqual(aServicePayload);
     }
   });
 });

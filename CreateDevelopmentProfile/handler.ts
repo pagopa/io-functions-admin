@@ -2,7 +2,7 @@ import * as express from "express";
 
 import { Context } from "@azure/functions";
 
-import { isLeft } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import {
@@ -40,6 +40,7 @@ import {
 
 import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
+import { pipe } from "fp-ts/lib/function";
 import { DevelopmentProfile } from "../generated/definitions/DevelopmentProfile";
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
@@ -66,9 +67,10 @@ export const DeveloperProfilePayloadMiddleware: IRequestMiddleware<
   DevelopmentProfile
 > = request =>
   new Promise(resolve => {
-    const validation = DevelopmentProfile.decode(request.body);
-    const result = validation.mapLeft(
-      ResponseErrorFromValidationErrors(ExtendedProfile)
+    const result = pipe(
+      request.body,
+      DevelopmentProfile.decode,
+      E.mapLeft(ResponseErrorFromValidationErrors(ExtendedProfile))
     );
     resolve(result);
   });
@@ -98,16 +100,16 @@ export function CreateDevelopmentProfileHandler(
 
     const errorOrFiscalCode = FiscalCode.decode(sandboxFiscalCode);
 
-    if (isLeft(errorOrFiscalCode)) {
+    if (E.isLeft(errorOrFiscalCode)) {
       context.log.error(
-        `${logPrefix}|ERROR=${readableReport(errorOrFiscalCode.value)}`
+        `${logPrefix}|ERROR=${readableReport(errorOrFiscalCode.left)}`
       );
       return ResponseErrorFromValidationErrors(FiscalCode)(
-        errorOrFiscalCode.value
+        errorOrFiscalCode.left
       );
     }
 
-    const fiscalCode = errorOrFiscalCode.value;
+    const fiscalCode = errorOrFiscalCode.right;
 
     const newProfile: NewProfile = {
       email: developmentProfilePayload.email,
@@ -121,10 +123,10 @@ export function CreateDevelopmentProfileHandler(
       }
     };
 
-    const errorOrCreatedProfile = await profileModel.create(newProfile).run();
+    const errorOrCreatedProfile = await profileModel.create(newProfile)();
 
-    if (isLeft(errorOrCreatedProfile)) {
-      const error = errorOrCreatedProfile.value;
+    if (E.isLeft(errorOrCreatedProfile)) {
+      const error = errorOrCreatedProfile.left;
       context.log.error(`${logPrefix}|ERROR=${error}`);
 
       if (error.kind === "COSMOS_ERROR_RESPONSE" && error.error.code === 409) {
@@ -139,7 +141,7 @@ export function CreateDevelopmentProfileHandler(
       );
     }
 
-    const createdProfile = errorOrCreatedProfile.value;
+    const createdProfile = errorOrCreatedProfile.right;
 
     context.log.verbose(`${logPrefix}|SUCCESS`);
 

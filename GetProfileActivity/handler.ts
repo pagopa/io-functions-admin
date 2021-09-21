@@ -4,7 +4,9 @@
 
 import * as t from "io-ts";
 
-import { fromEither, fromLeft, taskEither } from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
 
 import { Context } from "@azure/functions";
 
@@ -72,7 +74,7 @@ export const ActivityResult = t.taggedUnion("kind", [
 
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
-const logPrefix = `GetUserDataProcessingActivity`;
+const logPrefix = `GetProfileActivity`;
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function assertNever(_: never): void {
@@ -113,46 +115,45 @@ export const createGetProfileActivityHandler = (profileModel: ProfileModel) => (
   context: Context,
   input: unknown
 ) =>
-  // the actual handler
-  fromEither(ActivityInput.decode(input))
-    .mapLeft<ActivityResultFailure>((reason: t.Errors) =>
+  pipe(
+    input,
+    ActivityInput.decode,
+    // the actual handler
+    E.mapLeft(reason =>
       ActivityResultInvalidInputFailure.encode({
         kind: "INVALID_INPUT_FAILURE",
         reason: readableReport(reason)
       })
-    )
-    .chain(({ fiscalCode }) =>
-      profileModel
-        .findLastVersionByModelId([fiscalCode])
-        .foldTaskEither<ActivityResultFailure, RetrievedProfile>(
-          error =>
-            fromLeft(
-              ActivityResultQueryFailure.encode({
-                kind: "QUERY_FAILURE",
-                query: "findLastVersionByModelId",
-                reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
-              })
-            ),
-          maybeRecord =>
-            maybeRecord.fold(
-              fromLeft(
-                ActivityResultNotFoundFailure.encode({
-                  kind: "NOT_FOUND_FAILURE"
-                })
-              ),
-              _ => taskEither.of(_)
-            )
+    ),
+    TE.fromEither,
+    TE.chainW(({ fiscalCode }) =>
+      pipe(
+        profileModel.findLastVersionByModelId([fiscalCode]),
+        TE.mapLeft(error =>
+          ActivityResultQueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            query: "findLastVersionByModelId",
+            reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
+          })
+        ),
+        TE.chainW(
+          TE.fromOption(() =>
+            ActivityResultNotFoundFailure.encode({
+              kind: "NOT_FOUND_FAILURE"
+            })
+          )
         )
-    )
-    .map(record =>
+      )
+    ),
+    TE.map(record =>
       ActivityResultSuccess.encode({
         kind: "SUCCESS",
         value: record
       })
-    )
-    .mapLeft(failure => {
+    ),
+    TE.mapLeft(failure => {
       logFailure(context)(failure);
       return failure;
-    })
-    .run()
-    .then(e => e.value);
+    }),
+    TE.toUnion
+  )();

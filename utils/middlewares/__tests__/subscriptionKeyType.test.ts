@@ -1,6 +1,6 @@
 import * as express from "express";
 
-import { isLeft, isRight } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 
 import { SubscriptionKeyTypeEnum } from "../../../generated/definitions/SubscriptionKeyType";
 import { SubscriptionKeyTypeMiddleware } from "../subscriptionKeyType";
@@ -13,7 +13,7 @@ describe("SubscriptionKeyTypeMiddleware", () => {
 
     const result = await SubscriptionKeyTypeMiddleware(request);
 
-    expect(isLeft(result)).toBe(true);
+    expect(E.isLeft(result)).toBe(true);
   });
 
   it("should return the SubscriptionKeyType if the request.body is a valid SubscriptionKeyType", async () => {
@@ -26,9 +26,9 @@ describe("SubscriptionKeyTypeMiddleware", () => {
 
     const result = await SubscriptionKeyTypeMiddleware(request);
 
-    expect(isRight(result)).toBe(true);
-    if (isRight(result)) {
-      expect(result.value).toEqual(subscriptionKeyType);
+    expect(E.isRight(result)).toBe(true);
+    if (E.isRight(result)) {
+      expect(result.right).toEqual(subscriptionKeyType);
     }
   });
 });

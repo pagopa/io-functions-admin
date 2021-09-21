@@ -2,9 +2,6 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import { isLeft, left, right } from "fp-ts/lib/Either";
-import { fromNullable, isNone } from "fp-ts/lib/Option";
-
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -33,16 +30,10 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
 
 import { BlobService } from "azure-storage";
-import { identity } from "fp-ts/lib/function";
-import { Option, tryCatch } from "fp-ts/lib/Option";
-import {
-  fromLeft,
-  fromPredicate as fromPredicateT,
-  taskEither,
-  TaskEither,
-  taskify
-} from "fp-ts/lib/TaskEither";
-import { fromEither } from "fp-ts/lib/TaskEither";
+import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import * as UPNG from "upng-js";
 import { Logo as ApiLogo } from "../generated/definitions/Logo";
 import { ServiceId } from "../generated/definitions/ServiceId";
@@ -75,10 +66,13 @@ const upsertBlobFromImageBuffer = (
   containerName: string,
   blobName: string,
   content: Buffer
-): TaskEither<Error, Option<BlobService.BlobResult>> =>
-  taskify<Error, BlobService.BlobResult>(cb =>
-    blobService.createBlockBlobFromText(containerName, blobName, content, cb)
-  )().map(fromNullable);
+): TE.TaskEither<Error, O.Option<BlobService.BlobResult>> =>
+  pipe(
+    TE.taskify<Error, BlobService.BlobResult>(cb =>
+      blobService.createBlockBlobFromText(containerName, blobName, content, cb)
+    )(),
+    TE.map(O.fromNullable)
+  );
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateServiceLogoHandler(
@@ -88,18 +82,18 @@ export function UpdateServiceLogoHandler(
 ): IUpdateServiceHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (_, __, serviceId, logoPayload) => {
-    const errorOrMaybeRetrievedService = await serviceModel
-      .findOneByServiceId(serviceId)
-      .run();
-    if (isLeft(errorOrMaybeRetrievedService)) {
+    const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
+      serviceId
+    )();
+    if (E.isLeft(errorOrMaybeRetrievedService)) {
       return ResponseErrorQuery(
         "Error trying to retrieve existing service",
-        errorOrMaybeRetrievedService.value
+        errorOrMaybeRetrievedService.left
       );
     }
 
-    const maybeService = errorOrMaybeRetrievedService.value;
-    if (isNone(maybeService)) {
+    const maybeService = errorOrMaybeRetrievedService.right;
+    if (O.isNone(maybeService)) {
       return ResponseErrorNotFound(
         "Error",
         "Could not find a service with the provided serviceId"
@@ -108,65 +102,58 @@ export function UpdateServiceLogoHandler(
 
     const bufferImage = Buffer.from(logoPayload.logo, "base64");
     const lowerCaseServiceId = serviceId.toLowerCase();
-    return fromEither(
-      tryCatch(() => UPNG.decode(bufferImage)).foldL(
+    return pipe(
+      O.tryCatch(() => UPNG.decode(bufferImage)),
+      O.fold(
         () =>
-          left<IResponseErrorValidation, UPNG.Image>(
+          E.left<IResponseErrorValidation, UPNG.Image>(
             imageValidationErrorResponse()
           ),
-        img => right<IResponseErrorValidation, UPNG.Image>(img)
-      )
-    )
-      .chain(image =>
-        fromPredicateT(
+        img => E.right<IResponseErrorValidation, UPNG.Image>(img)
+      ),
+      TE.fromEither,
+      TE.chain(
+        TE.fromPredicate(
           (img: UPNG.Image) => img.width > 0 && img.height > 0,
           () => imageValidationErrorResponse()
-        )(image)
-      )
-      .foldTaskEither<
-        IResponseErrorValidation | IResponseErrorInternal,
-        // eslint-disable-next-line @typescript-eslint/ban-types
-        IResponseSuccessRedirectToResource<{}, {}>
-      >(
-        imageValidationError => fromLeft(imageValidationError),
-        () =>
+        )
+      ),
+      TE.chainW(() =>
+        pipe(
           upsertBlobFromImageBuffer(
             blobService,
             "services",
             `${lowerCaseServiceId}.png`,
             bufferImage
-          )
-            .mapLeft(err =>
-              ResponseErrorInternal(
-                `Error trying to connect to storage ${err.message}`
-              )
+          ),
+
+          TE.mapLeft(err =>
+            ResponseErrorInternal(
+              `Error trying to connect to storage ${err.message}`
             )
-            .chain(maybeResult =>
-              maybeResult.foldL(
-                () =>
-                  fromLeft(
-                    ResponseErrorInternal(
-                      "Error trying to upload image logo on storage"
-                    )
-                  ),
-                () =>
-                  taskEither.of(
-                    ResponseSuccessRedirectToResource(
-                      {},
-                      `${logosUrl}/services/${lowerCaseServiceId}.png`,
-                      {}
-                    )
+          ),
+          TE.chain(
+            O.fold(
+              () =>
+                TE.left(
+                  ResponseErrorInternal(
+                    "Error trying to upload image logo on storage"
                   )
-              )
+                ),
+              () =>
+                TE.of(
+                  ResponseSuccessRedirectToResource(
+                    {},
+                    `${logosUrl}/services/${lowerCaseServiceId}.png`,
+                    {}
+                  )
+                )
             )
-      )
-      .fold<
-        | IResponseErrorValidation
-        | IResponseErrorInternal
-        // eslint-disable-next-line @typescript-eslint/ban-types
-        | IResponseSuccessRedirectToResource<{}, {}>
-      >(identity, identity)
-      .run();
+          )
+        )
+      ),
+      TE.toUnion
+    )();
   };
 }
 

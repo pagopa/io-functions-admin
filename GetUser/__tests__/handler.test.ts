@@ -5,8 +5,8 @@ import {
   SubscriptionContract
 } from "@azure/arm-apimanagement/esm/models";
 import { GraphRbacManagementClient } from "@azure/graph";
-import { isRight, left, right } from "fp-ts/lib/Either";
-import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { UserInfo } from "../../generated/definitions/UserInfo";
 import * as ApimUtils from "../../utils/apim";
@@ -16,6 +16,7 @@ import {
   subscriptionContractToApiSubscription
 } from "../../utils/conversions";
 import { GetUserHandler } from "../handler";
+import { pipe } from "fp-ts/lib/function";
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
@@ -70,7 +71,7 @@ mockAdb2cManagementClient.mockImplementation(() => ({
 
 const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
 spyOnGetApiClient.mockImplementation(() =>
-  fromEither(right(new mockApiManagementClient()))
+  TE.of(new mockApiManagementClient())
 );
 
 const spyOnGetAdb2cClient = jest.spyOn(
@@ -78,7 +79,7 @@ const spyOnGetAdb2cClient = jest.spyOn(
   "getGraphRbacManagementClient"
 );
 spyOnGetAdb2cClient.mockImplementation(() =>
-  fromEither(right(new mockAdb2cManagementClient()))
+  TE.of(new mockAdb2cManagementClient())
 );
 
 const mockLog = jest.fn();
@@ -90,7 +91,7 @@ const fakeAdb2cExtensionAppClientId = "extension-client-id" as NonEmptyString;
 describe("GetUser", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
-      fromLeft(Error("Error from ApiManagementClient constructor"))
+      TE.left(Error("Error from ApiManagementClient constructor"))
     );
 
     const getUserHandler = GetUserHandler(
@@ -367,12 +368,17 @@ describe("GetUser", () => {
       value: {
         groups: someValidGroups
           .concat(someMoreValidGroups)
-          .map(elem => groupContractToApiGroup(elem).value),
+          .map(elem => pipe(groupContractToApiGroup(elem), E.toUnion)),
         subscriptions: someValidSubscriptions
           .concat(someMoreValidSubscriptions)
-          .map(elem => subscriptionContractToApiSubscription(elem).value)
+          .map(elem =>
+            pipe(subscriptionContractToApiSubscription(elem), E.toUnion)
+          )
       }
     });
-    expect(isRight(UserInfo.decode((response as any).value))).toBeTruthy();
+    const decoded = UserInfo.decode(response);
+    if (E.isRight(decoded)) {
+      expect(decoded.right).toBeTruthy();
+    }
   });
 });

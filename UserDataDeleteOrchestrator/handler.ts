@@ -4,8 +4,8 @@ import {
   TaskSet,
   RetryOptions
 } from "durable-functions/lib/src/classes";
-import { isLeft, toError } from "fp-ts/lib/Either";
-import { toString } from "fp-ts/lib/function";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { RetrievedProfile } from "@pagopa/io-functions-commons/dist/src/models/profile";
@@ -54,8 +54,12 @@ import { ABORT_EVENT, addDays, addHours } from "./utils";
 
 const logPrefix = "UserDataDeleteOrchestrator";
 
-const printableError = (error: Error | unknown): string =>
-  error instanceof Error ? error.message : toString(error);
+const printableError = (error: Error | t.Errors | unknown): string =>
+  error instanceof Error
+    ? error.message
+    : Array.isArray(error)
+    ? readableReport(error)
+    : String(error);
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 export const InvalidInputFailure = t.interface({
@@ -133,8 +137,10 @@ function* setUserSessionLock(
       fiscalCode
     })
   );
-  return SetUserSessionLockActivityResultSuccess.decode(result).getOrElseL(
-    _ => {
+  return pipe(
+    result,
+    SetUserSessionLockActivityResultSuccess.decode,
+    E.getOrElseW(_ => {
       context.log.error(
         `${logPrefix}|ERROR|SetUserSessionLockActivity fail|${readableReport(
           _
@@ -147,7 +153,7 @@ function* setUserSessionLock(
           action
         }
       );
-    }
+    })
   );
 }
 
@@ -163,14 +169,16 @@ function* isFailedUserDataProcessing(
       fiscalCode: currentRecord.fiscalCode
     })
   );
-  return IsFailedUserDataProcessingActivityResultSuccess.decode(
-    result
-  ).getOrElseL(_ => {
-    throw toActivityFailure(
-      { kind: "IS_FAILED_USER_DATA_PROCESSING_ACTIVITY_RESULT" },
-      "IsFailedUserDataProcessingActivity"
-    );
-  }).value;
+  return pipe(
+    result,
+    IsFailedUserDataProcessingActivityResultSuccess.decode,
+    E.getOrElseW(_ => {
+      throw toActivityFailure(
+        { kind: "IS_FAILED_USER_DATA_PROCESSING_ACTIVITY_RESULT" },
+        "IsFailedUserDataProcessingActivity"
+      );
+    })
+  ).value;
 }
 
 function* setUserDataProcessingStatus(
@@ -186,17 +194,19 @@ function* setUserDataProcessingStatus(
       nextStatus
     }
   );
-  return SetUserDataProcessingStatusActivityResultSuccess.decode(
-    result
-  ).getOrElseL(_ => {
-    throw toActivityFailure(
-      { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
-      "SetUserDataProcessingStatusActivity",
-      {
-        status: nextStatus
-      }
-    );
-  });
+  return pipe(
+    result,
+    SetUserDataProcessingStatusActivityResultSuccess.decode,
+    E.getOrElseW(_ => {
+      throw toActivityFailure(
+        { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
+        "SetUserDataProcessingStatusActivity",
+        {
+          status: nextStatus
+        }
+      );
+    })
+  );
 }
 
 function* hasPendingDownload(
@@ -211,27 +221,31 @@ function* hasPendingDownload(
     })
   );
 
-  return GetUserDataProcessingStatusActivityResult.decode(result).fold(
-    _ => {
-      throw toActivityFailure(
-        { kind: "GET_USER_DATA_PROCESSING_ACTIVITY_RESULT" },
-        "GetUserDataProcessingActivity"
-      );
-    }, // check if
-    response => {
-      if (GetUserDataProcessingStatusActivityResultSuccess.is(response)) {
-        return [
-          UserDataProcessingStatusEnum.PENDING,
-          UserDataProcessingStatusEnum.WIP
-        ].includes(response.value.status);
-      } else if (
-        GetUserDataProcessingStatusActivityResultNotFoundFailure.is(response)
-      ) {
-        return false;
-      }
+  return pipe(
+    result,
+    GetUserDataProcessingStatusActivityResult.decode,
+    E.fold(
+      _ => {
+        throw toActivityFailure(
+          { kind: "GET_USER_DATA_PROCESSING_ACTIVITY_RESULT" },
+          "GetUserDataProcessingActivity"
+        );
+      }, // check if
+      response => {
+        if (GetUserDataProcessingStatusActivityResultSuccess.is(response)) {
+          return [
+            UserDataProcessingStatusEnum.PENDING,
+            UserDataProcessingStatusEnum.WIP
+          ].includes(response.value.status);
+        } else if (
+          GetUserDataProcessingStatusActivityResultNotFoundFailure.is(response)
+        ) {
+          return false;
+        }
 
-      throw toActivityFailure(response, "GetUserDataProcessingActivity");
-    }
+        throw toActivityFailure(response, "GetUserDataProcessingActivity");
+      }
+    )
   );
 }
 
@@ -249,17 +263,21 @@ function* deleteUserData(
       fiscalCode: currentRecord.fiscalCode
     })
   );
-  return DeleteUserDataActivityResultSuccess.decode(result).getOrElseL(_ => {
-    context.log.error(
-      `${logPrefix}|ERROR|DeleteUserDataActivity fail`,
-      result,
-      readableReport(_)
-    );
-    throw toActivityFailure(
-      { kind: "DELETE_USER_DATA" },
-      "DeleteUserDataActivity"
-    );
-  });
+  return pipe(
+    result,
+    DeleteUserDataActivityResultSuccess.decode,
+    E.getOrElseW(_ => {
+      context.log.error(
+        `${logPrefix}|ERROR|DeleteUserDataActivity fail`,
+        result,
+        readableReport(_)
+      );
+      throw toActivityFailure(
+        { kind: "DELETE_USER_DATA" },
+        "DeleteUserDataActivity"
+      );
+    })
+  );
 }
 
 function* sendUserDataDeleteEmail(
@@ -274,8 +292,10 @@ function* sendUserDataDeleteEmail(
       toAddress
     })
   );
-  return SendUserDataDeleteEmailActivityResultSuccess.decode(result).getOrElseL(
-    _ => {
+  return pipe(
+    result,
+    SendUserDataDeleteEmailActivityResultSuccess.decode,
+    E.getOrElseW(_ => {
       context.log.error(
         `${logPrefix}|ERROR|SendUserDataDeleteEmailActivity fail|${readableReport(
           _
@@ -285,7 +305,7 @@ function* sendUserDataDeleteEmail(
         { kind: "SEND_USER_DELETE_EMAIL_ACTIVITY_RESULT" },
         "SendUserDataDeleteEmailActivity"
       );
-    }
+    })
   );
 }
 
@@ -299,17 +319,21 @@ function* getProfile(
       fiscalCode
     })
   );
-  return GetProfileActivityResultSuccess.decode(result).getOrElseL(_ => {
-    context.log.error(
-      `${logPrefix}|ERROR|GetProfileActivity fail|${readableReport(
-        _
-      )}|result=${JSON.stringify(result)}`
-    );
-    throw toActivityFailure(
-      { kind: "GET_PROFILE_ACTIVITY_RESULT" },
-      "GetProfileActivity"
-    );
-  }).value;
+  return pipe(
+    result,
+    GetProfileActivityResultSuccess.decode,
+    E.getOrElseW(_ => {
+      context.log.error(
+        `${logPrefix}|ERROR|GetProfileActivity fail|${readableReport(
+          _
+        )}|result=${JSON.stringify(result)}`
+      );
+      throw toActivityFailure(
+        { kind: "GET_PROFILE_ACTIVITY_RESULT" },
+        "GetProfileActivity"
+      );
+    })
+  ).value;
 }
 
 function* updateSubscriptionFeed(
@@ -356,26 +380,28 @@ export const createUserDataDeleteOrchestratorHandler = (
     const document = context.df.getInput();
     // This check has been done on the trigger, so it should never fail.
     // However, it's worth the effort to check it twice
-    const invalidInputOrCurrentUserDataProcessing = ProcessableUserDataDelete.decode(
-      document
-    ).mapLeft<InvalidInputFailure>(err => {
-      context.log.error(
-        `${logPrefix}|WARN|Cannot decode ProcessableUserDataDelete document: ${readableReport(
-          err
-        )}`
-      );
-      return InvalidInputFailure.encode({
-        kind: "INVALID_INPUT",
-        reason: readableReport(err)
-      });
-    });
+    const invalidInputOrCurrentUserDataProcessing = pipe(
+      document,
+      ProcessableUserDataDelete.decode,
+      E.mapLeft(err => {
+        context.log.error(
+          `${logPrefix}|WARN|Cannot decode ProcessableUserDataDelete document: ${readableReport(
+            err
+          )}`
+        );
+        return InvalidInputFailure.encode({
+          kind: "INVALID_INPUT",
+          reason: readableReport(err)
+        });
+      })
+    );
 
-    if (isLeft(invalidInputOrCurrentUserDataProcessing)) {
-      return invalidInputOrCurrentUserDataProcessing.value;
+    if (E.isLeft(invalidInputOrCurrentUserDataProcessing)) {
+      return invalidInputOrCurrentUserDataProcessing.left;
     }
 
     const currentUserDataProcessing =
-      invalidInputOrCurrentUserDataProcessing.value;
+      invalidInputOrCurrentUserDataProcessing.right;
 
     context.log.verbose(
       `${logPrefix}|VERBOSE|Executing delete`,
@@ -525,15 +551,19 @@ export const createUserDataDeleteOrchestratorHandler = (
 
       trackUserDataDeleteException(
         "failed",
-        toError(error),
+        E.toError(error),
         currentUserDataProcessing
       );
 
-      const orchestrationFailure = OrchestratorFailure.decode(error).getOrElse(
-        UnhanldedFailure.encode({
-          kind: "UNHANDLED",
-          reason: printableError(error)
-        })
+      const orchestrationFailure = pipe(
+        error,
+        OrchestratorFailure.decode,
+        E.getOrElseW(() =>
+          UnhanldedFailure.encode({
+            kind: "UNHANDLED",
+            reason: printableError(error)
+          })
+        )
       );
 
       const failureReason = `${orchestrationFailure.kind}${
@@ -542,7 +572,7 @@ export const createUserDataDeleteOrchestratorHandler = (
           : ""
       }|${orchestrationFailure.reason}`;
 
-      SetUserDataProcessingStatusActivityResultSuccess.decode(
+      pipe(
         yield context.df.callActivityWithRetry(
           "SetUserDataProcessingStatusActivity",
           retryOptions,
@@ -551,19 +581,21 @@ export const createUserDataDeleteOrchestratorHandler = (
             failureReason,
             nextStatus: UserDataProcessingStatusEnum.FAILED
           }
-        )
-      ).getOrElseL(err => {
-        trackUserDataDeleteException(
-          "unhandled_failed_status",
-          new Error(readableReport(err)),
-          currentUserDataProcessing
-        );
-        throw new Error(
-          `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
-            err
-          )}`
-        );
-      });
+        ),
+        SetUserDataProcessingStatusActivityResultSuccess.decode,
+        E.getOrElseW(err => {
+          trackUserDataDeleteException(
+            "unhandled_failed_status",
+            new Error(readableReport(err)),
+            currentUserDataProcessing
+          );
+          throw new Error(
+            `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
+              err
+            )}`
+          );
+        })
+      );
 
       return orchestrationFailure;
     }

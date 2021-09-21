@@ -1,6 +1,5 @@
 import { Context } from "@azure/functions";
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
-import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
 

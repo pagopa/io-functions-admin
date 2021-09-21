@@ -8,28 +8,12 @@ import * as t from "io-ts";
 import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
 
 import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
-import { array, catOptions, flatten, rights } from "fp-ts/lib/Array";
-import {
-  Either,
-  fromOption,
-  isLeft,
-  left,
-  right,
-  toError
-} from "fp-ts/lib/Either";
-import {
-  fromEither,
-  TaskEither,
-  taskEither,
-  taskEitherSeq,
-  taskify,
-  tryCatch
-} from "fp-ts/lib/TaskEither";
+import * as A from "fp-ts/lib/Array";
+import { flatten, rights } from "fp-ts/lib/Array";
 
 import { Context } from "@azure/functions";
 
 import { BlobService } from "azure-storage";
-import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
 import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
   MessageModel,
@@ -52,10 +36,13 @@ import {
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
-import { fromLeft } from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
 import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as yaml from "yaml";
+import { pipe, flow } from "fp-ts/lib/function";
 import { getEncryptedZipStream } from "../utils/zip";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
@@ -138,11 +125,11 @@ const logPrefix = `ExtractUserDataActivity`;
  * into a TaskEither<Error | L, R>
  */
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const fromPromiseEither = <L, R>(promise: Promise<Either<L, R>>) =>
-  taskEither
-    .of<Error | L, R>(void 0)
-    .chainSecond(tryCatch(() => promise, toError))
-    .chain(fromEither);
+const fromPromiseEither = <L, R>(promise: Promise<E.Either<L, R>>) =>
+  pipe(
+    TE.tryCatch(() => promise, E.toError),
+    TE.chainW(TE.fromEither)
+  );
 
 /**
  * To be used for exhaustive checks
@@ -194,32 +181,26 @@ const logFailure = (context: Context) => (
 export const getProfile = (
   profileModel: ProfileModel,
   fiscalCode: FiscalCode
-): TaskEither<
+): TE.TaskEither<
   ActivityResultUserNotFound | ActivityResultQueryFailure,
   Profile
 > =>
-  profileModel
-    .findLastVersionByModelId([fiscalCode])
-    .foldTaskEither<
-      ActivityResultUserNotFound | ActivityResultQueryFailure,
-      Profile
-    >(
-      failure =>
-        fromLeft(
-          ActivityResultQueryFailure.encode({
-            kind: "QUERY_FAILURE",
-            reason: `${failure.kind}, ${getMessageFromCosmosErrors(failure)}`
-          })
-        ),
-      maybeProfile =>
-        fromEither<ActivityResultUserNotFound, Profile>(
-          fromOption(
-            ActivityResultUserNotFound.encode({
-              kind: "USER_NOT_FOUND_FAILURE"
-            })
-          )(maybeProfile)
-        )
-    );
+  pipe(
+    profileModel.findLastVersionByModelId([fiscalCode]),
+    TE.mapLeft(failure =>
+      ActivityResultQueryFailure.encode({
+        kind: "QUERY_FAILURE",
+        reason: `${failure.kind}, ${getMessageFromCosmosErrors(failure)}`
+      })
+    ),
+    TE.chainW(
+      TE.fromOption(() =>
+        ActivityResultUserNotFound.encode({
+          kind: "USER_NOT_FOUND_FAILURE"
+        })
+      )
+    )
+  );
 /**
  * Retrieves all contents for provided messages
  */
@@ -227,30 +208,33 @@ export const getAllMessageContents = (
   messageContentBlobService: BlobService,
   messageModel: MessageModel,
   messages: ReadonlyArray<RetrievedMessageWithoutContent>
-): TaskEither<
+): TE.TaskEither<
   ActivityResultQueryFailure,
   ReadonlyArray<MessageContentWithId>
 > =>
-  array.sequence(taskEither)(
-    messages.map(({ id: messageId }) =>
-      messageModel
-        .getContentFromBlob(messageContentBlobService, messageId)
-        .foldTaskEither<ActivityResultQueryFailure, MessageContentWithId>(
-          _ => fromEither(right({ messageId } as MessageContentWithId)),
-          maybeContent =>
-            fromEither(
-              maybeContent.foldL(
-                () => right({ messageId } as MessageContentWithId),
-                (content: MessageContent) =>
-                  right({
-                    content,
-                    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-                    messageId: messageId as NonEmptyString
-                  })
-              )
-            )
+  pipe(
+    messages,
+    A.map(_ => _.id),
+    A.map(messageId =>
+      pipe(
+        messageModel.getContentFromBlob(messageContentBlobService, messageId),
+        TE.chainW(
+          flow(
+            TE.fromOption(() => void 0 /* anything will do */),
+            TE.map(content => ({
+              content,
+              messageId
+            }))
+          )
+        ),
+        TE.fold(
+          // in case of failure retrieving the single message, just live a placeholder
+          () => TE.of({ messageId } as MessageContentWithId),
+          TE.of
         )
-    )
+      )
+    ),
+    A.sequence(TE.ApplicativePar)
   );
 
 /**
@@ -259,30 +243,30 @@ export const getAllMessageContents = (
 export const getAllMessagesStatuses = (
   messageStatusModel: MessageStatusModel,
   messages: ReadonlyArray<RetrievedMessageWithoutContent>
-): TaskEither<ActivityResultQueryFailure, ReadonlyArray<MessageStatus>> =>
-  array.sequence(taskEither)(
-    messages.map(({ id: messageId }) =>
-      messageStatusModel
-        .findLastVersionByModelId([messageId])
-        .foldTaskEither<ActivityResultQueryFailure, MessageStatus>(
-          failure =>
-            fromLeft(
-              ActivityResultQueryFailure.encode({
-                kind: "QUERY_FAILURE",
-                reason: `messageStatusModel|${
-                  failure.kind
-                }, ${getMessageFromCosmosErrors(failure)}`
-              })
-            ),
-          maybeContent =>
-            fromEither(
-              maybeContent.foldL(
-                () => right({ messageId } as MessageStatus),
-                content => right(content)
-              )
-            )
+): TE.TaskEither<ActivityResultQueryFailure, ReadonlyArray<MessageStatus>> =>
+  pipe(
+    messages,
+    A.map(_ => _.id),
+    A.map(messageId =>
+      pipe(
+        messageStatusModel.findLastVersionByModelId([messageId]),
+        TE.mapLeft(failure =>
+          ActivityResultQueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            reason: `messageStatusModel|${
+              failure.kind
+            }, ${getMessageFromCosmosErrors(failure)}`
+          })
+        ),
+        TE.chainW(TE.fromOption(() => void 0 /* anything will do */)),
+        TE.fold(
+          // in case of failure retrieving the single message, just live a placeholder
+          () => TE.of({ messageId } as MessageStatus),
+          TE.of
         )
-    )
+      )
+    ),
+    A.sequence(TE.ApplicativePar)
   );
 
 /**
@@ -293,69 +277,76 @@ export const getAllMessagesStatuses = (
 export const findNotificationsForAllMessages = (
   notificationModel: NotificationModel,
   messages: ReadonlyArray<RetrievedMessageWithoutContent>
-): TaskEither<
+): TE.TaskEither<
   ActivityResultQueryFailure,
   ReadonlyArray<RetrievedNotification>
 > =>
-  array
-    .sequence(taskEitherSeq)(
-      messages.map(m => notificationModel.findNotificationForMessage(m.id))
+  pipe(
+    messages,
+    A.map(m => notificationModel.findNotificationForMessage(m.id)),
+    A.sequence(TE.ApplicativeSeq),
+    TE.mapLeft(e =>
+      ActivityResultQueryFailure.encode({
+        kind: "QUERY_FAILURE",
+        reason: `notificationModel.findNotificationForMessage| ${
+          e.kind
+        }, ${getMessageFromCosmosErrors(e)}`
+      })
+    ),
+    // There are cases in which a message has no notification and that's fine
+    // We just filter "none" elements
+    TE.map(
+      flow(
+        A.filter(O.isSome),
+        A.map(maybeNotification => maybeNotification.value)
+      )
     )
-
-    .bimap(
-      e =>
-        ActivityResultQueryFailure.encode({
-          kind: "QUERY_FAILURE",
-          reason: `notificationModel.findNotificationForMessage| ${
-            e.kind
-          }, ${getMessageFromCosmosErrors(e)}`
-        }),
-      // There are cases in which a message has no notification and that's fine
-      // We just filter "none" elements
-      catOptions
-    );
+  );
 
 export const findAllNotificationStatuses = (
   notificationStatusModel: NotificationStatusModel,
   notifications: ReadonlyArray<RetrievedNotification>
-): TaskEither<ActivityResultQueryFailure, ReadonlyArray<NotificationStatus>> =>
-  array
-    .sequence(taskEither)(
-      // compose a query for every supported channel type
-      notifications
-        .reduce(
-          (queries, { id: notificationId }) => [
-            ...queries,
-            ...Object.values(NotificationChannelEnum).map(channel => [
-              notificationId,
-              channel
-            ])
-          ],
-          []
+): TE.TaskEither<
+  ActivityResultQueryFailure,
+  ReadonlyArray<NotificationStatus>
+> =>
+  pipe(
+    notifications,
+
+    // compose a query for every supported channel type
+    A.reduce([], (queries, { id: notificationId }) => [
+      ...queries,
+      ...Object.values(NotificationChannelEnum).map(channel => [
+        notificationId,
+        channel
+      ])
+    ]),
+    A.map(([notificationId, channel]) =>
+      pipe(
+        notificationStatusModel.findOneNotificationStatusByNotificationChannel(
+          notificationId,
+          channel
+        ),
+        TE.mapLeft(e =>
+          ActivityResultQueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            reason: `notificationStatusModel.findOneNotificationStatusByNotificationChannel|${
+              e.kind
+            }, ${getMessageFromCosmosErrors(e)}`
+          })
         )
-        .map(([notificationId, channel]) =>
-          notificationStatusModel
-            .findOneNotificationStatusByNotificationChannel(
-              notificationId,
-              channel
-            )
-            .mapLeft(e =>
-              ActivityResultQueryFailure.encode({
-                kind: "QUERY_FAILURE",
-                reason: `notificationStatusModel.findOneNotificationStatusByNotificationChannel|${
-                  e.kind
-                }, ${getMessageFromCosmosErrors(e)}`
-              })
-            )
-        )
-    )
+      )
+    ),
+    A.sequence(TE.ApplicativePar),
+
     // filter empty results (it might not exist a content for a pair notification/channel)
-    .map(arrayOfMaybeNotification =>
-      arrayOfMaybeNotification
-        // lift Option<T>[] to T[] by filtering all nones
-        .map(opt => opt.getOrElse(undefined))
-        .filter(value => typeof value !== "undefined")
-    );
+    TE.map(
+      flow(
+        A.filter(O.isSome),
+        A.map(someNotificationStatus => someNotificationStatus.value)
+      )
+    )
+  );
 
 /**
  * Perform all the queries to extract all data for a given user
@@ -371,68 +362,68 @@ export const queryAllUserData = (
   profileModel: ProfileModel,
   messageContentBlobService: BlobService,
   fiscalCode: FiscalCode
-): TaskEither<
+): TE.TaskEither<
   ActivityResultUserNotFound | ActivityResultQueryFailure,
   AllUserData
   // eslint-disable-next-line max-params
 > =>
-  // step 0: look for the profile
-  getProfile(profileModel, fiscalCode)
+  pipe(
+    // step 0: look for the profile
+    getProfile(profileModel, fiscalCode),
     // step 1: get messages, which can be queried by only knowing the fiscal code
-    .chain(profile =>
-      sequenceS(taskEither)({
+    TE.chain(profile =>
+      sequenceS(TE.ApplicativePar)({
         // queries all messages for the user
-        messages: messageModel
-          .findMessages(fiscalCode)
-          .chain(iterator =>
-            tryCatch(
+        messages: pipe(
+          messageModel.findMessages(fiscalCode),
+          TE.chain(iterator =>
+            TE.tryCatch(
               () => asyncIteratorToArray(iterator),
               toCosmosErrorResponse
             )
-          )
-          .map(flatten)
-          .mapLeft(_ =>
+          ),
+          TE.map(flatten),
+          TE.mapLeft(_ =>
             ActivityResultQueryFailure.encode({
               kind: "QUERY_FAILURE",
               query: "findMessages",
               reason: `${_.kind}, ${getMessageFromCosmosErrors(_)}`
             })
-          )
-          .foldTaskEither(
-            _ => fromLeft(_),
-            results =>
-              results.some(isLeft)
-                ? fromLeft(
-                    ActivityResultQueryFailure.encode({
-                      kind: "QUERY_FAILURE",
-                      query: "findMessages",
-                      reason: "Some messages cannot be decoded"
-                    })
-                  )
-                : fromEither(right(rights(results)))
           ),
-        profile: taskEither.of(profile)
+          TE.chainW(results =>
+            results.some(E.isLeft)
+              ? TE.left(
+                  ActivityResultQueryFailure.encode({
+                    kind: "QUERY_FAILURE",
+                    query: "findMessages",
+                    reason: "Some messages cannot be decoded"
+                  })
+                )
+              : TE.of(rights(results))
+          )
+        ),
+        profile: TE.of(profile)
       })
-    )
+    ),
     // step 2: queries notifications and message contents, which need message data to be queried first
-    .chain(({ profile, messages }) =>
-      sequenceS(taskEither)({
+    TE.chain(({ profile, messages }) =>
+      sequenceS(TE.ApplicativePar)({
         messageContents: getAllMessageContents(
           messageContentBlobService,
           messageModel,
           messages
         ),
         messageStatuses: getAllMessagesStatuses(messageStatusModel, messages),
-        messages: taskEither.of(messages),
+        messages: TE.of(messages),
         notifications: findNotificationsForAllMessages(
           notificationModel,
           messages
         ),
-        profile: taskEither.of(profile)
+        profile: TE.of(profile)
       })
-    )
+    ),
     // step 3: queries notifications statuses
-    .chain(
+    TE.chain(
       ({
         profile,
         messages,
@@ -440,18 +431,19 @@ export const queryAllUserData = (
         messageStatuses,
         notifications
       }) =>
-        sequenceS(taskEither)({
-          messageContents: taskEither.of(messageContents),
-          messageStatuses: taskEither.of(messageStatuses),
-          messages: taskEither.of(messages),
+        sequenceS(TE.ApplicativePar)({
+          messageContents: TE.of(messageContents),
+          messageStatuses: TE.of(messageStatuses),
+          messages: TE.of(messages),
           notificationStatuses: findAllNotificationStatuses(
             notificationStatusModel,
             notifications
           ),
-          notifications: taskEither.of(notifications),
-          profiles: taskEither.of([profile])
+          notifications: TE.of(notifications),
+          profiles: TE.of([profile])
         })
-    );
+    )
+  );
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
@@ -459,19 +451,19 @@ const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
   blob: string
 ) => {
   const { e1: errorOrResult, e2: resolve } = DeferredPromise<
-    Either<Error, BlobService.BlobResult>
+    E.Either<Error, BlobService.BlobResult>
   >();
   const blobStream = blobService.createWriteStreamToBlockBlob(
     container,
     blob,
     { contentSettings: { contentType: "application/zip" } },
-    (err, result) => (err ? resolve(left(err)) : resolve(right(result)))
+    (err, result) => (err ? resolve(E.left(err)) : resolve(E.right(result)))
   );
   // eslint-disable-next-line sort-keys
   return { errorOrResult, blobStream };
 };
 
-const onStreamFinished = taskify(stream.finished);
+const onStreamFinished = TE.taskify(stream.finished);
 
 /**
  * Creates a bundle with all user data and save it to a blob on a remote storage
@@ -486,7 +478,7 @@ export const saveDataToBlob = (
   userDataContainerName: string,
   data: AllUserData,
   password: StrongPassword
-): TaskEither<ActivityResultArchiveGenerationFailure, ArchiveInfo> => {
+): TE.TaskEither<ActivityResultArchiveGenerationFailure, ArchiveInfo> => {
   const profile = data.profiles[0];
   const blobName = `${profile.fiscalCode}-${Date.now()}.zip` as NonEmptyString;
   const fileName = `${profile.fiscalCode}.yaml` as NonEmptyString;
@@ -516,28 +508,33 @@ export const saveDataToBlob = (
     name: fileName
   });
 
-  const onZipStreamError = onStreamFinished(zipStream).mapLeft(failure);
+  const onZipStreamError = pipe(
+    onStreamFinished(zipStream),
+    TE.mapLeft(failure)
+  );
 
-  const onZipStreamFinalized = tryCatch(
-    () => zipStream.finalize(),
-    toError
-  ).mapLeft(failure);
+  const onZipStreamFinalized = pipe(
+    TE.tryCatch(() => zipStream.finalize(), E.toError),
+    TE.mapLeft(failure)
+  );
 
   // This task will run only when `onZipStreamFinalized` completes.
   // If `onZipStreamFinalized` does not finish, the process hangs here
   // until the function runtime timeout is reached
-  const onBlobStreamWritten = fromPromiseEither(errorOrResult).bimap(
-    failure,
-    success
+  const onBlobStreamWritten = pipe(
+    fromPromiseEither(errorOrResult),
+    TE.bimap(failure, success)
   );
 
   // run tasks in parallel
-  return sequenceT(taskEither)(
-    onZipStreamError,
-    onZipStreamFinalized,
-    onBlobStreamWritten
-    // keep only the blob stream result
-  ).map(_ => _[2]);
+  return pipe(
+    sequenceT(TE.ApplicativePar)(
+      onZipStreamError,
+      onZipStreamFinalized,
+      onBlobStreamWritten
+    ),
+    TE.map(([, , blobStreamResult]) => blobStreamResult)
+  );
 };
 
 export interface IActivityHandlerInput {
@@ -577,16 +574,17 @@ export function createExtractUserDataActivityHandler({
 ) => Promise<ActivityResult> {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return (context: Context, input: unknown) =>
-    fromEither(
-      ActivityInput.decode(input).mapLeft<ActivityResultFailure>(
-        (reason: t.Errors) =>
-          ActivityResultInvalidInputFailure.encode({
-            kind: "INVALID_INPUT_FAILURE",
-            reason: readableReport(reason)
-          })
-      )
-    )
-      .chain(({ fiscalCode }) =>
+    pipe(
+      input,
+      ActivityInput.decode,
+      E.mapLeft(reason =>
+        ActivityResultInvalidInputFailure.encode({
+          kind: "INVALID_INPUT_FAILURE",
+          reason: readableReport(reason)
+        })
+      ),
+      TE.fromEither,
+      TE.chainW(({ fiscalCode }) =>
         queryAllUserData(
           messageModel,
           messageStatusModel,
@@ -596,8 +594,8 @@ export function createExtractUserDataActivityHandler({
           messageContentBlobService,
           fiscalCode
         )
-      )
-      .map(allUserData => {
+      ),
+      TE.map(allUserData => {
         // remove sensitive data
         const notifications = allUserData.notifications.map(e =>
           cleanData({
@@ -613,16 +611,16 @@ export function createExtractUserDataActivityHandler({
           notifications,
           profiles: allUserData.profiles.map(cleanData)
         } as AllUserData;
-      })
-      .chain(allUserData =>
+      }),
+      TE.chainW(allUserData =>
         saveDataToBlob(
           userDataBlobService,
           userDataContainerName,
           allUserData,
           generateStrongPassword()
         )
-      )
-      .bimap(
+      ),
+      TE.bimap(
         failure => {
           logFailure(context)(failure);
           return failure;
@@ -632,7 +630,7 @@ export function createExtractUserDataActivityHandler({
             kind: "SUCCESS",
             value: archiveInfo
           })
-      )
-      .run()
-      .then(e => e.value);
+      ),
+      TE.toUnion
+    )();
 }

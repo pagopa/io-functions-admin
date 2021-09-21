@@ -1,15 +1,14 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-jest.mock('@azure/ms-rest-nodeauth', () => ({
+jest.mock("@azure/ms-rest-nodeauth", () => ({
   __esModule: true,
-  ...jest.requireActual('@azure/ms-rest-nodeauth')
+  ...jest.requireActual("@azure/ms-rest-nodeauth")
 }));
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
-import { left } from "fp-ts/lib/Either";
-import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { User } from "../../generated/definitions/User";
 import { UserPayload } from "../../generated/definitions/UserPayload";
@@ -121,7 +120,7 @@ describe("CreateUser", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
     spyOnGetApiClient.mockImplementationOnce(() =>
-      fromLeft(Error("Error on APIM client creation"))
+      TE.left(Error("Error on APIM client creation"))
     );
 
     mockUsersCreate.mockImplementationOnce(() =>

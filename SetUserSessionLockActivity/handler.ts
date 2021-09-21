@@ -4,16 +4,11 @@
 
 import { Context } from "@azure/functions";
 import { toError } from "fp-ts/lib/Either";
-import {
-  fromEither,
-  fromLeft,
-  taskEither,
-  TaskEither,
-  tryCatch
-} from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { flow, pipe } from "fp-ts/lib/function";
 import { SuccessResponse } from "../generated/session-api/SuccessResponse";
 import { Client } from "../utils/sessionApiClient";
 
@@ -88,51 +83,47 @@ const callSessionApi = (
   sessionApiClient: Client<"token">,
   action: ActivityInput["action"],
   fiscalcode: FiscalCode
-): TaskEither<ApiCallFailure | BadApiRequestFailure, SuccessResponse> =>
-  taskEither
-    .of<ApiCallFailure | BadApiRequestFailure, void>(void 0)
-    .chain(_ =>
-      tryCatch(
-        () => {
-          switch (action) {
-            case "LOCK":
-              return sessionApiClient.lockUserSession({ fiscalcode });
-            case "UNLOCK":
-              return sessionApiClient.unlockUserSession({ fiscalcode });
-            default:
-              assertNever(action);
-          }
-        },
-        error => {
+): TE.TaskEither<ApiCallFailure | BadApiRequestFailure, SuccessResponse> =>
+  pipe(
+    TE.tryCatch(
+      () => {
+        switch (action) {
+          case "LOCK":
+            return sessionApiClient.lockUserSession({ fiscalcode });
+          case "UNLOCK":
+            return sessionApiClient.unlockUserSession({ fiscalcode });
+          default:
+            assertNever(action);
+        }
+      },
+      error => {
+        context.log.error(`${logPrefix}|ERROR|failed using api`, action, error);
+        return ApiCallFailure.encode({
+          kind: "API_CALL_FAILURE",
+          reason: toError(error).message
+        });
+      }
+    ),
+    TE.chain(
+      flow(
+        TE.fromEither,
+        TE.mapLeft(error => {
           context.log.error(
-            `${logPrefix}|ERROR|failed using api`,
+            `${logPrefix}|ERROR|failed decoding api payload`,
             action,
             error
           );
           return ApiCallFailure.encode({
             kind: "API_CALL_FAILURE",
-            reason: toError(error).message
+            reason: readableReport(error)
           });
-        }
+        })
       )
-    )
-    .chain(decodeErrorOrResponse =>
-      fromEither(decodeErrorOrResponse).mapLeft(error => {
-        context.log.error(
-          `${logPrefix}|ERROR|failed decoding api payload`,
-          action,
-          error
-        );
-        return ApiCallFailure.encode({
-          kind: "API_CALL_FAILURE",
-          reason: readableReport(error)
-        });
-      })
-    )
-    .chain(({ status, value }) => {
+    ),
+    TE.chain(({ status, value }) => {
       switch (status) {
         case 200:
-          return taskEither.of(value);
+          return TE.of(value);
         case 400:
         case 401:
         case 404:
@@ -141,7 +132,7 @@ const callSessionApi = (
             action,
             value
           );
-          return fromLeft(
+          return TE.left(
             BadApiRequestFailure.encode({
               kind: "BAD_API_REQUEST_FAILURE",
               reason: `Session Api called badly, action: ${action} code: ${status}`
@@ -153,7 +144,7 @@ const callSessionApi = (
             action,
             value
           );
-          return fromLeft(
+          return TE.left(
             ApiCallFailure.encode({
               kind: "API_CALL_FAILURE",
               reason: `Session Api unexpected error, action: ${action}`
@@ -162,38 +153,37 @@ const callSessionApi = (
         default:
           assertNever(status);
       }
-    });
+    })
+  );
 
 export const createSetUserSessionLockActivityHandler = (
   sessionApiClient: Client<"token">
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => (context: Context, input: unknown) =>
-  taskEither
-    .of<ActivityResultFailure, void>(void 0)
-    .chain(_ =>
-      fromEither(ActivityInput.decode(input)).mapLeft(err =>
-        InvalidInputFailure.encode({
-          kind: "INVALID_INPUT_FAILURE",
-          reason: readableReport(err)
-        })
-      )
-    )
-    .chain(({ action, fiscalCode }) =>
+  pipe(
+    input,
+    ActivityInput.decode,
+    TE.fromEither,
+    TE.mapLeft(err =>
+      InvalidInputFailure.encode({
+        kind: "INVALID_INPUT_FAILURE",
+        reason: readableReport(err)
+      })
+    ),
+    TE.chainW(({ action, fiscalCode }) =>
       callSessionApi(context, sessionApiClient, action, fiscalCode)
-    )
-    .fold<ActivityResult>(
-      failure => {
-        context.log.error(`${logPrefix}|ERROR|Activity failed`, failure);
-
-        // in case of transient failures we let the activity throw, so the orchestrator can retry
-        if (TransientFailure.is(failure)) {
-          throw failure;
-        }
-        return failure;
-      },
-      _ => {
-        context.log.info(`${logPrefix}|INFO|Activity succeeded`);
-        return ActivityResultSuccess.encode({ kind: "SUCCESS" });
+    ),
+    TE.mapLeft(failure => {
+      context.log.error(`${logPrefix}|ERROR|Activity failed`, failure);
+      // in case of transient failures we let the activity throw, so the orchestrator can retry
+      if (TransientFailure.is(failure)) {
+        throw failure;
       }
-    )
-    .run();
+      return failure;
+    }),
+    TE.map(_ => {
+      context.log.info(`${logPrefix}|INFO|Activity succeeded`);
+      return ActivityResultSuccess.encode({ kind: "SUCCESS" });
+    }),
+    TE.toUnion
+  )();

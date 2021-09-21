@@ -56,16 +56,16 @@ export function CreateServiceHandler(
       ...apiServiceToService(servicePayload),
       kind: "INewService" as const
     };
-    const errorOrCreatedService = await serviceModel.create(newService).run();
+    const errorOrCreatedService = await serviceModel.create(newService)();
 
     if (isLeft(errorOrCreatedService)) {
       return ResponseErrorQuery(
         "CreateServiceHandler error",
-        errorOrCreatedService.value
+        errorOrCreatedService.left
       );
     }
 
-    const createdService = errorOrCreatedService.value;
+    const createdService = errorOrCreatedService.right;
 
     const upsertServiceEvent = UpsertServiceEvent.encode({
       newService: createdService,

@@ -1,24 +1,16 @@
-import { right } from "fp-ts/lib/Either";
 import { context as contextMock } from "../../__mocks__/functions";
-import {
-  aFiscalCode,
-  aUserDataProcessing,
-  aUserDataProcessingStatus
-} from "../../__mocks__/mocks";
+import { aFiscalCode, aUserDataProcessing } from "../../__mocks__/mocks";
 
 import {
   ActivityInput,
   ActivityResultInvalidInputFailure,
   ActivityResultNotFoundFailure,
-  ActivityResultQueryFailure,
   ActivityResultSuccess,
   getFindFailureReasonActivityHandler
 } from "../handler";
 
-import { none, some } from "fp-ts/lib/Option";
-import { fromEither, fromLeft } from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
 import { UserDataProcessingModel } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
 
 const aChoice = aUserDataProcessing.choice;
@@ -59,11 +51,13 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
     );
 
     const decodedResult = ActivityResultSuccess.decode(result);
-    expect(decodedResult.isRight()).toBe(true);
-    expect(decodedResult.value).toEqual({
-      kind: "SUCCESS",
-      value: JSON.stringify(failedOrchestratorOutput, (key, value) => value)
-    });
+    expect(E.isRight(decodedResult)).toBe(true);
+    if (E.isRight(decodedResult)) {
+      expect(decodedResult.right).toEqual({
+        kind: "SUCCESS",
+        value: JSON.stringify(failedOrchestratorOutput, (key, value) => value)
+      });
+    }
   });
 
   it("should handle a record not found failure", async () => {
@@ -82,7 +76,7 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
       input
     );
 
-    expect(ActivityResultNotFoundFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(ActivityResultNotFoundFailure.decode(result))).toBe(true);
   });
 
   it("should handle an invalid input", async () => {
@@ -93,7 +87,7 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
       invalid: "input"
     });
 
-    expect(ActivityResultInvalidInputFailure.decode(result).isRight()).toBe(
+    expect(E.isRight(ActivityResultInvalidInputFailure.decode(result))).toBe(
       true
     );
   });

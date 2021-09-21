@@ -1,19 +1,16 @@
+/* eslint-disable max-lines-per-function */
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { GroupContract } from "@azure/arm-apimanagement/esm/models";
 import { Context } from "@azure/functions";
 import * as express from "express";
 import { sequenceT } from "fp-ts/lib/Apply";
-import { array } from "fp-ts/lib/Array";
-import { either, toError } from "fp-ts/lib/Either";
-import { StrMap } from "fp-ts/lib/StrMap";
-import {
-  fromEither,
-  fromPredicate,
-  taskEither,
-  TaskEither,
-  taskEitherSeq,
-  tryCatch
-} from "fp-ts/lib/TaskEither";
+
+import * as S from "fp-ts/lib/string";
+import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as RMAP from "fp-ts/lib/ReadonlyMap";
+
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -36,6 +33,7 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { pipe } from "fp-ts/lib/function";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { GroupCollection } from "../generated/definitions/GroupCollection";
 import { UserGroupsPayload } from "../generated/definitions/UserGroupsPayload";
@@ -70,8 +68,8 @@ function getGroups(
   apimClient: ApiManagementClient,
   apimResourceGroup: string,
   apim: string
-): TaskEither<Error, ReadonlyArray<GroupContract>> {
-  return tryCatch(async () => {
+): TE.TaskEither<Error, ReadonlyArray<GroupContract>> {
+  return TE.tryCatch(async () => {
     // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
     const groupList: GroupContract[] = [];
     const groupListResponse = await apimClient.group.listByService(
@@ -89,7 +87,7 @@ function getGroups(
       nextLink = nextGroupList.nextLink;
     }
     return groupList;
-  }, toError);
+  }, E.toError);
 }
 
 interface IGroupsClusterization {
@@ -110,31 +108,35 @@ function clusterizeGroups(
   currentUserGroups: ReadonlyArray<string>,
   groupsInPayload: ReadonlyArray<string>
 ): IGroupsClusterization {
-  return new StrMap(existingGroups).reduceWithKey(
-    { toBeAssociated: [], toBeRemoved: [] },
-    (displayName, cluster, name) => {
-      if (
-        currentUserGroups.includes(displayName) &&
-        !groupsInPayload.includes(displayName)
-      ) {
-        return {
-          toBeAssociated: cluster.toBeAssociated,
-          toBeRemoved: cluster.toBeRemoved.concat([name])
-        };
+  return pipe(
+    Object.entries(existingGroups),
+    _ => new Map(_),
+    RMAP.reduceWithIndex(S.Ord)(
+      { toBeAssociated: [], toBeRemoved: [] },
+      (displayName, cluster, name) => {
+        if (
+          currentUserGroups.includes(displayName) &&
+          !groupsInPayload.includes(displayName)
+        ) {
+          return {
+            toBeAssociated: cluster.toBeAssociated,
+            toBeRemoved: cluster.toBeRemoved.concat([name])
+          };
+        }
+        if (
+          !currentUserGroups.includes(displayName) &&
+          groupsInPayload.includes(displayName)
+        ) {
+          return {
+            toBeAssociated: cluster.toBeAssociated.concat([
+              existingGroups[displayName]
+            ]),
+            toBeRemoved: cluster.toBeRemoved
+          };
+        }
+        return cluster;
       }
-      if (
-        !currentUserGroups.includes(displayName) &&
-        groupsInPayload.includes(displayName)
-      ) {
-        return {
-          toBeAssociated: cluster.toBeAssociated.concat([
-            existingGroups[displayName]
-          ]),
-          toBeRemoved: cluster.toBeRemoved
-        };
-      }
-      return cluster;
-    }
+    )
   );
 }
 
@@ -153,15 +155,14 @@ export function UpdateUserGroupHandler(
         error,
         errorMessage
       );
-    const response = await getApiClient(
-      servicePrincipalCreds,
-      azureApimConfig.subscriptionId
-    )
-      .mapLeft<IGetSubscriptionKeysHandlerResponseError>(error =>
+
+    return await pipe(
+      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      TE.mapLeft(error =>
         internalErrorHandler("Could not get the APIM client.", error)
-      )
-      .chain(apimClient =>
-        tryCatch(
+      ),
+      TE.chain(apimClient =>
+        TE.tryCatch(
           () =>
             apimClient.user
               .listByService(
@@ -181,9 +182,9 @@ export function UpdateUserGroupHandler(
               error as Error
             )
         )
-      )
-      .chain(
-        fromPredicate(
+      ),
+      TE.chainW(
+        TE.fromPredicate(
           taskResults => taskResults.userList.length !== 0,
           () =>
             ResponseErrorNotFound(
@@ -191,14 +192,17 @@ export function UpdateUserGroupHandler(
               "The provided user does not exist"
             )
         )
-      )
-      .map(taskResults => ({
+      ),
+      TE.map(taskResults => ({
         apimClient: taskResults.apimClient,
         userName: taskResults.userList[0].name
-      }))
-      .chain(taskResults =>
-        fromEither(NonEmptyString.decode(taskResults.userName))
-          .mapLeft(errors => {
+      })),
+      TE.chain(taskResults =>
+        pipe(
+          taskResults.userName,
+          NonEmptyString.decode,
+          TE.fromEither,
+          TE.mapLeft(errors => {
             const errorMessage = "Could not get user name from user contract.";
             return genericInternalValidationErrorHandler(
               context,
@@ -206,23 +210,25 @@ export function UpdateUserGroupHandler(
               errors,
               errorMessage
             );
-          })
-          .map(() => ({
+          }),
+          TE.map(() => ({
             apimClient: taskResults.apimClient,
             userName: taskResults.userName
           }))
-      )
-      .chain(taskResults =>
-        getUserGroups(
-          taskResults.apimClient,
-          azureApimConfig.apimResourceGroup,
-          azureApimConfig.apim,
-          taskResults.userName
         )
-          .mapLeft(error =>
+      ),
+      TE.chain(taskResults =>
+        pipe(
+          getUserGroups(
+            taskResults.apimClient,
+            azureApimConfig.apimResourceGroup,
+            azureApimConfig.apim,
+            taskResults.userName
+          ),
+          TE.mapLeft(error =>
             internalErrorHandler("Could not get the user groups.", error)
-          )
-          .map(currentUserGroups => ({
+          ),
+          TE.map(currentUserGroups => ({
             apimClient: taskResults.apimClient,
             currentUserGroups: currentUserGroups.map(
               // The displayNames values with which the user is currently associated
@@ -231,17 +237,19 @@ export function UpdateUserGroupHandler(
             ),
             userName: taskResults.userName
           }))
-      )
-      .chain(taskResults =>
-        getGroups(
-          taskResults.apimClient,
-          azureApimConfig.apimResourceGroup,
-          azureApimConfig.apim
         )
-          .mapLeft(error =>
+      ),
+      TE.chain(taskResults =>
+        pipe(
+          getGroups(
+            taskResults.apimClient,
+            azureApimConfig.apimResourceGroup,
+            azureApimConfig.apim
+          ),
+          TE.mapLeft(error =>
             internalErrorHandler("Could not list the groups", error)
-          )
-          .map(groupList => ({
+          ),
+          TE.map(groupList => ({
             apimClient: taskResults.apimClient,
             currentUserGroups: taskResults.currentUserGroups,
             existingGroups: groupList.reduce<Record<string, string>>(
@@ -250,95 +258,105 @@ export function UpdateUserGroupHandler(
             ),
             userName: taskResults.userName
           }))
-      )
-      .chain(taskResults =>
-        array
-          .traverse(taskEither)(
-            [...userGroupsPayload.groups],
-            fromPredicate(
+        )
+      ),
+      TE.chainW(taskResults =>
+        pipe(
+          [...userGroupsPayload.groups],
+          A.traverse(TE.ApplicativePar)(
+            TE.fromPredicate(
               groupName => taskResults.existingGroups[groupName] !== undefined,
-              groupName => Error(`Provided group not found: ${groupName}`)
+              __ => ResponseErrorValidation("Bad request", "Invalid groups")
             )
-          )
-          .mapLeft(() =>
-            ResponseErrorValidation("Bad request", "Invalid groups")
-          )
-          .map(() => taskResults)
-      )
-      .chain(taskResults => {
+          ),
+          TE.map(() => taskResults)
+        )
+      ),
+      TE.chain(taskResults => {
         const groupsClusterization = clusterizeGroups(
           taskResults.existingGroups,
           taskResults.currentUserGroups,
           userGroupsPayload.groups
         );
-        const errorOrUserContractsWithAssociatedGroups = array.traverse(
-          taskEitherSeq
-        )([...groupsClusterization.toBeAssociated], groupName =>
-          tryCatch(
-            () =>
-              taskResults.apimClient.groupUser.create(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                groupName,
-                taskResults.userName
-              ),
-            toError
+        const errorOrUserContractsWithAssociatedGroups = pipe(
+          [...groupsClusterization.toBeAssociated],
+          A.traverse(TE.ApplicativeSeq)(groupName =>
+            TE.tryCatch(
+              () =>
+                taskResults.apimClient.groupUser.create(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  groupName,
+                  taskResults.userName
+                ),
+              E.toError
+            )
           )
         );
-        const errorOrUserContractsWithNotAssociatedGroups = array.traverse(
-          taskEitherSeq
-        )([...groupsClusterization.toBeRemoved], groupName =>
-          tryCatch(
-            () =>
-              taskResults.apimClient.groupUser.deleteMethod(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                groupName,
-                taskResults.userName
-              ),
-            toError
+
+        const errorOrUserContractsWithNotAssociatedGroups = pipe(
+          [...groupsClusterization.toBeRemoved],
+          A.traverse(TE.ApplicativeSeq)(groupName =>
+            TE.tryCatch(
+              () =>
+                taskResults.apimClient.groupUser.deleteMethod(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  groupName,
+                  taskResults.userName
+                ),
+              E.toError
+            )
           )
         );
-        return sequenceT(taskEitherSeq)(
-          errorOrUserContractsWithAssociatedGroups,
-          errorOrUserContractsWithNotAssociatedGroups
-        )
-          .mapLeft(error =>
+        return pipe(
+          sequenceT(TE.ApplicativeSeq)(
+            errorOrUserContractsWithAssociatedGroups,
+            errorOrUserContractsWithNotAssociatedGroups
+          ),
+          TE.mapLeft(error =>
             internalErrorHandler(
               "Could not update the groups associated to the user",
               error
             )
-          )
-          .map(() => ({
+          ),
+          TE.map(() => ({
             apimClient: taskResults.apimClient,
             userName: taskResults.userName
-          }));
-      })
-      .chain(taskResults =>
-        getUserGroups(
-          taskResults.apimClient,
-          azureApimConfig.apimResourceGroup,
-          azureApimConfig.apim,
-          taskResults.userName
-        ).mapLeft(error =>
-          internalErrorHandler(
-            "Could not get the user groups after updating them.",
-            error
+          }))
+        );
+      }),
+      TE.chain(taskResults =>
+        pipe(
+          getUserGroups(
+            taskResults.apimClient,
+            azureApimConfig.apimResourceGroup,
+            azureApimConfig.apim,
+            taskResults.userName
+          ),
+          TE.mapLeft(error =>
+            internalErrorHandler(
+              "Could not get the user groups after updating them.",
+              error
+            )
           )
         )
-      )
-      .chain(groupContracts =>
-        fromEither(
-          array.traverse(either)([...groupContracts], groupContractToApiGroup)
-        ).mapLeft(error =>
-          internalErrorHandler("Invalid user groups after updating", error)
+      ),
+      TE.chain(groupContracts =>
+        pipe(
+          [...groupContracts],
+          A.traverse(E.Applicative)(groupContractToApiGroup),
+          TE.fromEither,
+          TE.mapLeft(error =>
+            internalErrorHandler("Invalid user groups after updating", error)
+          )
         )
-      )
-      .map(updatedUserGroups =>
+      ),
+      TE.map(updatedUserGroups =>
         ResponseSuccessJson({ items: updatedUserGroups })
-      )
-      .run();
-    return response.value;
+      ),
+      TE.toUnion
+    )();
   };
 }
 

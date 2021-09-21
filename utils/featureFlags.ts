@@ -2,13 +2,16 @@
  * Contains feature flags for the app
  */
 
-import { fromNullable } from "fp-ts/lib/Option";
+import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const getFlagFromEnv = (name: string, defaultValue: boolean) =>
-  fromNullable(process.env[name])
-    .map(value => value === "1")
-    .getOrElse(defaultValue);
+  pipe(
+    O.fromNullable(process.env[name]),
+    O.map(value => value === "1"),
+    O.getOrElse(() => defaultValue)
+  );
 
 export const flags = {
   ENABLE_USER_DATA_DELETE: getFlagFromEnv("FF_ENABLE_USER_DATA_DELETE", true),

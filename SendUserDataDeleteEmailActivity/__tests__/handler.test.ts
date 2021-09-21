@@ -7,7 +7,7 @@ import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 import { ActivityInput, getActivityFunction } from "../handler";
 
-import { fromLeft, taskEither } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
 
 import * as HtmlToText from "html-to-text";
 
@@ -52,7 +52,7 @@ const lMailerTransporterMock = ({} as unknown) as mail.MailerTransporter;
 
 describe("SendUserDataDeleteEmailActivity", () => {
   it("should respond with 'SUCCESS' if the mail is sent", async () => {
-    jest.spyOn(mail, "sendMail").mockReturnValueOnce(taskEither.of("SUCCESS"));
+    jest.spyOn(mail, "sendMail").mockReturnValueOnce(TE.of("SUCCESS"));
 
     const SendUserDataDeleteEmailActivityHandler = getActivityFunction(
       lMailerTransporterMock,
@@ -72,7 +72,7 @@ describe("SendUserDataDeleteEmailActivity", () => {
 
     jest
       .spyOn(mail, "sendMail")
-      .mockReturnValueOnce(fromLeft(new Error(errorMessage)));
+      .mockReturnValueOnce(TE.left(new Error(errorMessage)));
 
     const SendUserDataDeleteEmailActivityHandler = getActivityFunction(
       lMailerTransporterMock,

@@ -13,8 +13,8 @@ import {
   wrapRequestHandler
 } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 
-import { toError } from "fp-ts/lib/Either";
-import { tryCatch } from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -23,6 +23,7 @@ import {
   ResponseErrorNotFound,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
+import { pipe } from "fp-ts/lib/function";
 import { ServiceId } from "../generated/definitions/ServiceId";
 import { SubscriptionKeys } from "../generated/definitions/SubscriptionKeys";
 import { SubscriptionKeyTypeEnum } from "../generated/definitions/SubscriptionKeyType";
@@ -34,6 +35,14 @@ import {
 } from "../utils/apim";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 import { SubscriptionKeyTypeMiddleware } from "../utils/middlewares/subscriptionKeyType";
+
+/**
+ * To be used for exhaustive checks
+ */
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function assertNever(_: never): never {
+  throw new Error("should not have executed this");
+}
 
 type IGetSubscriptionKeysHandler = (
   context: Context,
@@ -52,49 +61,49 @@ export function RegenerateSubscriptionKeysHandler(
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  return async (context, _, serviceId, keyTypePayload) => {
-    const response = await getApiClient(
-      servicePrincipalCreds,
-      azureApimConfig.subscriptionId
-    )
-      .chain(apiClient =>
-        tryCatch(() => {
-          if (keyTypePayload.key_type === SubscriptionKeyTypeEnum.PRIMARY_KEY) {
-            return apiClient.subscription.regeneratePrimaryKey(
-              azureApimConfig.apimResourceGroup,
-              azureApimConfig.apim,
-              serviceId
-            );
-          }
-          if (
-            keyTypePayload.key_type === SubscriptionKeyTypeEnum.SECONDARY_KEY
-          ) {
-            return apiClient.subscription.regenerateSecondaryKey(
-              azureApimConfig.apimResourceGroup,
-              azureApimConfig.apim,
-              serviceId
-            );
-          }
-          throw new Error("Unhandled key type");
-        }, toError).chain(() =>
-          tryCatch(
-            () =>
-              apiClient.subscription.get(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                serviceId
-              ),
-            toError
+  return async (context, _, serviceId, keyTypePayload) =>
+    await pipe(
+      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      TE.chain(apiClient =>
+        pipe(
+          TE.tryCatch(() => {
+            switch (keyTypePayload.key_type) {
+              case SubscriptionKeyTypeEnum.PRIMARY_KEY:
+                return apiClient.subscription.regeneratePrimaryKey(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  serviceId
+                );
+              case SubscriptionKeyTypeEnum.SECONDARY_KEY:
+                return apiClient.subscription.regenerateSecondaryKey(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  serviceId
+                );
+              default:
+                assertNever(keyTypePayload.key_type);
+            }
+          }, E.toError),
+          TE.chain(() =>
+            TE.tryCatch(
+              () =>
+                apiClient.subscription.get(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  serviceId
+                ),
+              E.toError
+            )
           )
         )
-      )
-      .map(subscription =>
+      ),
+      TE.map(subscription =>
         ResponseSuccessJson({
           primary_key: subscription.primaryKey,
           secondary_key: subscription.secondaryKey
         })
-      )
-      .mapLeft(error => {
+      ),
+      TE.mapLeft(error => {
         context.log.error(error);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const anyError = error as any;
@@ -105,10 +114,9 @@ export function RegenerateSubscriptionKeysHandler(
           );
         }
         return ResponseErrorInternal("Internal server error");
-      })
-      .run();
-    return response.value;
-  };
+      }),
+      TE.toUnion
+    )();
 }
 
 /**

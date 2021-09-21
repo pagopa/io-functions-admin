@@ -1,7 +1,7 @@
 import { Context } from "@azure/functions";
 import * as express from "express";
-import { toError } from "fp-ts/lib/Either";
-import { fromEither, tryCatch } from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -20,6 +20,7 @@ import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { withoutUndefinedValues } from "@pagopa/ts-commons/lib/types";
 import * as randomString from "randomstring";
 import { ulid } from "ulid";
+import { pipe } from "fp-ts/lib/function";
 import { UserCreated } from "../generated/definitions/UserCreated";
 import { UserPayload } from "../generated/definitions/UserPayload";
 import {
@@ -54,89 +55,104 @@ export function CreateUserHandler(
         error,
         errorMessage
       );
-    const response = await getGraphRbacManagementClient(adb2cCredentials)
-      .mapLeft(error =>
+    return pipe(
+      getGraphRbacManagementClient(adb2cCredentials),
+      TE.mapLeft(error =>
         internalErrorHandler("Could not get the ADB2C client", error)
-      )
-      .chain(graphRbacManagementClient =>
-        tryCatch(
-          () =>
-            graphRbacManagementClient.users.create(
-              withoutUndefinedValues({
-                accountEnabled: true,
-                creationType: "LocalAccount",
-                displayName: `${userPayload.first_name} ${userPayload.last_name}`,
-                givenName: userPayload.first_name,
-                mailNickname: userPayload.email.split("@")[0],
-                passwordProfile: {
-                  forceChangePasswordNextLogin: true,
-                  password: randomString.generate({ length: 24 })
-                },
-                signInNames: [
-                  {
-                    type: "emailAddress",
-                    value: userPayload.email
-                  }
-                ],
-                surname: userPayload.last_name,
-                userPrincipalName: `${ulid()}@${adb2cCredentials.tenantId}`,
-                userType: "Member",
-                // eslint-disable-next-line sort-keys
-                [adb2cTokenAttributeName]: userPayload.token_name
-              })
-            ),
-          toError
-        ).mapLeft(error =>
-          internalErrorHandler("Could not create the user on the ADB2C", error)
+      ),
+      TE.chain(graphRbacManagementClient =>
+        pipe(
+          TE.tryCatch(
+            () =>
+              graphRbacManagementClient.users.create(
+                withoutUndefinedValues({
+                  accountEnabled: true,
+                  creationType: "LocalAccount",
+                  displayName: `${userPayload.first_name} ${userPayload.last_name}`,
+                  givenName: userPayload.first_name,
+                  mailNickname: userPayload.email.split("@")[0],
+                  passwordProfile: {
+                    forceChangePasswordNextLogin: true,
+                    password: randomString.generate({ length: 24 })
+                  },
+                  signInNames: [
+                    {
+                      type: "emailAddress",
+                      value: userPayload.email
+                    }
+                  ],
+                  surname: userPayload.last_name,
+                  userPrincipalName: `${ulid()}@${adb2cCredentials.tenantId}`,
+                  userType: "Member",
+                  // eslint-disable-next-line sort-keys
+                  [adb2cTokenAttributeName]: userPayload.token_name
+                })
+              ),
+            E.toError
+          ),
+          TE.mapLeft(error =>
+            internalErrorHandler(
+              "Could not create the user on the ADB2C",
+              error
+            )
+          )
         )
-      )
-      .chain(userCreateResponse =>
-        getApiClient(apimCredentials, azureApimConfig.subscriptionId)
-          .mapLeft(error =>
+      ),
+      TE.chain(userCreateResponse =>
+        pipe(
+          getApiClient(apimCredentials, azureApimConfig.subscriptionId),
+          TE.mapLeft(error =>
             internalErrorHandler(
               "Could not get the API management client",
               error
             )
-          )
-          .map(apimClient => ({
+          ),
+          TE.map(apimClient => ({
             apimClient,
             objectId: userCreateResponse.objectId
           }))
-      )
-      .chain(taskResults =>
-        tryCatch(
-          () =>
-            taskResults.apimClient.user.createOrUpdate(
-              azureApimConfig.apimResourceGroup,
-              azureApimConfig.apim,
-              taskResults.objectId,
-              {
-                email: userPayload.email,
-                firstName: userPayload.first_name,
-                identities: [
-                  {
-                    id: taskResults.objectId,
-                    provider: "AadB2C"
-                  }
-                ],
-                lastName: userPayload.last_name
-              }
-            ),
-          toError
-        ).mapLeft(error =>
-          internalErrorHandler(
-            "Could not create the user on the API management",
-            error
+        )
+      ),
+      TE.chainW(taskResults =>
+        pipe(
+          TE.tryCatch(
+            () =>
+              taskResults.apimClient.user.createOrUpdate(
+                azureApimConfig.apimResourceGroup,
+                azureApimConfig.apim,
+                taskResults.objectId,
+                {
+                  email: userPayload.email,
+                  firstName: userPayload.first_name,
+                  identities: [
+                    {
+                      id: taskResults.objectId,
+                      provider: "AadB2C"
+                    }
+                  ],
+                  lastName: userPayload.last_name
+                }
+              ),
+            E.toError
+          ),
+          TE.mapLeft(error =>
+            internalErrorHandler(
+              "Could not create the user on the API management",
+              error
+            )
           )
         )
-      )
-      .chain(userContract =>
-        fromEither(userContractToApiUserCreated(userContract))
-          .mapLeft(error => internalErrorHandler("Validation error", error))
-          .map(ResponseSuccessJson)
-      )
-      .run();
-    return response.value;
+      ),
+      TE.chain(userContract =>
+        pipe(
+          userContractToApiUserCreated(userContract),
+          TE.fromEither,
+          TE.mapLeft(error => internalErrorHandler("Validation error", error)),
+          TE.map(ResponseSuccessJson)
+        )
+      ),
+      TE.toUnion
+    )();
   };
 }
 

@@ -13,12 +13,15 @@
 import { Context } from "@azure/functions";
 
 import { isLeft } from "fp-ts/lib/Either";
-import { StrMap } from "fp-ts/lib/StrMap";
+import * as S from "fp-ts/lib/string";
+import * as RM from "fp-ts/lib/ReadonlyMap";
 import { VisibleService } from "@pagopa/io-functions-commons/dist/src/models/visible_service";
 
 import * as df from "durable-functions";
 import * as t from "io-ts";
+import { pipe } from "fp-ts/lib/function";
 
+export type VisibleServices = t.TypeOf<typeof VisibleServices>;
 export const VisibleServices = t.record(t.string, VisibleService);
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
@@ -34,30 +37,47 @@ async function UpdateVisibleServiceCache(context: Context): Promise<void> {
     return;
   }
 
-  const visibleServiceJson = errorOrVisibleServices.value;
-  const visibleServices = new StrMap(visibleServiceJson);
+  const visibleServiceJson = errorOrVisibleServices.right;
+  const visibleServices = RM.fromMap(
+    new Map(Object.entries(visibleServiceJson))
+  );
 
-  const visibleServicesTuples = visibleServices.mapWithKey((_, v) => ({
-    scope: v.serviceMetadata ? v.serviceMetadata.scope : undefined,
-    service_id: v.serviceId,
-    version: v.version
-  }));
+  const visibleServicesTuples = pipe(
+    visibleServices,
+    RM.map(v => ({
+      scope: v.serviceMetadata ? v.serviceMetadata.scope : undefined,
+      service_id: v.serviceId,
+      version: v.version
+    }))
+  );
 
   // store visible services in the blob
   // eslint-disable-next-line functional/immutable-data
   context.bindings.visibleServicesCacheBlob = {
-    items: visibleServicesTuples.reduce([], (p, c) => [...p, c])
+    items: pipe(
+      visibleServicesTuples,
+      RM.reduce(S.Ord)([], (p, c) => [...p, c])
+    )
   };
 
-  const { left: NATIONAL, right: LOCAL } = visibleServices.partition(
-    s => s.serviceMetadata && s.serviceMetadata.scope === "LOCAL"
+  const { left: NATIONAL, right: LOCAL } = pipe(
+    visibleServices,
+    RM.partition(s => s.serviceMetadata && s.serviceMetadata.scope === "LOCAL")
   );
 
   // store visible services partitioned by scope
   // eslint-disable-next-line functional/immutable-data
   context.bindings.visibleServicesByScopeCacheBlob = {
-    LOCAL: LOCAL.map(_ => _.serviceId).reduce([], (p, c) => [...p, c]),
-    NATIONAL: NATIONAL.map(_ => _.serviceId).reduce([], (p, c) => [...p, c])
+    LOCAL: pipe(
+      LOCAL,
+      RM.map(_ => _.serviceId),
+      RM.reduce(S.Ord)([], (p, c) => [...p, c])
+    ),
+    NATIONAL: pipe(
+      NATIONAL,
+      RM.map(_ => _.serviceId),
+      RM.reduce(S.Ord)([], (p, c) => [...p, c])
+    )
   };
 
   // start orchestrator to loop on every visible service

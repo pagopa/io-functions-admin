@@ -1,8 +1,8 @@
 import { Context } from "@azure/functions";
 import { BlobService } from "azure-storage";
-import { toString } from "fp-ts/lib/function";
-import { TaskEither, taskify } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { pipe } from "fp-ts/lib/function";
 import {
   ActivityResultFailure,
   BlobCreationFailure,
@@ -18,6 +18,13 @@ import {
 export function assertNever(_: never): never {
   throw new Error("should not have executed this");
 }
+
+const toString = (err: unknown): string =>
+  typeof err === "string"
+    ? err
+    : err instanceof Error
+    ? err.message
+    : JSON.stringify(err);
 
 /**
  * to cast an error to QueryFailure
@@ -94,19 +101,21 @@ export const saveDataToBlob = <T>(
   { blobService, containerName, folder }: IBlobServiceInfo,
   blobName: string,
   data: T
-): TaskEither<BlobCreationFailure, T> =>
-  taskify<Error, BlobService.BlobResult>(cb =>
-    blobService.createBlockBlobFromText(
-      containerName,
-      `${folder}${folder ? "/" : ""}${blobName}`,
-      JSON.stringify(data),
-      cb
-    )
-  )().bimap(
-    err =>
+): TE.TaskEither<BlobCreationFailure, T> =>
+  pipe(
+    TE.taskify<Error, BlobService.BlobResult>(cb =>
+      blobService.createBlockBlobFromText(
+        containerName,
+        `${folder}${folder ? "/" : ""}${blobName}`,
+        JSON.stringify(data),
+        cb
+      )
+    )(),
+    TE.mapLeft(err =>
       BlobCreationFailure.encode({
         kind: "BLOB_FAILURE",
         reason: err.message
-      }),
-    _ => data
+      })
+    ),
+    TE.map(_ => data)
   );

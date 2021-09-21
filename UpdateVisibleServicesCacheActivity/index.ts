@@ -3,7 +3,7 @@
  * services/<serviceid>.json through output binding.
  */
 import { Context } from "@azure/functions";
-import { isLeft } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 import {
   toServicePublic,
   VisibleService
@@ -16,13 +16,13 @@ async function UpdateVisibleServiceCacheActivity(
   const visibleServiceJson = context.bindings.visibleServiceJson;
   const errorOrVisibleService = VisibleService.decode(visibleServiceJson);
 
-  if (isLeft(errorOrVisibleService)) {
+  if (E.isLeft(errorOrVisibleService)) {
     context.log.error(
       "UpdateVisibleServiceCacheActivity|Cannot decode visible service JSON"
     );
     return;
   }
-  const visibleService = errorOrVisibleService.value;
+  const visibleService = errorOrVisibleService.right;
 
   context.log.info(
     "UpdateVisibleServiceCacheActivity|SERVICE_ID=",

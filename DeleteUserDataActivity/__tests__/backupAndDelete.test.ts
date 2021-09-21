@@ -3,9 +3,9 @@ import {
   toCosmosErrorResponse
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { BlobService } from "azure-storage";
-import { left, right } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
-import { taskEither, fromLeft, fromEither } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
 import { ValidationError } from "io-ts";
 import { MessageDeletableModel } from "../../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../../utils/extensions/models/message_status";
@@ -43,14 +43,15 @@ const asyncIteratorOf = <T>(items: T[]): AsyncIterator<T[]> => {
 const messageContentBlobService = ({} as unknown) as BlobService;
 
 // Message Model
-const mockGetContentFromBlob = jest.fn(() =>
-  taskEither.of(some(aMessageContent))
-);
+const mockGetContentFromBlob = jest.fn<
+  ReturnType<InstanceType<typeof MessageDeletableModel>["getContentFromBlob"]>,
+  Parameters<InstanceType<typeof MessageDeletableModel>["getContentFromBlob"]>
+>(() => TE.of(some(aMessageContent)));
 const mockFindMessages = jest.fn(() =>
-  taskEither.of(asyncIteratorOf([right(aRetrievedMessageWithContent)]))
+  TE.of(asyncIteratorOf([E.right(aRetrievedMessageWithContent)]))
 );
-const mockDeleteContentFromBlob = jest.fn(() => taskEither.of(true));
-const mockDeleteMessage = jest.fn(() => taskEither.of(true));
+const mockDeleteContentFromBlob = jest.fn(() => TE.of(true));
+const mockDeleteMessage = jest.fn(() => TE.of(true));
 const messageModel = ({
   getContentFromBlob: mockGetContentFromBlob,
   findMessages: mockFindMessages,
@@ -59,10 +60,18 @@ const messageModel = ({
 } as unknown) as MessageDeletableModel;
 
 // ServicePreferences Model
-const mockDeleteServicePreferences = jest.fn(() => taskEither.of(true));
-const mockFindAllServPreferencesByFiscalCode = jest.fn(() =>
-  asyncIteratorOf([right(aRetrievedServicePreferences)])
-);
+const mockDeleteServicePreferences = jest.fn<
+  ReturnType<InstanceType<typeof ServicePreferencesDeletableModel>["delete"]>,
+  Parameters<InstanceType<typeof ServicePreferencesDeletableModel>["delete"]>
+>(() => TE.of("anything"));
+const mockFindAllServPreferencesByFiscalCode = jest.fn<
+  ReturnType<
+    InstanceType<typeof ServicePreferencesDeletableModel>["findAllByFiscalCode"]
+  >,
+  Parameters<
+    InstanceType<typeof ServicePreferencesDeletableModel>["findAllByFiscalCode"]
+  >
+>(() => asyncIteratorOf([E.right(aRetrievedServicePreferences)]));
 const servicePreferencesModel = ({
   delete: mockDeleteServicePreferences,
   findAllByFiscalCode: mockFindAllServPreferencesByFiscalCode
@@ -70,19 +79,28 @@ const servicePreferencesModel = ({
 
 // MessageStatusModel
 const mockMessageStatusFindAllVersionsByModelId = jest.fn(() =>
-  asyncIteratorOf([right(aRetrievedMessageStatus)])
+  asyncIteratorOf([E.right(aRetrievedMessageStatus)])
 );
-const mockDeleteMessageStatusVersion = jest.fn(() => taskEither.of(true));
+const mockDeleteMessageStatusVersion = jest.fn(() => TE.of(true));
 const messageStatusModel = ({
   findAllVersionsByModelId: mockMessageStatusFindAllVersionsByModelId,
   deleteMessageStatusVersion: mockDeleteMessageStatusVersion
 } as unknown) as MessageStatusDeletableModel;
 
 // NotificationModel
-const mockFindNotificationForMessage = jest.fn(() =>
-  taskEither.of(some(aRetrievedNotification))
-);
-const mockDeleteNotification = jest.fn(() => taskEither.of(true));
+const mockFindNotificationForMessage = jest.fn<
+  ReturnType<
+    InstanceType<
+      typeof NotificationDeletableModel
+    >["findNotificationForMessage"]
+  >,
+  Parameters<
+    InstanceType<
+      typeof NotificationDeletableModel
+    >["findNotificationForMessage"]
+  >
+>(() => TE.of(some(aRetrievedNotification)));
+const mockDeleteNotification = jest.fn(() => TE.of(true));
 const notificationModel = ({
   deleteNotification: mockDeleteNotification,
   findNotificationForMessage: mockFindNotificationForMessage
@@ -90,9 +108,9 @@ const notificationModel = ({
 
 // NotificationStatusModel
 const mockFindAllVersionsByNotificationId = jest.fn(() =>
-  asyncIteratorOf([right(aRetrievedNotificationStatus)])
+  asyncIteratorOf([E.right(aRetrievedNotificationStatus)])
 );
-const mockDeleteNotificationStatusVersion = jest.fn(() => taskEither.of(true));
+const mockDeleteNotificationStatusVersion = jest.fn(() => TE.of(true));
 const notificationStatusModel = ({
   findAllVersionsByNotificationId: mockFindAllVersionsByNotificationId,
   deleteNotificationStatusVersion: mockDeleteNotificationStatusVersion
@@ -100,9 +118,9 @@ const notificationStatusModel = ({
 
 // ProfileModel
 const mockProfileFindAllVersionsByModelId = jest.fn(() =>
-  asyncIteratorOf([right(aRetrievedProfile)])
+  asyncIteratorOf([E.right(aRetrievedProfile)])
 );
-const mockDeleteProfileVersion = jest.fn(() => taskEither.of(true));
+const mockDeleteProfileVersion = jest.fn(() => TE.of(true));
 const profileModel = ({
   findAllVersionsByModelId: mockProfileFindAllVersionsByModelId,
   deleteProfileVersion: mockDeleteProfileVersion
@@ -133,9 +151,9 @@ describe(`backupAndDeleteAllUserData`, () => {
       servicePreferencesModel,
       userDataBackup,
       fiscalCode: aFiscalCode
-    }).run();
+    })();
 
-    expect(result.isRight()).toBe(true);
+    expect(E.isRight(result)).toBe(true);
 
     expect(mockDeleteProfileVersion).toHaveBeenCalled();
     expect(mockDeleteServicePreferences).toHaveBeenCalled();
@@ -146,7 +164,7 @@ describe(`backupAndDeleteAllUserData`, () => {
   });
 
   it("should not stop if a content is not found for a message", async () => {
-    mockGetContentFromBlob.mockImplementationOnce(() => taskEither.of(none));
+    mockGetContentFromBlob.mockImplementationOnce(() => TE.of(none));
     const result = await backupAndDeleteAllUserData({
       messageContentBlobService,
       messageModel,
@@ -157,9 +175,9 @@ describe(`backupAndDeleteAllUserData`, () => {
       userDataBackup,
       servicePreferencesModel,
       fiscalCode: aFiscalCode
-    }).run();
+    })();
 
-    expect(result.isRight()).toBe(true);
+    expect(E.isRight(result)).toBe(true);
 
     expect(mockDeleteProfileVersion).toHaveBeenCalled();
     expect(mockDeleteServicePreferences).toHaveBeenCalled();
@@ -170,9 +188,7 @@ describe(`backupAndDeleteAllUserData`, () => {
   });
 
   it("should not stop if  there is an error while looking for a message content", async () => {
-    mockGetContentFromBlob.mockImplementationOnce(() =>
-      fromLeft(new Error(""))
-    );
+    mockGetContentFromBlob.mockImplementationOnce(() => TE.left(new Error("")));
     const result = await backupAndDeleteAllUserData({
       messageContentBlobService,
       messageModel,
@@ -183,15 +199,13 @@ describe(`backupAndDeleteAllUserData`, () => {
       userDataBackup,
       servicePreferencesModel,
       fiscalCode: aFiscalCode
-    }).run();
+    })();
 
-    expect(result.isRight()).toBe(true);
+    expect(E.isRight(result)).toBe(true);
   });
 
   it("should not stop if a notification is not found for a message (none)", async () => {
-    mockFindNotificationForMessage.mockImplementationOnce(() =>
-      taskEither.of(none)
-    );
+    mockFindNotificationForMessage.mockImplementationOnce(() => TE.of(none));
     const result = await backupAndDeleteAllUserData({
       messageContentBlobService,
       messageModel,
@@ -202,14 +216,17 @@ describe(`backupAndDeleteAllUserData`, () => {
       userDataBackup,
       servicePreferencesModel,
       fiscalCode: aFiscalCode
-    }).run();
+    })();
 
-    expect(result.isRight()).toBe(true);
+    expect(E.isRight(result)).toBe(true);
   });
 
   it("should stop if there is an error while looking for a notification (404)", async () => {
     mockFindNotificationForMessage.mockImplementationOnce(() =>
-      fromLeft({ kind: "COSMOS_ERROR_RESPONSE", error: { code: 404 } })
+      TE.left({
+        kind: "COSMOS_ERROR_RESPONSE",
+        error: { code: 404, name: "", message: "" }
+      })
     );
     const result = await backupAndDeleteAllUserData({
       messageContentBlobService,
@@ -221,9 +238,9 @@ describe(`backupAndDeleteAllUserData`, () => {
       userDataBackup,
       servicePreferencesModel,
       fiscalCode: aFiscalCode
-    }).run();
+    })();
 
-    expect(result.isRight()).toBe(true);
+    expect(E.isRight(result)).toBe(true);
   });
 
   it("should not stop if no servicePreferences were found", async () => {
@@ -240,9 +257,9 @@ describe(`backupAndDeleteAllUserData`, () => {
       userDataBackup,
       servicePreferencesModel,
       fiscalCode: aFiscalCode
-    }).run();
+    })();
 
-    expect(result.isRight()).toBe(true);
+    expect(E.isRight(result)).toBe(true);
 
     expect(mockDeleteProfileVersion).toHaveBeenCalled();
     expect(mockDeleteServicePreferences).not.toHaveBeenCalled();
@@ -254,7 +271,7 @@ describe(`backupAndDeleteAllUserData`, () => {
 
   it("should not stop if service Preferences asyncIterator returns an error", async () => {
     mockFindAllServPreferencesByFiscalCode.mockImplementationOnce(() =>
-      asyncIteratorOf([left([{} as ValidationError])])
+      asyncIteratorOf([E.left([{} as ValidationError])])
     );
     const result = await backupAndDeleteAllUserData({
       messageContentBlobService,
@@ -266,9 +283,9 @@ describe(`backupAndDeleteAllUserData`, () => {
       userDataBackup,
       servicePreferencesModel,
       fiscalCode: aFiscalCode
-    }).run();
+    })();
 
-    expect(result.isRight()).toBe(true);
+    expect(E.isRight(result)).toBe(true);
 
     expect(mockDeleteProfileVersion).toHaveBeenCalled();
     expect(mockDeleteServicePreferences).not.toHaveBeenCalled();
@@ -280,7 +297,7 @@ describe(`backupAndDeleteAllUserData`, () => {
 
   it("should not stop if a CosmosError is raised for delete", async () => {
     mockDeleteServicePreferences.mockImplementationOnce(() =>
-      fromLeft(toCosmosErrorResponse("") as CosmosErrors)
+      TE.left(toCosmosErrorResponse("") as CosmosErrors)
     );
     const result = await backupAndDeleteAllUserData({
       messageContentBlobService,
@@ -292,9 +309,9 @@ describe(`backupAndDeleteAllUserData`, () => {
       userDataBackup,
       servicePreferencesModel,
       fiscalCode: aFiscalCode
-    }).run();
+    })();
 
-    expect(result.isRight()).toBe(true);
+    expect(E.isRight(result)).toBe(true);
 
     expect(mockDeleteProfileVersion).toHaveBeenCalled();
     expect(mockDeleteMessage).toHaveBeenCalled();

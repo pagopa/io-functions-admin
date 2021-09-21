@@ -2,7 +2,7 @@ import * as df from "durable-functions";
 
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 
-import { isLeft } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 import { isSome, none, Option, some } from "fp-ts/lib/Option";
 
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
@@ -55,17 +55,17 @@ export const handler = function*(
   // Check if input is valid
   const errorOrUpsertServiceEvent = UpsertServiceEvent.decode(input);
 
-  if (isLeft(errorOrUpsertServiceEvent)) {
+  if (E.isLeft(errorOrUpsertServiceEvent)) {
     context.log.error(
       `UpdateVisibleServicesActivity|Cannot parse input|ERROR=${readableReport(
-        errorOrUpsertServiceEvent.value
+        errorOrUpsertServiceEvent.left
       )}`
     );
     // We will never be able to recover from this, so don't trigger a retry
     return [];
   }
 
-  const upsertServiceEvent = errorOrUpsertServiceEvent.value;
+  const upsertServiceEvent = errorOrUpsertServiceEvent.right;
   const { newService, oldService } = upsertServiceEvent;
 
   // Update visible services if needed
@@ -94,12 +94,12 @@ export const handler = function*(
         updateVisibleServicesActivityResultJson
       );
 
-      if (isLeft(errorOrUpdateVisibleServicesActivityResult)) {
+      if (E.isLeft(errorOrUpdateVisibleServicesActivityResult)) {
         context.log.error(
           `UpdateVisibleServicesActivity|Can't decode result|SERVICE_ID=${
             visibleService.serviceId
           }|ERROR=${readableReport(
-            errorOrUpdateVisibleServicesActivityResult.value
+            errorOrUpdateVisibleServicesActivityResult.left
           )}`
         );
 
@@ -107,7 +107,7 @@ export const handler = function*(
       }
 
       const updateVisibleServicesActivityResult =
-        errorOrUpdateVisibleServicesActivityResult.value;
+        errorOrUpdateVisibleServicesActivityResult.right;
 
       if (updateVisibleServicesActivityResult.kind === "SUCCESS") {
         context.log.verbose(

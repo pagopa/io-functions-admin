@@ -6,7 +6,8 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { fromLeft, taskEither } from "fp-ts/lib/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
 import {
   aUserDataProcessing,
   aFiscalCode,
@@ -15,6 +16,7 @@ import {
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { none, Option, some } from "fp-ts/lib/Option";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { pipe } from "fp-ts/lib/function";
 
 let throwError = jest.fn(() => false);
 
@@ -23,16 +25,18 @@ const makeUserDataProcessingId = jest.fn(
     choice: UserDataProcessingChoice,
     fiscalCode: FiscalCode
   ): UserDataProcessingId =>
-    UserDataProcessingId.decode(`${fiscalCode}-${choice}`).getOrElseL(
-      errors => {
+    pipe(
+      `${fiscalCode}-${choice}`,
+      UserDataProcessingId.decode,
+      E.getOrElseW(errors => {
         throw new Error("");
-      }
+      })
     )
 );
 
 const mockUserDataProcessingModel = ({
   findLastVersionByModelId: jest.fn(([modelId, partitionKey]) => {
-    return taskEither.of<CosmosErrors, Option<UserDataProcessing>>(
+    return TE.of<CosmosErrors, Option<UserDataProcessing>>(
       aUserDataProcessing.fiscalCode == partitionKey
         ? some(aUserDataProcessing)
         : none
@@ -40,15 +44,14 @@ const mockUserDataProcessingModel = ({
   }),
   createOrUpdateByNewOne: jest.fn((u: UserDataProcessing) => {
     return throwError()
-      ? fromLeft<CosmosErrors, UserDataProcessing>({
+      ? TE.left<CosmosErrors, UserDataProcessing>({
           kind: "COSMOS_ERROR_RESPONSE"
         } as CosmosErrors)
-      : taskEither.of<CosmosErrors, UserDataProcessing>(aUserDataProcessing);
+      : TE.of<CosmosErrors, UserDataProcessing>(aUserDataProcessing);
   })
 } as any) as UserDataProcessingModel;
 
 describe("setUserDataProcessingStatusHandler", () => {
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -78,7 +81,10 @@ describe("setUserDataProcessingStatusHandler", () => {
     expect(
       mockUserDataProcessingModel.findLastVersionByModelId
     ).toHaveBeenCalledWith([
-      makeUserDataProcessingId(aUserDataProcessingChoice, notExistingFiscalCode),
+      makeUserDataProcessingId(
+        aUserDataProcessingChoice,
+        notExistingFiscalCode
+      ),
       notExistingFiscalCode
     ]);
 

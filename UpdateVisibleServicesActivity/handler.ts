@@ -3,8 +3,8 @@ import { BlobService } from "azure-storage";
 
 import * as t from "io-ts";
 
-import { Either, isLeft, left, right } from "fp-ts/lib/Either";
-import { isSome, none, Option, some } from "fp-ts/lib/Option";
+import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
 
 import { Second } from "@pagopa/ts-commons/lib/units";
 
@@ -20,6 +20,7 @@ import {
   releaseLease,
   upsertBlobFromObject
 } from "@pagopa/io-functions-commons/dist/src/utils/azure_storage";
+import { flow, pipe } from "fp-ts/lib/function";
 
 // The lease duration in seconds.
 // After the retrive/update activities the lease is released actively by the function.
@@ -74,7 +75,7 @@ function computeNewVisibleServices(
   visibleServices: IVisibleServices,
   visibleService: VisibleService,
   action: Input["action"]
-): Option<IVisibleServices> {
+): O.Option<IVisibleServices> {
   // Get the current visible service if available
   const currentVisibleService = visibleServices[visibleService.serviceId];
   if (
@@ -82,7 +83,7 @@ function computeNewVisibleServices(
     currentVisibleService.version >= visibleService.version
   ) {
     // A newer version is already stored in the blob, so skip the remove/update
-    return none;
+    return O.none;
   }
   if (action === "DELETE") {
     const {
@@ -91,10 +92,10 @@ function computeNewVisibleServices(
       ...restVisibleServices
     } = visibleServices;
 
-    return some(restVisibleServices);
+    return O.some(restVisibleServices);
   }
 
-  return some({
+  return O.some({
     ...visibleServices,
     [visibleService.serviceId]: visibleService
   });
@@ -110,7 +111,7 @@ async function updateVisibleServices(
   visibleService: VisibleService,
   action: Input["action"],
   leaseId: string
-): Promise<Either<Error, true>> {
+): Promise<E.Either<Error, true>> {
   // Retrieve the current visibleServices blob using the leaseId
   const errorOrMaybeVisibleServices = await getBlobAsObject(
     VisibleServicesBlob,
@@ -123,26 +124,27 @@ async function updateVisibleServices(
   );
 
   // Default to an empty object when the blob does not exist yet
-  const errorOrVisibleServices = errorOrMaybeVisibleServices.map(_ =>
-    _.getOrElse({})
+  const errorOrVisibleServices = pipe(
+    errorOrMaybeVisibleServices,
+    E.chain(flow(E.fromOption(() => ({}))))
   );
 
-  if (isLeft(errorOrVisibleServices)) {
-    return left(
+  if (E.isLeft(errorOrVisibleServices)) {
+    return E.left(
       Error(
-        `UpdateVisibleServicesActivity|Cannot decode blob|ERROR=${errorOrVisibleServices.value}`
+        `UpdateVisibleServicesActivity|Cannot decode blob|ERROR=${errorOrVisibleServices.left}`
       )
     );
   }
 
   // Compute the new visibleServices blob content
   const maybeNewVisibleServices = computeNewVisibleServices(
-    errorOrVisibleServices.value,
+    errorOrVisibleServices.right,
     visibleService,
     action
   );
 
-  if (isSome(maybeNewVisibleServices)) {
+  if (O.isSome(maybeNewVisibleServices)) {
     const newVisibleServices = maybeNewVisibleServices.value;
     // Store the new visibleServices blob
     const errorOrBlobResult = await upsertBlobFromObject(
@@ -155,16 +157,16 @@ async function updateVisibleServices(
       }
     );
 
-    if (isLeft(errorOrBlobResult)) {
-      return left(
+    if (E.isLeft(errorOrBlobResult)) {
+      return E.left(
         Error(
-          `UpdateVisibleServicesActivity|Cannot save blob|ERROR=${errorOrBlobResult.value.message}`
+          `UpdateVisibleServicesActivity|Cannot save blob|ERROR=${errorOrBlobResult.left.message}`
         )
       );
     }
   }
 
-  return right(true);
+  return E.right(true);
 }
 
 /**
@@ -175,7 +177,7 @@ export const getUpdateVisibleServicesActivityHandler = (
 ) => async (context: Context, input: unknown): Promise<unknown> => {
   const errorOrInput = Input.decode(input);
 
-  if (isLeft(errorOrInput)) {
+  if (E.isLeft(errorOrInput)) {
     // Return a failure result
     // We don't throw an exception because is not possible to retry
     return Result.encode({
@@ -184,7 +186,7 @@ export const getUpdateVisibleServicesActivityHandler = (
     });
   }
 
-  const { action, visibleService } = errorOrInput.value;
+  const { action, visibleService } = errorOrInput.right;
 
   // Lock the blob to avoid concurrency problems
   const errorOrLeaseResult = await acquireLease(
@@ -196,16 +198,16 @@ export const getUpdateVisibleServicesActivityHandler = (
     }
   );
 
-  if (isLeft(errorOrLeaseResult)) {
+  if (E.isLeft(errorOrLeaseResult)) {
     // Another instance of this activity has locked the blob we need to retry
     const error = Error(
-      `UpdateVisibleServicesActivity|Cannot acquire the lease on the blob|ERROR=${errorOrLeaseResult.value}`
+      `UpdateVisibleServicesActivity|Cannot acquire the lease on the blob|ERROR=${errorOrLeaseResult.left}`
     );
     context.log.error(error.message);
     throw error;
   }
 
-  const leaseResult = errorOrLeaseResult.value;
+  const leaseResult = errorOrLeaseResult.right;
 
   const errorOrOk = await updateVisibleServices(
     blobService,
@@ -222,10 +224,10 @@ export const getUpdateVisibleServicesActivityHandler = (
     leaseResult.id
   );
 
-  if (isLeft(errorOrOk)) {
-    context.log.error(errorOrOk.value.message);
+  if (E.isLeft(errorOrOk)) {
+    context.log.error(errorOrOk.left.message);
     // Throw an error so the activity is retried
-    throw errorOrOk.value;
+    throw errorOrOk.left;
   }
 
   // Return a success result

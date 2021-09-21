@@ -8,9 +8,10 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
-import * as te from "fp-ts/lib/TaskEither";
-import * as e from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
 import { Errors } from "io-ts";
+import { pipe } from "fp-ts/lib/function";
 
 /**
  * Extends ServicePreferencesModel with deleting operations
@@ -19,13 +20,14 @@ export class ServicePreferencesDeletableModel extends ServicesPreferencesModel {
   public delete(
     documentId: NonEmptyString,
     fiscalCode: FiscalCode
-  ): te.TaskEither<CosmosErrors, string> {
-    return te
-      .tryCatch(
+  ): TE.TaskEither<CosmosErrors, string> {
+    return pipe(
+      TE.tryCatch(
         () => this.container.item(documentId, fiscalCode).delete(),
         toCosmosErrorResponse
-      )
-      .map(_ => _.item.id);
+      ),
+      TE.map(_ => _.item.id)
+    );
   }
 
   /**
@@ -36,7 +38,7 @@ export class ServicePreferencesDeletableModel extends ServicesPreferencesModel {
   public findAllByFiscalCode(
     fiscalCode: FiscalCode
   ): AsyncIterator<
-    ReadonlyArray<e.Either<Errors, RetrievedServicePreference>>
+    ReadonlyArray<E.Either<Errors, RetrievedServicePreference>>
   > {
     return this.getQueryIterator({
       parameters: [

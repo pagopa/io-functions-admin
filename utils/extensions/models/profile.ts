@@ -1,5 +1,5 @@
-import { Either } from "fp-ts/lib/Either";
-import { TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import {
   PROFILE_MODEL_PK_FIELD,
   ProfileModel as ProfileModelBase,
@@ -11,6 +11,7 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { pipe } from "fp-ts/lib/function";
 import * as DocumentDbUtils from "../documentdb";
 
 /**
@@ -20,11 +21,14 @@ export class ProfileDeletableModel extends ProfileModelBase {
   public deleteProfileVersion(
     fiscalCode: FiscalCode,
     documentId: NonEmptyString
-  ): TaskEither<CosmosErrors, string> {
-    return tryCatch(
-      () => this.container.item(documentId, fiscalCode).delete(),
-      toCosmosErrorResponse
-    ).map(_ => _.item.id);
+  ): TE.TaskEither<CosmosErrors, string> {
+    return pipe(
+      TE.tryCatch(
+        () => this.container.item(documentId, fiscalCode).delete(),
+        toCosmosErrorResponse
+      ),
+      TE.map(_ => _.item.id)
+    );
   }
 
   /**
@@ -34,7 +38,7 @@ export class ProfileDeletableModel extends ProfileModelBase {
    */
   public findAllVersionsByModelId(
     fiscalCode: FiscalCode
-  ): AsyncIterator<ReadonlyArray<Either<Errors, RetrievedProfile>>> {
+  ): AsyncIterator<ReadonlyArray<E.Either<Errors, RetrievedProfile>>> {
     return DocumentDbUtils.findAllVersionsByModelId(
       this.container,
       this.retrievedItemT,

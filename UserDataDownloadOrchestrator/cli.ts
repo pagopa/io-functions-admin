@@ -11,7 +11,7 @@ import { Context } from "@azure/functions";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 
-import { toString } from "fp-ts/lib/function";
+import { pipe } from "fp-ts/lib/function";
 
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
@@ -20,8 +20,8 @@ import {
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 
-import { isLeft } from "fp-ts/lib/Either";
-import { isNone } from "fp-ts/lib/Option";
+import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import setUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
 import sendUserDataDownloadMessageActivity from "../SendUserDataDownloadMessageActivity";
@@ -51,29 +51,33 @@ const userDataProcessingModel = new UserDataProcessingModel(
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/no-explicit-any
 async function run(): Promise<any> {
-  const fiscalCode = FiscalCode.decode(process.argv[2]).getOrElseL(reason => {
-    throw new Error(`Invalid input: ${readableReport(reason)}`);
-  });
+  const fiscalCode = pipe(
+    process.argv[2],
+    FiscalCode.decode,
+    E.getOrElse(reason => {
+      throw new Error(`Invalid input: ${readableReport(reason)}`);
+    })
+  );
 
-  const errorOrMaybeRetrievedUserDataProcessing = await userDataProcessingModel
-    .findLastVersionByModelId([
+  const errorOrMaybeRetrievedUserDataProcessing = await userDataProcessingModel.findLastVersionByModelId(
+    [
       makeUserDataProcessingId(
         UserDataProcessingChoiceEnum.DOWNLOAD,
         fiscalCode
       ),
       fiscalCode
-    ])
-    .run();
+    ]
+  )();
 
-  if (isLeft(errorOrMaybeRetrievedUserDataProcessing)) {
+  if (E.isLeft(errorOrMaybeRetrievedUserDataProcessing)) {
     throw new Error(
-      `Cannot retrieve user data processing ${errorOrMaybeRetrievedUserDataProcessing.value.kind}`
+      `Cannot retrieve user data processing ${errorOrMaybeRetrievedUserDataProcessing.left.kind}`
     );
   }
 
-  const maybeUserDataProcessing = errorOrMaybeRetrievedUserDataProcessing.value;
+  const maybeUserDataProcessing = errorOrMaybeRetrievedUserDataProcessing.right;
 
-  if (isNone(maybeUserDataProcessing)) {
+  if (O.isNone(maybeUserDataProcessing)) {
     throw new Error("Cannot retrieve user data processing.");
   }
 
@@ -114,7 +118,7 @@ async function run(): Promise<any> {
           password: bundle.value.password
         });
       } else {
-        throw new Error(toString(bundle));
+        throw new Error(String(bundle));
       }
     })
     .then(() =>

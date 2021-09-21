@@ -4,8 +4,10 @@ import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
-import { fromPredicate } from "fp-ts/lib/Option";
+import * as O from "fp-ts/lib/Option";
+import * as E from "fp-ts/lib/Either";
 import * as t from "io-ts";
+import { pipe } from "fp-ts/lib/function";
 import { toHash } from "../utils/crypto";
 import {
   SubscriptionFeedEntitySelector,
@@ -64,16 +66,16 @@ export const updateSubscriptionFeed = async (
   logPrefix: string = "UpdateServiceSubscriptionFeedActivity"
 ) => {
   const decodedInputOrError = Input.decode(rawInput);
-  if (decodedInputOrError.isLeft()) {
+  if (E.isLeft(decodedInputOrError)) {
     context.log.error(
       `${logPrefix}|Cannot parse input|ERROR=${readableReport(
-        decodedInputOrError.value
+        decodedInputOrError.left
       )}`
     );
     return "FAILURE";
   }
 
-  const decodedInput = decodedInputOrError.value;
+  const decodedInput = decodedInputOrError.right;
 
   const { fiscalCode, operation, updatedAt, version } = decodedInput;
 
@@ -110,11 +112,11 @@ export const updateSubscriptionFeed = async (
   const sKey = `${sPartitionKey}-${fiscalCodeHash}`;
   const uKey = `${uPartitionKey}-${fiscalCodeHash}`;
 
-  const otherEntitiesToDelete: ReadonlyArray<SubscriptionFeedEntitySelector> = fromPredicate(
-    ProfileInput.is
-  )(decodedInput)
-    .mapNullable(_ => _.previousPreferences)
-    .map(_ =>
+  const otherEntitiesToDelete: ReadonlyArray<SubscriptionFeedEntitySelector> = pipe(
+    decodedInput,
+    O.fromPredicate(ProfileInput.is),
+    O.chainNullableK(_ => _.previousPreferences),
+    O.map(_ =>
       _.reduce((prev, preference) => {
         // TODO: This code could be optimized deleting only the entry based on the current
         // profile status and the effective previous preference inbox value
@@ -132,8 +134,9 @@ export const updateSubscriptionFeed = async (
           }
         ];
       }, [] as ReadonlyArray<SubscriptionFeedEntitySelector>)
-    )
-    .getOrElse([]);
+    ),
+    O.getOrElse(() => [])
+  );
 
   const allowInsertIfDeleted = decodedInput.subscriptionKind !== "SERVICE";
 

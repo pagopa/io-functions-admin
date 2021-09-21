@@ -1,18 +1,13 @@
+import * as E from "fp-ts/lib/Either";
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
   mockOrchestratorContext,
   mockOrchestratorGetInput
 } from "../../__mocks__/durable-functions";
-import {
-  ActivityResultSuccess as CheckLastStatusActivityResultSuccess
-} from "../../UserDataProcessingCheckLastStatusActivity/handler";
-import {
-  ActivityResultSuccess as FindFailureReasonActivityResultSuccess
-} from "../../UserDataProcessingFindFailureReasonActivity/handler";
-import {
-  ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess
-} from "../../SetUserDataProcessingStatusActivity/handler";
+import { ActivityResultSuccess as CheckLastStatusActivityResultSuccess } from "../../UserDataProcessingCheckLastStatusActivity/handler";
+import { ActivityResultSuccess as FindFailureReasonActivityResultSuccess } from "../../UserDataProcessingFindFailureReasonActivity/handler";
+import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import {
   handler,
   InvalidInputFailure,
@@ -94,7 +89,7 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(document);
     const result = consumeOrchestrator(handler(context));
 
-    expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(InvalidInputFailure.decode(result))).toBe(true);
     expect(checkLastStatusActivity).not.toHaveBeenCalled();
     expect(findFailureReasonActivity).not.toHaveBeenCalled();
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
@@ -111,7 +106,7 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aNotFailedUserDataProcessing);
     const result = consumeOrchestrator(handler(context));
 
-    expect(InvalidInputFailure.decode(result).isRight()).toBe(true);
+    expect(E.isRight(InvalidInputFailure.decode(result))).toBe(true);
     expect(checkLastStatusActivity).not.toHaveBeenCalled();
     expect(findFailureReasonActivity).not.toHaveBeenCalled();
     expect(setUserDataProcessingStatusActivity).not.toHaveBeenCalled();
@@ -137,11 +132,13 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     const result = consumeOrchestrator(handler(context));
 
     const orchestratorResult = OrchestratorFailure.decode(result);
-    expect(orchestratorResult.isRight()).toBe(true);
-    expect(orchestratorResult.value).toEqual({
-      kind: "UNHANDLED",
-      reason: '"any error"'
-    });
+    expect(E.isRight(orchestratorResult)).toBe(true);
+    if (E.isRight(orchestratorResult)) {
+      expect(orchestratorResult.right).toEqual({
+        kind: "UNHANDLED",
+        reason: "any error"
+      });
+    }
 
     expect(checkLastStatusActivity).toHaveBeenCalled();
     expect(findFailureReasonActivity).not.toHaveBeenCalled();
@@ -168,11 +165,14 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     const result = consumeOrchestrator(handler(context));
 
     const orchestratorResult = OrchestratorFailure.decode(result);
-    expect(orchestratorResult.isRight()).toBe(true);
-    expect(orchestratorResult.value).toEqual({
-      kind: "UNHANDLED",
-      reason: '"any error"'
-    });
+
+    expect(E.isRight(orchestratorResult)).toBe(true);
+    if (E.isRight(orchestratorResult)) {
+      expect(orchestratorResult.right).toEqual({
+        kind: "UNHANDLED",
+        reason: "any error"
+      });
+    }
 
     expect(checkLastStatusActivity).toHaveBeenCalled();
     expect(findFailureReasonActivity).toHaveBeenCalled();
@@ -199,11 +199,13 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     const result = consumeOrchestrator(handler(context));
 
     const orchestratorResult = OrchestratorFailure.decode(result);
-    expect(orchestratorResult.isRight()).toBe(true);
-    expect(orchestratorResult.value).toEqual({
-      kind: "UNHANDLED",
-      reason: '"any error"'
-    });
+    expect(E.isRight(orchestratorResult)).toBe(true);
+    if (E.isRight(orchestratorResult)) {
+      expect(orchestratorResult.right).toEqual({
+        kind: "UNHANDLED",
+        reason: "any error"
+      });
+    }
 
     expect(checkLastStatusActivity).toHaveBeenCalled();
     expect(findFailureReasonActivity).toHaveBeenCalled();
@@ -229,10 +231,12 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
 
     const result = consumeOrchestrator(handler(context));
     const orchestratorResult = SkippedDocument.decode(result);
-    expect(orchestratorResult.isRight()).toBe(true);
-    expect(orchestratorResult.value).toEqual({
-      kind: "SKIPPED"
-    });
+    expect(E.isRight(orchestratorResult)).toBe(true);
+    if (E.isRight(orchestratorResult)) {
+      expect(orchestratorResult.right).toEqual({
+        kind: "SKIPPED"
+      });
+    }
 
     expect(checkLastStatusActivity).toHaveBeenCalled();
     expect(checkLastStatusActivity).toHaveBeenCalledTimes(1);
@@ -261,11 +265,13 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     const result = consumeOrchestrator(handler(context));
 
     const orchestratorResult = OrchestratorSuccess.decode(result);
-    expect(orchestratorResult.isRight()).toBe(true);
-    expect(orchestratorResult.value).toEqual({
-      kind: "SUCCESS",
-      type: "COMPLETED"
-    });
+    expect(E.isRight(orchestratorResult)).toBe(true);
+    if (E.isRight(orchestratorResult)) {
+      expect(orchestratorResult.right).toEqual({
+        kind: "SUCCESS",
+        type: "COMPLETED"
+      });
+    }
 
     expect(checkLastStatusActivity).toHaveBeenCalled();
     expect(checkLastStatusActivity).toHaveBeenCalledTimes(1);

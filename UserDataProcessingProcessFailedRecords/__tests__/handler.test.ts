@@ -7,7 +7,7 @@ import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { processFailedUserDataProcessingHandler } from "../handler";
 import { SqlQuerySpec, FeedOptions } from "@azure/cosmos";
-import { tryCatch2v } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
 import { Branded } from "io-ts";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import * as t from "io-ts";
@@ -137,7 +137,7 @@ const recordsIterator = (query: string | SqlQuerySpec) => ({
       // and keep the asynchrounous behaviour
       await new Promise(resolve => setTimeout(resolve, 100));
       yield [
-        tryCatch2v(
+        E.tryCatch(
           () =>
             recordMock(
               record.choice,
