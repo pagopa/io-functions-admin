@@ -1,5 +1,8 @@
 # Azure DevOps pipeline to release a new version and deploy to production.
 
+variables:
+  HEALTHCHECK_PATH: '/info' 
+
 parameters:
   - name: 'RELEASE_SEMVER'
     displayName: 'When packing a release, define the version bump to apply'
@@ -129,20 +132,18 @@ stages:
 
   # Check that the staging instance is healthy
   - stage: Healthcheck
+    pool:
+      name: $(AGENT_POOL)
     dependsOn:
       - Deploy_staging
     jobs:
       - job: 'do_healthcheck'       
         steps:  
-          - template: templates/rest-healthcheck/template.yaml@pagopaCommons
-            parameters:
-              azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
-              appName: '$(PRODUCTION_APP_NAME)'
-              endpoint: 'https://$(PRODUCTION_APP_NAME)-staging.azurewebsites.net/info'
-              endpointType: 'private'
-              containerInstanceResourceGroup: 'io-p-rg-common'
-              containerInstanceVNet: 'io-p-vnet-common'
-              containerInstanceSubnet: 'azure-devops'
+          - checkout: none
+          - script: |
+              # fails if response status is not 2xx
+              curl -f 'https://$(PRODUCTION_APP_NAME)-staging.azurewebsites.net/$(HEALTHCHECK_PATH)'
+            displayName: 'Healthcheck'
 
   # Promote the staging instance to production
   - stage: Deploy_production
