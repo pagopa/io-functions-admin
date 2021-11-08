@@ -468,6 +468,37 @@ paths:
           description: Resource (User or Product) not found
         "500":
           description: Internal server error
+  /subscriptions/{subscription_id}/owner:
+    patch:
+      summary: Update Subscription owner
+      description: Update Subscription owner
+      operationId: updateSubscriptionOwner
+      parameters:
+        - name: subscription_id
+          in: path
+          type: string
+          required: true
+          description: The id of the Subscription
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/UpdateSubscriptionOwnerPayload"
+      responses:
+        "200":
+          description: Subscription updated
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Resource (User or Product) not found
+        "500":
+          description: Internal server error
+  
+
 definitions:
   DevelopmentProfile:
     type: object
@@ -755,6 +786,21 @@ definitions:
         type: string
     required:
      - version
+  UpdateSubscriptionOwnerPayload:
+    type: object
+    properties:
+      current_email:
+        type: string
+        format: email
+        minLength: 1
+      destination_email:
+        type: string
+        format: email
+        minLength: 1
+    required:
+      - current_email
+      - destination_email
+  
 responses: {}
 parameters:
   SandboxFiscalCode:
