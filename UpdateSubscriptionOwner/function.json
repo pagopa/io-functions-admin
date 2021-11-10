@@ -5,7 +5,7 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "route": "/subscriptions/{subscription_id}/owner",
+      "route": "/subscriptions/move-owner",
       "methods": [
         "patch"
       ]

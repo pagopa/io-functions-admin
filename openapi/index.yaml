@@ -468,17 +468,12 @@ paths:
           description: Resource (User or Product) not found
         "500":
           description: Internal server error
-  /subscriptions/{subscription_id}/owner:
+  /subscriptions/move-owner:
     patch:
       summary: Update Subscription owner
       description: Update Subscription owner
       operationId: updateSubscriptionOwner
       parameters:
-        - name: subscription_id
-          in: path
-          type: string
-          required: true
-          description: The id of the Subscription
         - name: body
           in: body
           required: true
@@ -797,10 +792,18 @@ definitions:
         type: string
         format: email
         minLength: 1
+      subscription_ids:
+        type: array
+        items:
+          $ref: "#/definitions/SubscriptionId"
     required:
       - current_email
       - destination_email
-  
+      - subscription_ids
+  SubscriptionId:
+    type: string
+    minLength: 1  
+
 responses: {}
 parameters:
   SandboxFiscalCode:

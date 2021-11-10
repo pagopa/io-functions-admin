@@ -9,6 +9,7 @@ import { setAppContext } from "@pagopa/io-functions-commons/dist/src/utils/middl
 
 import createAzureFunctionHandler from "@pagopa/express-azure-functions/dist/src/createAzureFunctionsHandler";
 
+import { getConfigOrThrow } from "../utils/config";
 import { UpdateSubscriptionOwner } from "./handler";
 
 // eslint-disable-next-line functional/no-let
@@ -22,8 +23,24 @@ winston.add(contextTransport);
 const app = express();
 secureExpressApp(app);
 
+const config = getConfigOrThrow();
+
+const servicePrincipalCreds = {
+  clientId: config.SERVICE_PRINCIPAL_CLIENT_ID,
+  secret: config.SERVICE_PRINCIPAL_SECRET,
+  tenantId: config.SERVICE_PRINCIPAL_TENANT_ID
+};
+const azureApimConfig = {
+  apim: config.AZURE_APIM,
+  apimResourceGroup: config.AZURE_APIM_RESOURCE_GROUP,
+  subscriptionId: config.AZURE_SUBSCRIPTION_ID
+};
+
 // Add express route
-app.patch("/subscriptions/:subscriptionId/owner", UpdateSubscriptionOwner());
+app.patch(
+  "/subscriptions/move-owner",
+  UpdateSubscriptionOwner(servicePrincipalCreds, azureApimConfig)
+);
 
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
