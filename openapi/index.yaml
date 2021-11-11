@@ -468,10 +468,10 @@ paths:
           description: Resource (User or Product) not found
         "500":
           description: Internal server error
-  /subscriptions/move-owner:
+  /actions/subscriptions/ownerships:
     patch:
-      summary: Update Subscription owner
-      description: Update Subscription owner
+      summary: Update Subscriptions owner
+      description: Update Ownership for a group of subscriptions
       operationId: updateSubscriptionOwner
       parameters:
         - name: body
