@@ -37,7 +37,7 @@ const azureApimConfig = {
 };
 
 // Add express route
-app.patch(
+app.post(
   "/adm/actions/subscriptions/ownerships",
   UpdateSubscriptionOwner(servicePrincipalCreds, azureApimConfig)
 );

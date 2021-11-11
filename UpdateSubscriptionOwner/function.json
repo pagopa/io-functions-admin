@@ -7,7 +7,7 @@
       "name": "req",
       "route": "adm/actions/subscriptions/ownerships",
       "methods": [
-        "patch"
+        "post"
       ]
     },
     {

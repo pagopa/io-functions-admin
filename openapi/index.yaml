@@ -469,7 +469,7 @@ paths:
         "500":
           description: Internal server error
   /actions/subscriptions/ownerships:
-    patch:
+    post:
       summary: Update Subscriptions owner
       description: Update Ownership for a group of subscriptions
       operationId: updateSubscriptionOwner
