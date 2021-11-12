@@ -65,7 +65,10 @@ const moveSubscription = (
     TE.chain(subscription =>
       proxyClient.updateSubscriptionOwner(subscription, destination.id)
     ),
-    TE.map(_ => `Update subscription ${_.name} with ownerId ${destination.id}`)
+    TE.map(
+      _ =>
+        `Update subscription ${_.name} with owner ${destination.id} [${destination.email}]`
+    )
   );
 
 /**
