@@ -20,7 +20,6 @@ import { errorsToReadableMessages } from "@pagopa/ts-commons/lib/reporters";
 import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { pipe } from "fp-ts/lib/function";
 import { SpecialServiceMetadata } from "../generated/definitions/SpecialServiceMetadata";
-import { StandardServiceMetadata } from "../generated/definitions/StandardServiceMetadata";
 import { CIDR } from "../generated/definitions/CIDR";
 import { Group, Group as ApiGroup } from "../generated/definitions/Group";
 import {
@@ -30,6 +29,7 @@ import {
 import { User, User as ApiUser } from "../generated/definitions/User";
 import { UserCreated as ApiUserCreated } from "../generated/definitions/UserCreated";
 import { UserStateEnum } from "../generated/definitions/UserState";
+import { StandardServiceCategoryEnum } from "../generated/definitions/StandardServiceCategory";
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function errorsToError(errors: Errors): Error {
@@ -73,7 +73,6 @@ export function apiServiceToService(service: ApiService): Service {
         address: service.service_metadata.address,
         appAndroid: service.service_metadata.app_android,
         appIos: service.service_metadata.app_ios,
-        category: service.service_metadata.category,
         cta: service.service_metadata.cta,
         description: service.service_metadata.description,
         email: service.service_metadata.email,
@@ -87,26 +86,29 @@ export function apiServiceToService(service: ApiService): Service {
         webUrl: service.service_metadata.web_url
       },
       serviceName: service.service_name
-    },
+    } as Service,
     commonService =>
       SpecialServiceMetadata.is(service.service_metadata)
-        ? ({
+        ? {
             ...commonService,
             serviceMetadata: {
               ...commonService.serviceMetadata,
+              category: service.service_metadata.category,
               customSpecialFlow: service.service_metadata.custom_special_flow
             }
-          } as Service)
-        : StandardServiceMetadata.is(service.service_metadata)
+          }
+        : service.service_metadata
         ? ({
             ...commonService,
             serviceMetadata: {
               ...commonService.serviceMetadata,
+              // When service_metadata is defined the default value of category is STANDARD
+              category: StandardServiceCategoryEnum.STANDARD,
               customSpecialFlow: undefined
             }
           } as Service)
         : // Service without metadata
-          (commonService as Service)
+          commonService
   );
 }
 
