@@ -19,6 +19,7 @@ import { Errors } from "io-ts";
 import { errorsToReadableMessages } from "@pagopa/ts-commons/lib/reporters";
 import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { pipe } from "fp-ts/lib/function";
+import { SpecialServiceMetadata } from "../generated/definitions/SpecialServiceMetadata";
 import { CIDR } from "../generated/definitions/CIDR";
 import { Group, Group as ApiGroup } from "../generated/definitions/Group";
 import {
@@ -28,6 +29,7 @@ import {
 import { User, User as ApiUser } from "../generated/definitions/User";
 import { UserCreated as ApiUserCreated } from "../generated/definitions/UserCreated";
 import { UserStateEnum } from "../generated/definitions/UserState";
+import { StandardServiceCategoryEnum } from "../generated/definitions/StandardServiceCategory";
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function errorsToError(errors: Errors): Error {
@@ -54,34 +56,60 @@ function removeNullProperties<T>(obj: T): unknown {
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function apiServiceToService(service: ApiService): Service {
-  return {
-    authorizedCIDRs: toAuthorizedCIDRs(service.authorized_cidrs),
-    authorizedRecipients: toAuthorizedRecipients(service.authorized_recipients),
-    departmentName: service.department_name,
-    isVisible: service.is_visible,
-    maxAllowedPaymentAmount: service.max_allowed_payment_amount,
-    organizationFiscalCode: service.organization_fiscal_code,
-    organizationName: service.organization_name,
-    requireSecureChannels: service.require_secure_channels,
-    serviceId: service.service_id,
-    serviceMetadata: service.service_metadata && {
-      address: service.service_metadata.address,
-      appAndroid: service.service_metadata.app_android,
-      appIos: service.service_metadata.app_ios,
-      cta: service.service_metadata.cta,
-      description: service.service_metadata.description,
-      email: service.service_metadata.email,
-      pec: service.service_metadata.pec,
-      phone: service.service_metadata.phone,
-      privacyUrl: service.service_metadata.privacy_url,
-      scope: service.service_metadata.scope,
-      supportUrl: service.service_metadata.support_url,
-      tokenName: service.service_metadata.token_name,
-      tosUrl: service.service_metadata.tos_url,
-      webUrl: service.service_metadata.web_url
-    },
-    serviceName: service.service_name
-  };
+  return pipe(
+    {
+      authorizedCIDRs: toAuthorizedCIDRs(service.authorized_cidrs),
+      authorizedRecipients: toAuthorizedRecipients(
+        service.authorized_recipients
+      ),
+      departmentName: service.department_name,
+      isVisible: service.is_visible,
+      maxAllowedPaymentAmount: service.max_allowed_payment_amount,
+      organizationFiscalCode: service.organization_fiscal_code,
+      organizationName: service.organization_name,
+      requireSecureChannels: service.require_secure_channels,
+      serviceId: service.service_id,
+      serviceMetadata: service.service_metadata && {
+        address: service.service_metadata.address,
+        appAndroid: service.service_metadata.app_android,
+        appIos: service.service_metadata.app_ios,
+        cta: service.service_metadata.cta,
+        description: service.service_metadata.description,
+        email: service.service_metadata.email,
+        pec: service.service_metadata.pec,
+        phone: service.service_metadata.phone,
+        privacyUrl: service.service_metadata.privacy_url,
+        scope: service.service_metadata.scope,
+        supportUrl: service.service_metadata.support_url,
+        tokenName: service.service_metadata.token_name,
+        tosUrl: service.service_metadata.tos_url,
+        webUrl: service.service_metadata.web_url
+      },
+      serviceName: service.service_name
+    } as Service,
+    commonService =>
+      SpecialServiceMetadata.is(service.service_metadata)
+        ? {
+            ...commonService,
+            serviceMetadata: {
+              ...commonService.serviceMetadata,
+              category: service.service_metadata.category,
+              customSpecialFlow: service.service_metadata.custom_special_flow
+            }
+          }
+        : service.service_metadata
+        ? ({
+            ...commonService,
+            serviceMetadata: {
+              ...commonService.serviceMetadata,
+              // When service_metadata is defined the default value of category is STANDARD
+              category: StandardServiceCategoryEnum.STANDARD,
+              customSpecialFlow: undefined
+            }
+          } as Service)
+        : // Service without metadata
+          commonService
+  );
 }
 
 // Returns an API Service Metadata from an internal Service model
