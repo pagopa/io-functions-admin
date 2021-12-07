@@ -4,7 +4,7 @@ import * as TE from "fp-ts/lib/TaskEither";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
-import { GetImpersonateUserHandler } from "../handler";
+import { GetImpersonateServiceHandler } from "../handler";
 import { RestError } from "@azure/ms-rest-js";
 
 jest.mock("@azure/arm-apimanagement");
@@ -79,18 +79,18 @@ const mockLog = jest.fn();
 const mockedContext = { log: { error: mockLog } };
 
 // eslint-disable-next-line sonar/sonar-max-lines-per-function
-describe("GetImpersonateUserHandler", () => {
+describe("GetImpersonateServiceHandler", () => {
   it("GIVEN a not working APIM client WHEN call the handler THEN an Internel Error is returned", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
       TE.left(Error("Error from ApiManagementClient constructor"))
     );
 
-    const getImpersonateUserHandler = GetImpersonateUserHandler(
+    const getImpersonateServiceHandler = GetImpersonateServiceHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
     );
 
-    const response = await getImpersonateUserHandler(
+    const response = await getImpersonateServiceHandler(
       mockedContext as any,
       undefined,
       undefined
@@ -100,7 +100,7 @@ describe("GetImpersonateUserHandler", () => {
   });
 
   it("GIVEN a not working APIM server WHEN call the handler THEN an Internal Error is returned", async () => {
-    const handler = GetImpersonateUserHandler(
+    const handler = GetImpersonateServiceHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
     );
@@ -115,7 +115,7 @@ describe("GetImpersonateUserHandler", () => {
   });
 
   it("GIVEN a subscripion without owner WHEN call the handler THEN an Internal Error error is returned", async () => {
-    const handler = GetImpersonateUserHandler(
+    const handler = GetImpersonateServiceHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
     );
@@ -130,7 +130,7 @@ describe("GetImpersonateUserHandler", () => {
   });
 
   it("GIVEN a not existing subscripion id WHEN call the handler THEN an Not Found error is returned", async () => {
-    const handler = GetImpersonateUserHandler(
+    const handler = GetImpersonateServiceHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
     );
@@ -144,7 +144,7 @@ describe("GetImpersonateUserHandler", () => {
     expect(response.kind).toEqual("IResponseErrorNotFound");
   });
 
-  it("should return all the user subscriptions and groups", async () => {
+  it("GIVEN an existing subscripion id WHEN call the handler THEN a proper Impersonated Service is returned", async () => {
     const anApimGroupContract: GroupContract = {
       description: "group description",
       displayName: "groupName"
@@ -169,7 +169,7 @@ describe("GetImpersonateUserHandler", () => {
       Promise.resolve(someMoreValidGroups)
     );
 
-    const handler = GetImpersonateUserHandler(
+    const handler = GetImpersonateServiceHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
     );
@@ -184,8 +184,8 @@ describe("GetImpersonateUserHandler", () => {
       expect.objectContaining({
         kind: "IResponseSuccessJson",
         value: {
-          serviceId: "valid-subscription-id",
-          userGroup: "groupName,groupName,groupName,groupName"
+          service_id: "valid-subscription-id",
+          user_groups: "groupName,groupName,groupName,groupName"
         }
       })
     );

@@ -309,6 +309,25 @@ paths:
           description: Subscription not found
         "500":
           description: Internal server error
+  /impersonate-service/{serviceId}:
+    get:
+      summary: Gets the data to impersonate a service
+      operationId: getImpersonatedUser
+      parameters:
+        - name: serviceId
+          description: the serviceId of the target service.
+          in: path
+          type: string
+          required: true
+      responses:
+        "200":
+          description: data required to impersonte a service
+          schema:
+            $ref: "#/definitions/ImpersonatedService"
+        "404":
+          description: service or service owner not found
+        "500":
+          description: Internal server error
   /users:
     get:
       summary: Gets the list of users
@@ -538,6 +557,8 @@ definitions:
     $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v22.0.1/openapi/definitions.yaml#/FiscalCode"
   ExtendedProfile:
     $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v22.0.1/openapi/definitions.yaml#/ExtendedProfile"
+  ImpersonatedService:
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/IC-66--add-legal-message-for-app-and-impersonate-service-data/openapi/definitions.yaml#/ImpersonatedService"
   UserGroupsPayload:
     description: |-
       All the groups with which the user must be associated.

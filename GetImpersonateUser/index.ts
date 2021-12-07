@@ -10,7 +10,7 @@ import { setAppContext } from "@pagopa/io-functions-commons/dist/src/utils/middl
 import createAzureFunctionHandler from "@pagopa/express-azure-functions/dist/src/createAzureFunctionsHandler";
 
 import { getConfigOrThrow } from "../utils/config";
-import { GetImpersonateUser } from "./handler";
+import { GetImpersonateService } from "./handler";
 
 const config = getConfigOrThrow();
 
@@ -19,6 +19,7 @@ const servicePrincipalCreds = {
   secret: config.SERVICE_PRINCIPAL_SECRET,
   tenantId: config.SERVICE_PRINCIPAL_TENANT_ID
 };
+
 const azureApimConfig = {
   apim: config.AZURE_APIM,
   apimResourceGroup: config.AZURE_APIM_RESOURCE_GROUP,
@@ -39,12 +40,7 @@ secureExpressApp(app);
 // Add express route
 app.get(
   "/adm/users/:email",
-  GetImpersonateUser(
-    // adb2cCreds,
-    servicePrincipalCreds,
-    azureApimConfig
-    // adb2cTokenAttributeName
-  )
+  GetImpersonateService(servicePrincipalCreds, azureApimConfig)
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);

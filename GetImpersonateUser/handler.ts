@@ -20,6 +20,7 @@ import {
 } from "@pagopa/ts-commons/lib/responses";
 
 import { ServiceId } from "../generated/definitions/ServiceId";
+import { ImpersonatedService } from "../generated/definitions/ImpersonatedService";
 import {
   getSubscription,
   extractUserId,
@@ -32,25 +33,22 @@ import {
   IServicePrincipalCreds
 } from "../utils/apim";
 
-type IGetImpersonateUser = (
+type IGetImpersonateService = (
   context: Context,
   auth: IAzureApiAuthorization,
   serviceId: ServiceId
 ) => Promise<
-  | IResponseSuccessJson<{
-      readonly serviceId: string;
-      readonly userGroup: string;
-    }>
+  | IResponseSuccessJson<ImpersonatedService>
   | IResponseErrorNotFound
   | IResponseErrorInternal
 >;
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function GetImpersonateUserHandler(
+export function GetImpersonateServiceHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
-): IGetImpersonateUser {
-  return async (_context, _, serviceId): ReturnType<IGetImpersonateUser> =>
+): IGetImpersonateService {
+  return async (_context, _, serviceId): ReturnType<IGetImpersonateService> =>
     pipe(
       getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
       TE.chain(apimC =>
@@ -77,23 +75,25 @@ export function GetImpersonateUserHandler(
         )
       ),
       TE.map(groups => groups.map(g => g.displayName).join(",")),
-      TE.map(groupsAsString => ({ serviceId, userGroup: groupsAsString })),
+      TE.map(groupsAsString => ({
+        service_id: serviceId,
+        user_groups: groupsAsString
+      })),
       TE.map(ResponseSuccessJson),
       wrapWithIResponse,
-      TE.toUnion,
-      x => x
+      TE.toUnion
     )();
 }
 
 /**
- * Wraps a GetUsers handler inside an Express request handler.
+ * Wraps a GetServices handler inside an Express request handler.
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function GetImpersonateUser(
+export function GetImpersonateService(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {
-  const handler = GetImpersonateUserHandler(
+  const handler = GetImpersonateServiceHandler(
     servicePrincipalCreds,
     azureApimConfig
   );
@@ -102,7 +102,7 @@ export function GetImpersonateUser(
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiUserAdmin group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])), // FIXME: APiUserAdmin is too much!!!!
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])), // FIXME: APiUserAdmin is too much???
     // Extract the serviceId value from the request
     RequiredParamMiddleware("serviceId", ServiceId)
   );
