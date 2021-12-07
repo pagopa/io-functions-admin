@@ -102,7 +102,7 @@ export function GetImpersonateService(
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiUserAdmin group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])), // FIXME: APiUserAdmin is too much???
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiMessageWriteWithLegal])), // FIXME: APiUserAdmin is too much, could be useful define a new permission?
     // Extract the serviceId value from the request
     RequiredParamMiddleware("serviceId", ServiceId)
   );
