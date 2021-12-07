@@ -312,7 +312,7 @@ paths:
   /impersonate-service/{serviceId}:
     get:
       summary: Gets the data to impersonate a service
-      operationId: getImpersonatedUser
+      operationId: getImpersonatedService
       parameters:
         - name: serviceId
           description: the serviceId of the target service.
