@@ -39,7 +39,7 @@ secureExpressApp(app);
 
 // Add express route
 app.get(
-  "/adm/users/:email",
+  "adm/impersonate-service/:serviceId",
   GetImpersonateService(servicePrincipalCreds, azureApimConfig)
 );
 
