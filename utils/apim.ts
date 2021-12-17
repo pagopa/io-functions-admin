@@ -1,22 +1,23 @@
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import {
   GroupContract,
-  SubscriptionGetResponse
+  SubscriptionGetResponse,
+  UserGetResponse
 } from "@azure/arm-apimanagement/esm/models";
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { toError } from "fp-ts/lib/Either";
-import { pipe } from "fp-ts/lib/function";
+import { flow, identity, pipe } from "fp-ts/lib/function";
+import * as t from "io-ts";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/Either";
-import * as O from "fp-ts/Option";
 import {
-  ResponseErrorNotFound,
-  ResponseErrorInternal,
   IResponseErrorInternal,
-  IResponseErrorNotFound
+  IResponseErrorNotFound,
+  ResponseErrorInternal,
+  ResponseErrorNotFound
 } from "@pagopa/ts-commons/lib/responses";
-
+import { parse } from "fp-ts/lib/Json";
 export interface IServicePrincipalCreds {
   readonly clientId: string;
   readonly secret: string;
@@ -29,21 +30,42 @@ export interface IAzureApimConfig {
   readonly apim: string;
 }
 
-interface IRestError {
-  readonly statusCode: number;
-  readonly message?: string;
-}
+export type ApimMappedErrors = IResponseErrorInternal | IResponseErrorNotFound;
 
-const isRestError = (i: unknown): i is IRestError =>
-  typeof i === "object" && "statusCode" in i;
+export const ApimRestError = t.interface({
+  statusCode: t.number
+});
+export type ApimRestError = t.TypeOf<typeof ApimRestError>;
 
-export type IApimErrors = IResponseErrorInternal | IResponseErrorNotFound;
+export const mapApimRestError = (resource: string) => (
+  apimRestError: ApimRestError
+): ApimMappedErrors =>
+  apimRestError.statusCode === 404
+    ? ResponseErrorNotFound("Not found", `${resource} Not found`)
+    : ResponseErrorInternal(
+        `Internal Error while retrieving ${resource} detail`
+      );
 
-export const mapRestErrorWithIResponse = (e: Error): IApimErrors =>
-  isRestError(e) && e.statusCode === 404
-    ? ResponseErrorNotFound("Not Found", e.message)
-    : ResponseErrorInternal(e.message);
-
+export const chainApimMappedError = <T>(
+  te: TE.TaskEither<unknown, T>
+): TE.TaskEither<ApimRestError, T> =>
+  pipe(
+    te,
+    TE.orElseW(
+      flow(
+        JSON.stringify,
+        parse,
+        E.chainW(ApimRestError.decode),
+        E.fold(
+          () =>
+            TE.left({
+              statusCode: 500
+            }),
+          TE.left
+        )
+      )
+    )
+  );
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getApiClient(
   servicePrincipalCreds: IServicePrincipalCreds,
@@ -118,33 +140,32 @@ export function getUserGroups(
   );
 }
 
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function getUser(
+  apimClient: ApiManagementClient,
+  apimResourceGroup: string,
+  apim: string,
+  userId: string
+): TE.TaskEither<ApimRestError, UserGetResponse> {
+  return pipe(
+    TE.tryCatch(
+      () => apimClient.user.get(apimResourceGroup, apim, userId),
+      identity
+    ),
+    chainApimMappedError
+  );
+}
+
 export const getSubscription = (
   apimClient: ApiManagementClient,
   apimResourceGroup: string,
   apim: string,
   serviceId: string
-): TE.TaskEither<Error, SubscriptionGetResponse> =>
+): TE.TaskEither<ApimRestError, SubscriptionGetResponse> =>
   pipe(
-    serviceId,
-    TE.right,
-    TE.chain(sid =>
-      TE.tryCatch(
-        () => apimClient.subscription.get(apimResourceGroup, apim, sid),
-        E.toError
-      )
-    )
-  );
-
-export const wrapWithIResponse = <T>(
-  fa: TE.TaskEither<Error, T>
-): TE.TaskEither<IApimErrors, T> =>
-  pipe(fa, TE.mapLeft(mapRestErrorWithIResponse));
-
-export const extractUserId = (
-  subscription: SubscriptionGetResponse
-): O.Option<string> =>
-  pipe(
-    subscription.ownerId,
-    O.fromNullable,
-    O.map(str => str.substring(7)) // {userId} will be extracted from /users/{userId}
+    TE.tryCatch(
+      () => apimClient.subscription.get(apimResourceGroup, apim, serviceId),
+      identity
+    ),
+    chainApimMappedError
   );

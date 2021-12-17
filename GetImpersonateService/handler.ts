@@ -16,16 +16,14 @@ import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
   IResponseSuccessJson,
+  ResponseErrorInternal,
+  ResponseErrorNotFound,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 
 import { ServiceId } from "../generated/definitions/ServiceId";
 import { ImpersonatedService } from "../generated/definitions/ImpersonatedService";
-import {
-  getSubscription,
-  extractUserId,
-  wrapWithIResponse
-} from "../utils/apim";
+import { getSubscription, getUser, mapApimRestError } from "../utils/apim";
 import {
   getApiClient,
   getUserGroups,
@@ -43,6 +41,15 @@ type IGetImpersonateService = (
   | IResponseErrorInternal
 >;
 
+const chainNullableWithNotFound = (
+  value: string
+): TE.TaskEither<IResponseErrorNotFound, string> =>
+  pipe(
+    value,
+    O.fromNullable,
+    TE.fromOption(() => ResponseErrorNotFound("Not found", "Not Found"))
+  );
+
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetImpersonateServiceHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
@@ -51,6 +58,9 @@ export function GetImpersonateServiceHandler(
   return async (_context, _, serviceId): ReturnType<IGetImpersonateService> =>
     pipe(
       getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      TE.mapLeft(e =>
+        ResponseErrorInternal(`Error while connecting to APIM ${e.message}`)
+      ),
       TE.chain(apimC =>
         pipe(
           getSubscription(
@@ -59,28 +69,46 @@ export function GetImpersonateServiceHandler(
             azureApimConfig.apim,
             serviceId
           ),
-          TE.map(extractUserId),
-          TE.filterOrElseW(
-            O.isSome,
-            () => new Error("Missing owner for input service")
-          ),
+          TE.mapLeft(mapApimRestError("Subscription")),
+          TE.map(subscription => subscription.ownerId),
+          TE.chainW(chainNullableWithNotFound),
           TE.chain(userId =>
-            getUserGroups(
-              apimC,
-              azureApimConfig.apimResourceGroup,
-              azureApimConfig.apim,
-              userId.value
+            pipe(
+              getUserGroups(
+                apimC,
+                azureApimConfig.apimResourceGroup,
+                azureApimConfig.apim,
+                userId
+              ),
+              TE.mapLeft(e =>
+                ResponseErrorInternal(
+                  `Error while retrieving user groups ${e.message}`
+                )
+              ),
+              TE.map(groups => groups.map(g => g.displayName).join(",")),
+              TE.map(groupsAsString => ({
+                service_id: serviceId,
+                user_groups: groupsAsString
+              })),
+              TE.chain(result =>
+                pipe(
+                  getUser(
+                    apimC,
+                    azureApimConfig.apimResourceGroup,
+                    azureApimConfig.apim,
+                    userId
+                  ),
+                  TE.mapLeft(mapApimRestError("User")),
+                  TE.map(user => user.email),
+                  TE.chainW(chainNullableWithNotFound),
+                  TE.map(user_email => ({ ...result, user_email }))
+                )
+              )
             )
           )
         )
       ),
-      TE.map(groups => groups.map(g => g.displayName).join(",")),
-      TE.map(groupsAsString => ({
-        service_id: serviceId,
-        user_groups: groupsAsString
-      })),
       TE.map(ResponseSuccessJson),
-      wrapWithIResponse,
       TE.toUnion
     )();
 }

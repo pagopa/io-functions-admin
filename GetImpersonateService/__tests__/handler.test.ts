@@ -3,9 +3,16 @@ import { GroupContract } from "@azure/arm-apimanagement/esm/models";
 import * as TE from "fp-ts/lib/TaskEither";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as ApimUtils from "../../utils/apim";
-import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import {
+  ApimRestError,
+  IAzureApimConfig,
+  IServicePrincipalCreds
+} from "../../utils/apim";
 import { GetImpersonateServiceHandler } from "../handler";
 import { RestError } from "@azure/ms-rest-js";
+import { pipe } from "fp-ts/lib/function";
+import { mapLeft } from "fp-ts/lib/Either";
+import { errorsToReadableMessages } from "@pagopa/ts-commons/lib/reporters";
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
@@ -24,10 +31,6 @@ const fakeApimConfig: IAzureApimConfig = {
 
 const fakeUserName = "a-non-empty-string";
 
-const mockUserGroupList = jest.fn();
-const mockUserGroupListNext = jest.fn();
-const mockUserSubscriptionGet = jest.fn();
-
 const aValidSubscriptionId = "valid-subscription-id" as NonEmptyString;
 const aNotExistingSubscriptionId = "not-existing-subscription-id" as NonEmptyString;
 const aBreakingApimSubscriptionId = "broken-subscription-id" as NonEmptyString;
@@ -42,44 +45,65 @@ const mockedSubscriptionWithoutOwner = {
   ownerId: undefined
 };
 
-const mockApiManagementClient = ApiManagementClient as jest.Mock;
+const anApimGroupContract: GroupContract = {
+  description: "group description",
+  displayName: "groupName"
+};
 
-mockApiManagementClient.mockImplementation(() => ({
+const someValidGroups: ReadonlyArray<GroupContract> = [
+  { ...anApimGroupContract, id: "group #1" },
+  { ...anApimGroupContract, id: "group #2" }
+];
+const someMoreValidGroups: ReadonlyArray<GroupContract> = [
+  { ...anApimGroupContract, id: "group #3" },
+  { ...anApimGroupContract, id: "group #4" }
+];
+
+const mockedUserWithoutEmail = {
+  name: "test",
+  surname: "test"
+};
+
+const mockUserGroupList = jest.fn().mockImplementation(() => {
+  const apimResponse = someValidGroups;
+  // eslint-disable-next-line functional/immutable-data
+  apimResponse["nextLink"] = "next-page";
+  return Promise.resolve(apimResponse);
+});
+const mockUserGroupListNext = jest
+  .fn()
+  .mockImplementation(() => Promise.resolve(someMoreValidGroups));
+const mockUserSubscriptionGet = jest
+  .fn()
+  .mockImplementation(() => Promise.resolve(mockedSubscription));
+const mockUserGet = jest
+  .fn()
+  .mockImplementation(() => Promise.resolve({ email: "user_email@mail.it" }));
+
+const mockApiManagementClient = {
   userGroup: {
     list: mockUserGroupList,
     listNext: mockUserGroupListNext
   },
   subscription: {
     get: mockUserSubscriptionGet
+  },
+  user: {
+    get: mockUserGet
   }
-}));
-
-mockUserSubscriptionGet.mockImplementation((_, __, subscriptionId) => {
-  if (subscriptionId === aValidSubscriptionId) {
-    return Promise.resolve(mockedSubscription);
-  }
-  if (subscriptionId === aValidSubscriptionIdWithouthOwner) {
-    return Promise.resolve(mockedSubscriptionWithoutOwner);
-  }
-  if (subscriptionId === aBreakingApimSubscriptionId) {
-    return Promise.reject(new RestError("generic error", "", 500));
-  }
-  if (subscriptionId === aNotExistingSubscriptionId) {
-    return Promise.reject(new RestError("not found", "", 404));
-  }
-  return fail(Error("The provided subscription id value is not handled"));
-});
+} as any;
 
 const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
-spyOnGetApiClient.mockImplementation(() =>
-  TE.of(new mockApiManagementClient())
-);
+spyOnGetApiClient.mockImplementation(() => TE.of(mockApiManagementClient));
 
 const mockLog = jest.fn();
 const mockedContext = { log: { error: mockLog } };
 
 // eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("GetImpersonateServiceHandler", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
   it("GIVEN a not working APIM client WHEN call the handler THEN an Internel Error is returned", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
       TE.left(Error("Error from ApiManagementClient constructor"))
@@ -104,7 +128,9 @@ describe("GetImpersonateServiceHandler", () => {
       fakeServicePrincipalCredentials,
       fakeApimConfig
     );
-
+    mockUserSubscriptionGet.mockImplementationOnce(() =>
+      Promise.reject(new RestError("generic error", "", 500))
+    );
     const response = await handler(
       mockedContext as any,
       undefined,
@@ -114,10 +140,14 @@ describe("GetImpersonateServiceHandler", () => {
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
-  it("GIVEN a subscripion without owner WHEN call the handler THEN an Internal Error error is returned", async () => {
+  it("GIVEN a subscription without owner WHEN call the handler THEN a Not Found Error error is returned", async () => {
     const handler = GetImpersonateServiceHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
+    );
+
+    mockUserSubscriptionGet.mockImplementationOnce(() =>
+      Promise.resolve(mockedSubscriptionWithoutOwner)
     );
 
     const response = await handler(
@@ -126,13 +156,39 @@ describe("GetImpersonateServiceHandler", () => {
       aValidSubscriptionIdWithouthOwner
     );
 
-    expect(response.kind).toEqual("IResponseErrorInternal");
+    expect(response.kind).toEqual("IResponseErrorNotFound");
   });
 
-  it("GIVEN a not existing subscripion id WHEN call the handler THEN an Not Found error is returned", async () => {
+  it("GIVEN a subscription with not existing owner WHEN call the handler THEN a Not Found Error error is returned", async () => {
     const handler = GetImpersonateServiceHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
+    );
+
+    mockUserSubscriptionGet.mockImplementationOnce(() =>
+      Promise.resolve(mockedSubscription)
+    );
+
+    mockUserGet.mockImplementationOnce(() =>
+      Promise.reject(new RestError("not found", "Not Found", 404))
+    );
+
+    const response = await handler(
+      mockedContext as any,
+      undefined,
+      aValidSubscriptionIdWithouthOwner
+    );
+
+    expect(response.kind).toEqual("IResponseErrorNotFound");
+  });
+
+  it("GIVEN a user without email WHEN call the handler THEN a Not Found error is returned", async () => {
+    const handler = GetImpersonateServiceHandler(
+      fakeServicePrincipalCredentials,
+      fakeApimConfig
+    );
+    mockUserSubscriptionGet.mockImplementationOnce(() =>
+      Promise.resolve(mockedUserWithoutEmail)
     );
 
     const response = await handler(
@@ -144,31 +200,42 @@ describe("GetImpersonateServiceHandler", () => {
     expect(response.kind).toEqual("IResponseErrorNotFound");
   });
 
-  it("GIVEN an existing subscripion id WHEN call the handler THEN a proper Impersonated Service is returned", async () => {
-    const anApimGroupContract: GroupContract = {
-      description: "group description",
-      displayName: "groupName"
-    };
-
-    const someValidGroups: ReadonlyArray<GroupContract> = [
-      { ...anApimGroupContract, id: "group #1" },
-      { ...anApimGroupContract, id: "group #2" }
-    ];
-    const someMoreValidGroups: ReadonlyArray<GroupContract> = [
-      { ...anApimGroupContract, id: "group #3" },
-      { ...anApimGroupContract, id: "group #4" }
-    ];
-
-    mockUserGroupList.mockImplementation(() => {
-      const apimResponse = someValidGroups;
-      // eslint-disable-next-line functional/immutable-data
-      apimResponse["nextLink"] = "next-page";
-      return Promise.resolve(apimResponse);
-    });
-    mockUserGroupListNext.mockImplementation(() =>
-      Promise.resolve(someMoreValidGroups)
+  it("GIVEN an error while retrieving user WHEN call the handler THEN an Internal Error is returned", async () => {
+    const handler = GetImpersonateServiceHandler(
+      fakeServicePrincipalCredentials,
+      fakeApimConfig
+    );
+    mockUserSubscriptionGet.mockImplementationOnce(() =>
+      Promise.reject(new RestError("Internal Error", "Internal Error", 500))
     );
 
+    const response = await handler(
+      mockedContext as any,
+      undefined,
+      aNotExistingSubscriptionId
+    );
+
+    expect(response.kind).toEqual("IResponseErrorInternal");
+  });
+  it("GIVEN a not existing subscription id WHEN call the handler THEN a Not Found error is returned", async () => {
+    const handler = GetImpersonateServiceHandler(
+      fakeServicePrincipalCredentials,
+      fakeApimConfig
+    );
+    mockUserSubscriptionGet.mockImplementationOnce(() =>
+      Promise.reject(new RestError("not found", "Not Found", 404))
+    );
+
+    const response = await handler(
+      mockedContext as any,
+      undefined,
+      aNotExistingSubscriptionId
+    );
+
+    expect(response.kind).toEqual("IResponseErrorNotFound");
+  });
+
+  it("GIVEN an existing subscription id WHEN call the handler THEN a proper Impersonated Service is returned", async () => {
     const handler = GetImpersonateServiceHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -185,7 +252,8 @@ describe("GetImpersonateServiceHandler", () => {
         kind: "IResponseSuccessJson",
         value: {
           service_id: "valid-subscription-id",
-          user_groups: "groupName,groupName,groupName,groupName"
+          user_groups: "groupName,groupName,groupName,groupName",
+          user_email: "user_email@mail.it"
         }
       })
     );
