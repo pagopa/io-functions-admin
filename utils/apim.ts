@@ -1,11 +1,23 @@
 import { ApiManagementClient } from "@azure/arm-apimanagement";
-import { GroupContract } from "@azure/arm-apimanagement/esm/models";
+import {
+  GroupContract,
+  SubscriptionGetResponse,
+  UserGetResponse
+} from "@azure/arm-apimanagement/esm/models";
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { toError } from "fp-ts/lib/Either";
-import { pipe } from "fp-ts/lib/function";
+import { flow, identity, pipe } from "fp-ts/lib/function";
+import * as t from "io-ts";
 import * as TE from "fp-ts/lib/TaskEither";
-
+import * as E from "fp-ts/Either";
+import {
+  IResponseErrorInternal,
+  IResponseErrorNotFound,
+  ResponseErrorInternal,
+  ResponseErrorNotFound
+} from "@pagopa/ts-commons/lib/responses";
+import { parse } from "fp-ts/lib/Json";
 export interface IServicePrincipalCreds {
   readonly clientId: string;
   readonly secret: string;
@@ -18,6 +30,42 @@ export interface IAzureApimConfig {
   readonly apim: string;
 }
 
+export type ApimMappedErrors = IResponseErrorInternal | IResponseErrorNotFound;
+
+export const ApimRestError = t.interface({
+  statusCode: t.number
+});
+export type ApimRestError = t.TypeOf<typeof ApimRestError>;
+
+export const mapApimRestError = (resource: string) => (
+  apimRestError: ApimRestError
+): ApimMappedErrors =>
+  apimRestError.statusCode === 404
+    ? ResponseErrorNotFound("Not found", `${resource} Not found`)
+    : ResponseErrorInternal(
+        `Internal Error while retrieving ${resource} detail`
+      );
+
+export const chainApimMappedError = <T>(
+  te: TE.TaskEither<unknown, T>
+): TE.TaskEither<ApimRestError, T> =>
+  pipe(
+    te,
+    TE.orElseW(
+      flow(
+        JSON.stringify,
+        parse,
+        E.chainW(ApimRestError.decode),
+        E.fold(
+          () =>
+            TE.left({
+              statusCode: 500
+            }),
+          TE.left
+        )
+      )
+    )
+  );
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getApiClient(
   servicePrincipalCreds: IServicePrincipalCreds,
@@ -91,3 +139,33 @@ export function getUserGroups(
     }, toError)
   );
 }
+
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function getUser(
+  apimClient: ApiManagementClient,
+  apimResourceGroup: string,
+  apim: string,
+  userId: string
+): TE.TaskEither<ApimRestError, UserGetResponse> {
+  return pipe(
+    TE.tryCatch(
+      () => apimClient.user.get(apimResourceGroup, apim, userId),
+      identity
+    ),
+    chainApimMappedError
+  );
+}
+
+export const getSubscription = (
+  apimClient: ApiManagementClient,
+  apimResourceGroup: string,
+  apim: string,
+  serviceId: string
+): TE.TaskEither<ApimRestError, SubscriptionGetResponse> =>
+  pipe(
+    TE.tryCatch(
+      () => apimClient.subscription.get(apimResourceGroup, apim, serviceId),
+      identity
+    ),
+    chainApimMappedError
+  );
