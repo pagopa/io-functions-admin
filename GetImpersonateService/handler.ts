@@ -72,6 +72,7 @@ export function GetImpersonateServiceHandler(
           TE.mapLeft(mapApimRestError("Subscription")),
           TE.map(subscription => subscription.ownerId),
           TE.chainW(chainNullableWithNotFound),
+          TE.map(ownerId => ownerId.substring(ownerId.lastIndexOf("/"))),
           TE.chain(userId =>
             pipe(
               getUserGroups(
