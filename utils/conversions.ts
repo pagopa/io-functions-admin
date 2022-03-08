@@ -12,7 +12,6 @@ import {
   toAuthorizedCIDRs,
   toAuthorizedRecipients
 } from "@pagopa/io-functions-commons/dist/src/models/service";
-import { VisibleService } from "@pagopa/io-functions-commons/dist/src/models/visible_service";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { toApiServiceMetadata as toServiceMetadata } from "@pagopa/io-functions-commons/dist/src/utils/service_metadata";
 import { Errors } from "io-ts";
@@ -148,34 +147,6 @@ export function retrievedServiceToApiService(
     service_name: retrievedService.serviceName,
     version: retrievedService.version
   } as ApiService;
-}
-
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function retrievedServiceToVisibleService(
-  retrievedService: RetrievedService
-): VisibleService {
-  const {
-    departmentName,
-    id,
-    organizationFiscalCode,
-    organizationName,
-    requireSecureChannels,
-    serviceId,
-    serviceMetadata,
-    serviceName,
-    version
-  } = retrievedService;
-  return {
-    departmentName,
-    id,
-    organizationFiscalCode,
-    organizationName,
-    requireSecureChannels,
-    serviceId,
-    serviceMetadata,
-    serviceName,
-    version
-  };
 }
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
