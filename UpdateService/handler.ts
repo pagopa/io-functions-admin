@@ -2,8 +2,6 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import * as df from "durable-functions";
-
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 
@@ -41,7 +39,6 @@ import {
 } from "../utils/conversions";
 import { ServicePayloadMiddleware } from "../utils/middlewares/service";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
-import { UpsertServiceEvent } from "../utils/UpsertServiceEvent";
 
 type IUpdateServiceHandler = (
   context: Context,
@@ -102,23 +99,9 @@ export function UpdateServiceHandler(
       );
     }
 
-    const updatedService = errorOrUpdatedService.right;
-
-    const upsertServiceEvent = UpsertServiceEvent.encode({
-      newService: updatedService,
-      oldService: existingService,
-      updatedAt: new Date()
-    });
-
-    // Start orchestrator
-    const dfClient = df.getClient(context);
-    await dfClient.startNew(
-      "UpsertServiceOrchestrator",
-      undefined,
-      upsertServiceEvent
+    return ResponseSuccessJson(
+      retrievedServiceToApiService(errorOrUpdatedService.right)
     );
-
-    return ResponseSuccessJson(retrievedServiceToApiService(updatedService));
   };
 }
 
