@@ -1,9 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable sonar/sonar-max-lines-per-function */
 
-import * as df from "durable-functions";
-import * as lolex from "lolex";
-
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
@@ -16,7 +13,6 @@ import {
   aServicePayload
 } from "../../__mocks__/mocks";
 import { apiServiceToService } from "../../utils/conversions";
-import { UpsertServiceEvent } from "../../utils/UpsertServiceEvent";
 import { UpdateServiceHandler } from "../handler";
 
 const aDepartmentName = "UpdateDept" as NonEmptyString;
@@ -29,16 +25,8 @@ const leftErrorFn = jest.fn(() => {
   return TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }));
 });
 
-// eslint-disable-next-line functional/no-let
-let clock: lolex.InstalledClock;
 beforeEach(() => {
-  (df.getClient as any).mockClear();
-  (df as any).mockStartNew.mockClear();
-  clock = lolex.install({ now: Date.now() });
-  leftErrorFn.mockClear();
-});
-afterEach(() => {
-  clock.uninstall();
+  jest.clearAllMocks();
 });
 
 describe("UpdateServiceHandler", () => {
@@ -186,51 +174,5 @@ describe("UpdateServiceHandler", () => {
         department_name: aDepartmentName
       });
     }
-  });
-
-  it("should start the orchestrator with an appropriate event after the service is updated", async () => {
-    const serviceModelMock = {
-      findOneByServiceId: jest.fn(() => {
-        return TE.right(O.some(aRetrievedService));
-      }),
-      update: jest.fn(() =>
-        TE.right({
-          ...aRetrievedService,
-          ...anUpdatedApiService
-        })
-      )
-    };
-
-    const contextMock = {
-      log: jest.fn()
-    };
-
-    const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
-
-    await updateServiceHandler(
-      contextMock as any, // Not used
-      undefined as any, // Not used
-      aServicePayload.service_id,
-      {
-        ...aServicePayload,
-        department_name: aDepartmentName
-      }
-    );
-
-    const upsertServiceEvent = UpsertServiceEvent.encode({
-      newService: { ...aRetrievedService, departmentName: aDepartmentName },
-      oldService: aRetrievedService,
-      updatedAt: new Date()
-    });
-
-    expect(df.getClient).toHaveBeenCalledTimes(1);
-
-    const dfClient = df.getClient(contextMock);
-    expect(dfClient.startNew).toHaveBeenCalledTimes(1);
-    expect(dfClient.startNew).toHaveBeenCalledWith(
-      "UpsertServiceOrchestrator",
-      undefined,
-      upsertServiceEvent
-    );
   });
 });

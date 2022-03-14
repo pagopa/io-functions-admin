@@ -2,8 +2,6 @@ import { Context } from "@azure/functions";
 
 import * as express from "express";
 
-import * as df from "durable-functions";
-
 import { isLeft } from "fp-ts/lib/Either";
 
 import {
@@ -34,7 +32,6 @@ import {
   retrievedServiceToApiService
 } from "../utils/conversions";
 import { ServicePayloadMiddleware } from "../utils/middlewares/service";
-import { UpsertServiceEvent } from "../utils/UpsertServiceEvent";
 
 type ICreateServiceHandler = (
   context: Context,
@@ -65,22 +62,9 @@ export function CreateServiceHandler(
       );
     }
 
-    const createdService = errorOrCreatedService.right;
-
-    const upsertServiceEvent = UpsertServiceEvent.encode({
-      newService: createdService,
-      updatedAt: new Date()
-    });
-
-    // Start orchestrator
-    const dfClient = df.getClient(context);
-    await dfClient.startNew(
-      "UpsertServiceOrchestrator",
-      undefined,
-      upsertServiceEvent
+    return ResponseSuccessJson(
+      retrievedServiceToApiService(errorOrCreatedService.right)
     );
-
-    return ResponseSuccessJson(retrievedServiceToApiService(createdService));
   };
 }
 
