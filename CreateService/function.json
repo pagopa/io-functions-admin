@@ -14,11 +14,6 @@
       "type": "http",
       "direction": "out",
       "name": "res"
-    },
-    {
-      "type": "orchestrationClient",
-      "direction": "in",
-      "name": "starter"
     }
   ],
   "scriptFile": "../dist/CreateService/index.js"
