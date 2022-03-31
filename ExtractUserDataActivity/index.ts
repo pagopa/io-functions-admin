@@ -19,6 +19,10 @@ import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
+import {
+  MessageViewModel,
+  MESSAGE_VIEW_COLLECTION_NAME
+} from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import { cosmosdbClient } from "../utils/cosmosdb";
 import { getConfigOrThrow } from "../utils/config";
 import { createExtractUserDataActivityHandler } from "./handler";
@@ -35,6 +39,12 @@ const messageModel = new MessageModel(
 const messageStatusModel = new MessageStatusModel(
   database.container(MESSAGE_STATUS_COLLECTION_NAME)
 );
+
+const messageViewContainer = cosmosdbClient
+  .database(config.COSMOSDB_NAME)
+  .container(MESSAGE_VIEW_COLLECTION_NAME);
+
+const messageViewModel = new MessageViewModel(messageViewContainer);
 
 const notificationModel = new NotificationModel(
   database.container(NOTIFICATION_COLLECTION_NAME)
@@ -60,6 +70,7 @@ const activityFunctionHandler = createExtractUserDataActivityHandler({
   messageContentBlobService,
   messageModel,
   messageStatusModel,
+  messageViewModel,
   notificationModel,
   notificationStatusModel,
   profileModel,

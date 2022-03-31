@@ -1,6 +1,7 @@
 import { createBlobService } from "azure-storage";
 import { MESSAGE_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/message";
 import { MESSAGE_STATUS_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/message_status";
+import { MESSAGE_VIEW_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import { NOTIFICATION_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import { NOTIFICATION_STATUS_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import { PROFILE_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/profile";
@@ -13,6 +14,7 @@ import { NotificationDeletableModel } from "../utils/extensions/models/notificat
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
+import { MessageViewDeletableModel } from "../utils/extensions/models/message_view";
 import { createDeleteUserDataActivityHandler } from "./handler";
 
 const config = getConfigOrThrow();
@@ -33,6 +35,12 @@ const messageStatusesContainer = cosmosdbClient
 const messageStatusModel = new MessageStatusDeletableModel(
   messageStatusesContainer
 );
+
+const messageViewContainer = cosmosdbClient
+  .database(config.COSMOSDB_NAME)
+  .container(MESSAGE_VIEW_COLLECTION_NAME);
+
+const messageViewModel = new MessageViewDeletableModel(messageViewContainer);
 
 const notificationsContainer = cosmosdbClient
   .database(config.COSMOSDB_NAME)
@@ -75,6 +83,7 @@ const activityFunctionHandler = createDeleteUserDataActivityHandler({
   messageContentBlobService,
   messageModel,
   messageStatusModel,
+  messageViewModel,
   notificationModel,
   notificationStatusModel,
   profileModel,

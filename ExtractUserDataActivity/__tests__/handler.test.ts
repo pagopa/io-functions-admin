@@ -9,6 +9,7 @@ import * as zipstream from "../../utils/zip";
 import { context as contextMock } from "../../__mocks__/durable-functions";
 import {
   aFiscalCode,
+  aMessageView,
   aProfile,
   aRetrievedMessageStatus,
   aRetrievedNotificationStatus
@@ -43,6 +44,7 @@ import {
 import { AllUserData } from "../../utils/userData";
 import { none } from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/function";
+import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 
 const anotherRetrievedNotification: RetrievedNotification = {
   ...aRetrievedNotification,
@@ -108,6 +110,14 @@ const messageModelMock = ({
   getContentFromBlob: mockGetContentFromBlob
 } as any) as MessageModel;
 
+const iteratorGenMock = async function*(arr: any[]) {
+  for (let a of arr) yield a;
+};
+
+const messageViewModelMock = ({
+  getQueryIterator: jest.fn(() => iteratorGenMock([E.right(aMessageView)]))
+} as any) as MessageViewModel;
+
 const messageStatusModelMock = ({
   findLastVersionByModelId: jest.fn(() =>
     TE.fromEither(E.right(some(aRetrievedMessageStatus)))
@@ -172,6 +182,7 @@ describe("createExtractUserDataActivityHandler", () => {
       messageContentBlobService: blobServiceMock,
       messageModel: messageModelMock,
       messageStatusModel: messageStatusModelMock,
+      messageViewModel: messageViewModelMock,
       notificationModel: notificationModelMock,
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
@@ -209,6 +220,7 @@ describe("createExtractUserDataActivityHandler", () => {
       messageContentBlobService: blobServiceMock,
       messageModel: messageModelMock,
       messageStatusModel: messageStatusModelMock,
+      messageViewModel: messageViewModelMock,
       notificationModel: notificationWebhookModelMock,
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
@@ -238,6 +250,7 @@ describe("createExtractUserDataActivityHandler", () => {
       messageContentBlobService: blobServiceMock,
       messageModel: messageModelMock,
       messageStatusModel: messageStatusModelMock,
+      messageViewModel: messageViewModelMock,
       notificationModel: notificationModelMock,
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
@@ -281,6 +294,7 @@ describe("createExtractUserDataActivityHandler", () => {
       messageContentBlobService: blobServiceMock,
       messageModel: messageModelMock,
       messageStatusModel: messageStatusModelMock,
+      messageViewModel: messageViewModelMock,
       notificationModel: notificationModelMock,
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
@@ -303,6 +317,7 @@ describe("createExtractUserDataActivityHandler", () => {
       messageContentBlobService: blobServiceMock,
       messageModel: messageModelMock,
       messageStatusModel: messageStatusModelMock,
+      messageViewModel: messageViewModelMock,
       notificationModel: notificationModelMock,
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,

@@ -9,6 +9,7 @@ import * as TE from "fp-ts/lib/TaskEither";
 import { ValidationError } from "io-ts";
 import { MessageDeletableModel } from "../../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../../utils/extensions/models/message_status";
+import { MessageViewDeletableModel } from "../../utils/extensions/models/message_view";
 import { NotificationDeletableModel } from "../../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../../utils/extensions/models/profile";
@@ -17,6 +18,7 @@ import {
   aFiscalCode,
   aMessageContent,
   aRetrievedMessageStatus,
+  aRetrievedMessageView,
   aRetrievedMessageWithContent,
   aRetrievedNotification,
   aRetrievedNotificationStatus,
@@ -58,6 +60,16 @@ const messageModel = ({
   deleteContentFromBlob: mockDeleteContentFromBlob,
   deleteMessage: mockDeleteMessage
 } as unknown) as MessageDeletableModel;
+
+const mockDeleteMessageView = jest.fn(() => TE.of(true));
+const mockFindMessageView = jest.fn<
+  ReturnType<InstanceType<typeof MessageViewDeletableModel>["find"]>,
+  Parameters<InstanceType<typeof MessageViewDeletableModel>["find"]>
+>(() => TE.of(some(aRetrievedMessageView)));
+const messageViewModel = ({
+  find: mockFindMessageView,
+  deleteMessageView: mockDeleteMessageView
+} as unknown) as MessageViewDeletableModel;
 
 // ServicePreferences Model
 const mockDeleteServicePreferences = jest.fn<
@@ -145,6 +157,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageContentBlobService,
       messageModel,
       messageStatusModel,
+      messageViewModel,
       notificationModel,
       notificationStatusModel,
       profileModel,
@@ -169,6 +182,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageContentBlobService,
       messageModel,
       messageStatusModel,
+      messageViewModel,
       notificationModel,
       notificationStatusModel,
       profileModel,
@@ -193,6 +207,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageContentBlobService,
       messageModel,
       messageStatusModel,
+      messageViewModel,
       notificationModel,
       notificationStatusModel,
       profileModel,
@@ -210,6 +225,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageContentBlobService,
       messageModel,
       messageStatusModel,
+      messageViewModel,
       notificationModel,
       notificationStatusModel,
       profileModel,
@@ -232,6 +248,30 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageContentBlobService,
       messageModel,
       messageStatusModel,
+      messageViewModel,
+      notificationModel,
+      notificationStatusModel,
+      profileModel,
+      userDataBackup,
+      servicePreferencesModel,
+      fiscalCode: aFiscalCode
+    })();
+
+    expect(E.isRight(result)).toBe(true);
+  });
+
+  it("should stop if there is an error while looking for a message View (404)", async () => {
+    mockFindMessageView.mockImplementationOnce(() =>
+      TE.left({
+        kind: "COSMOS_ERROR_RESPONSE",
+        error: { code: 404, name: "", message: "" }
+      })
+    );
+    const result = await backupAndDeleteAllUserData({
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      messageViewModel,
       notificationModel,
       notificationStatusModel,
       profileModel,
@@ -251,6 +291,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageContentBlobService,
       messageModel,
       messageStatusModel,
+      messageViewModel,
       notificationModel,
       notificationStatusModel,
       profileModel,
@@ -277,6 +318,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageContentBlobService,
       messageModel,
       messageStatusModel,
+      messageViewModel,
       notificationModel,
       notificationStatusModel,
       profileModel,
@@ -303,6 +345,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageContentBlobService,
       messageModel,
       messageStatusModel,
+      messageViewModel,
       notificationModel,
       notificationStatusModel,
       profileModel,
