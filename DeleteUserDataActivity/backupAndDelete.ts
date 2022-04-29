@@ -7,7 +7,10 @@ import * as TE from "fp-ts/lib/TaskEither";
 
 import { array, flatten, rights } from "fp-ts/lib/Array";
 import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
-import { RetrievedMessageWithoutContent } from "@pagopa/io-functions-commons/dist/src/models/message";
+import {
+  RetrievedMessage,
+  RetrievedMessageWithoutContent
+} from "@pagopa/io-functions-commons/dist/src/models/message";
 import { RetrievedMessageStatus } from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import { RetrievedNotification } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import { RetrievedNotificationStatus } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
@@ -18,12 +21,14 @@ import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmos
 import { Errors } from "io-ts";
 import { RetrievedServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { flow, pipe } from "fp-ts/lib/function";
+import { RetrievedMessageView } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
+import { MessageViewDeletableModel } from "../utils/extensions/models/message_view";
 import { DataFailure, IBlobServiceInfo, QueryFailure } from "./types";
 import { saveDataToBlob } from "./utils";
 import { toDocumentDeleteFailure, toQueryFailure } from "./utils";
@@ -198,6 +203,50 @@ const backupAndDeleteNotificationStatus = ({
     userDataBackup,
     item => `notification-status/${item.id}.json`,
     notificationStatusModel.findAllVersionsByNotificationId(notification.id)
+  );
+
+/**
+ * Backup and delete a given message
+ *
+ * @param param0.messageViewModel instance of MessageViewModel
+ * @param param0.userDataBackup information about the blob storage account to place backup into
+ * @param param0.message the message
+ */
+const backupAndDeleteMessageView = ({
+  messageViewModel,
+  userDataBackup,
+  message
+}: {
+  readonly messageViewModel: MessageViewDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
+  readonly message: RetrievedMessage;
+}): TE.TaskEither<DataFailure, O.Option<RetrievedMessageView>> =>
+  pipe(
+    messageViewModel.find([message.id, message.fiscalCode]),
+    TE.chain(TE.fromOption(() => undefined)),
+    TE.foldW(
+      _ =>
+        // unfortunately, a document not found is threated like a query error
+        TE.of(O.none),
+      messageView =>
+        pipe(
+          saveDataToBlob(
+            userDataBackup,
+            `message-view/${message.id}.json`,
+            messageView
+          ),
+          TE.chainW(_ =>
+            pipe(
+              messageViewModel.deleteMessageView(
+                message.fiscalCode,
+                message.id
+              ),
+              TE.mapLeft(toDocumentDeleteFailure)
+            )
+          ),
+          TE.map(_ => O.some(messageView))
+        )
+    )
   );
 
 /**
@@ -378,6 +427,7 @@ const backupAndDeleteAllMessagesData = ({
   messageContentBlobService,
   messageModel,
   messageStatusModel,
+  messageViewModel,
   notificationModel,
   notificationStatusModel,
   userDataBackup,
@@ -386,6 +436,7 @@ const backupAndDeleteAllMessagesData = ({
   readonly messageContentBlobService: BlobService;
   readonly messageModel: MessageDeletableModel;
   readonly messageStatusModel: MessageStatusDeletableModel;
+  readonly messageViewModel: MessageViewDeletableModel;
   readonly notificationModel: NotificationDeletableModel;
   readonly notificationStatusModel: NotificationStatusDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
@@ -412,6 +463,11 @@ const backupAndDeleteAllMessagesData = ({
               const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
               return pipe(
                 sequenceT(TE.ApplicativeSeq)(
+                  backupAndDeleteMessageView({
+                    message: retrievedMessage,
+                    messageViewModel,
+                    userDataBackup
+                  }),
                   backupAndDeleteMessageContent({
                     message: retrievedMessage,
                     messageContentBlobService,
@@ -464,6 +520,7 @@ export const backupAndDeleteAllUserData = ({
   messageContentBlobService,
   messageModel,
   messageStatusModel,
+  messageViewModel,
   notificationModel,
   notificationStatusModel,
   profileModel,
@@ -474,6 +531,7 @@ export const backupAndDeleteAllUserData = ({
   readonly messageContentBlobService: BlobService;
   readonly messageModel: MessageDeletableModel;
   readonly messageStatusModel: MessageStatusDeletableModel;
+  readonly messageViewModel: MessageViewDeletableModel;
   readonly notificationModel: NotificationDeletableModel;
   readonly notificationStatusModel: NotificationStatusDeletableModel;
   readonly profileModel: ProfileDeletableModel;
@@ -487,6 +545,7 @@ export const backupAndDeleteAllUserData = ({
       messageContentBlobService,
       messageModel,
       messageStatusModel,
+      messageViewModel,
       notificationModel,
       notificationStatusModel,
       userDataBackup

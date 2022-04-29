@@ -73,6 +73,12 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import {
+  Components,
+  MessageView,
+  RetrievedMessageView,
+  Status
+} from "@pagopa/io-functions-commons/dist/src/models/message_view";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
 
@@ -220,6 +226,38 @@ export const aRetrievedMessageWithContent: RetrievedMessageWithContent = {
   ...retrievedMetadata,
   id: "A_MESSAGE_ID" as NonEmptyString,
   kind: "IRetrievedMessageWithContent"
+};
+
+const aComponents: Components = {
+  attachments: { has: false },
+  euCovidCert: { has: false },
+  legalData: { has: false },
+  payment: { has: false }
+};
+
+const aStatus: Status = {
+  archived: false,
+  processing: MessageStatusValueEnum.PROCESSED,
+  read: false
+};
+
+export const aMessageView: MessageView = {
+  components: aComponents,
+  createdAt: new Date(),
+  fiscalCode: "AAAAAA00A00A000A" as FiscalCode,
+  id: "a-unique-msg-id" as NonEmptyString,
+  messageTitle: "a-msg-title" as NonEmptyString,
+  senderServiceId: "a-service-id" as ServiceId,
+  status: aStatus,
+  version: 0 as NonNegativeInteger
+};
+
+export const aRetrievedMessageView: RetrievedMessageView = {
+  ...aMessageView,
+  _etag: "_etag",
+  _rid: "_rid",
+  _self: "_self",
+  _ts: 1
 };
 
 export const aServiceId = "s123" as ServiceId;

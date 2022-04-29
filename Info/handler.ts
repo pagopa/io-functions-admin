@@ -13,8 +13,7 @@ import {
   checkAzureCosmosDbHealth,
   checkAzureStorageHealth,
   checkUrlHealth,
-  HealthCheck,
-  ProblemSource
+  HealthCheck
 } from "@pagopa/io-functions-commons/dist/src/utils/healthcheck";
 import * as packageJson from "../package.json";
 import { envConfig, IConfig } from "../utils/config";
@@ -28,6 +27,7 @@ type InfoHandler = () => Promise<
   IResponseSuccessJson<IInfo> | IResponseErrorInternal
 >;
 
+type ProblemSource = "AzureCosmosDB" | "AzureStorage" | "Config" | "Url";
 type HealthChecker = (config: unknown) => HealthCheck<ProblemSource, true>;
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions

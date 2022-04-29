@@ -13,6 +13,7 @@ import { NotificationStatus } from "@pagopa/io-functions-commons/dist/src/models
 import { Profile } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import * as t from "io-ts";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { MessageView } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 
 // like Notification, but it's export-safe (the decoder removes webhook's sensitive data)
 export const SafeNotification = t.intersection([
@@ -42,6 +43,7 @@ export const AllUserData = t.interface({
   ),
   messageStatuses: t.readonlyArray(t.exact(MessageStatus), "MessageStatusList"),
   messages: t.readonlyArray(t.exact(MessageWithoutContent), "MessageList"),
+  messagesView: t.readonlyArray(t.exact(MessageView), "MessageViewList"),
   notificationStatuses: t.readonlyArray(
     t.exact(NotificationStatus),
     "NotificationStatusList"

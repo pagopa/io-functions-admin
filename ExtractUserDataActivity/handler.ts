@@ -43,6 +43,7 @@ import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/util
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as yaml from "yaml";
 import { pipe, flow } from "fp-ts/lib/function";
+import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import { getEncryptedZipStream } from "../utils/zip";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
@@ -357,6 +358,7 @@ export const findAllNotificationStatuses = (
 export const queryAllUserData = (
   messageModel: MessageModel,
   messageStatusModel: MessageStatusModel,
+  messageViewModel: MessageViewModel,
   notificationModel: NotificationModel,
   notificationStatusModel: NotificationStatusModel,
   profileModel: ProfileModel,
@@ -402,11 +404,48 @@ export const queryAllUserData = (
               : TE.of(rights(results))
           )
         ),
+        messagesView: pipe(
+          messageViewModel
+            .getQueryIterator({
+              parameters: [
+                {
+                  name: "@fiscalCode",
+                  value: fiscalCode
+                }
+              ],
+              query: `SELECT * FROM m WHERE m.fiscalCode = @fiscalCode
+                    ORDER BY m.fiscalCode, m.id DESC`
+            })
+            [Symbol.asyncIterator](),
+          TE.of,
+          TE.chain(iter =>
+            TE.tryCatch(() => asyncIteratorToArray(iter), toCosmosErrorResponse)
+          ),
+          TE.map(flatten),
+          TE.mapLeft(_ =>
+            ActivityResultQueryFailure.encode({
+              kind: "QUERY_FAILURE",
+              query: "findMessagesView",
+              reason: `${_.kind}, ${getMessageFromCosmosErrors(_)}`
+            })
+          ),
+          TE.chainW(results =>
+            results.some(E.isLeft)
+              ? TE.left(
+                  ActivityResultQueryFailure.encode({
+                    kind: "QUERY_FAILURE",
+                    query: "findMessagesView",
+                    reason: "Some messages cannot be decoded"
+                  })
+                )
+              : TE.of(rights(results))
+          )
+        ),
         profile: TE.of(profile)
       })
     ),
     // step 2: queries notifications and message contents, which need message data to be queried first
-    TE.chain(({ profile, messages }) =>
+    TE.chain(({ profile, messages, messagesView }) =>
       sequenceS(TE.ApplicativePar)({
         messageContents: getAllMessageContents(
           messageContentBlobService,
@@ -415,6 +454,7 @@ export const queryAllUserData = (
         ),
         messageStatuses: getAllMessagesStatuses(messageStatusModel, messages),
         messages: TE.of(messages),
+        messagesView: TE.of(messagesView),
         notifications: findNotificationsForAllMessages(
           notificationModel,
           messages
@@ -427,6 +467,7 @@ export const queryAllUserData = (
       ({
         profile,
         messages,
+        messagesView,
         messageContents,
         messageStatuses,
         notifications
@@ -435,6 +476,7 @@ export const queryAllUserData = (
           messageContents: TE.of(messageContents),
           messageStatuses: TE.of(messageStatuses),
           messages: TE.of(messages),
+          messagesView: TE.of(messagesView),
           notificationStatuses: findAllNotificationStatuses(
             notificationStatusModel,
             notifications
@@ -540,6 +582,7 @@ export const saveDataToBlob = (
 export interface IActivityHandlerInput {
   readonly messageModel: MessageModel;
   readonly messageStatusModel: MessageStatusModel;
+  readonly messageViewModel: MessageViewModel;
   readonly notificationModel: NotificationModel;
   readonly notificationStatusModel: NotificationStatusModel;
   readonly profileModel: ProfileModel;
@@ -562,6 +605,7 @@ const cleanData = (v: any) => {
 export function createExtractUserDataActivityHandler({
   messageModel,
   messageStatusModel,
+  messageViewModel,
   notificationModel,
   notificationStatusModel,
   profileModel,
@@ -588,6 +632,7 @@ export function createExtractUserDataActivityHandler({
         queryAllUserData(
           messageModel,
           messageStatusModel,
+          messageViewModel,
           notificationModel,
           notificationStatusModel,
           profileModel,
@@ -607,6 +652,7 @@ export function createExtractUserDataActivityHandler({
           messageContents: allUserData.messageContents,
           messageStatuses: allUserData.messageStatuses.map(cleanData),
           messages: allUserData.messages.map(cleanData),
+          messagesView: allUserData.messagesView.map(cleanData),
           notificationStatuses: allUserData.messageStatuses.map(cleanData),
           notifications,
           profiles: allUserData.profiles.map(cleanData)
