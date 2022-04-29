@@ -281,6 +281,7 @@ describe(`backupAndDeleteAllUserData`, () => {
     })();
 
     expect(E.isRight(result)).toBe(true);
+    expect(mockDeleteMessageView).not.toHaveBeenCalled();
   });
 
   it("should not stop if no servicePreferences were found", async () => {

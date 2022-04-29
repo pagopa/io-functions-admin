@@ -39,10 +39,7 @@ import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
-import {
-  asyncIterableToArray,
-  asyncIteratorToArray
-} from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as yaml from "yaml";
 import { pipe, flow } from "fp-ts/lib/function";
@@ -408,22 +405,21 @@ export const queryAllUserData = (
           )
         ),
         messagesView: pipe(
-          messageViewModel.getQueryIterator({
-            parameters: [
-              {
-                name: "@fiscalCode",
-                value: fiscalCode
-              }
-            ],
-            query: `SELECT * FROM m WHERE m.fiscalCode = @fiscalCode
+          messageViewModel
+            .getQueryIterator({
+              parameters: [
+                {
+                  name: "@fiscalCode",
+                  value: fiscalCode
+                }
+              ],
+              query: `SELECT * FROM m WHERE m.fiscalCode = @fiscalCode
                     ORDER BY m.fiscalCode, m.id DESC`
-          }),
+            })
+            [Symbol.asyncIterator](),
           TE.of,
-          TE.chain(iterable =>
-            TE.tryCatch(
-              () => asyncIterableToArray(iterable),
-              toCosmosErrorResponse
-            )
+          TE.chain(iter =>
+            TE.tryCatch(() => asyncIteratorToArray(iter), toCosmosErrorResponse)
           ),
           TE.map(flatten),
           TE.mapLeft(_ =>
