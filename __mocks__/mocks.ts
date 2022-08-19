@@ -68,6 +68,7 @@ import { ArchiveInfo } from "../ExtractUserDataActivity/handler";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
 import {
+  AccessReadMessageStatusEnum,
   makeServicesPreferencesDocumentId,
   RetrievedServicePreference
 } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
@@ -79,6 +80,7 @@ import {
   RetrievedMessageView,
   Status
 } from "@pagopa/io-functions-commons/dist/src/models/message_view";
+import { FeatureLevelTypeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/FeatureLevelType";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
 
@@ -205,7 +207,8 @@ const aSerializedMessageWithoutContent = {
 
 const aMessageWithoutContent: MessageWithoutContent = {
   ...aSerializedMessageWithoutContent,
-  createdAt: new Date()
+  createdAt: new Date(),
+  featureLevelType: FeatureLevelTypeEnum.STANDARD
 };
 
 export const aRetrievedMessageWithoutContent: RetrievedMessageWithoutContent = {
@@ -218,7 +221,8 @@ export const aRetrievedMessageWithoutContent: RetrievedMessageWithoutContent = {
 const aMessageWithContent: MessageWithContent = {
   ...aSerializedMessageWithoutContent,
   content: aMessageContent,
-  createdAt: new Date()
+  createdAt: new Date(),
+  featureLevelType: FeatureLevelTypeEnum.STANDARD
 };
 
 export const aRetrievedMessageWithContent: RetrievedMessageWithContent = {
@@ -232,7 +236,8 @@ const aComponents: Components = {
   attachments: { has: false },
   euCovidCert: { has: false },
   legalData: { has: false },
-  payment: { has: false }
+  payment: { has: false },
+  thirdParty: { has: false }
 };
 
 const aStatus: Status = {
@@ -391,5 +396,6 @@ export const aRetrievedServicePreferences: RetrievedServicePreference = {
     aFiscalCode,
     aServiceId,
     aServicePreferenceVersion
-  )
+  ),
+  accessReadMessageStatus: AccessReadMessageStatusEnum.ALLOW
 };
