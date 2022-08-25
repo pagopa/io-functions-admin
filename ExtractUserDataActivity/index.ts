@@ -23,8 +23,10 @@ import {
   MessageViewModel,
   MESSAGE_VIEW_COLLECTION_NAME
 } from "@pagopa/io-functions-commons/dist/src/models/message_view";
+import { SERVICE_PREFERENCES_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { cosmosdbClient } from "../utils/cosmosdb";
 import { getConfigOrThrow } from "../utils/config";
+import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
 import { createExtractUserDataActivityHandler } from "./handler";
 
 const config = getConfigOrThrow();
@@ -58,6 +60,11 @@ const profileModel = new ProfileModel(
   database.container(PROFILE_COLLECTION_NAME)
 );
 
+const servicePreferencesModel = new ServicePreferencesDeletableModel(
+  database.container(SERVICE_PREFERENCES_COLLECTION_NAME),
+  SERVICE_PREFERENCES_COLLECTION_NAME
+);
+
 const userDataBlobService = createBlobService(
   config.UserDataArchiveStorageConnection
 );
@@ -74,6 +81,7 @@ const activityFunctionHandler = createExtractUserDataActivityHandler({
   notificationModel,
   notificationStatusModel,
   profileModel,
+  servicePreferencesModel,
   userDataBlobService,
   userDataContainerName
 });

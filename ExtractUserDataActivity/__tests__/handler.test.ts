@@ -12,7 +12,8 @@ import {
   aMessageView,
   aProfile,
   aRetrievedMessageStatus,
-  aRetrievedNotificationStatus
+  aRetrievedNotificationStatus,
+  aRetrievedServicePreferences
 } from "../../__mocks__/mocks";
 
 import {
@@ -45,6 +46,7 @@ import { AllUserData } from "../../utils/userData";
 import { none } from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/function";
 import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
+import { ServicePreferencesDeletableModel } from "../../utils/extensions/models/service_preferences";
 
 const anotherRetrievedNotification: RetrievedNotification = {
   ...aRetrievedNotification,
@@ -109,6 +111,38 @@ const messageModelMock = ({
   findMessages: jest.fn(() => TE.fromEither(E.right(messageIteratorMock))),
   getContentFromBlob: mockGetContentFromBlob
 } as any) as MessageModel;
+
+// ServicePreferences Model
+const asyncIteratorOf = <T>(items: T[]): AsyncIterator<T[]> => {
+  const data = [...items];
+  return {
+    next: async () => {
+      const value = data.shift();
+      return {
+        done: typeof value === "undefined",
+        value: [value]
+      };
+    }
+  };
+};
+
+const mockDeleteServicePreferences = jest.fn<
+  ReturnType<InstanceType<typeof ServicePreferencesDeletableModel>["delete"]>,
+  Parameters<InstanceType<typeof ServicePreferencesDeletableModel>["delete"]>
+>(() => TE.of("anything"));
+const mockFindAllServPreferencesByFiscalCode = jest.fn<
+  ReturnType<
+    InstanceType<typeof ServicePreferencesDeletableModel>["findAllByFiscalCode"]
+  >,
+  Parameters<
+    InstanceType<typeof ServicePreferencesDeletableModel>["findAllByFiscalCode"]
+  >
+>(() => asyncIteratorOf([E.right(aRetrievedServicePreferences)]));
+
+const servicePreferencesModel = ({
+  delete: mockDeleteServicePreferences,
+  findAllByFiscalCode: mockFindAllServPreferencesByFiscalCode
+} as unknown) as ServicePreferencesDeletableModel;
 
 const iteratorGenMock = async function*(arr: any[]) {
   for (let a of arr) yield a;
@@ -187,7 +221,8 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
       userDataBlobService: blobServiceMock,
-      userDataContainerName: aUserDataContainerName
+      userDataContainerName: aUserDataContainerName,
+      servicePreferencesModel: servicePreferencesModel
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -225,7 +260,8 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
       userDataBlobService: blobServiceMock,
-      userDataContainerName: aUserDataContainerName
+      userDataContainerName: aUserDataContainerName,
+      servicePreferencesModel: servicePreferencesModel
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -255,7 +291,8 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
       userDataBlobService: blobServiceMock,
-      userDataContainerName: aUserDataContainerName
+      userDataContainerName: aUserDataContainerName,
+      servicePreferencesModel
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -299,7 +336,8 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
       userDataBlobService: blobServiceMock,
-      userDataContainerName: aUserDataContainerName
+      userDataContainerName: aUserDataContainerName,
+      servicePreferencesModel
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -322,7 +360,8 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
       userDataBlobService: blobServiceMock,
-      userDataContainerName: aUserDataContainerName
+      userDataContainerName: aUserDataContainerName,
+      servicePreferencesModel
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
