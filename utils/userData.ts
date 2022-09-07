@@ -14,7 +14,10 @@ import { Profile } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import * as t from "io-ts";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { MessageView } from "@pagopa/io-functions-commons/dist/src/models/message_view";
-import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
+import {
+  DisabledInboxServicePreferences,
+  EnabledInboxServicePreferences
+} from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 
 // like Notification, but it's export-safe (the decoder removes webhook's sensitive data)
 export const SafeNotification = t.intersection([
@@ -51,6 +54,11 @@ export const AllUserData = t.interface({
   ),
   notifications: t.readonlyArray(t.exact(SafeNotification), "NotificationList"),
   profiles: t.readonlyArray(t.exact(Profile)),
-  servicesPreferences: t.readonlyArray(ServicePreference)
+  servicesPreferences: t.readonlyArray(
+    t.union([
+      t.exact(EnabledInboxServicePreferences),
+      t.exact(DisabledInboxServicePreferences)
+    ])
+  )
 });
 export type AllUserData = t.TypeOf<typeof AllUserData>;

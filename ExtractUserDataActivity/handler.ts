@@ -474,29 +474,22 @@ export const queryAllUserData = (
       findAllNotificationStatuses(notificationStatusModel, notifications)
     ),
     // step 4: queries profile service preferences
-    TE.bindW("servicesPreferences", () =>
+    TE.bind("servicesPreferences", () =>
       pipe(
-        TE.tryCatch(
-          async () => servicePreferencesModel.findAllByFiscalCode(fiscalCode),
-          () =>
-            ActivityResultQueryFailure.encode({
-              kind: "QUERY_FAILURE",
-              reason: "Error while searching the profile service preferences"
-            })
-        ),
-        TE.map(flattenAsyncIterator),
-        TE.map(asyncIteratorToArray),
-        TE.chain(
-          (promise: Promise<ReadonlyArray<t.Validation<ServicePreference>>>) =>
-            TE.tryCatch(
-              () => promise,
-              () =>
-                ActivityResultQueryFailure.encode({
-                  kind: "QUERY_FAILURE",
-                  reason: "Error with the async operator"
-                })
-            )
-        ),
+        servicePreferencesModel.findAllByFiscalCode(fiscalCode),
+        flattenAsyncIterator,
+        asyncIteratorToArray,
+        promise =>
+          TE.tryCatch(
+            () => promise,
+            () =>
+              ActivityResultQueryFailure.encode({
+                kind: "QUERY_FAILURE",
+                reason: "Error with the async operator"
+              })
+          ),
+        // ROA.rights will return only the right values obtained from the database
+        // (left values represent malformed data inside the database)
         TE.map(ROA.rights)
       )
     ),
@@ -695,8 +688,8 @@ export function createExtractUserDataActivityHandler({
           notificationStatuses: allUserData.messageStatuses.map(cleanData),
           notifications,
           profiles: allUserData.profiles.map(cleanData),
-          servicesPreferences: allUserData.servicesPreferences
-        } as AllUserData;
+          servicesPreferences: allUserData.servicesPreferences.map(cleanData)
+        };
       }),
       TE.chainW(allUserData =>
         saveDataToBlob(
