@@ -139,7 +139,7 @@ const mockFindAllServPreferencesByFiscalCode = jest.fn<
   >
 >(() => asyncIteratorOf([E.right(aRetrievedServicePreferences)]));
 
-const servicePreferencesModel = ({
+const servicePreferencesModelMock = ({
   delete: mockDeleteServicePreferences,
   findAllByFiscalCode: mockFindAllServPreferencesByFiscalCode
 } as unknown) as ServicePreferencesDeletableModel;
@@ -222,7 +222,7 @@ describe("createExtractUserDataActivityHandler", () => {
       profileModel: profileModelMock,
       userDataBlobService: blobServiceMock,
       userDataContainerName: aUserDataContainerName,
-      servicePreferencesModel: servicePreferencesModel
+      servicePreferencesModel: servicePreferencesModelMock
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -261,7 +261,7 @@ describe("createExtractUserDataActivityHandler", () => {
       profileModel: profileModelMock,
       userDataBlobService: blobServiceMock,
       userDataContainerName: aUserDataContainerName,
-      servicePreferencesModel: servicePreferencesModel
+      servicePreferencesModel: servicePreferencesModelMock
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -292,7 +292,7 @@ describe("createExtractUserDataActivityHandler", () => {
       profileModel: profileModelMock,
       userDataBlobService: blobServiceMock,
       userDataContainerName: aUserDataContainerName,
-      servicePreferencesModel
+      servicePreferencesModel: servicePreferencesModelMock
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -337,7 +337,7 @@ describe("createExtractUserDataActivityHandler", () => {
       profileModel: profileModelMock,
       userDataBlobService: blobServiceMock,
       userDataContainerName: aUserDataContainerName,
-      servicePreferencesModel
+      servicePreferencesModel: servicePreferencesModelMock
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -361,7 +361,7 @@ describe("createExtractUserDataActivityHandler", () => {
       profileModel: profileModelMock,
       userDataBlobService: blobServiceMock,
       userDataContainerName: aUserDataContainerName,
-      servicePreferencesModel
+      servicePreferencesModel: servicePreferencesModelMock
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode

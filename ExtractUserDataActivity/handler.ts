@@ -53,6 +53,7 @@ import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
+import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 
 export const ArchiveInfo = t.interface({
   blobName: NonEmptyString,
@@ -135,6 +136,14 @@ const fromPromiseEither = <L, R>(promise: Promise<E.Either<L, R>>) =>
   pipe(
     TE.tryCatch(() => promise, E.toError),
     TE.chainW(TE.fromEither)
+  );
+
+const fromPromiseEitherArray = <L, R>(promise: Promise<E.Either<L, R>[]>) =>
+  pipe(
+    TE.tryCatch(() => promise, E.toError),
+    // ROA.rights will return only the right values obtained from the database
+    // (left values represent malformed data inside the database)
+    TE.map(ROA.rights)
   );
 
 /**
@@ -478,18 +487,13 @@ export const queryAllUserData = (
         servicePreferencesModel.findAllByFiscalCode(fiscalCode),
         flattenAsyncIterator,
         asyncIteratorToArray,
-        promise =>
-          TE.tryCatch(
-            () => promise,
-            () =>
-              ActivityResultQueryFailure.encode({
-                kind: "QUERY_FAILURE",
-                reason: "Error with the async operator"
-              })
-          ),
-        // ROA.rights will return only the right values obtained from the database
-        // (left values represent malformed data inside the database)
-        TE.map(ROA.rights)
+        fromPromiseEitherArray,
+        TE.mapLeft(() =>
+          ActivityResultQueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            reason: "Error with the async operator"
+          })
+        )
       )
     ),
     TE.map(

@@ -25,12 +25,9 @@ describe("servicePreference decoding", () => {
     expect(E.isRight(result)).toBeTruthy();
     if (E.isRight(result)) {
       expect(result.right).toMatchObject(mockedUserData);
-      expect(
-        (result.right.servicesPreferences[0] as any).foo
-      ).not.toBeDefined();
-      expect(
-        (result.right.servicesPreferences[0] as any).bar
-      ).not.toBeDefined();
+      expect(result.right.servicesPreferences[0]).toStrictEqual(
+        aServicePreference
+      );
     }
   });
 });
