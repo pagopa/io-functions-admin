@@ -53,7 +53,6 @@ import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
-import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 
 export const ArchiveInfo = t.interface({
   blobName: NonEmptyString,
@@ -131,14 +130,17 @@ const logPrefix = `ExtractUserDataActivity`;
  * Converts a Promise<Either<L, R>> that can reject
  * into a TaskEither<Error | L, R>
  */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const fromPromiseEither = <L, R>(promise: Promise<E.Either<L, R>>) =>
+const fromPromiseEither = <L, R>(
+  promise: Promise<E.Either<L, R>>
+): TE.TaskEither<L | Error, R> =>
   pipe(
     TE.tryCatch(() => promise, E.toError),
     TE.chainW(TE.fromEither)
   );
 
-const fromPromiseEitherArray = <L, R>(promise: Promise<E.Either<L, R>[]>) =>
+const fromPromiseEitherArray = <L, R>(
+  promise: Promise<ReadonlyArray<E.Either<L, R>>>
+): TE.TaskEither<Error, ReadonlyArray<R>> =>
   pipe(
     TE.tryCatch(() => promise, E.toError),
     // ROA.rights will return only the right values obtained from the database
