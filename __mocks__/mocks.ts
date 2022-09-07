@@ -70,7 +70,8 @@ import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/g
 import {
   AccessReadMessageStatusEnum,
   makeServicesPreferencesDocumentId,
-  RetrievedServicePreference
+  RetrievedServicePreference,
+  ServicePreference
 } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
@@ -378,6 +379,16 @@ export const aArchiveInfo = pipe(
 
 export const aServicePreferenceVersion = 0 as NonNegativeInteger;
 
+export const aServicePreference: ServicePreference = {
+  fiscalCode: aFiscalCode,
+  serviceId: aServiceId,
+  settingsVersion: aServicePreferenceVersion,
+  isWebhookEnabled: true,
+  isEmailEnabled: true,
+  isInboxEnabled: true,
+  accessReadMessageStatus: AccessReadMessageStatusEnum.ALLOW
+};
+
 export const aRetrievedServicePreferences: RetrievedServicePreference = {
   ...{
     _etag: "_etag",
@@ -385,17 +396,11 @@ export const aRetrievedServicePreferences: RetrievedServicePreference = {
     _self: "_self",
     _ts: 1
   },
-  isEmailEnabled: true,
-  isInboxEnabled: true,
-  isWebhookEnabled: true,
-  settingsVersion: aServicePreferenceVersion,
-  fiscalCode: aFiscalCode,
-  serviceId: aServiceId,
+  ...aServicePreference,
   kind: "IRetrievedServicePreference",
   id: makeServicesPreferencesDocumentId(
     aFiscalCode,
     aServiceId,
     aServicePreferenceVersion
-  ),
-  accessReadMessageStatus: AccessReadMessageStatusEnum.ALLOW
+  )
 };

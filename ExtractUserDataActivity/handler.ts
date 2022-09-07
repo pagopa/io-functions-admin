@@ -48,7 +48,6 @@ import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/uti
 import * as yaml from "yaml";
 import { pipe, flow } from "fp-ts/lib/function";
 import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
-import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { getEncryptedZipStream } from "../utils/zip";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
