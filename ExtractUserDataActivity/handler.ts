@@ -138,16 +138,6 @@ const fromPromiseEither = <L, R>(
     TE.chainW(TE.fromEither)
   );
 
-const fromPromiseEitherArray = <L, R>(
-  promise: Promise<ReadonlyArray<E.Either<L, R>>>
-): TE.TaskEither<Error, ReadonlyArray<R>> =>
-  pipe(
-    TE.tryCatch(() => promise, E.toError),
-    // ROA.rights will return only the right values obtained from the database
-    // (left values represent malformed data inside the database)
-    TE.map(ROA.rights)
-  );
-
 /**
  * To be used for exhaustive checks
  */
@@ -458,11 +448,28 @@ export const queryAllUserData = (
               : TE.of(rights(results))
           )
         ),
-        profile: TE.of(profile)
+        profile: TE.of(profile),
+        servicesPreferences: pipe(
+          servicePreferencesModel.findAllByFiscalCode(fiscalCode),
+          flattenAsyncIterator,
+          asyncIteratorToArray,
+          promise =>
+            TE.tryCatch(
+              () => promise,
+              () =>
+                ActivityResultQueryFailure.encode({
+                  kind: "QUERY_FAILURE",
+                  reason: "Error with the async operator"
+                })
+            ),
+          // ROA.rights will return only the right values obtained from the database
+          // (left values represent malformed data inside the database)
+          TE.map(ROA.rights)
+        )
       })
     ),
     // step 2: queries notifications and message contents, which need message data to be queried first
-    TE.chain(({ profile, messages, messagesView }) =>
+    TE.chain(({ profile, messages, messagesView, servicesPreferences }) =>
       sequenceS(TE.ApplicativePar)({
         messageContents: getAllMessageContents(
           messageContentBlobService,
@@ -476,27 +483,13 @@ export const queryAllUserData = (
           notificationModel,
           messages
         ),
-        profile: TE.of(profile)
+        profile: TE.of(profile),
+        servicesPreferences: TE.of(servicesPreferences)
       })
     ),
     // step 3: queries notifications statuses
     TE.bind("notificationStatuses", ({ notifications }) =>
       findAllNotificationStatuses(notificationStatusModel, notifications)
-    ),
-    // step 4: queries profile service preferences
-    TE.bind("servicesPreferences", () =>
-      pipe(
-        servicePreferencesModel.findAllByFiscalCode(fiscalCode),
-        flattenAsyncIterator,
-        asyncIteratorToArray,
-        fromPromiseEitherArray,
-        TE.mapLeft(() =>
-          ActivityResultQueryFailure.encode({
-            kind: "QUERY_FAILURE",
-            reason: "Error with the async operator"
-          })
-        )
-      )
     ),
     TE.map(
       ({
