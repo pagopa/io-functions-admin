@@ -9,6 +9,7 @@ import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
 
 import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
 import * as A from "fp-ts/lib/Array";
+import * as ROA from "fp-ts/lib/ReadonlyArray";
 import { flatten, rights } from "fp-ts/lib/Array";
 
 import { Context } from "@azure/functions";
@@ -39,7 +40,10 @@ import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
-import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import {
+  asyncIteratorToArray,
+  flattenAsyncIterator
+} from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as yaml from "yaml";
 import { pipe, flow } from "fp-ts/lib/function";
@@ -48,6 +52,7 @@ import { getEncryptedZipStream } from "../utils/zip";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
+import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
 
 export const ArchiveInfo = t.interface({
   blobName: NonEmptyString,
@@ -125,8 +130,9 @@ const logPrefix = `ExtractUserDataActivity`;
  * Converts a Promise<Either<L, R>> that can reject
  * into a TaskEither<Error | L, R>
  */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const fromPromiseEither = <L, R>(promise: Promise<E.Either<L, R>>) =>
+const fromPromiseEither = <L, R>(
+  promise: Promise<E.Either<L, R>>
+): TE.TaskEither<L | Error, R> =>
   pipe(
     TE.tryCatch(() => promise, E.toError),
     TE.chainW(TE.fromEither)
@@ -363,7 +369,8 @@ export const queryAllUserData = (
   notificationStatusModel: NotificationStatusModel,
   profileModel: ProfileModel,
   messageContentBlobService: BlobService,
-  fiscalCode: FiscalCode
+  fiscalCode: FiscalCode,
+  servicePreferencesModel: ServicePreferencesDeletableModel
 ): TE.TaskEither<
   ActivityResultUserNotFound | ActivityResultQueryFailure,
   AllUserData
@@ -441,11 +448,28 @@ export const queryAllUserData = (
               : TE.of(rights(results))
           )
         ),
-        profile: TE.of(profile)
+        profile: TE.of(profile),
+        servicesPreferences: pipe(
+          servicePreferencesModel.findAllByFiscalCode(fiscalCode),
+          flattenAsyncIterator,
+          asyncIteratorToArray,
+          promise =>
+            TE.tryCatch(
+              () => promise,
+              () =>
+                ActivityResultQueryFailure.encode({
+                  kind: "QUERY_FAILURE",
+                  reason: "Error with the async operator"
+                })
+            ),
+          // ROA.rights will return only the right values obtained from the database
+          // (left values represent malformed data inside the database)
+          TE.map(ROA.rights)
+        )
       })
     ),
     // step 2: queries notifications and message contents, which need message data to be queried first
-    TE.chain(({ profile, messages, messagesView }) =>
+    TE.chain(({ profile, messages, messagesView, servicesPreferences }) =>
       sequenceS(TE.ApplicativePar)({
         messageContents: getAllMessageContents(
           messageContentBlobService,
@@ -459,31 +483,34 @@ export const queryAllUserData = (
           notificationModel,
           messages
         ),
-        profile: TE.of(profile)
+        profile: TE.of(profile),
+        servicesPreferences: TE.of(servicesPreferences)
       })
     ),
     // step 3: queries notifications statuses
-    TE.chain(
+    TE.bind("notificationStatuses", ({ notifications }) =>
+      findAllNotificationStatuses(notificationStatusModel, notifications)
+    ),
+    TE.map(
       ({
         profile,
+        notifications,
         messages,
         messagesView,
         messageContents,
         messageStatuses,
-        notifications
-      }) =>
-        sequenceS(TE.ApplicativePar)({
-          messageContents: TE.of(messageContents),
-          messageStatuses: TE.of(messageStatuses),
-          messages: TE.of(messages),
-          messagesView: TE.of(messagesView),
-          notificationStatuses: findAllNotificationStatuses(
-            notificationStatusModel,
-            notifications
-          ),
-          notifications: TE.of(notifications),
-          profiles: TE.of([profile])
-        })
+        notificationStatuses,
+        servicesPreferences
+      }) => ({
+        messageContents,
+        messageStatuses,
+        messages,
+        messagesView,
+        notificationStatuses,
+        notifications,
+        profiles: [profile],
+        servicesPreferences
+      })
     )
   );
 
@@ -589,6 +616,7 @@ export interface IActivityHandlerInput {
   readonly messageContentBlobService: BlobService;
   readonly userDataBlobService: BlobService;
   readonly userDataContainerName: NonEmptyString;
+  readonly servicePreferencesModel: ServicePreferencesDeletableModel;
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-explicit-any
@@ -611,7 +639,8 @@ export function createExtractUserDataActivityHandler({
   profileModel,
   messageContentBlobService,
   userDataBlobService,
-  userDataContainerName
+  userDataContainerName,
+  servicePreferencesModel
 }: IActivityHandlerInput): (
   context: Context,
   input: unknown
@@ -637,7 +666,8 @@ export function createExtractUserDataActivityHandler({
           notificationStatusModel,
           profileModel,
           messageContentBlobService,
-          fiscalCode
+          fiscalCode,
+          servicePreferencesModel
         )
       ),
       TE.map(allUserData => {
@@ -655,8 +685,9 @@ export function createExtractUserDataActivityHandler({
           messagesView: allUserData.messagesView.map(cleanData),
           notificationStatuses: allUserData.messageStatuses.map(cleanData),
           notifications,
-          profiles: allUserData.profiles.map(cleanData)
-        } as AllUserData;
+          profiles: allUserData.profiles.map(cleanData),
+          servicesPreferences: allUserData.servicesPreferences.map(cleanData)
+        };
       }),
       TE.chainW(allUserData =>
         saveDataToBlob(
