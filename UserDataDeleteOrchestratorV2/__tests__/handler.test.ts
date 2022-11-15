@@ -306,6 +306,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
