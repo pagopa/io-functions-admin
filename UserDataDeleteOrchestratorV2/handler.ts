@@ -139,8 +139,9 @@ function* setUserSessionLock(
   context: IOrchestrationFunctionContext,
   { action, fiscalCode }: SetUserSessionLockActivityInput
 ): Generator<Task> {
-  const result = yield context.df.callActivity(
+  const result = yield context.df.callActivityWithRetry(
     "SetUserSessionLockActivity",
+    retryOptions,
     SetUserSessionLockActivityInput.encode({
       action,
       fiscalCode

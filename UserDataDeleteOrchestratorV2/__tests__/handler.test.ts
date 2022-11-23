@@ -306,6 +306,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -363,6 +364,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -426,6 +428,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -496,6 +499,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -503,6 +507,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "UNLOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -590,6 +595,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -656,6 +662,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -663,6 +670,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "UNLOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -811,6 +819,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -818,6 +827,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "UNLOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -881,6 +891,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -888,6 +899,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "UNLOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -965,6 +977,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -972,6 +985,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "UNLOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -1041,6 +1055,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -1048,6 +1063,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "UNLOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -1126,6 +1142,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -1191,6 +1208,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(1);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -1322,6 +1340,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "LOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
@@ -1329,6 +1348,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     );
     expect(setUserSessionLockActivity).toHaveBeenCalledWith(
       expect.any(String),
+      expectedRetryOptions,
       {
         action: "UNLOCK",
         fiscalCode: aProcessableUserDataDelete.fiscalCode
