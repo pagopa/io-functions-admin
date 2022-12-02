@@ -450,6 +450,33 @@ paths:
           description: Resource (User or Product) not found
         "500":
           description: Internal server error
+  /users/{email}/subscriptions:
+    get:
+      summary: Get user subscriptions
+      description: Gets the user information, that is the complete list of subscription and the complete list of groups for the User identified by the provided email
+      operationId: getUserSubscriptions
+      parameters:
+        - name: email
+          in: path
+          type: string
+          format: email
+          required: true
+          description: The email of the User
+      responses:
+        "200":
+          description: User subscriptions and groups
+          schema:
+            $ref: "#/definitions/UserInfo"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: User not found
+        "500":
+          description: Internal server error
   /users/{email}/subscriptions/{subscription_id}:
     put:
       summary: Create subscription
