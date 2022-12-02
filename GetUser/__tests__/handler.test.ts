@@ -11,6 +11,8 @@ import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
 import { groupContractToApiGroup } from "../../utils/conversions";
 import { GetUserHandler } from "../handler";
 import { pipe } from "fp-ts/lib/function";
+import * as t from "io-ts";
+import { Subscription } from "../../generated/definitions/Subscription";
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
@@ -204,9 +206,24 @@ describe("GetUser", () => {
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
-  it("still valid even if we do not pass subscriptions", () => {
+  it("still valid even if we do not pass group", () => {
     const input = { token_name: "anystring" as NonEmptyString };
     const result = UserInfo.decode(input);
+
+    const isValidPayload = E.isRight(result);
+    expect(isValidPayload).toBe(true);
+  });
+
+  it("still valid on legacy result even if we do not pass subscriptions", () => {
+    const input = { token_name: "anystring" as NonEmptyString };
+    // UserInfo used to contain a subscriptions optional field
+    // with this test, we check whether an outdated client would break or not
+    const LegacyUserInfo = t.intersection([
+      UserInfo,
+      t.partial({ subscriptions: t.readonlyArray(Subscription) })
+    ]);
+
+    const result = LegacyUserInfo.decode(input);
 
     const isValidPayload = E.isRight(result);
     expect(isValidPayload).toBe(true);

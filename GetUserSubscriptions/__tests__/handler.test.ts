@@ -8,7 +8,7 @@ import { GraphRbacManagementClient } from "@azure/graph";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { UserInfo } from "../../generated/definitions/UserInfo";
+import { UserInfoAndSubscriptions } from "../../generated/definitions/UserInfoAndSubscriptions";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
 import {
@@ -376,7 +376,7 @@ describe("GetUser", () => {
           )
       }
     });
-    const decoded = UserInfo.decode(response);
+    const decoded = UserInfoAndSubscriptions.decode(response);
     if (E.isRight(decoded)) {
       expect(decoded.right).toBeTruthy();
     }

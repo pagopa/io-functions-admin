@@ -27,7 +27,7 @@ import {
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 import { EmailAddress } from "../generated/definitions/EmailAddress";
-import { UserInfo } from "../generated/definitions/UserInfo";
+import { UserInfoAndSubscriptions } from "../generated/definitions/UserInfoAndSubscriptions";
 import {
   getApiClient,
   getGraphRbacManagementClient,
@@ -49,7 +49,7 @@ type IGetSubscriptionKeysHandler = (
   auth: IAzureApiAuthorization,
   email: EmailAddress
 ) => Promise<
-  | IResponseSuccessJson<UserInfo>
+  | IResponseSuccessJson<UserInfoAndSubscriptions>
   | IResponseErrorInternal
   | IResponseErrorNotFound
 >;
@@ -255,7 +255,7 @@ export function GetUserSubscriptionsHandler(
             subscriptions: E.toUnion(userInfo.errorOrSubscriptions),
             token_name: userInfo.token_name
           },
-          UserInfo.decode,
+          UserInfoAndSubscriptions.decode,
           E.mapLeft(errors =>
             internalValidationErrorHandler("Invalid response payload.", errors)
           ),
