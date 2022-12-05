@@ -1,9 +1,6 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 import { ApiManagementClient } from "@azure/arm-apimanagement";
-import {
-  GroupContract,
-  SubscriptionContract
-} from "@azure/arm-apimanagement/esm/models";
+import { GroupContract } from "@azure/arm-apimanagement/esm/models";
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
@@ -11,12 +8,11 @@ import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { UserInfo } from "../../generated/definitions/UserInfo";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
-import {
-  groupContractToApiGroup,
-  subscriptionContractToApiSubscription
-} from "../../utils/conversions";
+import { groupContractToApiGroup } from "../../utils/conversions";
 import { GetUserHandler } from "../handler";
 import { pipe } from "fp-ts/lib/function";
+import * as t from "io-ts";
+import { Subscription } from "../../generated/definitions/Subscription";
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
@@ -44,8 +40,6 @@ const fakeUserName = "a-non-empty-string";
 const mockUserListByService = jest.fn();
 const mockUserGroupList = jest.fn();
 const mockUserGroupListNext = jest.fn();
-const mockUserSubscriptionList = jest.fn();
-const mockUserSubscriptionListNext = jest.fn();
 
 const mockApiManagementClient = ApiManagementClient as jest.Mock;
 mockApiManagementClient.mockImplementation(() => ({
@@ -55,10 +49,6 @@ mockApiManagementClient.mockImplementation(() => ({
   userGroup: {
     list: mockUserGroupList,
     listNext: mockUserGroupListNext
-  },
-  userSubscription: {
-    list: mockUserSubscriptionList,
-    listNext: mockUserSubscriptionListNext
   }
 }));
 
@@ -175,31 +165,7 @@ describe("GetUser", () => {
     mockUserGroupList.mockImplementation(() =>
       Promise.reject(Error("Error on user groups list"))
     );
-    mockUserSubscriptionList.mockImplementation(() => Promise.resolve([]));
-    const getUserHandler = GetUserHandler(
-      fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
-      fakeApimConfig,
-      fakeAdb2cExtensionAppClientId
-    );
 
-    const response = await getUserHandler(
-      mockedContext as any,
-      undefined as any,
-      undefined as any
-    );
-
-    expect(response.kind).toEqual("IResponseErrorInternal");
-  });
-
-  it("should return an internal error response if the API management client can not list the user subscriptions", async () => {
-    mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: fakeUserName }])
-    );
-    mockUserGroupList.mockImplementation(() => Promise.resolve([]));
-    mockUserSubscriptionList.mockImplementation(() =>
-      Promise.reject(Error("Error on user subscription list"))
-    );
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
@@ -223,7 +189,7 @@ describe("GetUser", () => {
     mockUserGroupList.mockImplementation(() =>
       Promise.resolve([{ state: "invalid" }])
     );
-    mockUserSubscriptionList.mockImplementation(() => Promise.resolve([]));
+
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
       fakeServicePrincipalCredentials,
@@ -240,31 +206,30 @@ describe("GetUser", () => {
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
-  it("should return an internal error response if the API management client lists invalid subscriptions", async () => {
-    mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: fakeUserName }])
-    );
-    mockUserGroupList.mockImplementation(() => Promise.resolve([]));
-    mockUserSubscriptionList.mockImplementation(() =>
-      Promise.resolve([{ groupContractType: "invalid" }])
-    );
-    const getUserHandler = GetUserHandler(
-      fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
-      fakeApimConfig,
-      fakeAdb2cExtensionAppClientId
-    );
+  it("still valid even if we do not pass group", () => {
+    const input = { token_name: "anystring" as NonEmptyString };
+    const result = UserInfo.decode(input);
 
-    const response = await getUserHandler(
-      mockedContext as any,
-      undefined as any,
-      undefined as any
-    );
-
-    expect(response.kind).toEqual("IResponseErrorInternal");
+    const isValidPayload = E.isRight(result);
+    expect(isValidPayload).toBe(true);
   });
 
-  it("should return all the user subscriptions and groups", async () => {
+  it("still valid on legacy result even if we do not pass subscriptions", () => {
+    const input = { token_name: "anystring" as NonEmptyString };
+    // UserInfo used to contain a subscriptions optional field
+    // with this test, we check whether an outdated client would break or not
+    const LegacyUserInfo = t.intersection([
+      UserInfo,
+      t.partial({ subscriptions: t.readonlyArray(Subscription) })
+    ]);
+
+    const result = LegacyUserInfo.decode(input);
+
+    const isValidPayload = E.isRight(result);
+    expect(isValidPayload).toBe(true);
+  });
+
+  it("should return all the user groups", async () => {
     const anApimGroupContract: GroupContract = {
       builtIn: true,
       description: "group description",
@@ -276,25 +241,6 @@ describe("GetUser", () => {
       type: undefined
     };
 
-    const anApimSubscriptionContract: SubscriptionContract = {
-      allowTracing: false,
-      createdDate: new Date(),
-      displayName: null,
-      endDate: undefined,
-      expirationDate: undefined,
-      id: undefined,
-      name: undefined,
-      notificationDate: undefined,
-      ownerId: undefined,
-      primaryKey: "a-primary-key",
-      scope: "/apis",
-      secondaryKey: "a-secondary-key",
-      startDate: new Date(),
-      state: "active",
-      stateComment: undefined,
-      type: undefined
-    };
-
     const someValidGroups: ReadonlyArray<GroupContract> = [
       { ...anApimGroupContract, id: "group #1" },
       { ...anApimGroupContract, id: "group #2" }
@@ -303,30 +249,7 @@ describe("GetUser", () => {
       { ...anApimGroupContract, id: "group #3" },
       { ...anApimGroupContract, id: "group #4" }
     ];
-    const someValidSubscriptions: ReadonlyArray<SubscriptionContract> = [
-      {
-        ...anApimSubscriptionContract,
-        primaryKey: "primaryKey#1",
-        secondaryKey: "secondaryKey#1"
-      },
-      {
-        ...anApimSubscriptionContract,
-        primaryKey: "primaryKey#2",
-        secondaryKey: "secondaryKey#2"
-      }
-    ];
-    const someMoreValidSubscriptions: ReadonlyArray<SubscriptionContract> = [
-      {
-        ...anApimSubscriptionContract,
-        primaryKey: "primaryKey#3",
-        secondaryKey: "secondaryKey#3"
-      },
-      {
-        ...anApimSubscriptionContract,
-        primaryKey: "primaryKey#4",
-        secondaryKey: "secondaryKey#4"
-      }
-    ];
+
     mockUserListByService.mockImplementation(() =>
       Promise.resolve([{ name: fakeUserName }])
     );
@@ -338,15 +261,6 @@ describe("GetUser", () => {
     });
     mockUserGroupListNext.mockImplementation(() =>
       Promise.resolve(someMoreValidGroups)
-    );
-    mockUserSubscriptionList.mockImplementation(() => {
-      const apimResponse = someValidSubscriptions;
-      // eslint-disable-next-line functional/immutable-data
-      apimResponse["nextLink"] = "next-page";
-      return Promise.resolve(apimResponse);
-    });
-    mockUserSubscriptionListNext.mockImplementation(() =>
-      Promise.resolve(someMoreValidSubscriptions)
     );
 
     const getUserHandler = GetUserHandler(
@@ -368,12 +282,7 @@ describe("GetUser", () => {
       value: {
         groups: someValidGroups
           .concat(someMoreValidGroups)
-          .map(elem => pipe(groupContractToApiGroup(elem), E.toUnion)),
-        subscriptions: someValidSubscriptions
-          .concat(someMoreValidSubscriptions)
-          .map(elem =>
-            pipe(subscriptionContractToApiSubscription(elem), E.toUnion)
-          )
+          .map(elem => pipe(groupContractToApiGroup(elem), E.toUnion))
       }
     });
     const decoded = UserInfo.decode(response);
