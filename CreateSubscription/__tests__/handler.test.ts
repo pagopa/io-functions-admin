@@ -6,6 +6,7 @@ import {
   SubscriptionContract,
   UserContract
 } from "@azure/arm-apimanagement/esm/models";
+import { RestError } from "@azure/ms-rest-js";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import { ProductNamePayload } from "../../generated/definitions/ProductNamePayload";
@@ -314,5 +315,35 @@ describe("CreateSubscription", () => {
       )
     });
     expect(E.isRight(UserInfo.decode((response as any).value))).toBeTruthy();
+  });
+
+  it("should return too many requests if APIM respinds with 412", async () => {
+    mockUserListByService.mockImplementation(() =>
+      Promise.resolve([aFakeApimUser])
+    );
+    mockProductList.mockImplementation(() =>
+      Promise.resolve([aFakeApimProductContract])
+    );
+    mockSubscriptionCreateOrUpdate.mockImplementation(() =>
+      Promise.reject(new RestError("", "", 412))
+    );
+
+    const createSubscriptionHandler = CreateSubscriptionHandler(
+      fakeServicePrincipalCredentials,
+      fakeApimConfig
+    );
+
+    const response = await createSubscriptionHandler(
+      mockedContext as any,
+      undefined as any,
+      fakeParams as any,
+      fakePayload as any
+    );
+
+    expect(response).toEqual(
+      expect.objectContaining({
+        kind: "IResponseErrorTooManyRequests"
+      })
+    );
   });
 });

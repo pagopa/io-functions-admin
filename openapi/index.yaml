@@ -512,6 +512,8 @@ paths:
           description: Forbidden
         "404":
           description: Resource (User or Product) not found
+        "429":
+          description: Too Many Requests
         "500":
           description: Internal server error
 definitions:
