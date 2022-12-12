@@ -17,18 +17,21 @@ import { Errors } from "io-ts";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
+  IResponseErrorTooManyRequests,
   IResponseSuccessJson,
   ResponseErrorNotFound,
+  ResponseErrorTooManyRequests,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { flow, pipe } from "fp-ts/lib/function";
+import { flow, identity, pipe } from "fp-ts/lib/function";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { ProductNamePayload } from "../generated/definitions/ProductNamePayload";
 import { Subscription } from "../generated/definitions/Subscription";
 import {
   getApiClient,
   IAzureApimConfig,
+  isErrorStatusCode,
   IServicePrincipalCreds
 } from "../utils/apim";
 import { subscriptionContractToApiSubscription } from "../utils/conversions";
@@ -37,6 +40,7 @@ import {
   genericInternalValidationErrorHandler
 } from "../utils/errorHandler";
 import { CreateSubscriptionParamsMiddleware } from "../utils/middlewares/createSubscriptionParamsMiddleware";
+import { withRetry } from "../utils/retry";
 
 type ICreateSubscriptionHandler = (
   context: Context,
@@ -47,6 +51,7 @@ type ICreateSubscriptionHandler = (
   | IResponseSuccessJson<Subscription>
   | IResponseErrorInternal
   | IResponseErrorNotFound
+  | IResponseErrorTooManyRequests
 >;
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
@@ -183,7 +188,7 @@ export function CreateSubscriptionHandler(
         )
       ),
       TE.chainW(taskResults =>
-        TE.tryCatch(
+        pipe(
           () =>
             taskResults.apimClient.subscription.createOrUpdate(
               azureApimConfig.apimResourceGroup,
@@ -196,11 +201,27 @@ export function CreateSubscriptionHandler(
                 state: "active"
               }
             ),
-          error =>
-            internalErrorHandler(
-              "Could not create the subscription.",
-              error as Error
-            )
+          // It turns out Azure API Management implements optimistic consistency on accounts
+          // Hence, when multiple subscriptions are added to the same account concurrently,
+          //   this API may return 412.
+          // This is an undocumented behaviour that arose in production.
+          // In accordance with Azure support, we decided to retry the request on such case
+          withRetry({
+            delayMS: 200,
+            maxAttempts: 3,
+            whileCondition: f => isErrorStatusCode(f, 412)
+          }),
+          retrieable => TE.tryCatch(retrieable, identity),
+          // If we get 412 even after retries, we respond with a too may request status
+          //   so we ask the client to retry by itself
+          TE.mapLeft(error =>
+            isErrorStatusCode(error, 412)
+              ? ResponseErrorTooManyRequests()
+              : internalErrorHandler(
+                  "Could not create the subscription.",
+                  error as Error
+                )
+          )
         )
       ),
       TE.chainW(

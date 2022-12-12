@@ -18,6 +18,7 @@ import {
   ResponseErrorNotFound
 } from "@pagopa/ts-commons/lib/responses";
 import { parse } from "fp-ts/lib/Json";
+import { RestError } from "@azure/ms-rest-js";
 export interface IServicePrincipalCreds {
   readonly clientId: string;
   readonly secret: string;
@@ -169,3 +170,27 @@ export const getSubscription = (
     ),
     chainApimMappedError
   );
+/**
+ * APIM sdk operations may raise untyped errors.
+ * This utility check if the error is of a specific status code
+ *
+ * @param error any error coming from an APIM sdk call
+ * @param statusCode status code to check against
+ * @returns whether the returned error is of that status code
+ */
+export const isErrorStatusCode = (
+  error: unknown,
+  statusCode: number
+): boolean => {
+  if (error === null) {
+    return false;
+  }
+  if (!(error instanceof RestError)) {
+    return false;
+  }
+  if (!error.statusCode) {
+    return false;
+  }
+
+  return error.statusCode === statusCode;
+};
