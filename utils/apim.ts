@@ -170,7 +170,14 @@ export const getSubscription = (
     ),
     chainApimMappedError
   );
-
+/**
+ * APIM sdk operations may raise untyped errors.
+ * This utility check if the error is of a specific status code
+ *
+ * @param error any error coming from an APIM sdk call
+ * @param statusCode status code to check against
+ * @returns whether the returned error is of that status code
+ */
 export const isErrorStatusCode = (
   error: unknown,
   statusCode: number
