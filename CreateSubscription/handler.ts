@@ -55,7 +55,7 @@ type ICreateSubscriptionHandler = (
   | IResponseErrorTooManyRequests
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, max-lines-per-function
 export function CreateSubscriptionHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
@@ -214,7 +214,13 @@ export function CreateSubscriptionHandler(
               const is412 = isErrorStatusCode(f, 412);
               context.log.error(
                 `CreateSubscription | troubleshooting | whileCondition | ${is412} | ${f instanceof
-                  Error} | ${f instanceof RestError}`
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-ignore
+                  Error} | ${f instanceof RestError} | ${(f || {}).message} | ${
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-ignore
+                  (f || {}).statusCode
+                } | `
               );
               return isErrorStatusCode(f, 412);
             }
