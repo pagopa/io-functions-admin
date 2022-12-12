@@ -198,5 +198,6 @@ export const isErrorStatusCode = (
     return false;
   }
 
-  return error.statusCode === statusCode;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (error as any).statusCode === statusCode;
 };
