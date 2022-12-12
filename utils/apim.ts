@@ -185,10 +185,16 @@ export const isErrorStatusCode = (
   if (error === null) {
     return false;
   }
-  if (!(error instanceof RestError)) {
+  if (
+    !(
+      error instanceof RestError ||
+      (typeof error === "object" && "statusCode" in error)
+    )
+  ) {
     return false;
   }
-  if (!error.statusCode) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!(error as any).statusCode) {
     return false;
   }
 
