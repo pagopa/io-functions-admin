@@ -41,6 +41,7 @@ import {
 } from "../utils/errorHandler";
 import { CreateSubscriptionParamsMiddleware } from "../utils/middlewares/createSubscriptionParamsMiddleware";
 import { withRetry } from "../utils/retry";
+import { RestError } from "@azure/ms-rest-js";
 
 type ICreateSubscriptionHandler = (
   context: Context,
@@ -209,19 +210,31 @@ export function CreateSubscriptionHandler(
           withRetry({
             delayMS: 200,
             maxAttempts: 3,
-            whileCondition: f => isErrorStatusCode(f, 412)
+            whileCondition: f => {
+              const is412 = isErrorStatusCode(f, 412);
+              context.log.error(
+                `CreateSubscription | troubleshooting | whileCondition | ${is412} | ${f instanceof
+                  Error} | ${f instanceof RestError}`
+              );
+              return isErrorStatusCode(f, 412);
+            }
           }),
           retrieable => TE.tryCatch(retrieable, identity),
           // If we get 412 even after retries, we respond with a too may request status
           //   so we ask the client to retry by itself
-          TE.mapLeft(error =>
-            isErrorStatusCode(error, 412)
+          TE.mapLeft(error => {
+            const is412 = isErrorStatusCode(error, 412);
+            context.log.error(
+              `CreateSubscription | troubleshooting | mapLeft | ${is412} | ${error instanceof
+                Error} | ${error instanceof RestError}`
+            );
+            return is412
               ? ResponseErrorTooManyRequests()
               : internalErrorHandler(
                   "Could not create the subscription.",
                   error as Error
-                )
-          )
+                );
+          })
         )
       ),
       TE.chainW(
