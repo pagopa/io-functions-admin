@@ -208,7 +208,7 @@ export function CreateSubscriptionHandler(
           // In accordance with Azure support, we decided to retry the request on such case
           withRetry({
             delayMS: 200,
-            maxAttempts: 3,
+            maxAttempts: 1, // FIXME: remove retry wrapper
             whileCondition: f => isErrorStatusCode(f, 412)
           }),
           retrieable => TE.tryCatch(retrieable, identity),
