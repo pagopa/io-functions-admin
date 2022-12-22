@@ -19,8 +19,8 @@ pr: none
 
 # This pipeline has been implemented to be run on hosted agent pools based both
 # on 'windows' and 'ubuntu' virtual machine images and using the scripts defined
-# in the package.json file. Since we are deploying on Azure functions on Windows
-# runtime, the pipeline is currently configured to use a Windows hosted image for
+# in the package.json file. Since we are deploying on Azure functions on Linux
+# runtime, the pipeline is currently configured to use an ubuntu hosted image for
 # the build and deploy.
 pool:
   vmImage: 'ubuntu-latest'
