@@ -1,7 +1,7 @@
 # Azure DevOps pipeline to release a new version and deploy to production.
 
 variables:
-  HEALTHCHECK_PATH: '/info' 
+  HEALTHCHECK_PATH: '/info'
 
 parameters:
   - name: 'RELEASE_SEMVER'
@@ -23,7 +23,7 @@ pr: none
 # runtime, the pipeline is currently configured to use a Windows hosted image for
 # the build and deploy.
 pool:
-  vmImage: 'windows-2019'
+  vmImage: 'ubuntu-latest'
 
 resources:
   repositories: 
@@ -95,8 +95,8 @@ stages:
           - task: DotNetCoreCLI@2
             inputs:
               command: "build"
-              arguments: "-o bin"   
-          # Copy application to  
+              arguments: "-o bin"
+          # Copy application to
           - task: CopyFiles@2
             inputs:
               SourceFolder: '$(System.DefaultWorkingDirectory)'
@@ -118,12 +118,12 @@ stages:
                 !tsconfig.json
             displayName: 'Copy deploy files'
             
-          - task: AzureFunctionApp@1  
+          - task: AzureFunctionApp@1
             inputs:
               azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
-              resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
+              resourceGroupName: 'io-p-admin-rg'
               appType: 'functionApp'
-              appName: '$(PRODUCTION_APP_NAME)'
+              appName: 'io-p-admin-fn'
               package: '$(Build.ArtifactStagingDirectory)/'
               deploymentMethod: 'auto'
               deployToSlotOrASE: true
@@ -137,12 +137,12 @@ stages:
     dependsOn:
       - Deploy_staging
     jobs:
-      - job: 'do_healthcheck'       
-        steps:  
+      - job: 'do_healthcheck'
+        steps:
           - checkout: none
           - script: |
               # fails if response status is not 2xx
-              curl -f 'https://$(PRODUCTION_APP_NAME)-staging.azurewebsites.net/$(HEALTHCHECK_PATH)'
+              curl -f 'https://io-p-admin-fn-staging.azurewebsites.net/$(HEALTHCHECK_PATH)'
             displayName: 'Healthcheck'
 
   # Promote the staging instance to production
@@ -151,13 +151,13 @@ stages:
       - Healthcheck
       - Deploy_staging
     jobs:
-      - job: 'do_deploy'       
+      - job: 'do_deploy'
         steps:  
-          - task: AzureAppServiceManage@0   
+          - task: AzureAppServiceManage@0
             inputs:
               azureSubscription: '$(PRODUCTION_AZURE_SUBSCRIPTION)'
-              resourceGroupName: '$(PRODUCTION_RESOURCE_GROUP_NAME)'
-              webAppName: '$(PRODUCTION_APP_NAME)'
+              resourceGroupName: 'io-p-admin-rg'
+              webAppName: 'io-p-admin-fn'
               sourceSlot: staging
               swapWithProduction: true
             displayName: Swap with production slot
@@ -169,7 +169,7 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     jobs:
-      - job: publish_SDK   
+      - job: publish_SDK
         steps:
         # Template for generating and deploying client SDk to NPM
         - template: templates/client-sdk-publish/template.yaml@pagopaCommons
