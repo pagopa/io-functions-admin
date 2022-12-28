@@ -144,10 +144,19 @@
     universal-user-agent "^6.0.0"
     uuid "^8.3.0"
 
-"@azure/functions@^1.0.3", "@azure/functions@^1.2.3":
+"@azure/functions@^1.2.3":
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/@azure/functions/-/functions-1.2.3.tgz#65765837e7319eedffbf8a971cb2f78d4e043d54"
   integrity sha512-dZITbYPNg6ay6ngcCOjRUh1wDhlFITS0zIkqplyH5KfKEAVPooaoaye5mUFnR+WP9WdGRjlNXyl/y2tgWKHcRg==
+
+"@azure/functions@^3.5.0":
+  version "3.5.0"
+  resolved "https://registry.yarnpkg.com/@azure/functions/-/functions-3.5.0.tgz#64df210c676637ea720e9896d135046491f20d9b"
+  integrity sha512-RBYGdZIPYT17UPGBcXI9DPlpaEOO5D8r7pDpJsm/2N5eVrpqIRO8VZuoIiZiEQWV0LO3BZNzlvdS87pzBUBJzQ==
+  dependencies:
+    iconv-lite "^0.6.3"
+    long "^4.0.0"
+    uuid "^8.3.0"
 
 "@azure/graph@^4.0.1":
   version "4.3.0"
