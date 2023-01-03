@@ -9,7 +9,7 @@ import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { flow, pipe } from "fp-ts/lib/function";
-import { SuccessResponse } from "../generated/session-api/SuccessResponse";
+import { SuccessResponse } from "@pagopa/io-backend-session-sdk/SuccessResponse";
 import { Client } from "../utils/sessionApiClient";
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
