@@ -225,7 +225,7 @@
     "@azure/ms-rest-js" "^1.10.0"
     tslib "^1.9.3"
 
-"@azure/ms-rest-js@^1.1.0", "@azure/ms-rest-js@^1.10.0", "@azure/ms-rest-js@^1.5.0", "@azure/ms-rest-js@^1.8.1", "@azure/ms-rest-js@^1.8.13":
+"@azure/ms-rest-js@^1.1.0", "@azure/ms-rest-js@^1.10.0", "@azure/ms-rest-js@^1.5.0", "@azure/ms-rest-js@^1.8.1":
   version "1.11.2"
   resolved "https://registry.yarnpkg.com/@azure/ms-rest-js/-/ms-rest-js-1.11.2.tgz#e83d512b102c302425da5ff03a6d76adf2aa4ae6"
   integrity sha512-2AyQ1IKmLGKW7DU3/x3TsTBzZLcbC9YRI+yuDPuXAQrv3zar340K9wsxU413kHFIDjkWNCo9T0w5VtwcyWxhbQ==
@@ -239,22 +239,7 @@
     uuid "^3.2.1"
     xml2js "^0.4.19"
 
-"@azure/ms-rest-js@^2.0.4":
-  version "2.5.3"
-  resolved "https://registry.yarnpkg.com/@azure/ms-rest-js/-/ms-rest-js-2.5.3.tgz#20477408b931c37deebb369e0c718093eee2649e"
-  integrity sha512-OZ7qJwazS2nSRtZOA6+0k7x+RJ9D2P0IyUl9iHycyjgtQlINALNRutGqQeBirhIEx2IRQs9TMnnxoh/yRkFEAw==
-  dependencies:
-    "@azure/core-auth" "^1.1.4"
-    abort-controller "^3.0.0"
-    form-data "^2.5.0"
-    node-fetch "^2.6.0"
-    tough-cookie "^3.0.1"
-    tslib "^1.10.0"
-    tunnel "0.0.6"
-    uuid "^8.3.2"
-    xml2js "^0.4.19"
-
-"@azure/ms-rest-js@^2.6.4":
+"@azure/ms-rest-js@^2.0.4", "@azure/ms-rest-js@^2.6.4":
   version "2.6.4"
   resolved "https://registry.yarnpkg.com/@azure/ms-rest-js/-/ms-rest-js-2.6.4.tgz#b0a0f89841434471adf757d09e7e39e8ecfcd650"
   integrity sha512-2sbOpGhlBfv9itWdF7Qlk0CmoQCARxe5unwjNOprU7OdgEgabQncZ35L5u1A+zgdkVtNYF9Eo6XAhXzTweIhag==
@@ -269,15 +254,6 @@
     uuid "^8.3.2"
     xml2js "^0.4.19"
 
-"@azure/ms-rest-nodeauth@^2.0.6":
-  version "2.0.6"
-  resolved "https://registry.yarnpkg.com/@azure/ms-rest-nodeauth/-/ms-rest-nodeauth-2.0.6.tgz#e36b0b0647f1faa9f9f8b198bf00c614c3a54bed"
-  integrity sha512-vojQgq7bFUEkPwiPC6jnNf0BDg9V5DSmo8S7U0aA+BBZGDN39SqKdREtCUUTFC9x7YWo/e2/LnyoclomMwEwsw==
-  dependencies:
-    "@azure/ms-rest-azure-env" "^2.0.0"
-    "@azure/ms-rest-js" "^1.8.13"
-    adal-node "^0.1.28"
-
 "@azure/ms-rest-nodeauth@^3.0.6":
   version "3.0.10"
   resolved "https://registry.yarnpkg.com/@azure/ms-rest-nodeauth/-/ms-rest-nodeauth-3.0.10.tgz#bf5ae1ad2aa15e197cef0dd8af6d026cc0ebdd69"
@@ -286,6 +262,15 @@
     "@azure/ms-rest-azure-env" "^2.0.0"
     "@azure/ms-rest-js" "^2.0.4"
     adal-node "^0.2.2"
+
+"@azure/ms-rest-nodeauth@^3.0.8":
+  version "3.0.8"
+  resolved "https://registry.yarnpkg.com/@azure/ms-rest-nodeauth/-/ms-rest-nodeauth-3.0.8.tgz#381938aca692e19daa6c9febb2cbb95a8e689243"
+  integrity sha512-HmEkzAUGWxWHrwHysX9vE00cuK2WjxCYvBWV6cbsvm+eSm3VXpkGHPSoCHXyqUQOGqu58LXI4XFVJxFT/s40pA==
+  dependencies:
+    "@azure/ms-rest-azure-env" "^2.0.0"
+    "@azure/ms-rest-js" "^2.0.4"
+    adal-node "^0.1.28"
 
 "@azure/msal-common@^4.0.0":
   version "4.5.1"
