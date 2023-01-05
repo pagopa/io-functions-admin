@@ -18,7 +18,7 @@ import {
   lockUserSessionDefaultDecoder,
   UnlockUserSessionT,
   unlockUserSessionDefaultDecoder
-} from "../generated/session-api/requestTypes";
+} from "@pagopa/io-backend-session-sdk/requestTypes";
 import { identity } from "fp-ts/lib/function";
 
 export type ApiOperation = TypeofApiCall<LockUserSessionT> &

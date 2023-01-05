@@ -3,8 +3,8 @@
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { aFiscalCode } from "../../__mocks__/mocks";
 import { createMockFetch } from "../../__mocks__/node-fetch";
-import { ProblemJson } from "../../generated/session-api/ProblemJson";
-import { SuccessResponse } from "../../generated/session-api/SuccessResponse";
+import { ProblemJson } from "@pagopa/io-backend-session-sdk/ProblemJson";
+import { SuccessResponse } from "@pagopa/io-backend-session-sdk/SuccessResponse";
 import { createClient, WithDefaultsT } from "../sessionApiClient";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";

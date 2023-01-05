@@ -984,6 +984,15 @@
   resolved "https://registry.yarnpkg.com/@pagopa/express-azure-functions/-/express-azure-functions-2.0.0.tgz#eb52a0b997d931c1509372e2a9bea22a8ca85c17"
   integrity sha512-IFZqtk0e2sfkMZIxYqPORzxcKRkbIrVJesR6eMLNwzh1rA4bl2uh9ZHk1m55LNq4ZmaxREDu+1JcGlIaZQgKNQ==
 
+"@pagopa/io-backend-session-sdk@x":
+  version "9.7.0"
+  resolved "https://registry.yarnpkg.com/@pagopa/io-backend-session-sdk/-/io-backend-session-sdk-9.7.0.tgz#e32d3f1dcde5feb47ebedae992971485b98f2be6"
+  integrity sha512-xiRkZQrQN3LzcZ1cwV2ZTMASImHrjUoOTwvzKinQd5DvuyUYxTUBH4KrLQdFIhozjG0s9fzX9Becon9TJUjdKQ==
+  dependencies:
+    "@pagopa/ts-commons" "^10.0.0"
+    fp-ts "^2.10.5"
+    io-ts "^2.2.16"
+
 "@pagopa/io-functions-commons@^25.5.2":
   version "25.5.2"
   resolved "https://registry.yarnpkg.com/@pagopa/io-functions-commons/-/io-functions-commons-25.5.2.tgz#5bb04ded9551100ba2477ee6207735e82362368e"
