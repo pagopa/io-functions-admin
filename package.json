@@ -37,8 +37,6 @@
     "@types/upng-js": "^2.1.1",
     "auto-changelog": "^2.3.0",
     "azurite": "^3.13.1",
-    "danger": "^4.0.2",
-    "danger-plugin-digitalcitizenship": "^0.3.1",
     "dotenv-cli": "^3.2.0",
     "eslint-plugin-prettier": "^3.4.0",
     "fast-check": "^1.26.0",
