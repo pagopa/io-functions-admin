@@ -190,7 +190,7 @@ paths:
         type: string
         required: true
         description: The organization's fiscal code
-    put: 
+    put:
       summary: Upload Organization Logo
       description: |-
         Upload an organization logo for the given organization fiscal code.
@@ -516,6 +516,32 @@ paths:
           description: Too Many Requests
         "500":
           description: Internal server error
+  /subscriptions/{subscriptionId}:
+    get:
+      summary: Get specific subscription
+      description: Get a specific subscription information, that belongs to a particular subscription Id
+      operationId: getSubscription
+      parameters:
+        - name: subscriptionId
+          in: path
+          type: string
+          required: true
+          description: The id of the Subscription
+      responses:
+        "200":
+          description: Retrieved Subscription information
+          schema:
+            $ref: "#/definitions/Subscription"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Subscription not found
+        "500":
+          description: Internal server error
 definitions:
   DevelopmentProfile:
     type: object
@@ -765,6 +791,8 @@ definitions:
             type: string
           scope:
             type: string
+          owner_id:
+            type: string
         required:
           - scope
   SubscriptionState:
@@ -828,7 +856,7 @@ definitions:
       version:
         type: string
     required:
-     - version
+      - version
 responses: {}
 parameters:
   SandboxFiscalCode:
