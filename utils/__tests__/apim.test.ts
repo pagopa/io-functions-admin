@@ -1,4 +1,5 @@
-import { isErrorStatusCode } from "../apim";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { isErrorStatusCode, parseOwnerIdFullPath } from "../apim";
 
 class ErrorWithCode extends Error {
   public statusCode: number;
@@ -7,6 +8,15 @@ class ErrorWithCode extends Error {
     this.statusCode = statusCode;
   }
 }
+
+describe("Get Owner Id from Full Path", () => {
+  it("should retrieve the ID", () => {
+    const res = parseOwnerIdFullPath(
+      "/subscriptions/subid/resourceGroups/{resourceGroup}/providers/Microsoft.ApiManagement/service/{apimService}/users/5931a75ae4bbd512a88c680b" as NonEmptyString
+    );
+    expect(res).toBe("5931a75ae4bbd512a88c680b");
+  });
+});
 
 describe("isErrorStatusCode", () => {
   it.each`
