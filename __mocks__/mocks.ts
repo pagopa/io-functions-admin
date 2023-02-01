@@ -43,7 +43,7 @@ import {
 
 import { MessageBodyMarkdown } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageBodyMarkdown";
 import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
-import { MessageStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageStatusValue";
+import { NotRejectedMessageStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotRejectedMessageStatusValue";
 import { MessageSubject } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageSubject";
 import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
 import { NotificationChannelStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannelStatusValue";
@@ -243,7 +243,7 @@ const aComponents: Components = {
 
 const aStatus: Status = {
   archived: false,
-  processing: MessageStatusValueEnum.PROCESSED,
+  processing: NotRejectedMessageStatusValueEnum.PROCESSED,
   read: false
 };
 
@@ -333,7 +333,7 @@ export const aRetrievedNotificationStatus = {
 
 export const aSerializedMessageStatus = {
   messageId: aMessageId,
-  status: MessageStatusValueEnum.ACCEPTED,
+  status: NotRejectedMessageStatusValueEnum.ACCEPTED,
   updatedAt: new Date().toISOString()
 };
 
