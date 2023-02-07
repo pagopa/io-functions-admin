@@ -10,7 +10,7 @@ import {
   parseOwnerIdFullPath
 } from "../../utils/apim";
 import { GetSubscriptionHandler } from "../handler";
-import { Subscription } from "../../generated/definitions/Subscription";
+import { SubscriptionWithoutKeys } from "../../generated/definitions/SubscriptionWithoutKeys";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 jest.mock("@azure/arm-apimanagement");
@@ -41,7 +41,7 @@ const aValidSubscription: SubscriptionContract = {
   displayName: undefined,
   endDate: undefined,
   expirationDate: undefined,
-  id: undefined,
+  id: "12345",
   name: undefined,
   notificationDate: undefined,
   ownerId: fakeFullPathSubscriptionOwnerId,
@@ -52,11 +52,6 @@ const aValidSubscription: SubscriptionContract = {
   state: "active",
   stateComment: undefined,
   type: undefined
-};
-
-const anInvalidSubscription: SubscriptionContract = {
-  ...aValidSubscription,
-  ownerId: "an-invalid-owner-id"
 };
 
 const mockSubscription = jest.fn();
@@ -141,13 +136,11 @@ describe("GetSubscription", () => {
         owner_id: parseOwnerIdFullPath(
           aValidSubscription.ownerId as NonEmptyString
         ),
-        primary_key: aValidSubscription.primaryKey,
-        scope: aValidSubscription.scope,
-        secondary_key: aValidSubscription.secondaryKey
+        scope: aValidSubscription.scope
       }
     });
     expect(
-      E.isRight(Subscription.decode((response as any).value))
+      E.isRight(SubscriptionWithoutKeys.decode((response as any).value))
     ).toBeTruthy();
   });
 });

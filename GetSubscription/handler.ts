@@ -19,7 +19,7 @@ import {
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { pipe } from "fp-ts/lib/function";
 
-import { Subscription } from "../generated/definitions/Subscription";
+import { SubscriptionWithoutKeys } from "../generated/definitions/SubscriptionWithoutKeys";
 import {
   getApiClient,
   getSubscription,
@@ -35,7 +35,7 @@ type IGetSubscriptionHandler = (
   auth: IAzureApiAuthorization,
   subscriptionid: NonEmptyString
 ) => Promise<
-  | IResponseSuccessJson<Subscription>
+  | IResponseSuccessJson<SubscriptionWithoutKeys>
   | IResponseErrorInternal
   | IResponseErrorNotFound
 >;
@@ -75,9 +75,7 @@ export function GetSubscriptionHandler(
               owner_id: parseOwnerIdFullPath(
                 subscription.ownerId as NonEmptyString
               ),
-              primary_key: subscription.primaryKey,
-              scope: subscription.scope,
-              secondary_key: subscription.secondaryKey
+              scope: subscription.scope
             })
           )
         )

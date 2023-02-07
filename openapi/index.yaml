@@ -531,7 +531,7 @@ paths:
         "200":
           description: Retrieved Subscription information
           schema:
-            $ref: "#/definitions/Subscription"
+            $ref: "#/definitions/SubscriptionWithoutKeys"
         "400":
           description: Bad request
         "401":
@@ -791,10 +791,19 @@ definitions:
             type: string
           scope:
             type: string
-          owner_id:
-            type: string
         required:
           - scope
+  SubscriptionWithoutKeys:
+    type: object
+    properties:
+      id:
+        type: string
+      scope:
+        type: string
+      owner_id:
+        type: string
+    required:
+      - scope
   SubscriptionState:
     type: string
     x-extensible-enum:
