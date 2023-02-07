@@ -11,6 +11,7 @@ import { flow, identity, pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/Either";
+
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -19,6 +20,7 @@ import {
 } from "@pagopa/ts-commons/lib/responses";
 import { parse } from "fp-ts/lib/Json";
 import { RestError } from "@azure/ms-rest-js";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 export interface IServicePrincipalCreds {
   readonly clientId: string;
   readonly secret: string;
@@ -201,3 +203,17 @@ export const isErrorStatusCode = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (error as any).statusCode === statusCode;
 };
+
+/*
+ ** The right full path for ownerID is in this kind of format:
+ ** "/subscriptions/subid/resourceGroups/{resourceGroup}/providers/Microsoft.ApiManagement/service/{apimService}/users/5931a75ae4bbd512a88c680b",
+ ** resouce link: https://docs.microsoft.com/en-us/rest/api/apimanagement/current-ga/subscription/get
+ */
+export const parseOwnerIdFullPath = (
+  fullPath: NonEmptyString
+): NonEmptyString =>
+  pipe(
+    fullPath,
+    f => f.split("/"),
+    a => a[a.length - 1] as NonEmptyString
+  );
