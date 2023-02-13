@@ -14,7 +14,7 @@ import * as O from "fp-ts/lib/Option";
 import {
   ABORT_EVENT as ABORT_DELETE_EVENT,
   makeOrchestratorId as makeDeleteOrchestratorId
-} from "../UserDataDeleteOrchestrator/utils";
+} from "../UserDataDeleteOrchestratorV2/utils";
 import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
 import {
   trackUserDataDeleteEvent,

@@ -10,7 +10,7 @@ import * as TE from "fp-ts/lib/TaskEither";
 import { pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
 import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
-import { makeOrchestratorId as makeDeleteOrchestratorId } from "../UserDataDeleteOrchestrator/utils";
+import { makeOrchestratorId as makeDeleteOrchestratorId } from "../UserDataDeleteOrchestratorV2/utils";
 
 // Activity input
 export const ActivityInput = t.interface({
