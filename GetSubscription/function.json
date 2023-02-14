@@ -5,7 +5,7 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "route": "adm/subscription/{subscriptionid}",
+      "route": "adm/subscriptions/{subscriptionid}",
       "methods": [
         "get"
       ]
