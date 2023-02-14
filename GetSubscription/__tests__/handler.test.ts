@@ -12,6 +12,7 @@ import {
 import { GetSubscriptionHandler } from "../handler";
 import { SubscriptionWithoutKeys } from "../../generated/definitions/SubscriptionWithoutKeys";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { RestError } from "@azure/ms-rest-js";
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
@@ -94,7 +95,7 @@ describe("GetSubscription", () => {
 
   it("should return a not found error response if the API management client doesn't retrieve a subscription", async () => {
     mockSubscription.mockImplementation(() =>
-      Promise.reject({ statusCode: 404 })
+      Promise.reject(new RestError("not found", "Not Found", 404))
     );
 
     const getSubscriptionHandler = GetSubscriptionHandler(
