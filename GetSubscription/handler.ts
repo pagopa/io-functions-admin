@@ -1,5 +1,6 @@
 import { Context } from "@azure/functions";
 import * as express from "express";
+import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
@@ -14,6 +15,8 @@ import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
   IResponseSuccessJson,
+  ResponseErrorInternal,
+  ResponseErrorNotFound,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
@@ -22,13 +25,10 @@ import { pipe } from "fp-ts/lib/function";
 import { SubscriptionWithoutKeys } from "../generated/definitions/SubscriptionWithoutKeys";
 import {
   getApiClient,
-  getSubscription,
-  mapApimRestError,
   IAzureApimConfig,
   IServicePrincipalCreds,
   parseOwnerIdFullPath
 } from "../utils/apim";
-import { genericInternalErrorHandler } from "../utils/errorHandler";
 
 type IGetSubscriptionHandler = (
   context: Context,
@@ -46,43 +46,43 @@ export function GetSubscriptionHandler(
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  return async (context, _, subscriptionId) => {
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    const internalErrorHandler = (errorMessage: string, error: Error) =>
-      genericInternalErrorHandler(
-        context,
-        "GetSubscription | " + errorMessage,
-        error,
-        errorMessage
-      );
-    return pipe(
+  return async (context, _, subscriptionId) =>
+    pipe(
       getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
-      TE.mapLeft(error =>
-        internalErrorHandler("Could not get the APIM client.", error)
-      ),
-      TE.chain(apim =>
-        pipe(
-          getSubscription(
-            apim,
-            azureApimConfig.apimResourceGroup,
-            azureApimConfig.apim,
-            subscriptionId
-          ),
-          TE.mapLeft(mapApimRestError("Subscription")),
-          TE.map(subscription =>
-            ResponseSuccessJson({
-              id: subscription.id,
-              owner_id: parseOwnerIdFullPath(
-                subscription.ownerId as NonEmptyString
-              ),
-              scope: subscription.scope
-            })
-          )
+      TE.chain(apiClient =>
+        TE.tryCatch(
+          () =>
+            apiClient.subscription.get(
+              azureApimConfig.apimResourceGroup,
+              azureApimConfig.apim,
+              subscriptionId
+            ),
+          E.toError
         )
       ),
+      TE.map(subscription =>
+        ResponseSuccessJson({
+          id: subscription.id,
+          owner_id: parseOwnerIdFullPath(
+            subscription.ownerId as NonEmptyString
+          ),
+          scope: subscription.scope
+        })
+      ),
+      TE.mapLeft(error => {
+        context.log.error(error);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const anyError = error as any;
+        if ("statusCode" in anyError && anyError.statusCode === 404) {
+          return ResponseErrorNotFound(
+            "Not found",
+            "The required resource does not exist"
+          );
+        }
+        return ResponseErrorInternal("Internal server error");
+      }),
       TE.toUnion
     )();
-  };
 }
 
 /**
