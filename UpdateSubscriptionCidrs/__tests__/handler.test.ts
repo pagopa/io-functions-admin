@@ -2,24 +2,19 @@
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { SubscriptionContract } from "@azure/arm-apimanagement/esm/models";
 import * as E from "fp-ts/lib/Either";
-import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as ApimUtils from "../../utils/apim";
-import {
-  IAzureApimConfig,
-  IServicePrincipalCreds,
-  parseOwnerIdFullPath
-} from "../../utils/apim";
-import { GetSubscriptionHandler } from "../handler";
-import { SubscriptionWithoutKeys } from "../../generated/definitions/SubscriptionWithoutKeys";
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { RestError } from "@azure/ms-rest-js";
+import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { UpdateSubscriptionCidrsHandler } from "../handler";
+import { CIDR } from "@pagopa/ts-commons/lib/strings";
 import { none } from "fp-ts/lib/Option";
 import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
 import {
   CosmosErrors,
   toCosmosErrorResponse
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { CIDRsPayload } from "../../generated/definitions/CIDRsPayload";
+import { toAuthorizedCIDRs } from "@pagopa/io-functions-commons/dist/src/models/service";
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
@@ -35,8 +30,6 @@ const fakeApimConfig: IAzureApimConfig = {
   apimResourceGroup: "resource group",
   subscriptionId: "subscription id"
 };
-
-const fakeSubscriptionId = "a-non-empty-string";
 
 const fakeSubscriptionOwnerId = "5931a75ae4bbd512a88c680b";
 const fakeFullPathSubscriptionOwnerId =
@@ -62,6 +55,8 @@ const aValidSubscription: SubscriptionContract = {
   type: undefined
 };
 
+const aCIDRsPayload = [("1.2.3.4/5" as any) as CIDR] as any;
+
 const mockSubscription = jest.fn();
 
 const mockApiManagementClient = ApiManagementClient as jest.Mock;
@@ -80,158 +75,143 @@ const mockLog = jest.fn();
 const mockedContext = { log: { error: mockLog } };
 
 // eslint-disable-next-line sonar/sonar-max-lines-per-function
-describe("GetSubscription", () => {
+describe("UpdateSubscriptionCidrs", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
-      TE.left(Error("Error from ApiManagementClient constructor"))
+      TE.left(Error("Error on APIM client creation"))
     );
     const mockSubscriptionCIDRsModel = {
-      findLastVersionByModelId: jest.fn(() => {
+      upsert: jest.fn(() => {
         return TE.right(none);
       })
     };
 
-    const getSubscriptionHandler = GetSubscriptionHandler(
+    const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig,
       (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
     );
 
-    const response = await getSubscriptionHandler(
+    const response = await updateSubscriptionCidrs(
       mockedContext as any,
+      undefined as any,
       undefined as any,
       undefined as any
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
-    expect(
-      mockSubscriptionCIDRsModel.findLastVersionByModelId
-    ).not.toBeCalled();
+    expect(mockSubscriptionCIDRsModel.upsert).not.toBeCalled();
   });
 
-  it("should return a not found error response if the API management client doesn't retrieve a subscription", async () => {
-    mockSubscription.mockImplementation(() =>
-      Promise.reject(new RestError("not found", "Not Found", 404))
-    );
+  it("should return an internal error response if the apiclient get subscription returns an error", async () => {
+    mockApiManagementClient.mockImplementation(() => ({
+      subscription: {
+        get: jest.fn(() => {
+          return Promise.reject(new Error("error"));
+        })
+      }
+    }));
+
     const mockSubscriptionCIDRsModel = {
-      findLastVersionByModelId: jest.fn(() => {
+      upsert: jest.fn(() => {
         return TE.right(none);
       })
     };
 
-    const getSubscriptionHandler = GetSubscriptionHandler(
+    const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig,
       (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
     );
 
-    const response = await getSubscriptionHandler(
+    const response = await updateSubscriptionCidrs(
       mockedContext as any,
+      undefined as any,
       undefined as any,
       undefined as any
     );
 
-    expect(response.kind).toEqual("IResponseErrorNotFound");
-    expect(
-      mockSubscriptionCIDRsModel.findLastVersionByModelId
-    ).not.toBeCalled();
+    expect(response.kind).toEqual("IResponseErrorInternal");
+    expect(mockSubscriptionCIDRsModel.upsert).not.toBeCalled();
   });
 
-  it("should return an internal server error response if the Subscription CIDRs model return a CosmosError", async () => {
-    mockSubscription.mockImplementationOnce(() => {
-      const apimResponse = aValidSubscription;
-      return Promise.resolve(apimResponse);
-    });
-    const mockSubscriptionCIDRsModel = {
-      findLastVersionByModelId: jest.fn(() =>
-        TE.left(
-          Promise.reject(toCosmosErrorResponse("db error") as CosmosErrors)
+  it("should return an error query response if cosmos returns an error", async () => {
+    mockApiManagementClient.mockImplementation(() => ({
+      subscription: {
+        get: jest.fn(() =>
+          Promise.resolve({
+            ...((aValidSubscription as any) as SubscriptionContract)
+          })
         )
-      )
-    };
+      }
+    }));
 
-    const getSubscriptionHandler = GetSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
-    );
-
-    const response = await getSubscriptionHandler(
-      mockedContext as any,
-      undefined as any,
-      undefined as any
-    );
-
-    expect(mockSubscriptionCIDRsModel.findLastVersionByModelId).toBeCalledTimes(
-      1
-    );
-    expect(response.kind).toEqual("IResponseErrorInternal");
-  });
-
-  it("should return a not found error response if the Subscription CIDRs model return a None", async () => {
-    mockSubscription.mockImplementationOnce(() => {
-      const apimResponse = aValidSubscription;
-      return Promise.resolve(apimResponse);
-    });
     const mockSubscriptionCIDRsModel = {
-      findLastVersionByModelId: jest.fn(() => TE.of(O.none))
-    };
-
-    const getSubscriptionHandler = GetSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
-    );
-
-    const response = await getSubscriptionHandler(
-      mockedContext as any,
-      undefined as any,
-      undefined as any
-    );
-
-    expect(mockSubscriptionCIDRsModel.findLastVersionByModelId).toBeCalledTimes(
-      1
-    );
-    expect(response.kind).toEqual("IResponseErrorNotFound");
-  });
-
-  it("should return subscription information with related cidrs", async () => {
-    mockSubscription.mockImplementationOnce(() => {
-      const apimResponse = aValidSubscription;
-      return Promise.resolve(apimResponse);
-    });
-    const mockSubscriptionCIDRsModel = {
-      findLastVersionByModelId: jest.fn(() => {
-        return TE.right(O.some({ subscriptionId: "12345", cidrs: [] }));
+      upsert: jest.fn(() => {
+        return TE.left(
+          Promise.reject(toCosmosErrorResponse("db error") as CosmosErrors)
+        );
       })
     };
 
-    const getSubscriptionHandler = GetSubscriptionHandler(
+    const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig,
       (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
     );
 
-    const response = await getSubscriptionHandler(
+    const response = await updateSubscriptionCidrs(
       mockedContext as any,
       undefined as any,
-      fakeSubscriptionId as NonEmptyString
+      undefined as any,
+      aCIDRsPayload
     );
 
+    expect(response.kind).toEqual("IResponseErrorQuery");
+    expect(mockSubscriptionCIDRsModel.upsert).toBeCalledTimes(1);
+  });
+
+  it("should return an updated CIDRsPayload", async () => {
+    mockApiManagementClient.mockImplementation(() => ({
+      subscription: {
+        get: jest.fn(() =>
+          Promise.resolve({
+            ...((aValidSubscription as any) as SubscriptionContract)
+          })
+        )
+      }
+    }));
+
+    const mockSubscriptionCIDRsModel = {
+      upsert: jest.fn(() => {
+        return TE.right({
+          cidrs: (["1.2.3.4/5"] as unknown) as CIDR[],
+          subscriptionId: "aSubscriptionId"
+        });
+      })
+    };
+
+    const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
+      fakeServicePrincipalCredentials,
+      fakeApimConfig,
+      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+    );
+
+    const response = await updateSubscriptionCidrs(
+      mockedContext as any,
+      undefined as any,
+      undefined as any,
+      aCIDRsPayload
+    );
+
+    expect(mockSubscriptionCIDRsModel.upsert).toBeCalledTimes(1);
     expect(response).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",
-      value: {
-        id: aValidSubscription.id,
-        owner_id: parseOwnerIdFullPath(
-          aValidSubscription.ownerId as NonEmptyString
-        ),
-        scope: aValidSubscription.scope,
-        authorized_cidrs: []
-      }
+      value: aCIDRsPayload
     });
     expect(
-      E.isRight(SubscriptionWithoutKeys.decode((response as any).value))
+      E.isRight(CIDRsPayload.decode((response as any).value))
     ).toBeTruthy();
   });
 });

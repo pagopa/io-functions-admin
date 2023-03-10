@@ -15,7 +15,7 @@ import {
 
 import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
-import { GetSubscription } from "./handler";
+import { UpdateSubscriptionCidrs } from "./handler";
 
 const config = getConfigOrThrow();
 
@@ -50,9 +50,9 @@ const app = express();
 secureExpressApp(app);
 
 // Add express route
-app.get(
-  "/adm/subscriptions/:subscriptionid",
-  GetSubscription(
+app.put(
+  "/adm/subscriptions/:subscriptionid/cidrs",
+  UpdateSubscriptionCidrs(
     servicePrincipalCreds,
     azureApimConfig,
     subscriptionCIDRsModel
