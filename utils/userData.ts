@@ -45,7 +45,7 @@ export const AllUserData = t.interface({
     t.exact(MessageContentWithId),
     "MessageContentList"
   ),
-  messageStatuses: t.readonlyArray(t.exact(MessageStatus), "MessageStatusList"),
+  messageStatuses: t.readonlyArray(MessageStatus, "MessageStatusList"),
   messages: t.readonlyArray(t.exact(MessageWithoutContent), "MessageList"),
   messagesView: t.readonlyArray(t.exact(MessageView), "MessageViewList"),
   notificationStatuses: t.readonlyArray(
