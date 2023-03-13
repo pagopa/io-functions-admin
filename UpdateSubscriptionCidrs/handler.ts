@@ -27,6 +27,7 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
 import { toAuthorizedCIDRs } from "@pagopa/io-functions-commons/dist/src/models/service";
 import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
+import { pipe } from "fp-ts/lib/function";
 import {
   getApiClient,
   IAzureApimConfig,
@@ -46,6 +47,35 @@ type IUpdateSubscriptionCidrsHandler = (
   | IResponseErrorQuery
 >;
 
+const subscriptionExists = (
+  servicePrincipalCreds: IServicePrincipalCreds,
+  azureApimConfig: IAzureApimConfig,
+  subscriptionId: NonEmptyString
+): TE.TaskEither<IResponseErrorInternal, true> =>
+  pipe(
+    getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+    TE.mapLeft(_ =>
+      ResponseErrorInternal("Error trying to get Api Management Client")
+    ),
+    TE.chainW(apiClient =>
+      pipe(
+        TE.tryCatch(
+          () =>
+            apiClient.subscription.get(
+              azureApimConfig.apimResourceGroup,
+              azureApimConfig.apim,
+              subscriptionId
+            ),
+          E.toError
+        ),
+        TE.mapLeft(_ =>
+          ResponseErrorInternal("Error trying to get APIM Subscription")
+        ),
+        TE.map(_ => true)
+      )
+    )
+  );
+
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateSubscriptionCidrsHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
@@ -54,26 +84,13 @@ export function UpdateSubscriptionCidrsHandler(
 ): IUpdateSubscriptionCidrsHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, subscriptionId, cidrs) => {
-    const errorOrApiManagementClient = await getApiClient(
+    const maybeSubscriptionExists = await subscriptionExists(
       servicePrincipalCreds,
-      azureApimConfig.subscriptionId
+      azureApimConfig,
+      subscriptionId
     )();
-    if (E.isLeft(errorOrApiManagementClient)) {
-      return ResponseErrorInternal("Error trying to get Api Management Client");
-    }
-
-    const apiClient = errorOrApiManagementClient.right;
-    const errorOrSubscriptionResponse = await TE.tryCatch(
-      () =>
-        apiClient.subscription.get(
-          azureApimConfig.apimResourceGroup,
-          azureApimConfig.apim,
-          subscriptionId
-        ),
-      E.toError
-    )();
-    if (E.isLeft(errorOrSubscriptionResponse)) {
-      return ResponseErrorInternal("Error trying to get APIM Subscription");
+    if (E.isLeft(maybeSubscriptionExists)) {
+      return maybeSubscriptionExists.left;
     }
 
     const errorOrMaybeUpdatedSubscriptionCIDRs = await subscriptionCIDRsModel.upsert(

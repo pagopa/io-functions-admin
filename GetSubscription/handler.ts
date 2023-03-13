@@ -48,10 +48,9 @@ const getSubscriptionCIDRs = (
   subscription: SubscriptionGetResponse
 ) => (
   subscriptionCIDRsModel: SubscriptionCIDRsModel
-): Promise<
-  | IResponseSuccessJson<SubscriptionWithoutKeys>
-  | IResponseErrorInternal
-  | IResponseErrorNotFound
+): TE.TaskEither<
+  IResponseErrorInternal,
+  IResponseErrorNotFound | IResponseSuccessJson<SubscriptionWithoutKeys>
 > =>
   pipe(
     subscriptionCIDRsModel.findLastVersionByModelId([
@@ -72,9 +71,8 @@ const getSubscriptionCIDRs = (
             "The required document does not exist"
           )
     ),
-    TE.mapLeft(_ => ResponseErrorInternal(`Internal server error - db error`)),
-    TE.toUnion
-  )();
+    TE.mapLeft(_ => ResponseErrorInternal(`Internal server error - db error`))
+  );
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetSubscriptionHandler(
@@ -97,7 +95,7 @@ export function GetSubscriptionHandler(
           E.toError
         )
       ),
-      TE.map(subscription =>
+      TE.chainW(subscription =>
         getSubscriptionCIDRs(
           subscriptionId,
           subscription
