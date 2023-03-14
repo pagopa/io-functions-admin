@@ -103,7 +103,7 @@ describe("UpdateSubscriptionCidrs", () => {
     expect(mockSubscriptionCIDRsModel.upsert).not.toBeCalled();
   });
 
-  it("should return an internal error response if the apiclient get subscription returns an error", async () => {
+  it("should return a not found error response if the apiclient get subscription returns an error", async () => {
     mockApiManagementClient.mockImplementation(() => ({
       subscription: {
         get: jest.fn(() => {
@@ -131,7 +131,7 @@ describe("UpdateSubscriptionCidrs", () => {
       undefined as any
     );
 
-    expect(response.kind).toEqual("IResponseErrorInternal");
+    expect(response.kind).toEqual("IResponseErrorNotFound");
     expect(mockSubscriptionCIDRsModel.upsert).not.toBeCalled();
   });
 

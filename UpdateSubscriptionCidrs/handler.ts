@@ -16,6 +16,7 @@ import {
   IResponseErrorNotFound,
   IResponseSuccessJson,
   ResponseErrorInternal,
+  ResponseErrorNotFound,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
@@ -51,7 +52,7 @@ const subscriptionExists = (
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   subscriptionId: NonEmptyString
-): TE.TaskEither<IResponseErrorInternal, true> =>
+): TE.TaskEither<IResponseErrorInternal | IResponseErrorNotFound, true> =>
   pipe(
     getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
     TE.mapLeft(_ =>
@@ -69,7 +70,10 @@ const subscriptionExists = (
           E.toError
         ),
         TE.mapLeft(_ =>
-          ResponseErrorInternal("Error trying to get APIM Subscription")
+          ResponseErrorNotFound(
+            "Subscription not found",
+            "Error trying to get APIM Subscription"
+          )
         ),
         TE.map(_ => true)
       )
