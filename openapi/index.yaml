@@ -836,16 +836,8 @@ definitions:
         type: string
       owner_id:
         type: string
-      authorized_cidrs:
-        description: |-
-          Allowed source IPs or CIDRs for this subscription.
-          When empty, every IP address is authorized.
-        type: array
-        items:
-          $ref: "#/definitions/CIDR"
     required:
       - scope
-      - authorized_cidrs
   CIDRsPayload:
     type: array
     items:

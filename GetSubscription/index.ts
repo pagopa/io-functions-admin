@@ -8,13 +8,8 @@ import { AzureContextTransport } from "@pagopa/io-functions-commons/dist/src/uti
 import { setAppContext } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 
 import createAzureFunctionHandler from "@pagopa/express-azure-functions/dist/src/createAzureFunctionsHandler";
-import {
-  SUBSCRIPTION_CIDRS_COLLECTION_NAME,
-  SubscriptionCIDRsModel
-} from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
 
 import { getConfigOrThrow } from "../utils/config";
-import { cosmosdbClient } from "../utils/cosmosdb";
 import { GetSubscription } from "./handler";
 
 const config = getConfigOrThrow();
@@ -30,14 +25,6 @@ const azureApimConfig = {
   subscriptionId: config.AZURE_SUBSCRIPTION_ID
 };
 
-const subscriptionCIDRsContainer = cosmosdbClient
-  .database(config.COSMOSDB_NAME)
-  .container(SUBSCRIPTION_CIDRS_COLLECTION_NAME);
-
-const subscriptionCIDRsModel = new SubscriptionCIDRsModel(
-  subscriptionCIDRsContainer
-);
-
 // eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
@@ -52,11 +39,7 @@ secureExpressApp(app);
 // Add express route
 app.get(
   "/adm/subscriptions/:subscriptionid",
-  GetSubscription(
-    servicePrincipalCreds,
-    azureApimConfig,
-    subscriptionCIDRsModel
-  )
+  GetSubscription(servicePrincipalCreds, azureApimConfig)
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);

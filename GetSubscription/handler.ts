@@ -22,9 +22,6 @@ import {
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { pipe } from "fp-ts/lib/function";
 
-import { SubscriptionGetResponse } from "@azure/arm-apimanagement/esm/models";
-import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
-import { isSome } from "fp-ts/lib/Option";
 import { SubscriptionWithoutKeys } from "../generated/definitions/SubscriptionWithoutKeys";
 import {
   getApiClient,
@@ -43,42 +40,10 @@ type IGetSubscriptionHandler = (
   | IResponseErrorNotFound
 >;
 
-const getSubscriptionCIDRs = (
-  subscriptionId: string,
-  subscription: SubscriptionGetResponse
-) => (
-  subscriptionCIDRsModel: SubscriptionCIDRsModel
-): TE.TaskEither<
-  IResponseErrorInternal,
-  IResponseErrorNotFound | IResponseSuccessJson<SubscriptionWithoutKeys>
-> =>
-  pipe(
-    subscriptionCIDRsModel.findLastVersionByModelId([
-      subscriptionId as NonEmptyString
-    ]),
-    TE.map(subscriptionCIDRs =>
-      isSome(subscriptionCIDRs)
-        ? ResponseSuccessJson({
-            authorized_cidrs: Array.from(subscriptionCIDRs.value.cidrs),
-            id: subscription.id,
-            owner_id: parseOwnerIdFullPath(
-              subscription.ownerId as NonEmptyString
-            ),
-            scope: subscription.scope
-          } as SubscriptionWithoutKeys)
-        : ResponseErrorNotFound(
-            "Not found",
-            "The required document does not exist"
-          )
-    ),
-    TE.mapLeft(_ => ResponseErrorInternal(`Internal server error - db error`))
-  );
-
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetSubscriptionHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
-  azureApimConfig: IAzureApimConfig,
-  subscriptionCIDRsModel: SubscriptionCIDRsModel
+  azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, subscriptionId) =>
@@ -95,11 +60,14 @@ export function GetSubscriptionHandler(
           E.toError
         )
       ),
-      TE.chainW(subscription =>
-        getSubscriptionCIDRs(
-          subscriptionId,
-          subscription
-        )(subscriptionCIDRsModel)
+      TE.map(subscription =>
+        ResponseSuccessJson({
+          id: subscription.id,
+          owner_id: parseOwnerIdFullPath(
+            subscription.ownerId as NonEmptyString
+          ),
+          scope: subscription.scope
+        })
       ),
       TE.mapLeft(error => {
         context.log.error(error);
@@ -123,13 +91,11 @@ export function GetSubscriptionHandler(
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetSubscription(
   servicePrincipalCreds: IServicePrincipalCreds,
-  azureApimConfig: IAzureApimConfig,
-  subscriptionCIDRsModel: SubscriptionCIDRsModel
+  azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {
   const handler = GetSubscriptionHandler(
     servicePrincipalCreds,
-    azureApimConfig,
-    subscriptionCIDRsModel
+    azureApimConfig
   );
 
   const middlewaresWrap = withRequestMiddlewares(

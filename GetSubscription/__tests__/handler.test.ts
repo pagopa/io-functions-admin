@@ -2,7 +2,6 @@
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { SubscriptionContract } from "@azure/arm-apimanagement/esm/models";
 import * as E from "fp-ts/lib/Either";
-import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as ApimUtils from "../../utils/apim";
 import {
@@ -14,12 +13,6 @@ import { GetSubscriptionHandler } from "../handler";
 import { SubscriptionWithoutKeys } from "../../generated/definitions/SubscriptionWithoutKeys";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { RestError } from "@azure/ms-rest-js";
-import { none } from "fp-ts/lib/Option";
-import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
-import {
-  CosmosErrors,
-  toCosmosErrorResponse
-} from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
@@ -85,16 +78,10 @@ describe("GetSubscription", () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
       TE.left(Error("Error from ApiManagementClient constructor"))
     );
-    const mockSubscriptionCIDRsModel = {
-      findLastVersionByModelId: jest.fn(() => {
-        return TE.right(none);
-      })
-    };
 
     const getSubscriptionHandler = GetSubscriptionHandler(
       fakeServicePrincipalCredentials,
-      fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+      fakeApimConfig
     );
 
     const response = await getSubscriptionHandler(
@@ -104,25 +91,16 @@ describe("GetSubscription", () => {
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
-    expect(
-      mockSubscriptionCIDRsModel.findLastVersionByModelId
-    ).not.toBeCalled();
   });
 
   it("should return a not found error response if the API management client doesn't retrieve a subscription", async () => {
     mockSubscription.mockImplementation(() =>
       Promise.reject(new RestError("not found", "Not Found", 404))
     );
-    const mockSubscriptionCIDRsModel = {
-      findLastVersionByModelId: jest.fn(() => {
-        return TE.right(none);
-      })
-    };
 
     const getSubscriptionHandler = GetSubscriptionHandler(
       fakeServicePrincipalCredentials,
-      fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+      fakeApimConfig
     );
 
     const response = await getSubscriptionHandler(
@@ -132,84 +110,17 @@ describe("GetSubscription", () => {
     );
 
     expect(response.kind).toEqual("IResponseErrorNotFound");
-    expect(
-      mockSubscriptionCIDRsModel.findLastVersionByModelId
-    ).not.toBeCalled();
   });
 
-  it("should return an internal server error response if the Subscription CIDRs model return a CosmosError", async () => {
+  it("should return subscription information", async () => {
     mockSubscription.mockImplementationOnce(() => {
       const apimResponse = aValidSubscription;
       return Promise.resolve(apimResponse);
     });
-    const mockSubscriptionCIDRsModel = {
-      findLastVersionByModelId: jest.fn(() =>
-        TE.left(
-          Promise.reject(toCosmosErrorResponse("db error") as CosmosErrors)
-        )
-      )
-    };
 
     const getSubscriptionHandler = GetSubscriptionHandler(
       fakeServicePrincipalCredentials,
-      fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
-    );
-
-    const response = await getSubscriptionHandler(
-      mockedContext as any,
-      undefined as any,
-      undefined as any
-    );
-
-    expect(mockSubscriptionCIDRsModel.findLastVersionByModelId).toBeCalledTimes(
-      1
-    );
-    expect(response.kind).toEqual("IResponseErrorInternal");
-  });
-
-  it("should return a not found error response if the Subscription CIDRs model return a None", async () => {
-    mockSubscription.mockImplementationOnce(() => {
-      const apimResponse = aValidSubscription;
-      return Promise.resolve(apimResponse);
-    });
-    const mockSubscriptionCIDRsModel = {
-      findLastVersionByModelId: jest.fn(() => TE.of(O.none))
-    };
-
-    const getSubscriptionHandler = GetSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
-    );
-
-    const response = await getSubscriptionHandler(
-      mockedContext as any,
-      undefined as any,
-      undefined as any
-    );
-
-    expect(mockSubscriptionCIDRsModel.findLastVersionByModelId).toBeCalledTimes(
-      1
-    );
-    expect(response.kind).toEqual("IResponseErrorNotFound");
-  });
-
-  it("should return subscription information with related cidrs", async () => {
-    mockSubscription.mockImplementationOnce(() => {
-      const apimResponse = aValidSubscription;
-      return Promise.resolve(apimResponse);
-    });
-    const mockSubscriptionCIDRsModel = {
-      findLastVersionByModelId: jest.fn(() => {
-        return TE.right(O.some({ subscriptionId: "12345", cidrs: [] }));
-      })
-    };
-
-    const getSubscriptionHandler = GetSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+      fakeApimConfig
     );
 
     const response = await getSubscriptionHandler(
@@ -226,8 +137,7 @@ describe("GetSubscription", () => {
         owner_id: parseOwnerIdFullPath(
           aValidSubscription.ownerId as NonEmptyString
         ),
-        scope: aValidSubscription.scope,
-        authorized_cidrs: []
+        scope: aValidSubscription.scope
       }
     });
     expect(
