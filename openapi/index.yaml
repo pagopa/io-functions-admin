@@ -545,7 +545,7 @@ paths:
   /subscriptions/{subscriptionId}/cidrs:
     put:
       summary: Update Subscription CIDRs
-      description: Update authorized cidrs for a Subscription
+      description: Update authorized cidrs for a Subscription. **IMPORTANT:** This API should be used only for *MANAGE Flow*.
       operationId: updateSubscriptionCidrs
       parameters:
         - name: subscriptionId

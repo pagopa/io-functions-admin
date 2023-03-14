@@ -119,6 +119,8 @@ export function UpdateSubscriptionCidrsHandler(
 
 /**
  * Wraps an UpdateSubscriptionCidrs handler inside an Express request handler.
+ *
+ * **IMPORTANT:** This handler should be used only for *MANAGE Flow*
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateSubscriptionCidrs(
