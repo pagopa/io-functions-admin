@@ -35,6 +35,7 @@ import {
   IServicePrincipalCreds
 } from "../utils/apim";
 import { CIDRsPayload } from "../generated/definitions/CIDRsPayload";
+import { SubscriptionCIDRs } from "../generated/definitions/SubscriptionCIDRs";
 
 type IUpdateSubscriptionCidrsHandler = (
   context: Context,
@@ -42,7 +43,7 @@ type IUpdateSubscriptionCidrsHandler = (
   subscriptionid: NonEmptyString,
   cidrsPayload: CIDRsPayload
 ) => Promise<
-  | IResponseSuccessJson<CIDRsPayload>
+  | IResponseSuccessJson<SubscriptionCIDRs>
   | IResponseErrorInternal
   | IResponseErrorNotFound
   | IResponseErrorQuery
@@ -113,7 +114,10 @@ export function UpdateSubscriptionCidrsHandler(
 
     const updatedSubscriptionCIDRs = errorOrMaybeUpdatedSubscriptionCIDRs.right;
 
-    return ResponseSuccessJson(Array.from(updatedSubscriptionCIDRs.cidrs));
+    return ResponseSuccessJson({
+      cidrs: Array.from(updatedSubscriptionCIDRs.cidrs),
+      id: updatedSubscriptionCIDRs.subscriptionId
+    });
   };
 }
 

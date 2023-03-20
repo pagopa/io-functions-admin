@@ -585,9 +585,9 @@ paths:
             $ref: "#/definitions/CIDRsPayload"
       responses:
         "200":
-          description: The subscription CIDRs updated
+          description: Retrieved updated subscription cidrs data
           schema:
-            $ref: "#/definitions/CIDRsPayload"
+            $ref: "#/definitions/SubscriptionCIDRs"
         "400":
           description: Bad request
         "401":

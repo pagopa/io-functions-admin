@@ -13,8 +13,7 @@ import {
   CosmosErrors,
   toCosmosErrorResponse
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { CIDRsPayload } from "../../generated/definitions/CIDRsPayload";
-import { toAuthorizedCIDRs } from "@pagopa/io-functions-commons/dist/src/models/service";
+import { SubscriptionCIDRs } from "../../generated/definitions/SubscriptionCIDRs";
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
@@ -56,6 +55,11 @@ const aValidSubscription: SubscriptionContract = {
 };
 
 const aCIDRsPayload = [("1.2.3.4/5" as any) as CIDR] as any;
+
+const aSubscriptionCidrs = {
+  cidrs: (["1.2.3.4/5"] as unknown) as CIDR[],
+  id: "aSubscriptionId"
+};
 
 const mockSubscription = jest.fn();
 
@@ -208,10 +212,10 @@ describe("UpdateSubscriptionCidrs", () => {
     expect(response).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",
-      value: aCIDRsPayload
+      value: aSubscriptionCidrs
     });
     expect(
-      E.isRight(CIDRsPayload.decode((response as any).value))
+      E.isRight(SubscriptionCIDRs.decode((response as any).value))
     ).toBeTruthy();
   });
 });
