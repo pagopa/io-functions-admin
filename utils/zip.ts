@@ -1,5 +1,5 @@
 import * as archiver from "archiver";
-import { StrongPassword } from "./random";
+import { StrongPassword } from "./password";
 
 const initArchiverZipEncryptedPlugin = {
   called: false,

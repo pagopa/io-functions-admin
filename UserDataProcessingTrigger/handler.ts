@@ -3,9 +3,6 @@ import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
 import { Lazy, pipe } from "fp-ts/lib/function";
 import * as TE from "fp-ts/lib/TaskEither";
-import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { TableUtilities } from "azure-storage";
@@ -15,7 +12,6 @@ import {
   ABORT_EVENT as ABORT_DELETE_EVENT,
   makeOrchestratorId as makeDeleteOrchestratorId
 } from "../UserDataDeleteOrchestratorV2/utils";
-import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
 import {
   trackUserDataDeleteEvent,
   trackUserDataDownloadEvent
@@ -23,82 +19,20 @@ import {
 import { flags } from "../utils/featureFlags";
 import { isOrchestratorRunning } from "../utils/orchestrator";
 import { DeleteTableEntity, InsertTableEntity } from "../utils/storage";
+import { Connection, WorkflowClient } from "@temporalio/client";
+import { userDataDownloadWorkflow } from "../UserDataDownloadWorkflow";
+import {
+  ClosedUserDataProcessing,
+  CosmosDbDocumentCollection,
+  FailedUserDataProcessing,
+  ProcessableUserDataDelete,
+  ProcessableUserDataDeleteAbort,
+  ProcessableUserDataDownload
+} from "../utils/user_data_types";
 
 const eg = TableUtilities.entityGenerator;
 
-// configure log prefix
 const logPrefix = "UserDataProcessingHandler";
-
-// models the subset of UserDataProcessing documents that this orchestrator accepts
-export type ProcessableUserDataDownload = t.TypeOf<
-  typeof ProcessableUserDataDownload
->;
-export const ProcessableUserDataDownload = t.intersection([
-  UserDataProcessing,
-  // ony the subset of UserDataProcessing documents
-  // with the following characteristics must be processed
-  t.interface({
-    choice: t.literal(UserDataProcessingChoiceEnum.DOWNLOAD),
-    status: t.literal(UserDataProcessingStatusEnum.PENDING)
-  })
-]);
-
-// models the subset of UserDataProcessing documents that this orchestrator accepts
-export type ProcessableUserDataDelete = t.TypeOf<
-  typeof ProcessableUserDataDelete
->;
-export const ProcessableUserDataDelete = t.intersection([
-  UserDataProcessing,
-  // ony the subset of UserDataProcessing documents
-  // with the following characteristics must be processed
-  t.interface({
-    choice: t.literal(UserDataProcessingChoiceEnum.DELETE),
-    status: t.literal(UserDataProcessingStatusEnum.PENDING)
-  })
-]);
-
-// models the subset of UserDataProcessing documents that are delete abort requests
-export type ProcessableUserDataDeleteAbort = t.TypeOf<
-  typeof ProcessableUserDataDeleteAbort
->;
-export const ProcessableUserDataDeleteAbort = t.intersection([
-  UserDataProcessing,
-  // ony the subset of UserDataProcessing documents
-  // with the following characteristics must be processed
-  t.interface({
-    choice: t.literal(UserDataProcessingChoiceEnum.DELETE),
-    status: t.literal(UserDataProcessingStatusEnum.ABORTED)
-  })
-]);
-
-// models the subset of UserDataProcessing documents that this orchestrator accepts
-export type FailedUserDataProcessing = t.TypeOf<
-  typeof FailedUserDataProcessing
->;
-export const FailedUserDataProcessing = t.intersection([
-  UserDataProcessing,
-  // ony the subset of UserDataProcessing documents
-  // with the following characteristics must be processed
-  t.interface({
-    status: t.literal(UserDataProcessingStatusEnum.FAILED)
-  })
-]);
-
-// models the subset of UserDataProcessing documents that this orchestrator accepts
-export type ClosedUserDataProcessing = t.TypeOf<
-  typeof ClosedUserDataProcessing
->;
-export const ClosedUserDataProcessing = t.intersection([
-  UserDataProcessing,
-  // ony the subset of UserDataProcessing documents
-  // with the following characteristics must be processed
-  t.interface({
-    status: t.literal(UserDataProcessingStatusEnum.CLOSED)
-  })
-]);
-
-const CosmosDbDocumentCollection = t.readonlyArray(t.readonly(t.UnknownRecord));
-type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const startOrchestrator = async (
@@ -132,24 +66,6 @@ const startOrchestrator = async (
     }),
     TE.toUnion
   )();
-
-const startUserDataDownloadOrchestrator = (
-  context: Context,
-  processable: ProcessableUserDataDownload
-): Promise<string> => {
-  const dfClient = df.getClient(context);
-  context.log.info(
-    `${logPrefix}: starting UserDataDownloadOrchestrator with ${processable.fiscalCode}`
-  );
-  trackUserDataDownloadEvent("started", processable);
-  const orchestratorId = makeDownloadOrchestratorId(processable.fiscalCode);
-  return startOrchestrator(
-    dfClient,
-    "UserDataDownloadOrchestrator",
-    orchestratorId,
-    processable
-  );
-};
 
 const startUserDataDeleteOrchestrator = (
   context: Context,
@@ -232,6 +148,36 @@ const Processable = t.union([
   ClosedUserDataProcessing
 ]);
 
+const startUserDataDownloadWorkflow = async (
+  context: Context,
+  processable: Processable
+) => {
+  const connectionOptions = {
+    address: "host.docker.internal:7233"
+  };
+
+  console.log("starting workflow");
+
+  const connection = await Connection.connect(connectionOptions);
+
+  const client = new WorkflowClient({
+    connection
+  });
+
+  const handle = await client.start(userDataDownloadWorkflow, {
+    args: [processable, context],
+    taskQueue: "userDataDownloadQueue",
+    workflowId: "DOWNLOAD-" + processable.fiscalCode
+  });
+
+  console.log("started workflow");
+
+  const result = await handle.result();
+
+  console.log(result);
+  console.log("workflow finished");
+};
+
 const getAction = (
   context: Context,
   insertFailure: InsertTableEntity,
@@ -239,8 +185,7 @@ const getAction = (
   // eslint-disable-next-line sonarjs/cognitive-complexity
 ) => (processable: Processable): Lazy<Promise<string | void>> =>
   flags.ENABLE_USER_DATA_DOWNLOAD && ProcessableUserDataDownload.is(processable)
-    ? (): Promise<string> =>
-        startUserDataDownloadOrchestrator(context, processable)
+    ? (): Promise<void> => startUserDataDownloadWorkflow(context, processable)
     : flags.ENABLE_USER_DATA_DELETE && ProcessableUserDataDelete.is(processable)
     ? (): Promise<string> =>
         startUserDataDeleteOrchestrator(context, processable)

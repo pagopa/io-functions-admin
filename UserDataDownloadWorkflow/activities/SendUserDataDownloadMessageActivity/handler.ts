@@ -8,6 +8,8 @@ import * as TE from "fp-ts/lib/TaskEither";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { pipe } from "fp-ts/lib/function";
 import { userDataDownloadMessage } from "./messages";
+import { publicApiKey, publicApiUrl, publicDownloadBaseUrl } from "../config";
+import { timeoutFetch } from "../../../utils/fetch";
 
 /**
  * Send a single user data download message
@@ -58,15 +60,13 @@ export const ActivityInput = t.interface({
 });
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
-export const getActivityFunction = (
-  publicApiUrl: NonEmptyString,
-  publicApiKey: NonEmptyString,
-  publicDownloadBaseUrl: NonEmptyString,
-  timeoutFetch: typeof fetch
-) => (context: Context, input: unknown): Promise<ActivityResult> => {
+export const sendUserDataDownloadMessageActivity = (
+  input: unknown,
+  context: Context
+): Promise<ActivityResult> => {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const failure = (reason: string) => {
-    context.log.error(reason);
+    // context.log.error(reason);
     return ActivityResultFailure.encode({
       kind: "FAILURE",
       reason
@@ -92,7 +92,7 @@ export const getActivityFunction = (
     TE.fromEither,
     TE.chainW(({ blobName, fiscalCode, password }) => {
       const logPrefix = `SendUserDataDownloadMessageActivity|PROFILE=${fiscalCode}`;
-      context.log.verbose(`${logPrefix}|Sending user data download message`);
+      // context.log.verbose(`${logPrefix}|Sending user data download message`);
 
       return TE.tryCatch(
         async () => {
@@ -117,7 +117,7 @@ export const getActivityFunction = (
             }
           }
 
-          context.log.verbose(`${logPrefix}|RESPONSE=${status}`);
+          // context.log.verbose(`${logPrefix}|RESPONSE=${status}`);
           return success();
         },
         e => failure(E.toError(e).message)
@@ -126,5 +126,3 @@ export const getActivityFunction = (
     TE.toUnion
   )();
 };
-
-export default getActivityFunction;

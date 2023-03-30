@@ -42,7 +42,6 @@ import {
   ActivityResultSuccess as GetServicesPreferencesActivityResultSuccess
 } from "../GetServicesPreferencesActivity/handler";
 
-import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import {
   ActivityInput as SetUserSessionLockActivityInput,
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
@@ -54,12 +53,13 @@ import {
 } from "../IsFailedUserDataProcessingActivity/handler";
 
 import { Input as UpdateServiceSubscriptionFeedActivityInput } from "../UpdateSubscriptionsFeedActivity/handler";
-import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger/handler";
 import {
   trackUserDataDeleteEvent,
   trackUserDataDeleteException
 } from "../utils/appinsightsEvents";
 import { ABORT_EVENT, addDays, addHours } from "./utils";
+import { ProcessableUserDataDelete } from "../utils/user_data_types";
+import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../UserDataDownloadWorkflow/activities/types";
 
 const logPrefix = "UserDataDeleteOrchestrator";
 

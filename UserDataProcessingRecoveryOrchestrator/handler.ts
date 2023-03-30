@@ -10,6 +10,9 @@ import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 
 import * as t from "io-ts";
+import { FailedUserDataProcessing } from "../utils/user_data_types";
+import { ActivityInput as SetUserDataProcessingStatusActivityInput } from "../UserDataDownloadWorkflow/activities/SetUserDataProcessingStatusActivity/handler";
+import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../UserDataDownloadWorkflow/activities/SetUserDataProcessingStatusActivity/handler";
 import {
   ActivityInput as CheckLastStatusActivityInput,
   ActivityResultSuccess as CheckLastStatusActivityResultSuccess
@@ -18,11 +21,6 @@ import {
   ActivityInput as FindFailureReasonActivityInput,
   ActivityResultSuccess as FindFailureReasonActivityResultSuccess
 } from "../UserDataProcessingFindFailureReasonActivity/handler";
-import {
-  ActivityInput as SetUserDataProcessingStatusActivityInput,
-  ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess
-} from "../SetUserDataProcessingStatusActivity/handler";
-import { FailedUserDataProcessing } from "../UserDataProcessingTrigger/handler";
 
 const logPrefix = "UserDataProcessingRecoveryOrchestrator";
 

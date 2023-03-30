@@ -3,7 +3,6 @@
  */
 
 import * as stream from "stream";
-import * as t from "io-ts";
 
 import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
 
@@ -48,83 +47,36 @@ import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/uti
 import * as yaml from "yaml";
 import { pipe, flow } from "fp-ts/lib/function";
 import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
-import { getEncryptedZipStream } from "../utils/zip";
-import { AllUserData, MessageContentWithId } from "../utils/userData";
-import { generateStrongPassword, StrongPassword } from "../utils/random";
-import { getMessageFromCosmosErrors } from "../utils/conversions";
-import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
-
-export const ArchiveInfo = t.interface({
-  blobName: NonEmptyString,
-  password: StrongPassword
-});
-export type ArchiveInfo = t.TypeOf<typeof ArchiveInfo>;
-
-// Activity input
-export const ActivityInput = t.interface({
-  fiscalCode: FiscalCode
-});
-export type ActivityInput = t.TypeOf<typeof ActivityInput>;
-
-// Activity success result
-export const ActivityResultSuccess = t.interface({
-  kind: t.literal("SUCCESS"),
-  value: ArchiveInfo
-});
-export type ActivityResultSuccess = t.TypeOf<typeof ActivityResultSuccess>;
-
-// Activity failed because of invalid input
-const ActivityResultInvalidInputFailure = t.interface({
-  kind: t.literal("INVALID_INPUT_FAILURE"),
-  reason: t.string
-});
-export type ActivityResultInvalidInputFailure = t.TypeOf<
-  typeof ActivityResultInvalidInputFailure
->;
-
-// Activity failed because of an error on a query
-const ActivityResultQueryFailure = t.intersection([
-  t.interface({
-    kind: t.literal("QUERY_FAILURE"),
-    reason: t.string
-  }),
-  t.partial({ query: t.string })
-]);
-export type ActivityResultQueryFailure = t.TypeOf<
-  typeof ActivityResultQueryFailure
->;
-
-// activity failed for user not found
-const ActivityResultUserNotFound = t.interface({
-  kind: t.literal("USER_NOT_FOUND_FAILURE")
-});
-type ActivityResultUserNotFound = t.TypeOf<typeof ActivityResultUserNotFound>;
-
-// activity failed for user not found
-const ActivityResultArchiveGenerationFailure = t.interface({
-  kind: t.literal("ARCHIVE_GENERATION_FAILURE"),
-  reason: t.string
-});
-
-export type ActivityResultArchiveGenerationFailure = t.TypeOf<
-  typeof ActivityResultArchiveGenerationFailure
->;
-
-export const ActivityResultFailure = t.taggedUnion("kind", [
-  ActivityResultUserNotFound,
-  ActivityResultQueryFailure,
+import { getEncryptedZipStream } from "../../../utils/zip";
+import { AllUserData, MessageContentWithId } from "../../../utils/userData";
+import { generateStrongPassword } from "../../../utils/random";
+import { getMessageFromCosmosErrors } from "../../../utils/conversions";
+import { ServicePreferencesDeletableModel } from "../../../utils/extensions/models/service_preferences";
+import {
+  messageContentBlobService,
+  messageModel,
+  messageStatusModel,
+  messageViewModel,
+  notificationModel,
+  notificationStatusModel,
+  profileModel,
+  servicePreferencesModel,
+  userDataBlobService,
+  userDataContainerName
+} from "../config";
+import {
+  ActivityInput,
+  ActivityResult,
+  ActivityResultArchiveGenerationFailure,
+  ActivityResultFailure,
   ActivityResultInvalidInputFailure,
-  ActivityResultArchiveGenerationFailure
-]);
-export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
-
-export const ActivityResult = t.taggedUnion("kind", [
+  ActivityResultQueryFailure,
   ActivityResultSuccess,
-  ActivityResultFailure
-]);
-export type ActivityResult = t.TypeOf<typeof ActivityResult>;
-
-const logPrefix = `ExtractUserDataActivity`;
+  ActivityResultUserNotFound,
+  ArchiveInfo,
+  logPrefix
+} from "../types";
+import { StrongPassword } from "../../../utils/password";
 
 /**
  * Converts a Promise<Either<L, R>> that can reject
@@ -607,16 +559,8 @@ export const saveDataToBlob = (
 };
 
 export interface IActivityHandlerInput {
-  readonly messageModel: MessageModel;
-  readonly messageStatusModel: MessageStatusModel;
-  readonly messageViewModel: MessageViewModel;
-  readonly notificationModel: NotificationModel;
-  readonly notificationStatusModel: NotificationStatusModel;
-  readonly profileModel: ProfileModel;
-  readonly messageContentBlobService: BlobService;
-  readonly userDataBlobService: BlobService;
-  readonly userDataContainerName: NonEmptyString;
-  readonly servicePreferencesModel: ServicePreferencesDeletableModel;
+  readonly input: unknown;
+  readonly context: Context;
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-explicit-any
@@ -630,84 +574,72 @@ const cleanData = (v: any) => {
  * Factory methods that builds an activity function
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function createExtractUserDataActivityHandler({
-  messageModel,
-  messageStatusModel,
-  messageViewModel,
-  notificationModel,
-  notificationStatusModel,
-  profileModel,
-  messageContentBlobService,
-  userDataBlobService,
-  userDataContainerName,
-  servicePreferencesModel
-}: IActivityHandlerInput): (
-  context: Context,
-  input: unknown
-) => Promise<ActivityResult> {
+export function extractUserDataActivity({
+  input,
+  context
+}: IActivityHandlerInput): Promise<ActivityResult> {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  return (context: Context, input: unknown) =>
-    pipe(
-      input,
-      ActivityInput.decode,
-      E.mapLeft(reason =>
-        ActivityResultInvalidInputFailure.encode({
-          kind: "INVALID_INPUT_FAILURE",
-          reason: readableReport(reason)
+  return pipe(
+    input,
+    ActivityInput.decode,
+    E.mapLeft(reason =>
+      ActivityResultInvalidInputFailure.encode({
+        kind: "INVALID_INPUT_FAILURE",
+        reason: readableReport(reason)
+      })
+    ),
+    TE.fromEither,
+    TE.chainW(({ fiscalCode }) =>
+      queryAllUserData(
+        messageModel,
+        messageStatusModel,
+        messageViewModel,
+        notificationModel,
+        notificationStatusModel,
+        profileModel,
+        messageContentBlobService,
+        fiscalCode,
+        servicePreferencesModel
+      )
+    ),
+    TE.map(allUserData => {
+      // remove sensitive data
+      const notifications = allUserData.notifications.map(e =>
+        cleanData({
+          ...e,
+          channels: { ...e.channels, WEBHOOK: { url: undefined } }
         })
-      ),
-      TE.fromEither,
-      TE.chainW(({ fiscalCode }) =>
-        queryAllUserData(
-          messageModel,
-          messageStatusModel,
-          messageViewModel,
-          notificationModel,
-          notificationStatusModel,
-          profileModel,
-          messageContentBlobService,
-          fiscalCode,
-          servicePreferencesModel
-        )
-      ),
-      TE.map(allUserData => {
-        // remove sensitive data
-        const notifications = allUserData.notifications.map(e =>
-          cleanData({
-            ...e,
-            channels: { ...e.channels, WEBHOOK: { url: undefined } }
-          })
-        );
-        return {
-          messageContents: allUserData.messageContents,
-          messageStatuses: allUserData.messageStatuses.map(cleanData),
-          messages: allUserData.messages.map(cleanData),
-          messagesView: allUserData.messagesView.map(cleanData),
-          notificationStatuses: allUserData.messageStatuses.map(cleanData),
-          notifications,
-          profiles: allUserData.profiles.map(cleanData),
-          servicesPreferences: allUserData.servicesPreferences.map(cleanData)
-        };
-      }),
-      TE.chainW(allUserData =>
-        saveDataToBlob(
-          userDataBlobService,
-          userDataContainerName,
-          allUserData,
-          generateStrongPassword()
-        )
-      ),
-      TE.bimap(
-        failure => {
-          logFailure(context)(failure);
-          return failure;
-        },
-        archiveInfo =>
-          ActivityResultSuccess.encode({
-            kind: "SUCCESS",
-            value: archiveInfo
-          })
-      ),
-      TE.toUnion
-    )();
+      );
+      return {
+        messageContents: allUserData.messageContents,
+        messageStatuses: allUserData.messageStatuses.map(cleanData),
+        messages: allUserData.messages.map(cleanData),
+        messagesView: allUserData.messagesView.map(cleanData),
+        notificationStatuses: allUserData.messageStatuses.map(cleanData),
+        notifications,
+        profiles: allUserData.profiles.map(cleanData),
+        servicesPreferences: allUserData.servicesPreferences.map(cleanData)
+      };
+    }),
+    TE.chainW(allUserData =>
+      saveDataToBlob(
+        userDataBlobService,
+        userDataContainerName,
+        allUserData,
+        generateStrongPassword()
+      )
+    ),
+    TE.bimap(
+      failure => {
+        // logFailure(context)(failure);
+        return failure;
+      },
+      archiveInfo =>
+        ActivityResultSuccess.encode({
+          kind: "SUCCESS",
+          value: archiveInfo
+        })
+    ),
+    TE.toUnion
+  )();
 }

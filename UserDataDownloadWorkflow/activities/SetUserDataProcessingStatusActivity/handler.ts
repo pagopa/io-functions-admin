@@ -10,13 +10,11 @@ import { pipe } from "fp-ts/lib/function";
 import { Context } from "@azure/functions";
 
 import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import {
-  UserDataProcessing,
-  UserDataProcessingModel
-} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { getMessageFromCosmosErrors } from "../utils/conversions";
+import { getMessageFromCosmosErrors } from "../../../utils/conversions";
+import { userDataProcessingModel } from "../config";
 
 // Activity input
 export const ActivityInput = t.intersection([
@@ -102,10 +100,7 @@ const logFailure = (context: Context) => (
   }
 };
 
-export const createSetUserDataProcessingStatusActivityHandler = (
-  userDataProcessingModel: UserDataProcessingModel
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-) => (context: Context, input: unknown) => {
+export const setUserDataProcessingStatusActivity = (input: unknown) => {
   /**
    * Updates a UserDataProcessing record by creating a new version of it with a chenged status
    *
@@ -155,7 +150,7 @@ export const createSetUserDataProcessingStatusActivityHandler = (
       })
     ),
     TE.mapLeft(failure => {
-      logFailure(context)(failure);
+      // logFailure(context)(failure);
       return failure;
     }),
     TE.toUnion

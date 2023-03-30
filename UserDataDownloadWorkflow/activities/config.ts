@@ -1,3 +1,9 @@
+import { getConfigOrThrow } from "../../utils/config";
+import { cosmosdbClient } from "../../utils/cosmosdb";
+import {
+  UserDataProcessingModel,
+  USER_DATA_PROCESSING_COLLECTION_NAME
+} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { createBlobService } from "azure-storage";
 import {
   MESSAGE_COLLECTION_NAME,
@@ -24,66 +30,58 @@ import {
   MESSAGE_VIEW_COLLECTION_NAME
 } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import { SERVICE_PREFERENCES_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
-import { cosmosdbClient } from "../utils/cosmosdb";
-import { getConfigOrThrow } from "../utils/config";
-import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
-import { createExtractUserDataActivityHandler } from "./handler";
+import { ServicePreferencesDeletableModel } from "../../utils/extensions/models/service_preferences";
 
 const config = getConfigOrThrow();
 
-const database = cosmosdbClient.database(config.COSMOSDB_NAME);
+export const database = cosmosdbClient.database(config.COSMOSDB_NAME);
 
-const messageModel = new MessageModel(
+export const userDataProcessingModel = new UserDataProcessingModel(
+  database.container(USER_DATA_PROCESSING_COLLECTION_NAME)
+);
+
+export const messageModel = new MessageModel(
   database.container(MESSAGE_COLLECTION_NAME),
   config.MESSAGE_CONTAINER_NAME
 );
 
-const messageStatusModel = new MessageStatusModel(
+export const messageStatusModel = new MessageStatusModel(
   database.container(MESSAGE_STATUS_COLLECTION_NAME)
 );
 
-const messageViewContainer = cosmosdbClient
+export const messageViewContainer = cosmosdbClient
   .database(config.COSMOSDB_NAME)
   .container(MESSAGE_VIEW_COLLECTION_NAME);
 
-const messageViewModel = new MessageViewModel(messageViewContainer);
+export const messageViewModel = new MessageViewModel(messageViewContainer);
 
-const notificationModel = new NotificationModel(
+export const notificationModel = new NotificationModel(
   database.container(NOTIFICATION_COLLECTION_NAME)
 );
 
-const notificationStatusModel = new NotificationStatusModel(
+export const notificationStatusModel = new NotificationStatusModel(
   database.container(NOTIFICATION_STATUS_COLLECTION_NAME)
 );
 
-const profileModel = new ProfileModel(
+export const profileModel = new ProfileModel(
   database.container(PROFILE_COLLECTION_NAME)
 );
 
-const servicePreferencesModel = new ServicePreferencesDeletableModel(
+export const servicePreferencesModel = new ServicePreferencesDeletableModel(
   database.container(SERVICE_PREFERENCES_COLLECTION_NAME),
   SERVICE_PREFERENCES_COLLECTION_NAME
 );
 
-const userDataBlobService = createBlobService(
+export const userDataBlobService = createBlobService(
   config.UserDataArchiveStorageConnection
 );
 
-const messageContentBlobService = createBlobService(config.StorageConnection);
+export const messageContentBlobService = createBlobService(
+  config.StorageConnection
+);
 
-const userDataContainerName = config.USER_DATA_CONTAINER_NAME;
+export const userDataContainerName = config.USER_DATA_CONTAINER_NAME;
 
-const activityFunctionHandler = createExtractUserDataActivityHandler({
-  messageContentBlobService,
-  messageModel,
-  messageStatusModel,
-  messageViewModel,
-  notificationModel,
-  notificationStatusModel,
-  profileModel,
-  servicePreferencesModel,
-  userDataBlobService,
-  userDataContainerName
-});
-
-export default activityFunctionHandler;
+export const publicApiUrl = config.PUBLIC_API_URL;
+export const publicApiKey = config.PUBLIC_API_KEY;
+export const publicDownloadBaseUrl = config.PUBLIC_DOWNLOAD_BASE_URL;
