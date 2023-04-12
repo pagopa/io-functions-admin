@@ -4,7 +4,7 @@ on:
   # Trigger the workflow on push on the main branch
   push:
     branches:
-      - temporal
+      - master
     paths-ignore:
       - 'CODEOWNERS'
       - '**.md'
