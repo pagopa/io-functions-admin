@@ -116,7 +116,8 @@ describe("withRetry", () => {
     const waitFor = 1000;
     const retriable = withRetry({ delayMS: waitFor })(operation);
     const _ = retriable();
-
+    _.catch(e => e);
+    
     expect(operation).toBeCalledTimes(1);
     await sleep(waitFor * 1.01);
 
