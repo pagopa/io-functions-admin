@@ -153,7 +153,7 @@ describe("UpdateSubscriptionCidrs", () => {
     const mockSubscriptionCIDRsModel = {
       upsert: jest.fn(() => {
         return TE.left(
-          Promise.reject(toCosmosErrorResponse("db error") as CosmosErrors)
+          toCosmosErrorResponse("db error") as CosmosErrors
         );
       })
     };
