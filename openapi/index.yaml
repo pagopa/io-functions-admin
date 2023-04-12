@@ -190,7 +190,7 @@ paths:
         type: string
         required: true
         description: The organization's fiscal code
-    put: 
+    put:
       summary: Upload Organization Logo
       description: |-
         Upload an organization logo for the given organization fiscal code.
@@ -516,6 +516,91 @@ paths:
           description: Too Many Requests
         "500":
           description: Internal server error
+  /subscriptions/{subscriptionId}:
+    get:
+      summary: Get specific subscription
+      description: Get a specific subscription information, that belongs to a particular subscription Id
+      operationId: getSubscription
+      parameters:
+        - name: subscriptionId
+          in: path
+          type: string
+          required: true
+          description: The id of the Subscription
+      responses:
+        "200":
+          description: Retrieved Subscription information
+          schema:
+            $ref: "#/definitions/SubscriptionWithoutKeys"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Subscription not found
+        "500":
+          description: Internal server error
+  /subscriptions/{subscriptionId}/cidrs:
+    get:
+      summary: Get subscription cidrs
+      description: Get a specific subscription cidrs
+      operationId: getSubscriptionCidrs
+      parameters:
+        - name: subscriptionId
+          in: path
+          type: string
+          required: true
+          description: The id of the Subscription
+      responses:
+        "200":
+          description: Retrieved Subscription cidrs data
+          schema:
+            $ref: "#/definitions/SubscriptionCIDRs"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Subscription not found
+        "500":
+          description: Internal server error
+    put:
+      summary: Update Subscription CIDRs
+      description: Update authorized cidrs for a Subscription. **IMPORTANT:** This API should be used only for *MANAGE Flow*.
+      operationId: updateSubscriptionCidrs
+      parameters:
+        - name: subscriptionId
+          in: path
+          type: string
+          required: true
+          description: The id of the Subscription
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/CIDRsPayload"
+      responses:
+        "200":
+          description: Retrieved updated subscription cidrs data
+          schema:
+            $ref: "#/definitions/SubscriptionCIDRs"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Resource (User or Product) not found
+        "429":
+          description: Too Many Requests
+        "500":
+          description: Internal server error
+
 definitions:
   DevelopmentProfile:
     type: object
@@ -767,6 +852,36 @@ definitions:
             type: string
         required:
           - scope
+  SubscriptionWithoutKeys:
+    type: object
+    properties:
+      id:
+        type: string
+      scope:
+        type: string
+      owner_id:
+        type: string
+    required:
+      - scope
+  SubscriptionCIDRs:
+    type: object
+    properties:
+      id:
+        type: string
+      cidrs:
+        description: |-
+          Allowed source IPs or CIDRs for this subscription.
+          When empty, every IP address is authorized.
+        type: array
+        items:
+          $ref: "#/definitions/CIDR"
+    required:
+      - id
+      - cidrs
+  CIDRsPayload:
+    type: array
+    items:
+      $ref: "#/definitions/CIDR"
   SubscriptionState:
     type: string
     x-extensible-enum:
@@ -828,7 +943,7 @@ definitions:
       version:
         type: string
     required:
-     - version
+      - version
 responses: {}
 parameters:
   SandboxFiscalCode:
