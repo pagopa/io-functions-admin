@@ -29,7 +29,7 @@ jobs:
         # from https://github.com/cycjimmy/semantic-release-action/commits/main
         uses: cycjimmy/semantic-release-action@bdd914ff2423e2792c73475f11e8da603182f32d
         with:
-          semantic_version: 0.35.1
+          semantic_version: 18.0.0
           extra_plugins: |
             @semantic-release/release-notes-generator@10.0.3
             @semantic-release/git@10.0.1
