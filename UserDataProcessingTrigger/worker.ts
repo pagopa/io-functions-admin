@@ -11,9 +11,6 @@ async function run() {
     workflowsPath: require.resolve("../UserDataDownloadWorkflow/workflows.ts"),
     taskQueue: "userDataDownloadQueue",
     activities,
-    // bundlerOptions: {
-    //   ignoreModules: ["crypto"]
-    // },
     connection
   });
 
