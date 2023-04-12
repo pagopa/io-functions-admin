@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  # Trigger the workflow on push on the main branch
+  push:
+    branches:
+      - temporal
+    paths-ignore:
+      - 'CODEOWNERS'
+      - '**.md'
+      - '.**'
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        id: checkout
+        # from https://github.com/actions/checkout/commits/main
+        uses: actions/checkout@1f9a0c22da41e6ebfa534300ef656657ea2c6707
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Release
+        id: release
+        # from https://github.com/cycjimmy/semantic-release-action/commits/main
+        uses: cycjimmy/semantic-release-action@bdd914ff2423e2792c73475f11e8da603182f32d
+        with:
+          semantic_version: 0.35.1
+          extra_plugins: |
+            @semantic-release/release-notes-generator@10.0.3
+            @semantic-release/git@10.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to the Container registry
+        id: docker_login
+        if: steps.release.outputs.new_release_published == 'true'
+        # from https://github.com/docker/login-action/commits/master
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        id: docker_build_push
+        if: steps.release.outputs.new_release_published == 'true'
+        # from https://github.com/docker/build-push-action/commits/master
+        uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:v${{ steps.release.outputs.new_release_version }}
+          labels: |
+            maintainer=arcogabbo
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}

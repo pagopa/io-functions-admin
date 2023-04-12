@@ -5,7 +5,7 @@ async function run() {
   // Step 1: Register Workflows and Activities with the Worker and connect to
   // the Temporal server.
   const connection = await NativeConnection.connect({
-    address: "127.0.0.1:7233"
+    address: process.env.TEMPORAL_ADDRESS
   });
   const worker = await Worker.create({
     workflowsPath: require.resolve("../UserDataDownloadWorkflow/workflows.ts"),
