@@ -22,7 +22,7 @@ describe("GetSubscriptionCidrs", () => {
     const mockSubscriptionCIDRsModel = {
       findLastVersionByModelId: jest.fn(() =>
         TE.left(
-          Promise.reject(toCosmosErrorResponse("db error") as CosmosErrors)
+          toCosmosErrorResponse("db error") as CosmosErrors
         )
       )
     };

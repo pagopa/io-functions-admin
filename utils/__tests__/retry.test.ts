@@ -115,7 +115,9 @@ describe("withRetry", () => {
     const operation = anAlwaysBadOperation;
     const waitFor = 1000;
     const retriable = withRetry({ delayMS: waitFor })(operation);
-    const _ = retriable();
+    const result = retriable();
+    // this catch is only to manage the unhandled promise errore
+    result.catch(e => e);
 
     expect(operation).toBeCalledTimes(1);
     await sleep(waitFor * 1.01);
