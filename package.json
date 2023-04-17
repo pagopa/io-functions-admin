@@ -58,7 +58,7 @@
     "@azure/graph": "^4.0.1",
     "@azure/ms-rest-js": "^2.6.4",
     "@azure/ms-rest-nodeauth": "^2.0.6",
-    "@pagopa/express-azure-functions": "^4.0.0",
+    "@pagopa/express-azure-functions": "^4.0.1",
     "@pagopa/io-backend-session-sdk": "x",
     "@pagopa/io-functions-commons": "^28.1.0",
     "@pagopa/ts-commons": "^11.0.0",

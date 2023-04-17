@@ -1127,10 +1127,10 @@
     eslint-plugin-sonarjs "^0.5.0"
     prettier "^2.1.2"
 
-"@pagopa/express-azure-functions@^4.0.0":
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/@pagopa/express-azure-functions/-/express-azure-functions-4.0.0.tgz#6fc2253eef6f17f250f60b7ba7fd47d0a7be477a"
-  integrity sha512-dGVint+LzGtFvSdeH/XUJtDEDqV4JswhHzmZFdvWJAr+xEXZQ8dWSZ+4Ol/83AL3CeByCGDRohpOK7B2SddlXg==
+"@pagopa/express-azure-functions@^4.0.1":
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/@pagopa/express-azure-functions/-/express-azure-functions-4.0.1.tgz#0c584ab57773f2bcfda511b996f5e6ccdb89defb"
+  integrity sha512-2gSMQ6nCz5z5RdSgE0P5uoVBoxQqUeZr8bUUVyXjEqA/Z1PVDofbDbYJG6aPnDhfHO8aEXLDJOG8eUqjYB4Qsg==
 
 "@pagopa/io-backend-session-sdk@x":
   version "10.7.0"
