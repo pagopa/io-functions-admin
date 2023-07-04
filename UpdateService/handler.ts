@@ -87,6 +87,15 @@ export function UpdateServiceHandler(
 
     const existingService = maybeService.value;
 
+    /* 
+    The new io-services-cms has a functionality to sync back and forth the services between the new and the legacy containers:
+     - when a service is created/updated using the new APIs it is also written into the legacy container and marked with a field "cmsTag"
+     - when a service is created/updated using the old APIs a CosmosDBTrigger Azure Function will intercept it an write it into the new container but 
+     only if the "cmsTag" field is not present, so when a service is updated using the old APIs the "cmsTag" field needs to be removed.
+    */
+    // eslint-disable-next-line fp/no-delete, functional/immutable-data, @typescript-eslint/dot-notation
+    delete existingService["cmsTag"];
+
     const errorOrUpdatedService = await serviceModel.update({
       ...existingService,
       ...apiServiceToService(servicePayload)
