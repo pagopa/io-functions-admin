@@ -136,6 +136,11 @@ export const aRetrievedService: RetrievedService = {
   version: 1 as NonNegativeInteger
 };
 
+export const aRetrievedServiceWithCmsTag: RetrievedService = {
+  ...aRetrievedService,
+  cmsTag: "cmsTag"
+} as RetrievedService;
+
 export const aSeralizedService: ApiService = {
   ...aServicePayload,
   id: "MySubscriptionId" as NonEmptyString,

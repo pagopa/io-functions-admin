@@ -4,11 +4,13 @@
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
-import * as TE from "fp-ts/lib/TaskEither";
-import * as O from "fp-ts/lib/Option";
+import { Service } from "@pagopa/io-functions-commons/dist/src/models/service";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import * as O from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
 import {
   aRetrievedService,
+  aRetrievedServiceWithCmsTag,
   aSeralizedService,
   aServicePayload
 } from "../../__mocks__/mocks";
@@ -173,6 +175,45 @@ describe("UpdateServiceHandler", () => {
         ...aSeralizedService,
         department_name: aDepartmentName
       });
+    }
+  });
+
+  it("should remove cmsTag when updating service", async () => {
+    const serviceModelMock = {
+      findOneByServiceId: jest.fn(() => {
+        return TE.right(O.some(aRetrievedServiceWithCmsTag));
+      }),
+      update: jest.fn((s: Service) =>
+        TE.right({
+          ...s
+        })
+      )
+    };
+
+    const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
+
+    const response = await updateServiceHandler(
+      undefined as any, // Not used
+      undefined as any, // Not used
+      aServicePayload.service_id,
+      {
+        ...aServicePayload,
+        department_name: aDepartmentName
+      }
+    );
+
+    expect(serviceModelMock.findOneByServiceId).toHaveBeenCalledWith(
+      aRetrievedService.serviceId
+    );
+    expect(serviceModelMock.update).toHaveBeenCalledTimes(1);
+    expect(response.kind).toBe("IResponseSuccessJson");
+    if (response.kind === "IResponseSuccessJson") {
+      expect(response.value).toEqual({
+        ...aSeralizedService,
+        department_name: aDepartmentName
+      });
+
+      expect(response.value).not.toHaveProperty("cmsTag");
     }
   });
 });
