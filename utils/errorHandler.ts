@@ -26,3 +26,6 @@ export const genericInternalValidationErrorHandler = (
   context.log.error(logMessage, errorsToReadableMessages(error).join(" / "));
   return ResponseErrorInternal(errorDetail);
 };
+
+export const errorsToError = (errors: Errors): Error =>
+  new Error(errorsToReadableMessages(errors).join(" / "));
