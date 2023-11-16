@@ -26,10 +26,12 @@ import {
   InvalidInputFailure
 } from "./types";
 import { logFailure } from "./utils";
+import AuthenticationLockService from "./authenticationLockService";
 
 const logPrefix = `DeleteUserDataActivity`;
 
 export interface IActivityHandlerInput {
+  readonly authenticationLockService: AuthenticationLockService;
   readonly messageModel: MessageDeletableModel;
   readonly messageStatusModel: MessageStatusDeletableModel;
   readonly messageViewModel: MessageViewDeletableModel;
@@ -47,6 +49,7 @@ export interface IActivityHandlerInput {
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function createDeleteUserDataActivityHandler({
+  authenticationLockService,
   messageContentBlobService,
   messageModel,
   messageStatusModel,
@@ -79,6 +82,7 @@ export function createDeleteUserDataActivityHandler({
       TE.chainW(({ fiscalCode, backupFolder }) =>
         pipe(
           backupAndDeleteAllUserData({
+            authenticationLockService,
             fiscalCode,
             messageContentBlobService,
             messageModel,

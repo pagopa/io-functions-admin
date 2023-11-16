@@ -1,3 +1,5 @@
+/* eslint-disable no-invalid-this */
+
 /**
  * This service retrieves and updates the user profile from the API system using
  * an API client.
