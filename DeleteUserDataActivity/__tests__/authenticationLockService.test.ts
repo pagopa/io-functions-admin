@@ -1,6 +1,7 @@
 import { RestError } from "@azure/data-tables";
 
 import * as E from "fp-ts/Either";
+import * as ROA from "fp-ts/ReadonlyArray";
 
 import AuthenticationLockService from "../authenticationLockService";
 
@@ -16,6 +17,7 @@ import {
   lockedProfileTableClient,
   submitTransactionMock
 } from "../../__mocks__/lockedProfileTableClient";
+import { UnlockCode } from "../../generated/definitions/UnlockCode";
 
 // -------------------------------------------
 // Variables
@@ -87,31 +89,44 @@ describe("AuthenticationLockService#getAllUserAuthenticationLockData", () => {
   });
 });
 
-describe("AuthenticationLockService#unlockUserAuthentication", () => {
-  it("should return true when records update transaction succeded", async () => {
-    const result = await service.deleteUserAuthenticationLockData(aFiscalCode, [
-      anUnlockCode,
-      anothernUnlockCode
-    ])();
-
-    expect(result).toEqual(E.right(true));
-    expect(submitTransactionMock).toHaveBeenCalledWith([
-      [
-        "delete",
-        {
-          partitionKey: aFiscalCode,
-          rowKey: anUnlockCode
-        }
-      ],
-      [
-        "delete",
-        {
-          partitionKey: aFiscalCode,
-          rowKey: anothernUnlockCode
-        }
-      ]
-    ]);
+describe("AuthenticationLockService#deleteUserAuthenticationLockData", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
+
+  const generateUnlockCodes = (number: number) =>
+    [...Array(number).keys()].map(i => i.toString().padStart(9, "0"));
+  it.each`
+    scenario                      | items
+    ${"with less than 100 items"} | ${generateUnlockCodes(50)}
+    ${"with more than 100 items"} | ${generateUnlockCodes(150)}
+  `(
+    "should return true when records delete transaction succeded $scenario",
+    async ({ items }: { items: UnlockCode[] }) => {
+      const result = await service.deleteUserAuthenticationLockData(
+        aFiscalCode,
+        items
+      )();
+
+      expect(result).toEqual(E.right(true));
+
+      let i = 1;
+      for (const chunk of ROA.chunksOf(100)(items)) {
+        expect(submitTransactionMock).toHaveBeenNthCalledWith(
+          i,
+          chunk.map(unlockCode => [
+            "delete",
+            {
+              partitionKey: aFiscalCode,
+              rowKey: unlockCode
+            }
+          ])
+        );
+
+        i++;
+      }
+    }
+  );
 
   it("should return an Error when at least one CF-unlock code was not found", async () => {
     submitTransactionMock.mockRejectedValueOnce(

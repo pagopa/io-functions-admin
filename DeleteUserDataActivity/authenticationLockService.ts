@@ -21,6 +21,8 @@ import * as AI from "@pagopa/io-functions-commons/dist/src/utils/async_iterable_
 import { UnlockCode } from "../generated/definitions/UnlockCode";
 import { errorsToError } from "../utils/errorHandler";
 
+const MAX_TRANSACTION_ITEMS = 100;
+
 // ----------------------------
 // ----------------------------
 // Types and Codecs
@@ -94,25 +96,32 @@ export default class AuthenticationLockService {
   ): TE.TaskEither<Error, true> =>
     pipe(
       unlockCodes,
+      ROA.chunksOf(MAX_TRANSACTION_ITEMS),
       ROA.map(
-        unlockCode =>
-          [
-            "delete",
-            {
-              partitionKey: fiscalCode,
-              rowKey: unlockCode
-            }
-          ] as TransactionAction
+        flow(
+          ROA.map(
+            unlockCode =>
+              [
+                "delete",
+                {
+                  partitionKey: fiscalCode,
+                  rowKey: unlockCode
+                }
+              ] as TransactionAction
+          ),
+          actions =>
+            TE.tryCatch(
+              () => this.tableClient.submitTransaction(Array.from(actions)),
+              identity
+            ),
+          TE.filterOrElseW(
+            response => response.status === 202,
+            () => void 0
+          )
+        )
       ),
-      actions =>
-        TE.tryCatch(
-          () => this.tableClient.submitTransaction(Array.from(actions)),
-          identity
-        ),
-      TE.filterOrElseW(
-        response => response.status === 202,
-        () => void 0
-      ),
+      // Sequentially execute chunk tasks: as soon as one fails, the procedure stops
+      ROA.sequence(TE.ApplicativeSeq),
       TE.mapLeft(() => new Error("Something went wrong deleting the records")),
       TE.map(() => true as const)
     );
