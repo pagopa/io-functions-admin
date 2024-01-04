@@ -1177,10 +1177,13 @@
     fp-ts "^2.10.5"
     io-ts "^2.2.16"
 
-"@pagopa/io-functions-commons@file:../io-functions-commons":
-  version "28.6.0"
+"@pagopa/io-functions-commons@^28.13.0":
+  version "28.13.0"
+  resolved "https://registry.yarnpkg.com/@pagopa/io-functions-commons/-/io-functions-commons-28.13.0.tgz#3b99468d254cddc4c93b0408a57a62d24f1b42b8"
+  integrity sha512-h0Bn5m47J9lVDcpg6XGdljVR1uVkvqmUiKZmHaQXleu8p/MTl/Z3yqITx4jstfiEZHPtplOu7Cdh9VrjVt70Mw==
   dependencies:
     "@azure/cosmos" "^3.17.1"
+    "@azure/data-tables" "^13.2.2"
     "@pagopa/ts-commons" "^11.0.0"
     applicationinsights "^1.8.10"
     azure-storage "^2.10.5"
