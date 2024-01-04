@@ -1,5 +1,7 @@
 import { describe, it, jest } from "@jest/globals";
 
+import { Container } from "@azure/cosmos";
+
 import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
@@ -9,12 +11,10 @@ import {
   RetrievedProfile
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
 
-import { ProfileToSanitize, sanitizeProfileEmails } from "../index";
+import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 
 import { aFiscalCode, aRetrievedProfile } from "../../__mocks__/mocks";
-import { EmailAddress } from "../../generated/definitions/EmailAddress";
-import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { Container } from "@azure/cosmos";
+import { ProfileToSanitize, sanitizeProfileEmails } from "../index";
 
 const fiscalCodes = {
   TO_SANITIZE: "BBBBBB20B20B222B" as FiscalCode,
@@ -24,7 +24,7 @@ const fiscalCodes = {
   ERROR: "ERRORE10E10E111E" as FiscalCode
 };
 
-const email = "test0@uee.pagopa.it" as EmailAddress;
+const email = "test0@uee.pagopa.it" as EmailString;
 
 const mocks = {
   email,
