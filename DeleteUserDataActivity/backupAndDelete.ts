@@ -1,3 +1,5 @@
+import * as crypto from "crypto";
+
 import { BlobService } from "azure-storage";
 import { sequenceT } from "fp-ts/lib/Apply";
 import * as A from "fp-ts/lib/Array";
@@ -111,7 +113,13 @@ const backupAndDeleteAuthenticationLockData = (
   data: ReadonlyArray<AuthenticationLockData>
 ): TE.TaskEither<DataFailure, true> =>
   pipe(
-    saveDataToBlob(userDataBackup, "access/authentication-locks.json", data),
+    saveDataToBlob(
+      userDataBackup,
+      `access/authentication-locks-${crypto
+        .randomBytes(4)
+        .toString("hex")}.json`,
+      data
+    ),
     TE.mapLeft(e =>
       BlobCreationFailure.encode({
         kind: "BLOB_FAILURE",

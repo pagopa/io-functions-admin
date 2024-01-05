@@ -82,7 +82,9 @@ describe("AuthenticationLockService#getAllUserAuthenticationLockData", () => {
     expect(result).toEqual(
       E.left(
         Error(
-          'value ["CF"] at [root.0.0.0.partitionKey] is not a valid [string that matches the pattern "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$"] / value [undefined] at [root.0.0.1.Released] is not a valid [boolean] / value ["CF"] at [root.0.1.partitionKey] is not a valid [string that matches the pattern "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$"]'
+          `value "CF" at root[0].partitionKey is not a valid [string that matches the pattern "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$"]\n` +
+            `value undefined at root[0].Released is not a valid [boolean]\n` +
+            `value "CF" at root[0].partitionKey is not a valid [string that matches the pattern "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$"]`
         )
       )
     );
