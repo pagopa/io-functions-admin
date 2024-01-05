@@ -6,6 +6,8 @@ import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 
+import * as L from "@pagopa/logger";
+
 import {
   ProfileModel,
   RetrievedProfile
@@ -65,6 +67,11 @@ MockedProfileModel.prototype.update.mockImplementation(
 
 const profileModel = new MockedProfileModel(({} as any) as Container);
 
+const ConsoleLogger: L.Logger = {
+  log: r => () => console.log(r),
+  format: L.format.json
+};
+
 describe("Given a list a profiles to be sanitized with their duplicated e-mail addresses", () => {
   afterEach(() => {
     jest.clearAllMocks();
@@ -95,7 +102,9 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
     ];
 
     await Promise.all(
-      profiles.map(p => sanitizeProfileEmail(p)({ profileModel })())
+      profiles.map(p =>
+        sanitizeProfileEmail(p)({ profileModel, logger: ConsoleLogger })()
+      )
     );
 
     expect(MockedProfileModel.prototype.update).toBeCalledTimes(1);
@@ -109,7 +118,8 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
       email: mocks.email,
       fiscalCode: mocks.fiscalCodes.ERROR
     })({
-      profileModel
+      profileModel,
+      logger: ConsoleLogger
     })();
     if (E.isLeft(result)) {
       expect(MockedProfileModel.prototype.update).toBeCalledTimes(0);
