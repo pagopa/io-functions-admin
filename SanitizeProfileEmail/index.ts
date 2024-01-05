@@ -13,6 +13,8 @@ import {
   RetrievedProfile
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
 
+import * as L from "@pagopa/logger";
+
 import { cosmosErrorsToString } from "../utils/errors";
 
 export const ProfileToSanitize = t.type({
@@ -61,9 +63,19 @@ const setProfileEmailAsNotValidated = (profile: RetrievedProfile) => (
 
 export const sanitizeProfileEmail = flow(
   getProfileForUpdate,
+  RTE.chainFirstW(maybe =>
+    L.debugRTE("profile retrived", {
+      isProfileEligibleForUpdate: O.isSome(maybe)
+    })
+  ),
   RTE.chain(
     flow(
-      O.map(setProfileEmailAsNotValidated),
+      O.map(
+        flow(
+          setProfileEmailAsNotValidated,
+          RTE.chainFirstW(() => L.debugRTE("profile updated"))
+        )
+      ),
       O.getOrElse(() => RTE.right(void 0))
     )
   )
