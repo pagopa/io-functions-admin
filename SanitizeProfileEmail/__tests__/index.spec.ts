@@ -14,7 +14,7 @@ import {
 import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 
 import { aFiscalCode, aRetrievedProfile } from "../../__mocks__/mocks";
-import { ProfileToSanitize, sanitizeProfileEmails } from "../index";
+import { ProfileToSanitize, sanitizeProfileEmail } from "../index";
 
 const fiscalCodes = {
   TO_SANITIZE: "BBBBBB20B20B222B" as FiscalCode,
@@ -75,7 +75,6 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
     // 1. isEmailValidated = true
     // 2. the same e-mail address as input
     // 3. should have an item in the profile collection
-    // the script also filters out duplicate input entries
     const profiles: ProfileToSanitize[] = [
       {
         email: mocks.email,
@@ -91,16 +90,14 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
       },
       {
         email: mocks.email,
-        fiscalCode: mocks.fiscalCodes.TO_SANITIZE
-      },
-      {
-        email: mocks.email,
         fiscalCode: mocks.fiscalCodes.NOT_FOUND
       }
     ];
-    await sanitizeProfileEmails(profiles)({
-      profileModel
-    })();
+
+    await Promise.all(
+      profiles.map(p => sanitizeProfileEmail(p)({ profileModel })())
+    );
+
     expect(MockedProfileModel.prototype.update).toBeCalledTimes(1);
     expect(MockedProfileModel.prototype.update).toBeCalledWith(
       expect.objectContaining({ isEmailValidated: false })
@@ -108,13 +105,10 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
   });
 
   it("should fail without creating new profile versions if there are errors retrieving the eligible profiles", async () => {
-    const profiles: ProfileToSanitize[] = [
-      {
-        email: mocks.email,
-        fiscalCode: mocks.fiscalCodes.ERROR
-      }
-    ];
-    const result = await sanitizeProfileEmails(profiles)({
+    const result = await sanitizeProfileEmail({
+      email: mocks.email,
+      fiscalCode: mocks.fiscalCodes.ERROR
+    })({
       profileModel
     })();
     if (E.isLeft(result)) {

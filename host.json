@@ -19,6 +19,14 @@
         "traceInputsAndOutputs": false,
         "traceReplayEvents": false
       }
+    },
+    "queues": {
+        "maxPollingInterval": "00:00:02",
+        "visibilityTimeout" : "00:00:30",
+        "batchSize": 16,
+        "maxDequeueCount": 5,
+        "newBatchThreshold": 8,
+        "messageEncoding": "base64"
     }
   },
   "extensionBundle": {

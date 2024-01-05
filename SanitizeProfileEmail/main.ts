@@ -1,5 +1,3 @@
-import * as t from "io-ts";
-
 import * as H from "@pagopa/handler-kit";
 import { azureFunction } from "@pagopa/handler-kit-azure-func";
 
@@ -11,7 +9,7 @@ import {
 import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbInstance } from "../utils/cosmosdb";
 
-import { ProfileToSanitize, sanitizeProfileEmails } from "./index";
+import { ProfileToSanitize, sanitizeProfileEmail } from "./index";
 
 getConfigOrThrow();
 
@@ -20,10 +18,10 @@ const profilesContainer = cosmosdbInstance.container(PROFILE_COLLECTION_NAME);
 const profileModel = new ProfileModel(profilesContainer);
 
 const createSanitizeProfileEmailsFunction = azureFunction(
-  H.of(sanitizeProfileEmails)
+  H.of(sanitizeProfileEmail)
 );
 
 export default createSanitizeProfileEmailsFunction({
-  inputDecoder: t.array(ProfileToSanitize),
+  inputDecoder: ProfileToSanitize,
   profileModel
 });
