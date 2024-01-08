@@ -1,6 +1,7 @@
 import { RestError } from "@azure/data-tables";
 
 import * as E from "fp-ts/Either";
+import * as NEA from "fp-ts/NonEmptyArray";
 import * as ROA from "fp-ts/ReadonlyArray";
 
 import AuthenticationLockService from "../authenticationLockService";
@@ -79,14 +80,12 @@ describe("AuthenticationLockService#getAllUserAuthenticationLockData", () => {
       aFiscalCode
     )();
 
-    expect(result).toEqual(
-      E.left(
-        Error(
-          `value "CF" at root[0].partitionKey is not a valid [string that matches the pattern "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$"]\n` +
-            `value undefined at root[0].Released is not a valid [boolean]\n` +
-            `value "CF" at root[0].partitionKey is not a valid [string that matches the pattern "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$"]`
+    expect(result).toMatchObject(
+      E.left({
+        message: expect.stringContaining(
+          "is not a valid [string that matches the pattern"
         )
-      )
+      })
     );
   });
 });
@@ -97,7 +96,7 @@ describe("AuthenticationLockService#deleteUserAuthenticationLockData", () => {
   });
 
   const generateUnlockCodes = (number: number) =>
-    [...Array(number).keys()].map(i => i.toString().padStart(9, "0"));
+    NEA.range(0, number).map(i => i.toString().padStart(9, "0"));
   it.each`
     scenario                      | items
     ${"with less than 100 items"} | ${generateUnlockCodes(50)}

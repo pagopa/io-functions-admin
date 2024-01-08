@@ -63,6 +63,8 @@ const AuthenticationLockData = t.union([
   NotReleasedAuthenticationLockData
 ]);
 
+const AuthenticationLockDataArray = t.array(AuthenticationLockData);
+
 // ----------------------------
 // ----------------------------
 // AuthenticationLockService
@@ -99,19 +101,20 @@ export default class AuthenticationLockService {
       ROA.chunksOf(MAX_TRANSACTION_ITEMS),
       ROA.map(
         flow(
-          ROA.map(
-            unlockCode =>
-              [
-                "delete",
-                {
-                  partitionKey: fiscalCode,
-                  rowKey: unlockCode
-                }
-              ] as TransactionAction
-          ),
+          chunk =>
+            chunk.map(
+              unlockCode =>
+                [
+                  "delete",
+                  {
+                    partitionKey: fiscalCode,
+                    rowKey: unlockCode
+                  }
+                ] as TransactionAction
+            ),
           actions =>
             TE.tryCatch(
-              () => this.tableClient.submitTransaction(Array.from(actions)),
+              () => this.tableClient.submitTransaction(actions),
               identity
             ),
           TE.filterOrElseW(
@@ -142,7 +145,7 @@ export default class AuthenticationLockService {
       AI.fromAsyncIterable,
       AI.foldTaskEither(E.toError),
       TE.chainEitherK(
-        flow(t.array(AuthenticationLockData).decode, E.mapLeft(errorsToError))
+        flow(AuthenticationLockDataArray.decode, E.mapLeft(errorsToError))
       )
     );
 }
