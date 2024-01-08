@@ -1,4 +1,5 @@
 import { createBlobService } from "azure-storage";
+import { TableClient } from "@azure/data-tables";
 import { MESSAGE_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/message";
 import { MESSAGE_STATUS_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import { MESSAGE_VIEW_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/message_view";
@@ -16,6 +17,7 @@ import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
 import { MessageViewDeletableModel } from "../utils/extensions/models/message_view";
 import { createDeleteUserDataActivityHandler } from "./handler";
+import AuthenticationLockService from "./authenticationLockService";
 
 const config = getConfigOrThrow();
 
@@ -79,7 +81,14 @@ const messageContentBlobService = createBlobService(config.StorageConnection);
 
 const userDataBackupContainerName = config.USER_DATA_BACKUP_CONTAINER_NAME;
 
+const tableClient = TableClient.fromConnectionString(
+  config.LOCKED_PROFILES_STORAGE_CONNECTION_STRING,
+  config.LOCKED_PROFILES_TABLE_NAME
+);
+const authenticationLockService = new AuthenticationLockService(tableClient);
+
 const activityFunctionHandler = createDeleteUserDataActivityHandler({
+  authenticationLockService,
   messageContentBlobService,
   messageModel,
   messageStatusModel,

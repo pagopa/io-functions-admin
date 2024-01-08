@@ -1,6 +1,9 @@
 import { Context } from "@azure/functions";
 import { Errors } from "io-ts";
-import { errorsToReadableMessages } from "@pagopa/ts-commons/lib/reporters";
+import {
+  errorsToReadableMessages,
+  readableReportSimplified
+} from "@pagopa/ts-commons/lib/reporters";
 import { ResponseErrorInternal } from "@pagopa/ts-commons/lib/responses";
 
 const genericErrorDetail = "An error occurred while performing the operation";
@@ -26,3 +29,6 @@ export const genericInternalValidationErrorHandler = (
   context.log.error(logMessage, errorsToReadableMessages(error).join(" / "));
   return ResponseErrorInternal(errorDetail);
 };
+
+export const errorsToError = (errors: Errors): Error =>
+  new Error(readableReportSimplified(errors));

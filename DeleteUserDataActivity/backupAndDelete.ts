@@ -1,3 +1,5 @@
+import * as crypto from "crypto";
+
 import { BlobService } from "azure-storage";
 import { sequenceT } from "fp-ts/lib/Apply";
 import * as A from "fp-ts/lib/Array";
@@ -29,9 +31,18 @@ import { NotificationStatusDeletableModel } from "../utils/extensions/models/not
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
 import { MessageViewDeletableModel } from "../utils/extensions/models/message_view";
-import { DataFailure, IBlobServiceInfo, QueryFailure } from "./types";
+import {
+  BlobCreationFailure,
+  DataFailure,
+  DocumentDeleteFailure,
+  IBlobServiceInfo,
+  QueryFailure
+} from "./types";
 import { saveDataToBlob } from "./utils";
 import { toDocumentDeleteFailure, toQueryFailure } from "./utils";
+import AuthenticationLockService, {
+  AuthenticationLockData
+} from "./authenticationLockService";
 
 /**
  * Recursively consumes an iterator and executes operations on every item
@@ -95,6 +106,42 @@ const executeRecursiveBackupAndDelete = <T>(
     )
   );
 
+const backupAndDeleteAuthenticationLockData = (
+  authenticationLockService: AuthenticationLockService,
+  userDataBackup: IBlobServiceInfo,
+  fiscalCode: FiscalCode,
+  data: ReadonlyArray<AuthenticationLockData>
+): TE.TaskEither<DataFailure, true> =>
+  pipe(
+    saveDataToBlob(
+      userDataBackup,
+      `access/authentication-locks-${crypto
+        .randomBytes(4)
+        .toString("hex")}.json`,
+      data
+    ),
+    TE.mapLeft(e =>
+      BlobCreationFailure.encode({
+        kind: "BLOB_FAILURE",
+        reason: `backupAndDeleteAuthenticationLockData|${e.reason}`
+      })
+    ),
+    TE.chainW(_ =>
+      pipe(
+        authenticationLockService.deleteUserAuthenticationLockData(
+          fiscalCode,
+          data.map(v => v.rowKey)
+        ),
+        TE.mapLeft(e =>
+          DocumentDeleteFailure.encode({
+            kind: "DELETE_FAILURE",
+            reason: `backupAndDeleteAuthenticationLockData|${e.message}`
+          })
+        )
+      )
+    )
+  );
+
 /**
  * Backup and delete every version of the profile
  *
@@ -104,11 +151,13 @@ const executeRecursiveBackupAndDelete = <T>(
  */
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const backupAndDeleteProfile = ({
+  authenticationLockService,
   fiscalCode,
   profileModel,
   servicePreferencesModel,
   userDataBackup
 }: {
+  readonly authenticationLockService: AuthenticationLockService;
   readonly profileModel: ProfileDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
   readonly servicePreferencesModel: ServicePreferencesDeletableModel;
@@ -127,6 +176,27 @@ const backupAndDeleteProfile = ({
         userDataBackup,
         item => `service-settings/${item.id}.json`,
         servicePreferencesModel.findAllByFiscalCode(fiscalCode)
+      )
+    ),
+    TE.chainW(_ =>
+      pipe(
+        authenticationLockService.getAllUserAuthenticationLockData(fiscalCode),
+        TE.mapLeft(e =>
+          QueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            reason: `backupAndDeleteAuthenticationLockData|${e.message}`
+          })
+        ),
+        TE.chain(data =>
+          data.length > 0
+            ? backupAndDeleteAuthenticationLockData(
+                authenticationLockService,
+                userDataBackup,
+                fiscalCode,
+                data
+              )
+            : TE.of(true)
+        )
       )
     ),
     TE.foldW(
@@ -526,8 +596,10 @@ export const backupAndDeleteAllUserData = ({
   profileModel,
   servicePreferencesModel,
   userDataBackup,
+  authenticationLockService,
   fiscalCode
 }: {
+  readonly authenticationLockService: AuthenticationLockService;
   readonly messageContentBlobService: BlobService;
   readonly messageModel: MessageDeletableModel;
   readonly messageStatusModel: MessageStatusDeletableModel;
@@ -553,6 +625,7 @@ export const backupAndDeleteAllUserData = ({
     TE.chainW(_ =>
       // eslint-disable-next-line sort-keys
       backupAndDeleteProfile({
+        authenticationLockService,
         fiscalCode,
         profileModel,
         servicePreferencesModel,

@@ -27,6 +27,7 @@ import {
 } from "../../__mocks__/mocks";
 import { backupAndDeleteAllUserData } from "../backupAndDelete";
 import { IBlobServiceInfo } from "../types";
+import { AuthenticationLockServiceMock } from "../../__mocks__/authenticationLockService.mock";
 
 const asyncIteratorOf = <T>(items: T[]): AsyncIterator<T[]> => {
   const data = [...items];
@@ -150,10 +151,13 @@ const userDataBackup = {
   folder: "folder"
 } as IBlobServiceInfo;
 
+const authenticationLockService = AuthenticationLockServiceMock;
+
 describe(`backupAndDeleteAllUserData`, () => {
   beforeEach(() => jest.clearAllMocks());
   it("should work if there are no errors", async () => {
     const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
       messageContentBlobService,
       messageModel,
       messageStatusModel,
@@ -179,6 +183,7 @@ describe(`backupAndDeleteAllUserData`, () => {
   it("should not stop if a content is not found for a message", async () => {
     mockGetContentFromBlob.mockImplementationOnce(() => TE.of(none));
     const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
       messageContentBlobService,
       messageModel,
       messageStatusModel,
@@ -204,6 +209,7 @@ describe(`backupAndDeleteAllUserData`, () => {
   it("should not stop if  there is an error while looking for a message content", async () => {
     mockGetContentFromBlob.mockImplementationOnce(() => TE.left(new Error("")));
     const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
       messageContentBlobService,
       messageModel,
       messageStatusModel,
@@ -222,6 +228,7 @@ describe(`backupAndDeleteAllUserData`, () => {
   it("should not stop if a notification is not found for a message (none)", async () => {
     mockFindNotificationForMessage.mockImplementationOnce(() => TE.of(none));
     const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
       messageContentBlobService,
       messageModel,
       messageStatusModel,
@@ -245,6 +252,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       })
     );
     const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
       messageContentBlobService,
       messageModel,
       messageStatusModel,
@@ -268,6 +276,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       })
     );
     const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
       messageContentBlobService,
       messageModel,
       messageStatusModel,
@@ -289,6 +298,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       asyncIteratorOf([])
     );
     const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
       messageContentBlobService,
       messageModel,
       messageStatusModel,
@@ -316,6 +326,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       asyncIteratorOf([E.left([{} as ValidationError])])
     );
     const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
       messageContentBlobService,
       messageModel,
       messageStatusModel,
@@ -343,6 +354,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       TE.left(toCosmosErrorResponse("") as CosmosErrors)
     );
     const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
       messageContentBlobService,
       messageModel,
       messageStatusModel,
