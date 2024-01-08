@@ -60,6 +60,9 @@ export const IConfig = t.intersection([
     SUBSCRIPTIONS_FEED_TABLE: NonEmptyString,
     USER_DATA_DELETE_DELAY_DAYS: NonEmptyString,
 
+    LOCKED_PROFILES_STORAGE_CONNECTION_STRING: NonEmptyString,
+    LOCKED_PROFILES_TABLE_NAME: NonEmptyString,
+
     isProduction: t.boolean
     /* eslint-enable sort-keys */
   }),

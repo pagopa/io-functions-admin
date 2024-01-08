@@ -49,6 +49,7 @@ export function toExtendedProfile(profile: RetrievedProfile): ExtendedProfile {
     accepted_tos_version: profile.acceptedTosVersion,
     blocked_inbox_or_channels: profile.blockedInboxOrChannels,
     email: profile.email,
+    is_email_already_taken: undefined,
     is_email_enabled: profile.isEmailEnabled,
     is_email_validated: profile.isEmailValidated,
     is_inbox_enabled: profile.isInboxEnabled === true,
