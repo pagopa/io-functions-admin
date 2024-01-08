@@ -64,7 +64,7 @@ const setProfileEmailAsNotValidated = (profile: RetrievedProfile) => (
 export const sanitizeProfileEmail = flow(
   getProfileForUpdate,
   RTE.chainFirstW(maybe =>
-    L.debugRTE("profile retrived", {
+    L.debugRTE("profile retrieved", {
       isProfileEligibleForUpdate: O.isSome(maybe)
     })
   ),
