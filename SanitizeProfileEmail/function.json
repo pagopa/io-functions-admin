@@ -9,5 +9,5 @@
       "connection": "CitizenAuthStorageConnection"
     }
   ],
-  "scriptFile": "../dist/SanitizeProfileEmail/main.js"
+  "scriptFile": "../dist/SanitizeProfileEmail/index.js"
 }

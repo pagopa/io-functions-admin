@@ -16,7 +16,7 @@ import {
 import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 
 import { aFiscalCode, aRetrievedProfile } from "../../__mocks__/mocks";
-import { ProfileToSanitize, sanitizeProfileEmail } from "../index";
+import { ProfileToSanitize, sanitizeProfileEmail } from "../handler";
 
 const fiscalCodes = {
   TO_SANITIZE: "BBBBBB20B20B222B" as FiscalCode,
