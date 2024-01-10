@@ -49,13 +49,17 @@ const getProfileForUpdate = (
     RTE.map(O.filter(isProfileEligibleForUpdate(profile.email)))
   );
 
+const OPT_OUT_EMAIL_SWITCH_DATE = 1625781600;
+
 const setProfileEmailAsNotValidated = (profile: RetrievedProfile) => (
   r: IProfileModel
 ): TE.TaskEither<Error, void> =>
   pipe(
     r.profileModel.update({
       ...profile,
-      isEmailValidated: false
+      isEmailValidated: false,
+      isEmailEnabled:
+        profile._ts < OPT_OUT_EMAIL_SWITCH_DATE ? false : profile.isEmailEnabled
     }),
     TE.mapLeft(flow(cosmosErrorsToString, Error)),
     TE.map(() => void 0)
