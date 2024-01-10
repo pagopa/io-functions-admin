@@ -57,9 +57,12 @@ const setProfileEmailAsNotValidated = (profile: RetrievedProfile) => (
   pipe(
     r.profileModel.update({
       ...profile,
-      isEmailValidated: false,
       isEmailEnabled:
-        profile._ts < OPT_OUT_EMAIL_SWITCH_DATE ? false : profile.isEmailEnabled
+        // eslint-disable-next-line no-underscore-dangle
+        profile._ts < OPT_OUT_EMAIL_SWITCH_DATE
+          ? false
+          : profile.isEmailEnabled,
+      isEmailValidated: false
     }),
     TE.mapLeft(flow(cosmosErrorsToString, Error)),
     TE.map(() => void 0)
