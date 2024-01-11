@@ -23,7 +23,8 @@ const fiscalCodes = {
   EMAIL_CHANGED: "AAAAAA10A10A111A" as FiscalCode,
   EMAIL_NOT_VALIDATED: "CCCCCC30C30C333C" as FiscalCode,
   NOT_FOUND: aFiscalCode,
-  ERROR: "ERRORE10E10E111E" as FiscalCode
+  ERROR: "ERRORE10E10E111E" as FiscalCode,
+  AFTER_EMAIL_OPT_OUT: "OPTOUT90O9O90009" as FiscalCode
 };
 
 const email = "test0@uee.pagopa.it" as EmailString;
@@ -49,7 +50,9 @@ MockedProfileModel.prototype.findLastVersionByModelId.mockImplementation(
           O.some({
             ...aRetrievedProfile,
             email: mocks.email,
-            fiscalCode: mocks.fiscalCodes.TO_SANITIZE
+            fiscalCode: mocks.fiscalCodes.TO_SANITIZE,
+            isEmailEnabled: true,
+            _ts: 1625711566
           })
         );
       case mocks.fiscalCodes.EMAIL_NOT_VALIDATED:
@@ -62,6 +65,16 @@ MockedProfileModel.prototype.findLastVersionByModelId.mockImplementation(
           kind: "COSMOS_ERROR_RESPONSE",
           error: new Error("test error")
         });
+      case mocks.fiscalCodes.AFTER_EMAIL_OPT_OUT:
+        return TE.right(
+          O.some({
+            ...aRetrievedProfile,
+            email: mocks.email,
+            isEmailEnabled: true,
+            fiscalCode: mocks.fiscalCodes.AFTER_EMAIL_OPT_OUT,
+            _ts: 1625781600
+          })
+        );
     }
     return TE.right(O.none);
   }
@@ -135,4 +148,35 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
     }
     expect.hasAssertions();
   });
+
+  it.each([
+    {
+      fiscalCode: mocks.fiscalCodes.TO_SANITIZE,
+      isEmailEnabled: false
+    },
+    {
+      fiscalCode: mocks.fiscalCodes.AFTER_EMAIL_OPT_OUT,
+      isEmailEnabled: true
+    }
+  ])(
+    "should update isEmailEnabled based on profile latest update and opt out email switch date",
+    async ({ fiscalCode, isEmailEnabled }) => {
+      const result = await sanitizeProfileEmail({
+        email: mocks.email,
+        fiscalCode
+      })({
+        profileModel,
+        logger: ConsoleLogger
+      })();
+      if (E.isRight(result)) {
+        expect(MockedProfileModel.prototype.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            fiscalCode,
+            isEmailEnabled
+          })
+        );
+      }
+      expect.hasAssertions();
+    }
+  );
 });

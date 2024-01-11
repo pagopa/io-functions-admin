@@ -49,9 +49,12 @@ const getProfileForUpdate = (
     RTE.map(O.filter(isProfileEligibleForUpdate(profile.email)))
   );
 
+// after this date, e-mail notification of IO messages becomes an opt-in feature
+// so we should set "isEmailEnabled: false" to profiles that haven't updated before
+// this date.
 const OPT_OUT_EMAIL_SWITCH_DATE = 1625781600;
 
-const setProfileEmailAsNotValidated = (profile: RetrievedProfile) => (
+const updateProfile = (profile: RetrievedProfile) => (
   r: IProfileModel
 ): TE.TaskEither<Error, void> =>
   pipe(
@@ -79,7 +82,7 @@ export const sanitizeProfileEmail = flow(
     flow(
       O.map(
         flow(
-          setProfileEmailAsNotValidated,
+          updateProfile,
           RTE.chainFirstW(() => L.debugRTE("profile updated"))
         )
       ),
