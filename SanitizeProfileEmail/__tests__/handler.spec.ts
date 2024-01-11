@@ -45,7 +45,13 @@ MockedProfileModel.prototype.findLastVersionByModelId.mockImplementation(
         return TE.right(O.some(aRetrievedProfile));
       case mocks.fiscalCodes.TO_SANITIZE:
         // this is profile eligible to sanitification
-        return TE.right(O.some({ ...aRetrievedProfile, email: mocks.email }));
+        return TE.right(
+          O.some({
+            ...aRetrievedProfile,
+            email: mocks.email,
+            fiscalCode: mocks.fiscalCodes.TO_SANITIZE
+          })
+        );
       case mocks.fiscalCodes.EMAIL_NOT_VALIDATED:
         // this profile has not yet validated its email
         return TE.right(
@@ -109,7 +115,10 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
 
     expect(MockedProfileModel.prototype.update).toBeCalledTimes(1);
     expect(MockedProfileModel.prototype.update).toBeCalledWith(
-      expect.objectContaining({ isEmailValidated: false })
+      expect.objectContaining({
+        isEmailValidated: false,
+        fiscalCode: mocks.fiscalCodes.TO_SANITIZE
+      })
     );
   });
 
