@@ -11,6 +11,7 @@ import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 import { pipe } from "fp-ts/lib/function";
+import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
@@ -37,6 +38,7 @@ export interface IActivityHandlerInput {
   readonly messageViewModel: MessageViewDeletableModel;
   readonly notificationModel: NotificationDeletableModel;
   readonly notificationStatusModel: NotificationStatusDeletableModel;
+  readonly profileEmailsRepository: IProfileEmailWriter;
   readonly profileModel: ProfileDeletableModel;
   readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly messageContentBlobService: BlobService;
@@ -56,6 +58,7 @@ export function createDeleteUserDataActivityHandler({
   messageViewModel,
   notificationModel,
   notificationStatusModel,
+  profileEmailsRepository,
   profileModel,
   servicePreferencesModel,
   userDataBackupBlobService,
@@ -90,6 +93,7 @@ export function createDeleteUserDataActivityHandler({
             messageViewModel,
             notificationModel,
             notificationStatusModel,
+            profileEmailsRepository,
             profileModel,
             servicePreferencesModel,
             userDataBackup: {

@@ -28,6 +28,7 @@ import {
 import { backupAndDeleteAllUserData } from "../backupAndDelete";
 import { IBlobServiceInfo } from "../types";
 import { AuthenticationLockServiceMock } from "../../__mocks__/authenticationLockService.mock";
+import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
 
 const asyncIteratorOf = <T>(items: T[]): AsyncIterator<T[]> => {
   const data = [...items];
@@ -134,9 +135,18 @@ const mockProfileFindAllVersionsByModelId = jest.fn(() =>
   asyncIteratorOf([E.right(aRetrievedProfile)])
 );
 const mockDeleteProfileVersion = jest.fn(() => TE.of(true));
+const mockFindLastVersionByModelId = jest.fn<
+  ReturnType<
+    InstanceType<typeof ProfileDeletableModel>["findLastVersionByModelId"]
+  >,
+  Parameters<
+    InstanceType<typeof ProfileDeletableModel>["findLastVersionByModelId"]
+  >
+>(() => TE.of(some(aRetrievedProfile)));
 const profileModel = ({
   findAllVersionsByModelId: mockProfileFindAllVersionsByModelId,
-  deleteProfileVersion: mockDeleteProfileVersion
+  deleteProfileVersion: mockDeleteProfileVersion,
+  findLastVersionByModelId: mockFindLastVersionByModelId
 } as unknown) as ProfileDeletableModel;
 
 // backup BlobService
@@ -153,6 +163,12 @@ const userDataBackup = {
 
 const authenticationLockService = AuthenticationLockServiceMock;
 
+// ProfileEmailsRepository
+const mockDelete = jest.fn(() => Promise.resolve(undefined));
+const profileEmailsRepository = ({
+  delete: mockDelete
+} as unknown) as IProfileEmailWriter;
+
 describe(`backupAndDeleteAllUserData`, () => {
   beforeEach(() => jest.clearAllMocks());
   it("should work if there are no errors", async () => {
@@ -164,6 +180,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageViewModel,
       notificationModel,
       notificationStatusModel,
+      profileEmailsRepository,
       profileModel,
       servicePreferencesModel,
       userDataBackup,
@@ -190,6 +207,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageViewModel,
       notificationModel,
       notificationStatusModel,
+      profileEmailsRepository,
       profileModel,
       userDataBackup,
       servicePreferencesModel,
@@ -216,6 +234,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageViewModel,
       notificationModel,
       notificationStatusModel,
+      profileEmailsRepository,
       profileModel,
       userDataBackup,
       servicePreferencesModel,
@@ -235,6 +254,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageViewModel,
       notificationModel,
       notificationStatusModel,
+      profileEmailsRepository,
       profileModel,
       userDataBackup,
       servicePreferencesModel,
@@ -259,6 +279,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageViewModel,
       notificationModel,
       notificationStatusModel,
+      profileEmailsRepository,
       profileModel,
       userDataBackup,
       servicePreferencesModel,
@@ -283,6 +304,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageViewModel,
       notificationModel,
       notificationStatusModel,
+      profileEmailsRepository,
       profileModel,
       userDataBackup,
       servicePreferencesModel,
@@ -305,6 +327,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageViewModel,
       notificationModel,
       notificationStatusModel,
+      profileEmailsRepository,
       profileModel,
       userDataBackup,
       servicePreferencesModel,
@@ -333,6 +356,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageViewModel,
       notificationModel,
       notificationStatusModel,
+      profileEmailsRepository,
       profileModel,
       userDataBackup,
       servicePreferencesModel,
@@ -361,6 +385,7 @@ describe(`backupAndDeleteAllUserData`, () => {
       messageViewModel,
       notificationModel,
       notificationStatusModel,
+      profileEmailsRepository,
       profileModel,
       userDataBackup,
       servicePreferencesModel,
@@ -374,5 +399,114 @@ describe(`backupAndDeleteAllUserData`, () => {
     expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
     expect(mockDeleteNotification).toHaveBeenCalled();
     expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+  });
+
+  it("should not stop and should not call `profileEmailsRepository.delete` when a CosmosErrors is raised in getting the last validated email", async () => {
+    mockFindLastVersionByModelId.mockImplementationOnce(() =>
+      TE.left(toCosmosErrorResponse("") as CosmosErrors)
+    );
+    const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      messageViewModel,
+      notificationModel,
+      notificationStatusModel,
+      profileEmailsRepository,
+      profileModel,
+      userDataBackup,
+      servicePreferencesModel,
+      fiscalCode: aFiscalCode
+    })();
+
+    expect(E.isRight(result)).toBe(true);
+
+    expect(mockDeleteProfileVersion).toHaveBeenCalled();
+    expect(mockDeleteMessage).toHaveBeenCalled();
+    expect(mockDeleteNotification).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it("should not call `profileEmailsRepository.delete` when `profileModel.findLastVersionByModelId` returns a profile with `isEmailValidated` equal to false", async () => {
+    mockFindLastVersionByModelId.mockImplementationOnce(() =>
+      TE.of(some({ ...aRetrievedProfile, isEmailValidated: false }))
+    );
+    const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      messageViewModel,
+      notificationModel,
+      notificationStatusModel,
+      profileEmailsRepository,
+      profileModel,
+      userDataBackup,
+      servicePreferencesModel,
+      fiscalCode: aFiscalCode
+    })();
+
+    expect(E.isRight(result)).toBe(true);
+
+    expect(mockDeleteProfileVersion).toHaveBeenCalled();
+    expect(mockDeleteMessage).toHaveBeenCalled();
+    expect(mockDeleteNotification).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it("should not call `profileEmailsRepository.delete` when `profileModel.findLastVersionByModelId` returns a profile with missing email", async () => {
+    mockFindLastVersionByModelId.mockImplementationOnce(() =>
+      TE.of(some({ ...aRetrievedProfile, email: undefined }))
+    );
+    const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      messageViewModel,
+      notificationModel,
+      notificationStatusModel,
+      profileEmailsRepository,
+      profileModel,
+      userDataBackup,
+      servicePreferencesModel,
+      fiscalCode: aFiscalCode
+    })();
+
+    expect(E.isRight(result)).toBe(true);
+
+    expect(mockDeleteProfileVersion).toHaveBeenCalled();
+    expect(mockDeleteMessage).toHaveBeenCalled();
+    expect(mockDeleteNotification).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it("should call `profileEmailsRepository.delete` when `profileModel.findLastVersionByModelId` returns a profile with a valid and validated email", async () => {
+    const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      messageViewModel,
+      notificationModel,
+      notificationStatusModel,
+      profileEmailsRepository,
+      profileModel,
+      userDataBackup,
+      servicePreferencesModel,
+      fiscalCode: aFiscalCode
+    })();
+
+    expect(E.isRight(result)).toBe(true);
+
+    expect(mockDeleteProfileVersion).toHaveBeenCalled();
+    expect(mockDeleteMessage).toHaveBeenCalled();
+    expect(mockDeleteNotification).toHaveBeenCalled();
+    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
+    expect(mockDelete).toHaveBeenCalled();
   });
 });

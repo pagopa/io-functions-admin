@@ -17,13 +17,14 @@ import { RetrievedMessageStatus } from "@pagopa/io-functions-commons/dist/src/mo
 import { RetrievedNotification } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import { RetrievedNotificationStatus } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import { RetrievedProfile } from "@pagopa/io-functions-commons/dist/src/models/profile";
-import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { Errors } from "io-ts";
 import { RetrievedServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { flow, pipe } from "fp-ts/lib/function";
 import { RetrievedMessageView } from "@pagopa/io-functions-commons/dist/src/models/message_view";
+import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
@@ -38,8 +39,11 @@ import {
   IBlobServiceInfo,
   QueryFailure
 } from "./types";
-import { saveDataToBlob } from "./utils";
-import { toDocumentDeleteFailure, toQueryFailure } from "./utils";
+import {
+  saveDataToBlob,
+  toDocumentDeleteFailure,
+  toQueryFailure
+} from "./utils";
 import AuthenticationLockService, {
   AuthenticationLockData
 } from "./authenticationLockService";
@@ -142,6 +146,50 @@ const backupAndDeleteAuthenticationLockData = (
     )
   );
 
+const getLastEmailIfValidated = ({
+  profileModel,
+  fiscalCode
+}: {
+  readonly profileModel: ProfileDeletableModel;
+  readonly fiscalCode: FiscalCode;
+}): TE.TaskEither<QueryFailure, O.Option<EmailString>> =>
+  pipe(
+    profileModel.findLastVersionByModelId([fiscalCode]),
+    TE.chainW(
+      flow(
+        O.fold(
+          () => TE.right(O.none),
+          profile =>
+            profile.email && profile.isEmailValidated
+              ? TE.right(O.some(profile.email))
+              : TE.right(O.none)
+        )
+      )
+    ),
+    TE.mapLeft(toQueryFailure)
+  );
+
+const deleteProfileEmail = ({
+  profileEmailsRepository,
+  email,
+  fiscalCode
+}: {
+  readonly profileEmailsRepository: IProfileEmailWriter;
+  readonly email: EmailString;
+  readonly fiscalCode: FiscalCode;
+}): TE.TaskEither<DocumentDeleteFailure, true> =>
+  pipe(
+    TE.tryCatch(
+      () => profileEmailsRepository.delete({ email, fiscalCode }),
+      error =>
+        error instanceof Error
+          ? error
+          : new Error("error deleting ProfileEmail from table storage")
+    ),
+    TE.map(_ => true as const),
+    TE.mapLeft(toDocumentDeleteFailure)
+  );
+
 /**
  * Backup and delete every version of the profile
  *
@@ -155,13 +203,17 @@ const backupAndDeleteProfile = ({
   fiscalCode,
   profileModel,
   servicePreferencesModel,
-  userDataBackup
+  userDataBackup,
+  profileEmailsRepository,
+  lastValidatedEmail
 }: {
   readonly authenticationLockService: AuthenticationLockService;
   readonly profileModel: ProfileDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
   readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly fiscalCode: FiscalCode;
+  readonly profileEmailsRepository: IProfileEmailWriter;
+  readonly lastValidatedEmail?: EmailString;
 }): TE.TaskEither<DataFailure, true> =>
   pipe(
     executeRecursiveBackupAndDelete<RetrievedProfile>(
@@ -197,6 +249,17 @@ const backupAndDeleteProfile = ({
               )
             : TE.of(true)
         )
+      )
+    ),
+    TE.chainW(_ =>
+      pipe(
+        lastValidatedEmail
+          ? deleteProfileEmail({
+              email: lastValidatedEmail,
+              fiscalCode,
+              profileEmailsRepository
+            })
+          : TE.right(void 0)
       )
     ),
     TE.foldW(
@@ -594,6 +657,7 @@ export const backupAndDeleteAllUserData = ({
   notificationModel,
   notificationStatusModel,
   profileModel,
+  profileEmailsRepository,
   servicePreferencesModel,
   userDataBackup,
   authenticationLockService,
@@ -606,6 +670,7 @@ export const backupAndDeleteAllUserData = ({
   readonly messageViewModel: MessageViewDeletableModel;
   readonly notificationModel: NotificationDeletableModel;
   readonly notificationStatusModel: NotificationStatusDeletableModel;
+  readonly profileEmailsRepository: IProfileEmailWriter;
   readonly profileModel: ProfileDeletableModel;
   readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
@@ -622,14 +687,25 @@ export const backupAndDeleteAllUserData = ({
       notificationStatusModel,
       userDataBackup
     }),
-    TE.chainW(_ =>
-      // eslint-disable-next-line sort-keys
-      backupAndDeleteProfile({
-        authenticationLockService,
-        fiscalCode,
-        profileModel,
-        servicePreferencesModel,
-        userDataBackup
-      })
+    TE.chainW(() =>
+      pipe(
+        getLastEmailIfValidated({ fiscalCode, profileModel }),
+        TE.fold(
+          () => TE.right(void 0),
+          lastValidatedEmail =>
+            TE.right(pipe(lastValidatedEmail, O.toUndefined))
+        ),
+        TE.chain(lastValidatedEmail =>
+          backupAndDeleteProfile({
+            authenticationLockService,
+            fiscalCode,
+            lastValidatedEmail,
+            profileEmailsRepository,
+            profileModel,
+            servicePreferencesModel,
+            userDataBackup
+          })
+        )
+      )
     )
   );

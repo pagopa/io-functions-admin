@@ -63,7 +63,10 @@ export const IConfig = t.intersection([
     LOCKED_PROFILES_STORAGE_CONNECTION_STRING: NonEmptyString,
     LOCKED_PROFILES_TABLE_NAME: NonEmptyString,
 
-    isProduction: t.boolean
+    isProduction: t.boolean,
+
+    PROFILE_EMAILS_STORAGE_CONNECTION_STRING: NonEmptyString,
+    PROFILE_EMAILS_TABLE_NAME: NonEmptyString
     /* eslint-enable sort-keys */
   }),
   MailerConfig
