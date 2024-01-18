@@ -79,8 +79,8 @@ const trackResetEmailValidationEvent = (
   r.telemetryClient.trackEvent({
     name: "io.citizen-auth.reset_email_validation",
     tagOverrides: {
-      samplingEnabled: "false",
-      "ai.user.id": hashFiscalCode(profile.fiscalCode)
+      "ai.user.id": hashFiscalCode(profile.fiscalCode),
+      samplingEnabled: "false"
     }
   });
 
