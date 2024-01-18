@@ -70,6 +70,7 @@ export const IConfig = t.intersection([
 
     PROFILE_EMAILS_STORAGE_CONNECTION_STRING: NonEmptyString,
     PROFILE_EMAILS_TABLE_NAME: NonEmptyString
+
     /* eslint-enable sort-keys */
   }),
   MailerConfig
