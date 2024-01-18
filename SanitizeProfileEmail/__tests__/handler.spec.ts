@@ -2,6 +2,8 @@ import { describe, it, jest } from "@jest/globals";
 
 import { Container } from "@azure/cosmos";
 
+import * as ai from "applicationinsights";
+
 import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
@@ -18,6 +20,12 @@ import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { aFiscalCode, aRetrievedProfile } from "../../__mocks__/mocks";
 import { ProfileToSanitize, sanitizeProfileEmail } from "../handler";
 
+jest.mock("applicationinsights");
+
+const telemetryClient = jest.mocked(ai.defaultClient);
+
+jest.mock("@pagopa/io-functions-commons/dist/src/models/profile");
+
 const fiscalCodes = {
   TO_SANITIZE: "BBBBBB20B20B222B" as FiscalCode,
   EMAIL_CHANGED: "AAAAAA10A10A111A" as FiscalCode,
@@ -33,8 +41,6 @@ const mocks = {
   email,
   fiscalCodes
 };
-
-jest.mock("@pagopa/io-functions-commons/dist/src/models/profile");
 
 const MockedProfileModel = jest.mocked(ProfileModel);
 
@@ -122,7 +128,11 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
 
     await Promise.all(
       profiles.map(p =>
-        sanitizeProfileEmail(p)({ profileModel, logger: ConsoleLogger })()
+        sanitizeProfileEmail(p)({
+          profileModel,
+          logger: ConsoleLogger,
+          telemetryClient
+        })()
       )
     );
 
@@ -133,6 +143,13 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
         fiscalCode: mocks.fiscalCodes.TO_SANITIZE
       })
     );
+
+    expect(telemetryClient.trackEvent).toBeCalledTimes(1);
+    expect(telemetryClient.trackEvent).toBeCalledWith(
+      expect.objectContaining({
+        name: "io.citizen-auth.reset_email_validation"
+      })
+    );
   });
 
   it("should fail without creating new profile versions if there are errors retrieving the eligible profiles", async () => {
@@ -141,7 +158,8 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
       fiscalCode: mocks.fiscalCodes.ERROR
     })({
       profileModel,
-      logger: ConsoleLogger
+      logger: ConsoleLogger,
+      telemetryClient
     })();
     if (E.isLeft(result)) {
       expect(MockedProfileModel.prototype.update).toBeCalledTimes(0);
@@ -166,7 +184,8 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
         fiscalCode
       })({
         profileModel,
-        logger: ConsoleLogger
+        logger: ConsoleLogger,
+        telemetryClient
       })();
       if (E.isRight(result)) {
         expect(MockedProfileModel.prototype.update).toHaveBeenCalledWith(

@@ -1,6 +1,9 @@
+import { TelemetryClient } from "applicationinsights";
+
 import * as t from "io-ts";
 
 import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { hashFiscalCode } from "@pagopa/ts-commons/lib/hash";
 
 import * as RTE from "fp-ts/lib/ReaderTaskEither";
 import * as TE from "fp-ts/lib/TaskEither";
@@ -56,7 +59,7 @@ const OPT_OUT_EMAIL_SWITCH_DATE = 1625781600;
 
 const updateProfile = (profile: RetrievedProfile) => (
   r: IProfileModel
-): TE.TaskEither<Error, void> =>
+): TE.TaskEither<Error, RetrievedProfile> =>
   pipe(
     r.profileModel.update({
       ...profile,
@@ -67,9 +70,19 @@ const updateProfile = (profile: RetrievedProfile) => (
           : profile.isEmailEnabled,
       isEmailValidated: false
     }),
-    TE.mapLeft(flow(cosmosErrorsToString, Error)),
-    TE.map(() => void 0)
+    TE.mapLeft(flow(cosmosErrorsToString, Error))
   );
+
+const trackResetEmailValidationEvent = (
+  profile: Pick<RetrievedProfile, "fiscalCode">
+) => (r: { readonly telemetryClient: TelemetryClient }) => (): void =>
+  r.telemetryClient.trackEvent({
+    name: "io.citizen-auth.reset_email_validation",
+    properties: {
+      hashedFiscalCode: hashFiscalCode(profile.fiscalCode)
+    },
+    tagOverrides: { samplingEnabled: "false" }
+  });
 
 export const sanitizeProfileEmail = flow(
   getProfileForUpdate,
@@ -83,7 +96,8 @@ export const sanitizeProfileEmail = flow(
       O.map(
         flow(
           updateProfile,
-          RTE.chainFirstW(() => L.debugRTE("profile updated"))
+          RTE.chainFirstW(() => L.debugRTE("profile updated")),
+          RTE.chainFirstReaderIOKW(trackResetEmailValidationEvent)
         )
       ),
       O.getOrElse(() => RTE.right(void 0))
