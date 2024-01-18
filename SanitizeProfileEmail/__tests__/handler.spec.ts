@@ -19,6 +19,7 @@ import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 
 import { aFiscalCode, aRetrievedProfile } from "../../__mocks__/mocks";
 import { ProfileToSanitize, sanitizeProfileEmail } from "../handler";
+import { hashFiscalCode } from "@pagopa/ts-commons/lib/hash";
 
 jest.mock("applicationinsights");
 
@@ -147,7 +148,11 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
     expect(telemetryClient.trackEvent).toBeCalledTimes(1);
     expect(telemetryClient.trackEvent).toBeCalledWith(
       expect.objectContaining({
-        name: "io.citizen-auth.reset_email_validation"
+        name: "io.citizen-auth.reset_email_validation",
+        tagOverrides: {
+          samplingEnabled: "false",
+          "ai.user.id": hashFiscalCode(mocks.fiscalCodes.TO_SANITIZE)
+        }
       })
     );
   });

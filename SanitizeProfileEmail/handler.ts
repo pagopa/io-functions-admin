@@ -78,10 +78,12 @@ const trackResetEmailValidationEvent = (
 ) => (r: { readonly telemetryClient: TelemetryClient }) => (): void =>
   r.telemetryClient.trackEvent({
     name: "io.citizen-auth.reset_email_validation",
-    properties: {
-      hashedFiscalCode: hashFiscalCode(profile.fiscalCode)
-    },
-    tagOverrides: { samplingEnabled: "false" }
+    tagOverrides: {
+      samplingEnabled: "false",
+      [r.telemetryClient.context.keys.userId]: hashFiscalCode(
+        profile.fiscalCode
+      )
+    }
   });
 
 export const sanitizeProfileEmail = flow(
