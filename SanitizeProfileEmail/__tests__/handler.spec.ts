@@ -20,12 +20,7 @@ import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { aFiscalCode, aRetrievedProfile } from "../../__mocks__/mocks";
 import { ProfileToSanitize, sanitizeProfileEmail } from "../handler";
 import { hashFiscalCode } from "@pagopa/ts-commons/lib/hash";
-
-jest.mock("applicationinsights");
-
-const telemetryClient = jest.mocked(ai.defaultClient);
-
-jest.mock("@pagopa/io-functions-commons/dist/src/models/profile");
+import { ContextTagKeys } from "applicationinsights/out/Declarations/Contracts";
 
 const fiscalCodes = {
   TO_SANITIZE: "BBBBBB20B20B222B" as FiscalCode,
@@ -42,6 +37,12 @@ const mocks = {
   email,
   fiscalCodes
 };
+
+jest.mock("applicationinsights");
+
+const telemetryClient = jest.mocked(ai.defaultClient);
+
+jest.mock("@pagopa/io-functions-commons/dist/src/models/profile");
 
 const MockedProfileModel = jest.mocked(ProfileModel);
 
