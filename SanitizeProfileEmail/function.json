@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/function",
+  "bindings": [
+    {
+      "type": "queueTrigger",
+      "direction": "in",
+      "name": "profiles",
+      "queueName": "%SanitizeUserProfileQueueName%",
+      "connection": "CitizenAuthStorageConnection"
+    }
+  ],
+  "scriptFile": "../dist/SanitizeProfileEmail/index.js"
+}
