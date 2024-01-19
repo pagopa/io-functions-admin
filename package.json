@@ -1,6 +1,6 @@
 {
   "name": "@pagopa/io-functions-admin",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "license": "MIT",
   "scripts": {
     "prebuild": "shx rm -rf dist && yarn generate",
