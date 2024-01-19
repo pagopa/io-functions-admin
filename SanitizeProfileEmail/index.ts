@@ -8,6 +8,7 @@ import {
 
 import { cosmosdbInstance } from "../utils/cosmosdb";
 
+import { initTelemetryClient } from "../utils/appinsights";
 import { ProfileToSanitize, sanitizeProfileEmail } from "./handler";
 
 const profilesContainer = cosmosdbInstance.container(PROFILE_COLLECTION_NAME);
@@ -20,5 +21,6 @@ const createSanitizeProfileEmailsFunction = azureFunction(
 
 export default createSanitizeProfileEmailsFunction({
   inputDecoder: ProfileToSanitize,
-  profileModel
+  profileModel,
+  telemetryClient: initTelemetryClient()
 });
