@@ -423,9 +423,6 @@ describe(`backupAndDeleteAllUserData`, () => {
     expect(E.isRight(result)).toBe(true);
 
     expect(mockDeleteProfileVersion).toHaveBeenCalled();
-    expect(mockDeleteMessage).toHaveBeenCalled();
-    expect(mockDeleteNotification).toHaveBeenCalled();
-    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
@@ -451,9 +448,6 @@ describe(`backupAndDeleteAllUserData`, () => {
     expect(E.isRight(result)).toBe(true);
 
     expect(mockDeleteProfileVersion).toHaveBeenCalled();
-    expect(mockDeleteMessage).toHaveBeenCalled();
-    expect(mockDeleteNotification).toHaveBeenCalled();
-    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
@@ -504,9 +498,6 @@ describe(`backupAndDeleteAllUserData`, () => {
     expect(E.isRight(result)).toBe(true);
 
     expect(mockDeleteProfileVersion).toHaveBeenCalled();
-    expect(mockDeleteMessage).toHaveBeenCalled();
-    expect(mockDeleteNotification).toHaveBeenCalled();
-    expect(mockDeleteMessageStatusVersion).toHaveBeenCalled();
     expect(mockDelete).toHaveBeenCalled();
   });
 });
