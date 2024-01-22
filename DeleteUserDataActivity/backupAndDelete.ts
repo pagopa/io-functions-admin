@@ -204,8 +204,7 @@ const backupAndDeleteProfile = ({
   profileModel,
   servicePreferencesModel,
   userDataBackup,
-  profileEmailsRepository,
-  lastValidatedEmail
+  profileEmailsRepository
 }: {
   readonly authenticationLockService: AuthenticationLockService;
   readonly profileModel: ProfileDeletableModel;
@@ -213,58 +212,68 @@ const backupAndDeleteProfile = ({
   readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly fiscalCode: FiscalCode;
   readonly profileEmailsRepository: IProfileEmailWriter;
-  readonly lastValidatedEmail?: EmailString;
 }): TE.TaskEither<DataFailure, true> =>
   pipe(
-    executeRecursiveBackupAndDelete<RetrievedProfile>(
-      item => profileModel.deleteProfileVersion(item.fiscalCode, item.id),
-      userDataBackup,
-      item => `profile/${item.id}.json`,
-      profileModel.findAllVersionsByModelId(fiscalCode)
+    getLastEmailIfValidated({ fiscalCode, profileModel }),
+    TE.fold(
+      () => TE.right(void 0),
+      lastValidatedEmail => TE.right(pipe(lastValidatedEmail, O.toUndefined))
     ),
-    TE.chainW(_ =>
-      executeRecursiveBackupAndDelete<RetrievedServicePreference>(
-        item => servicePreferencesModel.delete(item.id, item.fiscalCode),
-        userDataBackup,
-        item => `service-settings/${item.id}.json`,
-        servicePreferencesModel.findAllByFiscalCode(fiscalCode)
-      )
-    ),
-    TE.chainW(_ =>
+    TE.chain(lastValidatedEmail =>
       pipe(
-        authenticationLockService.getAllUserAuthenticationLockData(fiscalCode),
-        TE.mapLeft(e =>
-          QueryFailure.encode({
-            kind: "QUERY_FAILURE",
-            reason: `backupAndDeleteAuthenticationLockData|${e.message}`
-          })
+        executeRecursiveBackupAndDelete<RetrievedProfile>(
+          item => profileModel.deleteProfileVersion(item.fiscalCode, item.id),
+          userDataBackup,
+          item => `profile/${item.id}.json`,
+          profileModel.findAllVersionsByModelId(fiscalCode)
         ),
-        TE.chain(data =>
-          data.length > 0
-            ? backupAndDeleteAuthenticationLockData(
-                authenticationLockService,
-                userDataBackup,
-                fiscalCode,
-                data
-              )
-            : TE.of(true)
+        TE.chainW(_ =>
+          executeRecursiveBackupAndDelete<RetrievedServicePreference>(
+            item => servicePreferencesModel.delete(item.id, item.fiscalCode),
+            userDataBackup,
+            item => `service-settings/${item.id}.json`,
+            servicePreferencesModel.findAllByFiscalCode(fiscalCode)
+          )
+        ),
+        TE.chainW(_ =>
+          pipe(
+            authenticationLockService.getAllUserAuthenticationLockData(
+              fiscalCode
+            ),
+            TE.mapLeft(e =>
+              QueryFailure.encode({
+                kind: "QUERY_FAILURE",
+                reason: `backupAndDeleteAuthenticationLockData|${e.message}`
+              })
+            ),
+            TE.chain(data =>
+              data.length > 0
+                ? backupAndDeleteAuthenticationLockData(
+                    authenticationLockService,
+                    userDataBackup,
+                    fiscalCode,
+                    data
+                  )
+                : TE.of(true)
+            )
+          )
+        ),
+        TE.chainW(_ =>
+          pipe(
+            lastValidatedEmail
+              ? deleteProfileEmail({
+                  email: lastValidatedEmail,
+                  fiscalCode,
+                  profileEmailsRepository
+                })
+              : TE.right(void 0)
+          )
+        ),
+        TE.foldW(
+          () => TE.of(true as const),
+          _ => TE.of(true as const)
         )
       )
-    ),
-    TE.chainW(_ =>
-      pipe(
-        lastValidatedEmail
-          ? deleteProfileEmail({
-              email: lastValidatedEmail,
-              fiscalCode,
-              profileEmailsRepository
-            })
-          : TE.right(void 0)
-      )
-    ),
-    TE.foldW(
-      () => TE.of(true as const),
-      _ => TE.of(true as const)
     )
   );
 
@@ -687,25 +696,14 @@ export const backupAndDeleteAllUserData = ({
       notificationStatusModel,
       userDataBackup
     }),
-    TE.chainW(() =>
-      pipe(
-        getLastEmailIfValidated({ fiscalCode, profileModel }),
-        TE.fold(
-          () => TE.right(void 0),
-          lastValidatedEmail =>
-            TE.right(pipe(lastValidatedEmail, O.toUndefined))
-        ),
-        TE.chain(lastValidatedEmail =>
-          backupAndDeleteProfile({
-            authenticationLockService,
-            fiscalCode,
-            lastValidatedEmail,
-            profileEmailsRepository,
-            profileModel,
-            servicePreferencesModel,
-            userDataBackup
-          })
-        )
-      )
+    TE.chain(_ =>
+      backupAndDeleteProfile({
+        authenticationLockService,
+        fiscalCode,
+        profileEmailsRepository,
+        profileModel,
+        servicePreferencesModel,
+        userDataBackup
+      })
     )
   );
