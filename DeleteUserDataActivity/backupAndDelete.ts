@@ -215,10 +215,7 @@ const backupAndDeleteProfile = ({
 }): TE.TaskEither<DataFailure, true> =>
   pipe(
     getLastEmailIfValidated({ fiscalCode, profileModel }),
-    TE.fold(
-      () => TE.right(void 0),
-      lastValidatedEmail => TE.right(pipe(lastValidatedEmail, O.toUndefined))
-    ),
+    TE.fold(() => TE.right(O.none), TE.right),
     TE.chain(lastValidatedEmail =>
       pipe(
         executeRecursiveBackupAndDelete<RetrievedProfile>(
@@ -260,13 +257,16 @@ const backupAndDeleteProfile = ({
         ),
         TE.chainW(_ =>
           pipe(
-            lastValidatedEmail
-              ? deleteProfileEmail({
-                  email: lastValidatedEmail,
+            lastValidatedEmail,
+            O.fold(
+              () => TE.of(true as const),
+              email =>
+                deleteProfileEmail({
+                  email,
                   fiscalCode,
                   profileEmailsRepository
                 })
-              : TE.right(void 0)
+            )
           )
         ),
         TE.foldW(
