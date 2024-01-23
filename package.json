@@ -64,8 +64,8 @@
     "@pagopa/handler-kit": "^1.1.0",
     "@pagopa/handler-kit-azure-func": "^1.2.1",
     "@pagopa/io-backend-session-sdk": "x",
-    "@pagopa/io-functions-commons": "^28.13.0",
     "@pagopa/logger": "^1.0.1",
+    "@pagopa/io-functions-commons": "^28.15.0",
     "@pagopa/ts-commons": "^12.5.0",
     "@types/archiver": "^3.1.1",
     "@types/randomstring": "^1.1.6",
@@ -94,5 +94,6 @@
   },
   "resolutions": {
     "handlebars": "~4.5.3"
-  }
+  },
+  "packageManager": "yarn@1.22.19"
 }

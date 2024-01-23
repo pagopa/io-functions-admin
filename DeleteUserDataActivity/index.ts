@@ -7,6 +7,7 @@ import { NOTIFICATION_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/
 import { NOTIFICATION_STATUS_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import { PROFILE_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import { SERVICE_PREFERENCES_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
+import { DataTableProfileEmailsRepository } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement/storage";
 import { cosmosdbClient } from "../utils/cosmosdb";
 import { getConfigOrThrow } from "../utils/config";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
@@ -87,6 +88,15 @@ const tableClient = TableClient.fromConnectionString(
 );
 const authenticationLockService = new AuthenticationLockService(tableClient);
 
+const profileEmailsTableClient = TableClient.fromConnectionString(
+  config.PROFILE_EMAILS_STORAGE_CONNECTION_STRING,
+  config.PROFILE_EMAILS_TABLE_NAME
+);
+
+const profileEmailsRepository = new DataTableProfileEmailsRepository(
+  profileEmailsTableClient
+);
+
 const activityFunctionHandler = createDeleteUserDataActivityHandler({
   authenticationLockService,
   messageContentBlobService,
@@ -95,6 +105,7 @@ const activityFunctionHandler = createDeleteUserDataActivityHandler({
   messageViewModel,
   notificationModel,
   notificationStatusModel,
+  profileEmailsRepository,
   profileModel,
   servicePreferencesModel,
   userDataBackupBlobService,

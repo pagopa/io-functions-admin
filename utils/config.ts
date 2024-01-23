@@ -66,8 +66,10 @@ export const IConfig = t.intersection([
     isProduction: t.boolean,
 
     CitizenAuthStorageConnection: NonEmptyString,
-    SanitizeUserProfileQueueName: NonEmptyString
+    SanitizeUserProfileQueueName: NonEmptyString,
 
+    PROFILE_EMAILS_STORAGE_CONNECTION_STRING: NonEmptyString,
+    PROFILE_EMAILS_TABLE_NAME: NonEmptyString
     /* eslint-enable sort-keys */
   }),
   MailerConfig
