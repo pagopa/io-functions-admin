@@ -209,7 +209,7 @@ function* setUserDataProcessingStatus(
   return pipe(
     result,
     SetUserDataProcessingStatusActivityResultSuccess.decode,
-    E.getOrElse(_ => {
+    E.getOrElseW(_ => {
       throw toActivityFailure(
         { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
         "SetUserDataProcessingStatusActivity",

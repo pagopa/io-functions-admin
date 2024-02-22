@@ -109,7 +109,7 @@ export function getConfig(): t.Validation<IConfig> {
 export function getConfigOrThrow(): IConfig {
   return pipe(
     errorOrConfig,
-    E.getOrElse(errors => {
+    E.getOrElseW(errors => {
       throw new Error(`Invalid configuration: ${readableReport(errors)}`);
     })
   );
