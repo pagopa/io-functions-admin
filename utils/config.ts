@@ -4,13 +4,14 @@
  * Single point of access for the application confguration. Handles validation on required environment variables.
  * The configuration is evaluate eagerly at the first access to the module. The module exposes convenient methods to access such value.
  */
-
-import { MailerConfig } from "@pagopa/io-functions-commons/dist/src/mailer";
 import * as t from "io-ts";
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+
+import { MailerConfig } from "@pagopa/io-functions-commons/dist/src/mailer";
+import { CommaSeparatedListOf } from "@pagopa/ts-commons/lib/comma-separated-list";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 // global app configuration
 export type IConfig = t.TypeOf<typeof IConfig>;
@@ -69,7 +70,9 @@ export const IConfig = t.intersection([
     SanitizeUserProfileQueueName: NonEmptyString,
 
     PROFILE_EMAILS_STORAGE_CONNECTION_STRING: NonEmptyString,
-    PROFILE_EMAILS_TABLE_NAME: NonEmptyString
+    PROFILE_EMAILS_TABLE_NAME: NonEmptyString,
+
+    INSTANT_DELETE_ENABLED_USERS: CommaSeparatedListOf(FiscalCode)
     /* eslint-enable sort-keys */
   }),
   MailerConfig
@@ -111,3 +114,13 @@ export function getConfigOrThrow(): IConfig {
     })
   );
 }
+
+export type IsUserEligibleForInstantDelete = (
+  fiscalCode: FiscalCode
+) => boolean;
+export const isUserEligibleForInstantDelete: ({
+  INSTANT_DELETE_ENABLED_USERS
+}: IConfig) => IsUserEligibleForInstantDelete = ({
+  INSTANT_DELETE_ENABLED_USERS
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+}) => fiscalCode => INSTANT_DELETE_ENABLED_USERS.includes(fiscalCode);
