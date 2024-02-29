@@ -59,6 +59,7 @@ import {
   trackUserDataDeleteEvent,
   trackUserDataDeleteException
 } from "../utils/appinsightsEvents";
+import { IsUserEligibleForInstantDelete } from "../utils/config";
 import { ABORT_EVENT, addDays, addHours } from "./utils";
 
 const logPrefix = "UserDataDeleteOrchestrator";
@@ -208,7 +209,7 @@ function* setUserDataProcessingStatus(
   return pipe(
     result,
     SetUserDataProcessingStatusActivityResultSuccess.decode,
-    E.getOrElse(_ => {
+    E.getOrElseW(_ => {
       throw toActivityFailure(
         { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
         "SetUserDataProcessingStatusActivity",
@@ -471,6 +472,7 @@ function* getServicesPreferences(
 // eslint-disable-next-line max-lines-per-function
 export const createUserDataDeleteOrchestratorHandler = (
   waitForAbortInterval: Day,
+  isUserEligibleForInstantDelete: IsUserEligibleForInstantDelete,
   waitForDownloadInterval: Hour = 12 as Hour
 ) =>
   // eslint-disable-next-line max-lines-per-function
@@ -531,9 +533,11 @@ export const createUserDataDeleteOrchestratorHandler = (
       );
 
       // we calculate the grace period: if this is a failed request => 0 days
-      const gracePeriod = isFailedUserDataProcessingRequest
-        ? (0 as Day)
-        : waitForAbortInterval;
+      const gracePeriod =
+        isFailedUserDataProcessingRequest ||
+        isUserEligibleForInstantDelete(currentUserDataProcessing.fiscalCode)
+          ? (0 as Day)
+          : waitForAbortInterval;
 
       // we have an interval on which we wait for eventual cancellation by the user
       const intervalExpiredEvent = context.df.createTimer(

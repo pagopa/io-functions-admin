@@ -178,6 +178,10 @@ const consumeOrchestrator = (orch: any) => {
   }
 };
 
+const mockIsUserEligibleForInstantDelete = jest
+  .fn()
+  .mockImplementation(_ => false);
+
 // just a convenient cast, good for every test case
 const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
 
@@ -199,6 +203,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -236,6 +241,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -285,6 +291,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -343,6 +350,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -407,6 +415,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -478,6 +487,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -574,6 +584,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -641,6 +652,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -706,6 +718,79 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
   });
 
+  it("new processing requests: should delete profile, send email and set status as CLOSED without waiting the grace period if the user is enabled for instant delete", () => {
+    mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
+    mockIsUserEligibleForInstantDelete.mockReturnValueOnce(true);
+
+    const result = consumeOrchestrator(
+      createUserDataDeleteOrchestratorHandler(
+        waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
+        waitForDownloadInterval
+      )(context)
+    );
+
+    expect(E.isRight(OrchestratorSuccess.decode(result))).toBe(true);
+
+    expect(getProfileActivity).toHaveBeenCalled();
+    expect(getProfileActivity).toHaveBeenCalledTimes(1);
+
+    expect(isFailedUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    // test that grace period is skipped
+    expect(context.df.createTimer).toHaveBeenCalled();
+    expect(context.df.createTimer).toHaveBeenCalledTimes(1);
+    expect(context.df.createTimer).toHaveBeenCalledWith(
+      context.df.currentUtcDateTime
+    );
+
+    expect(setUserSessionLockActivity).toHaveBeenCalledTimes(2);
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      {
+        action: "LOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+    expect(setUserSessionLockActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      {
+        action: "UNLOCK",
+        fiscalCode: aProcessableUserDataDelete.fiscalCode
+      }
+    );
+
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledTimes(2);
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.WIP
+      })
+    );
+    expect(setUserDataProcessingStatusActivity).toHaveBeenCalledWith(
+      expect.any(String),
+      expectedRetryOptions,
+      expect.objectContaining({
+        nextStatus: UserDataProcessingStatusEnum.CLOSED
+      })
+    );
+
+    expect(getUserDataProcessingActivity).toHaveBeenCalled();
+    expect(getUserDataProcessingActivity).toHaveBeenCalledTimes(1);
+
+    expect(deleteUserDataActivity).toHaveBeenCalled();
+    expect(deleteUserDataActivity).toHaveBeenCalledTimes(1);
+
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalled();
+    expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledTimes(1);
+
+    expect(updateSubscriptionFeed).toHaveBeenCalled();
+    expect(updateSubscriptionFeed).toHaveBeenCalledTimes(1);
+  });
+
   it("new processing requests: should not delete profile and set status as CLOSED if abort request comes before wait interval expires", () => {
     mockOrchestratorGetInput.mockReturnValueOnce(aProcessableUserDataDelete);
 
@@ -715,6 +800,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -788,6 +874,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -869,6 +956,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -955,6 +1043,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -1033,6 +1122,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -1120,6 +1210,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -1186,6 +1277,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -1257,6 +1349,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
@@ -1310,6 +1403,7 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     const result = consumeOrchestrator(
       createUserDataDeleteOrchestratorHandler(
         waitForAbortInterval,
+        mockIsUserEligibleForInstantDelete,
         waitForDownloadInterval
       )(context)
     );
