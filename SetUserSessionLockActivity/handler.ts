@@ -132,7 +132,10 @@ const callSessionApi = (
             action,
             value
           );
-          return TE.left(
+          return TE.left<
+            ApiCallFailure | BadApiRequestFailure,
+            SuccessResponse
+          >(
             BadApiRequestFailure.encode({
               kind: "BAD_API_REQUEST_FAILURE",
               reason: `Session Api called badly, action: ${action} code: ${status}`
@@ -144,7 +147,10 @@ const callSessionApi = (
             action,
             value
           );
-          return TE.left(
+          return TE.left<
+            ApiCallFailure | BadApiRequestFailure,
+            SuccessResponse
+          >(
             ApiCallFailure.encode({
               kind: "API_CALL_FAILURE",
               reason: `Session Api unexpected error, action: ${action}`

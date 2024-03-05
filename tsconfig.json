@@ -11,7 +11,7 @@
     "alwaysStrict": true,
     "strictBindCallApply": true,
     "strictNullChecks": false,
-    "strictFunctionTypes": false,
+    "strictFunctionTypes": true,
     "strictPropertyInitialization": false,
     "resolveJsonModule": true,
     "skipLibCheck": true

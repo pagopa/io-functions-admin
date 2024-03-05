@@ -197,7 +197,7 @@ export function UpdateUserGroupHandler(
         apimClient: taskResults.apimClient,
         userName: taskResults.userList[0].name
       })),
-      TE.chain(taskResults =>
+      TE.chainW(taskResults =>
         pipe(
           taskResults.userName,
           NonEmptyString.decode,
@@ -217,7 +217,7 @@ export function UpdateUserGroupHandler(
           }))
         )
       ),
-      TE.chain(taskResults =>
+      TE.chainW(taskResults =>
         pipe(
           getUserGroups(
             taskResults.apimClient,
@@ -239,7 +239,7 @@ export function UpdateUserGroupHandler(
           }))
         )
       ),
-      TE.chain(taskResults =>
+      TE.chainW(taskResults =>
         pipe(
           getGroups(
             taskResults.apimClient,
@@ -272,7 +272,7 @@ export function UpdateUserGroupHandler(
           TE.map(() => taskResults)
         )
       ),
-      TE.chain(taskResults => {
+      TE.chainW(taskResults => {
         const groupsClusterization = clusterizeGroups(
           taskResults.existingGroups,
           taskResults.currentUserGroups,
@@ -326,7 +326,7 @@ export function UpdateUserGroupHandler(
           }))
         );
       }),
-      TE.chain(taskResults =>
+      TE.chainW(taskResults =>
         pipe(
           getUserGroups(
             taskResults.apimClient,
@@ -342,7 +342,7 @@ export function UpdateUserGroupHandler(
           )
         )
       ),
-      TE.chain(groupContracts =>
+      TE.chainW(groupContracts =>
         pipe(
           [...groupContracts],
           A.traverse(E.Applicative)(groupContractToApiGroup),

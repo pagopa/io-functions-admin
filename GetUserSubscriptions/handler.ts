@@ -150,7 +150,7 @@ export function GetUserSubscriptionsHandler(
             )
         )
       ),
-      TE.chain(taskResults =>
+      TE.chainW(taskResults =>
         pipe(
           taskResults.userList[0].name,
           NonEmptyString.decode,
@@ -167,7 +167,7 @@ export function GetUserSubscriptionsHandler(
           TE.fromEither
         )
       ),
-      TE.chain(taskResults =>
+      TE.chainW(taskResults =>
         pipe(
           sequenceT(TE.ApplicativePar)(
             getUserGroups(
@@ -201,7 +201,7 @@ export function GetUserSubscriptionsHandler(
         )([...subscriptionContracts]);
         return { errorOrGroups, errorOrSubscriptions };
       }),
-      TE.chain(taskResults =>
+      TE.chainW(taskResults =>
         pipe(
           getGraphRbacManagementClient(adb2cCredentials),
           TE.mapLeft(error =>
@@ -246,7 +246,7 @@ export function GetUserSubscriptionsHandler(
               )
             )
       ),
-      TE.chain(userInfo =>
+      TE.chainW(userInfo =>
         pipe(
           {
             // TODO: as both errorOrGroups and errorOrSubscriptions cannot be Left because of the previous checks,
