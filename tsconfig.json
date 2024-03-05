@@ -6,6 +6,13 @@
     "rootDir": ".",
     "sourceMap": true,
     "strict": false,
+    "noImplicitAny": false,
+    "noImplicitThis": true,
+    "alwaysStrict": false,
+    "strictBindCallApply": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictPropertyInitialization": false,
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
