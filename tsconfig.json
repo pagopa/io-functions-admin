@@ -8,7 +8,7 @@
     "strict": false,
     "noImplicitAny": false,
     "noImplicitThis": true,
-    "alwaysStrict": false,
+    "alwaysStrict": true,
     "strictBindCallApply": false,
     "strictNullChecks": false,
     "strictFunctionTypes": false,
