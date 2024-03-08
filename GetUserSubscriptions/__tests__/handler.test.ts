@@ -1,7 +1,9 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import {
+  GroupCollection,
   GroupContract,
+  SubscriptionCollection,
   SubscriptionContract
 } from "@azure/arm-apimanagement/esm/models";
 import { GraphRbacManagementClient } from "@azure/graph";
@@ -295,7 +297,7 @@ describe("GetUser", () => {
       type: undefined
     };
 
-    const someValidGroups: ReadonlyArray<GroupContract> = [
+    const someValidGroups: Array<GroupContract> = [
       { ...anApimGroupContract, id: "group #1" },
       { ...anApimGroupContract, id: "group #2" }
     ];
@@ -303,7 +305,7 @@ describe("GetUser", () => {
       { ...anApimGroupContract, id: "group #3" },
       { ...anApimGroupContract, id: "group #4" }
     ];
-    const someValidSubscriptions: ReadonlyArray<SubscriptionContract> = [
+    const someValidSubscriptions: Array<SubscriptionContract> = [
       {
         ...anApimSubscriptionContract,
         primaryKey: "primaryKey#1",
@@ -331,7 +333,7 @@ describe("GetUser", () => {
       Promise.resolve([{ name: fakeUserName }])
     );
     mockUserGroupList.mockImplementation(() => {
-      const apimResponse = someValidGroups;
+      const apimResponse: GroupCollection = someValidGroups;
       // eslint-disable-next-line functional/immutable-data
       apimResponse["nextLink"] = "next-page";
       return Promise.resolve(apimResponse);
@@ -340,7 +342,7 @@ describe("GetUser", () => {
       Promise.resolve(someMoreValidGroups)
     );
     mockUserSubscriptionList.mockImplementation(() => {
-      const apimResponse = someValidSubscriptions;
+      const apimResponse: SubscriptionCollection = someValidSubscriptions;
       // eslint-disable-next-line functional/immutable-data
       apimResponse["nextLink"] = "next-page";
       return Promise.resolve(apimResponse);

@@ -222,7 +222,11 @@ export function GetUserSubscriptionsHandler(
           ),
           TE.map(([adb2User]) => ({
             ...taskResults,
-            token_name: adb2User[`${adb2cTokenAttributeName}`]
+            // Note: This workaround is necessary to enable strict typing.
+            // `adb2cTokenAttributeName` should be typed with the list of attributes allowed in this scenario,
+            // ensuring compatibility and adherence to specified attribute constraints.
+            token_name:
+              adb2User[`${adb2cTokenAttributeName}` as keyof typeof adb2User]
           }))
         )
       ),

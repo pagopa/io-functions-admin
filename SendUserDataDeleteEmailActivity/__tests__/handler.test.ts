@@ -82,7 +82,9 @@ describe("SendUserDataDeleteEmailActivity", () => {
     try {
       await SendUserDataDeleteEmailActivityHandler(mockContext, input);
     } catch (e) {
-      expect(e.message).toBe("Error while sending email: " + errorMessage);
+      expect(e).toMatchObject({
+        message: "Error while sending email: " + errorMessage
+      });
     }
   });
 });

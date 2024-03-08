@@ -42,10 +42,10 @@ function removeNullProperties<T>(obj: T): unknown {
   }
   return Object.keys(obj).reduce<unknown>(
     (filteredObj, key) =>
-      obj[key] === null
+      obj[key as keyof typeof obj] === null
         ? filteredObj
         : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          { ...(filteredObj as any), [key]: obj[key] },
+          { ...(filteredObj as any), [key]: obj[key as keyof typeof obj] },
     {}
   );
 }
