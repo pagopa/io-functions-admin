@@ -114,8 +114,8 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await getImpersonateServiceHandler(
       mockedContext as any,
-      undefined,
-      undefined
+      undefined as any, // Not used
+      undefined as any // Not used
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -131,7 +131,7 @@ describe("GetImpersonateServiceHandler", () => {
     );
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aBreakingApimSubscriptionId
     );
 
@@ -150,7 +150,7 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aValidSubscriptionIdWithouthOwner
     );
 
@@ -173,7 +173,7 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aValidSubscriptionIdWithouthOwner
     );
 
@@ -191,7 +191,7 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aNotExistingSubscriptionId
     );
 
@@ -209,7 +209,7 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aNotExistingSubscriptionId
     );
 
@@ -226,7 +226,7 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aNotExistingSubscriptionId
     );
 

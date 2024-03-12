@@ -340,7 +340,7 @@ describe("UpdateUserGroups", () => {
       )
       .mockImplementationOnce(() =>
         Promise.resolve(
-          updatedGroups.slice(-1, 1).concat([{ displayName: undefined }])
+          updatedGroups.slice(-1, 1).concat([{ displayName: undefined as any }])
         )
       );
     mockGroupListByService.mockImplementation(() =>

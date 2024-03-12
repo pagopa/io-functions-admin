@@ -68,7 +68,7 @@ describe("UpdateServiceLogoHandler", () => {
     } as Logo;
     const mockedContext = {
       bindings: {
-        logo: undefined as string
+        logo: undefined
       }
     };
 

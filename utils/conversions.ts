@@ -93,7 +93,8 @@ export function apiServiceToService(service: ApiService): Service {
             serviceMetadata: {
               ...commonService.serviceMetadata,
               category: service.service_metadata.category,
-              customSpecialFlow: service.service_metadata.custom_special_flow
+              customSpecialFlow: service.service_metadata.custom_special_flow,
+              scope: service.service_metadata.scope
             }
           }
         : service.service_metadata
@@ -115,7 +116,7 @@ export function apiServiceToService(service: ApiService): Service {
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function toApiServiceMetadata(
   service: RetrievedService
-): ApiServiceMetadata {
+): ApiServiceMetadata | undefined {
   return service.serviceMetadata
     ? toServiceMetadata(service.serviceMetadata)
     : undefined;

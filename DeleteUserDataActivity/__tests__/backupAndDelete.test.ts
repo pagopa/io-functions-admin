@@ -37,7 +37,7 @@ const asyncIteratorOf = <T>(items: T[]): AsyncIterator<T[]> => {
       const value = data.shift();
       return {
         done: typeof value === "undefined",
-        value: [value]
+        value: [value!]
       };
     }
   };

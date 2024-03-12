@@ -130,7 +130,9 @@ const recordsIterator = (query: string | SqlQuerySpec) => ({
   async *[Symbol.asyncIterator]() {
     // I don't care for string queries, but I manage it to keep signatures coherent
     const queriedRecords = userDataProcessingRecords.filter(r =>
-      typeof query === "string" ? false : r.status === query.parameters[0].value
+      typeof query === "string" || query.parameters === undefined
+        ? false
+        : r.status === query.parameters[0].value
     );
     for (const record of queriedRecords) {
       // wait for 100ms to not pass the 5000ms limit of jest
@@ -145,7 +147,11 @@ const recordsIterator = (query: string | SqlQuerySpec) => ({
               record.status,
               1 as NonNegativeInteger
             ),
-          _ => void 0
+          _ => [
+            {
+              message: "error"
+            } as t.ValidationError
+          ]
         )
       ];
     }

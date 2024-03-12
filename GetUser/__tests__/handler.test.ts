@@ -237,7 +237,7 @@ describe("GetUser", () => {
       builtIn: true,
       description: "group description",
       displayName: "groupName",
-      externalId: null,
+      externalId: undefined,
       groupContractType: "custom",
       id: undefined,
       name: undefined,

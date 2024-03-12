@@ -13,9 +13,9 @@ import { SuccessResponse } from "@pagopa/io-backend-session-sdk/SuccessResponse"
 import { Client } from "../utils/sessionApiClient";
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-function assertNever(_: never): void {
+const assertNever = (_: never): never => {
   throw new Error("should not have executed this");
-}
+};
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -93,7 +93,7 @@ const callSessionApi = (
           case "UNLOCK":
             return sessionApiClient.unlockUserSession({ fiscalcode });
           default:
-            assertNever(action);
+            return assertNever(action);
         }
       },
       error => {
@@ -157,7 +157,7 @@ const callSessionApi = (
             })
           );
         default:
-          assertNever(status);
+          return assertNever(status);
       }
     })
   );

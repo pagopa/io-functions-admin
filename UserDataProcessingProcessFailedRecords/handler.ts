@@ -33,7 +33,7 @@ import { isOrchestratorRunning } from "../utils/orchestrator";
 const logPrefix = "UserDataProcessingProcessFailedRecordsHandler";
 
 type IGetFailedUserDataProcessingHandlerResult =
-  | IResponseSuccessJson<ReadonlyArray<string>>
+  | IResponseSuccessJson<ReadonlyArray<string | undefined>>
   | IResponseErrorQuery;
 
 type IGetFailedUserDataProcessingHandler = (

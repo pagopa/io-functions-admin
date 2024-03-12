@@ -112,7 +112,10 @@ function clusterizeGroups(
     Object.entries(existingGroups),
     _ => new Map(_),
     RMAP.reduceWithIndex(S.Ord)(
-      { toBeAssociated: [], toBeRemoved: [] },
+      {
+        toBeAssociated: [] as ReadonlyArray<string>,
+        toBeRemoved: [] as ReadonlyArray<string>
+      },
       (displayName, cluster, name) => {
         if (
           currentUserGroups.includes(displayName) &&
@@ -223,6 +226,9 @@ export function UpdateUserGroupHandler(
             taskResults.apimClient,
             azureApimConfig.apimResourceGroup,
             azureApimConfig.apim,
+            // TODO: Implement a validation step to ensure the existence of `userName`.
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             taskResults.userName
           ),
           TE.mapLeft(error =>
@@ -253,6 +259,9 @@ export function UpdateUserGroupHandler(
             apimClient: taskResults.apimClient,
             currentUserGroups: taskResults.currentUserGroups,
             existingGroups: groupList.reduce<Record<string, string>>(
+              // TODO: Implement a validation step to ensure the existence of `curr.name`.
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
               (prev, curr) => ({ ...prev, [curr.displayName]: curr.name }),
               {}
             ),
@@ -265,6 +274,9 @@ export function UpdateUserGroupHandler(
           [...userGroupsPayload.groups],
           A.traverse(TE.ApplicativePar)(
             TE.fromPredicate(
+              // TODO: Add validation
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
               groupName => taskResults.existingGroups[groupName] !== undefined,
               __ => ResponseErrorValidation("Bad request", "Invalid groups")
             )
@@ -274,6 +286,9 @@ export function UpdateUserGroupHandler(
       ),
       TE.chainW(taskResults => {
         const groupsClusterization = clusterizeGroups(
+          // TODO: Add validation
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
           taskResults.existingGroups,
           taskResults.currentUserGroups,
           userGroupsPayload.groups
@@ -287,6 +302,9 @@ export function UpdateUserGroupHandler(
                   azureApimConfig.apimResourceGroup,
                   azureApimConfig.apim,
                   groupName,
+                  // TODO: Add validation
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-ignore
                   taskResults.userName
                 ),
               E.toError
@@ -303,6 +321,9 @@ export function UpdateUserGroupHandler(
                   azureApimConfig.apimResourceGroup,
                   azureApimConfig.apim,
                   groupName,
+                  // TODO Add validation
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-ignore
                   taskResults.userName
                 ),
               E.toError
@@ -332,6 +353,9 @@ export function UpdateUserGroupHandler(
             taskResults.apimClient,
             azureApimConfig.apimResourceGroup,
             azureApimConfig.apim,
+            // TODO: Add validation
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             taskResults.userName
           ),
           TE.mapLeft(error =>

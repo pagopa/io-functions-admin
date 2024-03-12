@@ -21,6 +21,12 @@ import {
 } from "@pagopa/io-backend-session-sdk/requestTypes";
 import { identity } from "fp-ts/lib/function";
 
+// This is a placeholder for undefined when dealing with object keys
+// Typescript doesn't perform well when narrowing a union type which includes string and undefined
+// (example: "foo" | "bar" | undefined)
+// We use this as a placeholder for type parameters indicating "no key"
+type __UNDEFINED_KEY = "_____";
+
 export type ApiOperation = TypeofApiCall<LockUserSessionT> &
   TypeofApiCall<UnlockUserSessionT>;
 
@@ -54,7 +60,7 @@ export type WithDefaultsT<
  * Defines a collection of api operations
  * @param K name of the parameters that the Clients masks from the operations
  */
-export type Client<K extends ParamKeys | undefined = undefined> = {
+export type Client<K extends ParamKeys | __UNDEFINED_KEY = __UNDEFINED_KEY> = {
   readonly lockUserSession: TypeofApiCall<
     ReplaceRequestParams<
       LockUserSessionT,
@@ -69,6 +75,8 @@ export type Client<K extends ParamKeys | undefined = undefined> = {
     >
   >;
 };
+
+// TODO(IOPID-1648): Move to generated client
 
 /**
  * Create an instance of a client

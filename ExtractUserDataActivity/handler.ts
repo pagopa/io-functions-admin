@@ -319,13 +319,15 @@ export const findAllNotificationStatuses = (
     notifications,
 
     // compose a query for every supported channel type
-    ROA.reduce([], (queries, { id: notificationId }) => [
-      ...queries,
-      ...Object.values(NotificationChannelEnum).map(channel => [
-        notificationId,
-        channel
-      ])
-    ]),
+    ROA.reduce(
+      [] as ReadonlyArray<readonly [NonEmptyString, NotificationChannelEnum]>,
+      (queries, { id: notificationId }) => [
+        ...queries,
+        ...Object.values(NotificationChannelEnum).map(
+          channel => [notificationId, channel] as const
+        )
+      ]
+    ),
     ROA.map(([notificationId, channel]) =>
       pipe(
         notificationStatusModel.findOneNotificationStatusByNotificationChannel(

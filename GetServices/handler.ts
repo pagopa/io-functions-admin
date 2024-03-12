@@ -83,7 +83,8 @@ export function GetServicesHandler(
                 // keep only the latest version
                 const isNewer =
                   !prev.has(curr.serviceId) ||
-                  curr.version > prev.get(curr.serviceId);
+                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                  curr.version > prev.get(curr.serviceId)!;
                 return isNewer ? prev.set(curr.serviceId, curr.version) : prev;
               }
             )(items),

@@ -75,8 +75,8 @@ const updateProfile = (profile: RetrievedProfile) => (
 
 const trackResetEmailValidationEvent = (
   profile: Pick<RetrievedProfile, "fiscalCode">
-) => (r: { readonly telemetryClient: TelemetryClient }) => (): void =>
-  r.telemetryClient.trackEvent({
+) => (r: { readonly telemetryClient?: TelemetryClient }) => (): void =>
+  r.telemetryClient?.trackEvent({
     name: "io.citizen-auth.reset_email_validation",
     tagOverrides: {
       "ai.user.id": hashFiscalCode(profile.fiscalCode),
@@ -100,7 +100,7 @@ export const sanitizeProfileEmail = flow(
           RTE.chainFirstReaderIOKW(trackResetEmailValidationEvent)
         )
       ),
-      O.getOrElse(() => RTE.right(void 0))
+      O.getOrElseW(() => RTE.right(void 0))
     )
   )
 );

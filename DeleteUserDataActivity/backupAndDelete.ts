@@ -365,7 +365,7 @@ const backupAndDeleteMessageView = ({
 }): TE.TaskEither<DataFailure, O.Option<RetrievedMessageView>> =>
   pipe(
     messageViewModel.find([message.id, message.fiscalCode]),
-    TE.chain(TE.fromOption(() => undefined)),
+    TE.chainW(TE.fromOption(() => undefined)),
     TE.foldW(
       _ =>
         // unfortunately, a document not found is threated like a query error
@@ -443,7 +443,7 @@ const backupAndDeleteMessageContent = ({
 }): TE.TaskEither<DataFailure, O.Option<MessageContent>> =>
   pipe(
     messageModel.getContentFromBlob(messageContentBlobService, message.id),
-    TE.chain(TE.fromOption(() => undefined)),
+    TE.chainW(TE.fromOption(() => undefined)),
     TE.foldW(
       _ =>
         // unfortunately, a document not found is threated like a query error

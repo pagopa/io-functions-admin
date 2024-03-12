@@ -42,7 +42,7 @@ type IGetImpersonateService = (
 >;
 
 const chainNullableWithNotFound = (
-  value: string
+  value: string | undefined
 ): TE.TaskEither<IResponseErrorNotFound, string> =>
   pipe(
     value,

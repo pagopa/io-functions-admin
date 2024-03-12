@@ -63,6 +63,9 @@ export const IsFailedUserDataProcessing = (
               failedUserDataProcessingTable,
               i.choice,
               i.fiscalCode,
+              // TODO: Refactor for using the new `@azure/data-tables` library
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
               null,
               (error: Error, result: TableEntry, response: ServiceResponse) =>
                 response.isSuccessful
