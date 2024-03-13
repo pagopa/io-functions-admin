@@ -43,6 +43,12 @@ const asyncIteratorOf = <T>(items: T[]): AsyncIterator<T[]> => {
   };
 };
 
+export async function* errorMessageIterator(error: any) {
+  //Sonarcloud requires at least one `yield` before `throw` operation
+  yield [E.right(aRetrievedMessageWithContent)];
+  throw error;
+}
+
 // MessageContentBlobService
 const messageContentBlobService = ({} as unknown) as BlobService;
 
@@ -287,6 +293,37 @@ describe(`backupAndDeleteAllUserData`, () => {
     })();
 
     expect(E.isRight(result)).toBe(true);
+  });
+
+  it("should stop if an error occurred retrieving messages", async () => {
+    const cosmosError = { kind: "COSMOS_ERROR_RESPONSE" };
+    mockFindMessages.mockImplementationOnce(() =>
+      TE.of(errorMessageIterator(cosmosError))
+    );
+
+    const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      messageViewModel,
+      notificationModel,
+      notificationStatusModel,
+      profileEmailsRepository,
+      profileModel,
+      servicePreferencesModel,
+      userDataBackup,
+      fiscalCode: aFiscalCode
+    })();
+
+    console.log(result);
+
+    expect(result).toEqual(
+      E.left({
+        kind: "QUERY_FAILURE",
+        reason: `CosmosError: ${JSON.stringify(cosmosError)}`
+      })
+    );
   });
 
   it("should stop if there is an error while looking for a message View (404)", async () => {
