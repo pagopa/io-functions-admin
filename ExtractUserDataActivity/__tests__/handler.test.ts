@@ -113,18 +113,11 @@ const messageModelMock = ({
 } as any) as MessageModel;
 
 // ServicePreferences Model
-const asyncIteratorOf = <T>(items: T[]): AsyncIterator<T[]> => {
-  const data = [...items];
-  return {
-    next: async () => {
-      const value = data.shift();
-      return {
-        done: typeof value === "undefined",
-        value: [value!]
-      };
-    }
-  };
-};
+export async function* asyncIteratorOf<T>(items: T[]) {
+  for (const item of items) {
+    yield [item];
+  }
+}
 
 const mockDeleteServicePreferences = jest.fn<
   ReturnType<InstanceType<typeof ServicePreferencesDeletableModel>["delete"]>,

@@ -23,7 +23,7 @@ import { pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as RMAP from "fp-ts/lib/ReadonlyMap";
-import * as RA from "fp-ts/lib/ReadonlyArray";
+import * as ROA from "fp-ts/lib/ReadonlyArray";
 import {
   asyncIteratorToArray,
   flattenAsyncIterator
@@ -70,11 +70,11 @@ export function GetServicesHandler(
       TE.map(results =>
         pipe(
           results,
-          RA.filter(E.isRight),
-          RA.map(e => e.right),
+          ROA.filter(E.isRight),
+          ROA.map(e => e.right),
           // create a Map (serviceId, lastVersionNumber)
           items =>
-            RA.reduce(
+            ROA.reduce(
               new Map<
                 typeof items[0]["serviceId"],
                 typeof items[0]["version"]

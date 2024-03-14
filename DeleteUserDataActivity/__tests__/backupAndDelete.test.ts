@@ -30,18 +30,11 @@ import { IBlobServiceInfo } from "../types";
 import { AuthenticationLockServiceMock } from "../../__mocks__/authenticationLockService.mock";
 import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
 
-const asyncIteratorOf = <T>(items: T[]): AsyncIterator<T[]> => {
-  const data = [...items];
-  return {
-    next: async () => {
-      const value = data.shift();
-      return {
-        done: typeof value === "undefined",
-        value: [value!]
-      };
-    }
-  };
-};
+export async function* asyncIteratorOf<T>(items: T[]) {
+  for (const item of items) {
+    yield [item];
+  }
+}
 
 export async function* errorMessageIterator(error: any) {
   //Sonarcloud requires at least one `yield` before `throw` operation
@@ -315,8 +308,6 @@ describe(`backupAndDeleteAllUserData`, () => {
       userDataBackup,
       fiscalCode: aFiscalCode
     })();
-
-    console.log(result);
 
     expect(result).toEqual(
       E.left({

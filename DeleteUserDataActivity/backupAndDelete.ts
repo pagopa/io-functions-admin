@@ -2,7 +2,7 @@ import * as crypto from "crypto";
 
 import { BlobService } from "azure-storage";
 import { sequenceT } from "fp-ts/lib/Apply";
-import * as RA from "fp-ts/lib/ReadonlyArray";
+import * as ROA from "fp-ts/lib/ReadonlyArray";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
@@ -72,13 +72,13 @@ const executeRecursiveBackupAndDelete = <T>(
         ? TE.left<DataFailure, ReadonlyArray<T>>(
             toQueryFailure(new Error("Some elements are not typed correctly"))
           )
-        : TE.of<DataFailure, ReadonlyArray<T>>(RA.rights(e.value))
+        : TE.of<DataFailure, ReadonlyArray<T>>(ROA.rights(e.value))
     ),
     // executes backup&delete for this set of items
     TE.chainW(items =>
       pipe(
         items,
-        RA.map((item: T) =>
+        ROA.map((item: T) =>
           pipe(
             sequenceT(TE.ApplicativeSeq)<
               DataFailure,
@@ -104,8 +104,8 @@ const executeRecursiveBackupAndDelete = <T>(
             TE.map(([_, __, nextResults]) => [item, ...nextResults])
           )
         ),
-        RA.sequence(TE.ApplicativePar),
-        TE.map(RA.flatten)
+        ROA.sequence(TE.ApplicativePar),
+        TE.map(ROA.flatten)
       )
     )
   );
@@ -596,7 +596,7 @@ const backupAndDeleteAllMessagesData = ({
             : toQueryFailure(E.toError(err))
       )
     ),
-    TE.map(RA.flatten),
+    TE.map(ROA.flatten),
     TE.chainW(results =>
       results.some(E.isLeft)
         ? TE.left(
@@ -604,8 +604,8 @@ const backupAndDeleteAllMessagesData = ({
               new Error("Cannot decode some element due to decoding errors")
             )
           )
-        : RA.sequence(TE.ApplicativeSeq)(
-            RA.rights(results).map(message => {
+        : ROA.sequence(TE.ApplicativeSeq)(
+            ROA.rights(results).map(message => {
               // cast needed because findMessages has a wrong signature
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
