@@ -54,7 +54,7 @@ async function run(): Promise<any> {
   const fiscalCode = pipe(
     process.argv[2],
     FiscalCode.decode,
-    E.getOrElse(reason => {
+    E.getOrElseW(reason => {
       throw new Error(`Invalid input: ${readableReport(reason)}`);
     })
   );

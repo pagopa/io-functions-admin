@@ -116,7 +116,7 @@ function* getLastStatus(
   return pipe(
     result,
     CheckLastStatusActivityResultSuccess.decode,
-    E.getOrElse(e => {
+    E.getOrElseW(e => {
       context.log.error(
         `${logPrefix}|ERROR|UserDataProcessingCheckLastStatusActivity fail|${readableReport(
           e
@@ -159,7 +159,7 @@ function* searchForFailureReason(
   return pipe(
     result,
     FindFailureReasonActivityResultSuccess.decode,
-    E.getOrElse(e => {
+    E.getOrElseW(e => {
       context.log.error(
         `${logPrefix}|ERROR|UserDataProcessingFindFailureReasonActivity fail|${readableReport(
           e
@@ -194,7 +194,7 @@ function* saveNewFailedRecordWithReason(
   return pipe(
     result,
     SetUserDataProcessingStatusActivityResultSuccess.decode,
-    E.getOrElse(e => {
+    E.getOrElseW(e => {
       context.log.error(
         `${logPrefix}|ERROR|SetUserDataProcessingStatusActivity fail|${readableReport(
           e
@@ -287,7 +287,7 @@ export const handler = function*(
     return pipe(
       error,
       OrchestratorFailure.decode,
-      E.getOrElse(_ =>
+      E.getOrElseW(_ =>
         UnhandledFailure.encode({
           kind: "UNHANDLED",
           reason: printableError(error)

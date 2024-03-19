@@ -51,7 +51,7 @@ const aFakeApimProductContract: ProductContract = {
 const aFakeApimSubscriptionContract: SubscriptionContract = {
   allowTracing: false,
   createdDate: new Date(),
-  displayName: null,
+  displayName: undefined,
   endDate: undefined,
   expirationDate: undefined,
   id: "subscription-id",

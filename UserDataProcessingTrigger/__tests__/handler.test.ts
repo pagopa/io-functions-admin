@@ -237,7 +237,29 @@ describe("FailedUserDataProcessing", () => {
     expect(insertEntity).toBeCalledWith({
       PartitionKey: eg.String(failedUserDataProcessing[0].choice),
       RowKey: eg.String(failedUserDataProcessing[0].fiscalCode),
-      Reason: eg.String(failedUserDataProcessing[0].reason)
+      Reason: eg.String(failedUserDataProcessing[0].reason ?? "UNKNOWN")
+    });
+    expect(deleteEntity).not.toBeCalled();
+  });
+
+  it("should process a failed user_data_processing inserting a failed record with unknown reason", async () => {
+    const failedUserDataProcessing: ReadonlyArray<UserDataProcessing> = [
+      aFailedUserDataProcessing
+    ];
+
+    const input: ReadonlyArray<any> = [...failedUserDataProcessing]
+      .map(toUndecoded)
+      .map(v => ({ ...v, reason: undefined }));
+
+    const handler = triggerHandler(insertEntity, deleteEntity);
+    await handler(context, input);
+
+    expect(insertEntity).toBeCalled();
+    expect(insertEntity).toBeCalledTimes(1);
+    expect(insertEntity).toBeCalledWith({
+      PartitionKey: eg.String(failedUserDataProcessing[0].choice),
+      RowKey: eg.String(failedUserDataProcessing[0].fiscalCode),
+      Reason: eg.String("UNKNOWN")
     });
     expect(deleteEntity).not.toBeCalled();
   });

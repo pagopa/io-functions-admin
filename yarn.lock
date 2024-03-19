@@ -1855,6 +1855,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/html-to-text@^5.1.1":
+  version "5.1.2"
+  resolved "https://registry.yarnpkg.com/@types/html-to-text/-/html-to-text-5.1.2.tgz#59a723cce41b573b7fa606414e2ceaa886038098"
+  integrity sha512-56PHFwRe18fmZ+UsN6GqUaoKfalOwFzxaBMRA2O5URde3d5mxdH1HvnIV7LSugCiO8JWlRdSL2L3xJXykCTKVg==
+
 "@types/http-errors@*":
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@types/http-errors/-/http-errors-2.0.4.tgz#7eb47726c391b7345a6ec35ad7f4de469cf5ba4f"
@@ -1950,6 +1955,13 @@
   version "8.10.66"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-8.10.66.tgz#dd035d409df322acc83dff62a602f12a5783bbb3"
   integrity sha512-tktOkFUA4kXx2hhhrB8bIFb5TbwzS4uOhKEmwiD+NoiL0qtP2OQ9mFldbgD4dV1djrlBYP6eBuQZiWjuHUpqFw==
+
+"@types/nodemailer@^4.6.8":
+  version "4.6.8"
+  resolved "https://registry.yarnpkg.com/@types/nodemailer/-/nodemailer-4.6.8.tgz#c14356e799fe1d4ee566126f901bc6031cc7b1b5"
+  integrity sha512-IX1P3bxDP1VIdZf6/kIWYNmSejkYm9MOyMEtoDFi4DVzKjJ3kY4GhOcOAKs6lZRjqVVmF9UjPOZXuQczlpZThw==
+  dependencies:
+    "@types/node" "*"
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.4"

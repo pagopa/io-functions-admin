@@ -42,10 +42,10 @@ function removeNullProperties<T>(obj: T): unknown {
   }
   return Object.keys(obj).reduce<unknown>(
     (filteredObj, key) =>
-      obj[key] === null
+      obj[key as keyof typeof obj] === null
         ? filteredObj
         : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          { ...(filteredObj as any), [key]: obj[key] },
+          { ...(filteredObj as any), [key]: obj[key as keyof typeof obj] },
     {}
   );
 }
@@ -93,7 +93,8 @@ export function apiServiceToService(service: ApiService): Service {
             serviceMetadata: {
               ...commonService.serviceMetadata,
               category: service.service_metadata.category,
-              customSpecialFlow: service.service_metadata.custom_special_flow
+              customSpecialFlow: service.service_metadata.custom_special_flow,
+              scope: service.service_metadata.scope
             }
           }
         : service.service_metadata
@@ -115,7 +116,7 @@ export function apiServiceToService(service: ApiService): Service {
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function toApiServiceMetadata(
   service: RetrievedService
-): ApiServiceMetadata {
+): ApiServiceMetadata | undefined {
   return service.serviceMetadata
     ? toServiceMetadata(service.serviceMetadata)
     : undefined;

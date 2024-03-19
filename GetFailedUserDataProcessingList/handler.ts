@@ -1,5 +1,4 @@
 import * as express from "express";
-import * as t from "io-ts";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import { pipe } from "fp-ts/lib/function";
@@ -55,6 +54,9 @@ export const GetFailedUserDataProcessingListHandler = (
             tableService.queryEntities(
               failedUserDataProcessingTable,
               tableQuery,
+              // TODO: Refactor for using the new `@azure/data-tables` library
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
               null,
               (
                 error: Error,
@@ -85,7 +87,7 @@ export const GetFailedUserDataProcessingList = (
 
   const middlewaresWrap = withRequestMiddlewares(
     ContextMiddleware(),
-    RequiredParamMiddleware("choice", t.string)
+    RequiredParamMiddleware("choice", NonEmptyString)
   );
 
   return wrapRequestHandler(middlewaresWrap(handler));

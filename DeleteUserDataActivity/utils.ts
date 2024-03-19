@@ -1,8 +1,11 @@
+import * as t from "io-ts";
 import { Context } from "@azure/functions";
 import { BlobService } from "azure-storage";
 import * as TE from "fp-ts/lib/TaskEither";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { pipe } from "fp-ts/lib/function";
+
+import { enumType } from "@pagopa/ts-commons/lib/types";
 import {
   ActivityResultFailure,
   BlobCreationFailure,
@@ -10,6 +13,21 @@ import {
   IBlobServiceInfo,
   QueryFailure
 } from "./types";
+
+// Cosmos Errors
+export enum CosmosErrorsTypes {
+  "COSMOS_EMPTY_RESPONSE" = "COSMOS_EMPTY_RESPONSE",
+  "COSMOS_CONFLICT_RESPONSE" = "COSMOS_CONFLICT_RESPONSE",
+  "COSMOS_DECODING_ERROR" = "COSMOS_DECODING_ERROR",
+  "COSMOS_ERROR_RESPONSE" = "COSMOS_ERROR_RESPONSE"
+}
+
+const CosmosErrorsTypesC = t.interface({
+  kind: enumType<CosmosErrorsTypes>(CosmosErrorsTypes, "kind")
+});
+
+export const isCosmosErrors = (error: unknown): error is CosmosErrors =>
+  CosmosErrorsTypesC.is(error);
 
 /**
  * To be used for exhaustive checks

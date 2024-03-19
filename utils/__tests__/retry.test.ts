@@ -16,7 +16,7 @@ const anOperationGoodAtAttemptNth = (n: number) => {
   });
 };
 
-const sleep = ms => new Promise(done => setTimeout(done, ms));
+const sleep = (ms: number) => new Promise(done => setTimeout(done, ms));
 
 beforeEach(() => {
   jest.clearAllMocks();

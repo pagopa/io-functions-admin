@@ -26,7 +26,7 @@ export const generateStrongPassword = (): StrongPassword =>
       length: 18
     }),
     StrongPassword.decode,
-    E.getOrElse(err => {
+    E.getOrElseW(err => {
       throw new Error(
         `Failed generating strong password - ${readableReport(err)}`
       );

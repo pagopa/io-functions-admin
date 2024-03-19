@@ -120,6 +120,9 @@ export function CreateUserHandler(
               taskResults.apimClient.user.createOrUpdate(
                 azureApimConfig.apimResourceGroup,
                 azureApimConfig.apim,
+                // TODO: Implement a validation step to ensure the existence of `objectId`
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
                 taskResults.objectId,
                 {
                   email: userPayload.email,

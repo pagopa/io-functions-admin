@@ -35,7 +35,11 @@ const mockedSubscription = {
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const regenerateKeyImplementation = (_, __, subscriptionId) => {
+const regenerateKeyImplementation = (
+  _: string,
+  __: string,
+  subscriptionId: string
+) => {
   if (subscriptionId === aValidSubscriptionId) {
     return Promise.resolve();
   }
@@ -56,7 +60,7 @@ mockRegenerateSecondaryKey.mockImplementation(regenerateKeyImplementation);
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    get: (_, __, subscriptionId) => {
+    get: (_: string, __: string, subscriptionId: string) => {
       if (subscriptionId === aValidSubscriptionId) {
         return Promise.resolve(mockedSubscription);
       }

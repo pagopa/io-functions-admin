@@ -3,7 +3,7 @@ import { isErrorStatusCode, parseOwnerIdFullPath } from "../apim";
 
 class ErrorWithCode extends Error {
   public statusCode: number;
-  constructor(statusCode, ...args) {
+  constructor(statusCode: number, ...args: Parameters<typeof Error>) {
     super(...args);
     this.statusCode = statusCode;
   }

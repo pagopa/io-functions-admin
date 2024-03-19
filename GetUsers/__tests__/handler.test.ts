@@ -1,8 +1,8 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-jest.mock('@azure/ms-rest-nodeauth', () => ({
+jest.mock("@azure/ms-rest-nodeauth", () => ({
   __esModule: true,
-  ...jest.requireActual('@azure/ms-rest-nodeauth')
+  ...jest.requireActual("@azure/ms-rest-nodeauth")
 }));
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
@@ -82,7 +82,7 @@ const mockedInvalidUserContract = {
   ],
   lastName: "Rossi",
   name: "user-name-1",
-  note: null,
+  note: undefined as string | undefined,
   registrationDate: new Date(),
   state: "active",
   type: "type"
@@ -111,7 +111,7 @@ describe("GetUsers", () => {
   it("should return an internal error response if the API management client returns an error", async () => {
     mockApiManagementClient.mockImplementation(() => ({
       user: {
-        listByService: (_, __, ___) =>
+        listByService: (_: string, __: string, ___: string) =>
           Promise.reject(new Error("API management client error"))
       }
     }));
@@ -132,7 +132,7 @@ describe("GetUsers", () => {
 
   it("should return an internal error response if the API management client returns invalid data", async () => {
     // eslint-disable-next-line functional/prefer-readonly-type
-    const mockedApimUsersList: any[] = [
+    const mockedApimUsersList: any[] & { nextLink?: string } = [
       mockedUserContract1,
       mockedUserContract2,
       mockedInvalidUserContract
@@ -141,7 +141,8 @@ describe("GetUsers", () => {
     mockedApimUsersList["nextLink"] = "next-link";
     mockApiManagementClient.mockImplementation(() => ({
       user: {
-        listByService: (_, __, ___) => Promise.resolve(mockedApimUsersList)
+        listByService: (_: string, __: string, ___: string) =>
+          Promise.resolve(mockedApimUsersList)
       }
     }));
     const getUsersHandler = GetUsersHandler(
@@ -196,8 +197,10 @@ describe("GetUsers", () => {
 
     mockApiManagementClient.mockImplementation(() => ({
       user: {
-        listByService: (_, __, options: { skip: number }) => {
-          const list: ReadonlyArray<any> = mockedApimUsersList.slice(
+        listByService: (_: string, __: string, options: { skip: number }) => {
+          const list: ReadonlyArray<any> & {
+            nextLink?: string;
+          } = mockedApimUsersList.slice(
             options.skip,
             options.skip + resultsPerPage
           );
@@ -223,7 +226,7 @@ describe("GetUsers", () => {
       undefined
     );
     expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
-    
+
     expect(responseWithNext).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",

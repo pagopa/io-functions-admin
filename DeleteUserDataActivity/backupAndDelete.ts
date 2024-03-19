@@ -2,12 +2,11 @@ import * as crypto from "crypto";
 
 import { BlobService } from "azure-storage";
 import { sequenceT } from "fp-ts/lib/Apply";
-import * as A from "fp-ts/lib/Array";
+import * as ROA from "fp-ts/lib/ReadonlyArray";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 
-import { array, flatten, rights } from "fp-ts/lib/Array";
 import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
 import {
   RetrievedMessage,
@@ -40,6 +39,7 @@ import {
   QueryFailure
 } from "./types";
 import {
+  isCosmosErrors,
   saveDataToBlob,
   toDocumentDeleteFailure,
   toQueryFailure
@@ -67,18 +67,18 @@ const executeRecursiveBackupAndDelete = <T>(
     TE.mapLeft(toQueryFailure),
     TE.chainW(e =>
       e.done
-        ? TE.of([])
+        ? TE.of<DataFailure, ReadonlyArray<T>>([])
         : e.value.some(E.isLeft)
-        ? TE.left(
+        ? TE.left<DataFailure, ReadonlyArray<T>>(
             toQueryFailure(new Error("Some elements are not typed correctly"))
           )
-        : TE.of(rights(e.value))
+        : TE.of<DataFailure, ReadonlyArray<T>>(ROA.rights(e.value))
     ),
     // executes backup&delete for this set of items
     TE.chainW(items =>
       pipe(
         items,
-        A.map((item: T) =>
+        ROA.map((item: T) =>
           pipe(
             sequenceT(TE.ApplicativeSeq)<
               DataFailure,
@@ -104,8 +104,8 @@ const executeRecursiveBackupAndDelete = <T>(
             TE.map(([_, __, nextResults]) => [item, ...nextResults])
           )
         ),
-        A.sequence(TE.ApplicativePar),
-        TE.map(flatten)
+        ROA.sequence(TE.ApplicativePar),
+        TE.map(ROA.flatten)
       )
     )
   );
@@ -365,7 +365,7 @@ const backupAndDeleteMessageView = ({
 }): TE.TaskEither<DataFailure, O.Option<RetrievedMessageView>> =>
   pipe(
     messageViewModel.find([message.id, message.fiscalCode]),
-    TE.chain(TE.fromOption(() => undefined)),
+    TE.chainW(TE.fromOption(() => undefined)),
     TE.foldW(
       _ =>
         // unfortunately, a document not found is threated like a query error
@@ -443,7 +443,7 @@ const backupAndDeleteMessageContent = ({
 }): TE.TaskEither<DataFailure, O.Option<MessageContent>> =>
   pipe(
     messageModel.getContentFromBlob(messageContentBlobService, message.id),
-    TE.chain(TE.fromOption(() => undefined)),
+    TE.chainW(TE.fromOption(() => undefined)),
     TE.foldW(
       _ =>
         // unfortunately, a document not found is threated like a query error
@@ -587,10 +587,16 @@ const backupAndDeleteAllMessagesData = ({
   pipe(
     messageModel.findMessages(fiscalCode),
     TE.mapLeft(toQueryFailure),
-    TE.chain(iter =>
-      TE.tryCatch(() => asyncIteratorToArray(iter), toQueryFailure)
+    TE.chainW(iter =>
+      TE.tryCatch(
+        () => asyncIteratorToArray(iter),
+        err =>
+          err instanceof Error || isCosmosErrors(err)
+            ? toQueryFailure(err)
+            : toQueryFailure(E.toError(err))
+      )
     ),
-    TE.map(flatten),
+    TE.map(ROA.flatten),
     TE.chainW(results =>
       results.some(E.isLeft)
         ? TE.left(
@@ -598,8 +604,8 @@ const backupAndDeleteAllMessagesData = ({
               new Error("Cannot decode some element due to decoding errors")
             )
           )
-        : array.sequence(TE.ApplicativeSeq)(
-            rights(results).map(message => {
+        : ROA.sequence(TE.ApplicativeSeq)(
+            ROA.rights(results).map(message => {
               // cast needed because findMessages has a wrong signature
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;

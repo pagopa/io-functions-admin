@@ -1,6 +1,9 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 import { ApiManagementClient } from "@azure/arm-apimanagement";
-import { GroupContract } from "@azure/arm-apimanagement/esm/models";
+import {
+  GroupCollection,
+  GroupContract
+} from "@azure/arm-apimanagement/esm/models";
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
@@ -234,18 +237,18 @@ describe("GetUser", () => {
       builtIn: true,
       description: "group description",
       displayName: "groupName",
-      externalId: null,
+      externalId: undefined,
       groupContractType: "custom",
       id: undefined,
       name: undefined,
       type: undefined
     };
 
-    const someValidGroups: ReadonlyArray<GroupContract> = [
+    const someValidGroups: Array<GroupContract> = [
       { ...anApimGroupContract, id: "group #1" },
       { ...anApimGroupContract, id: "group #2" }
     ];
-    const someMoreValidGroups: ReadonlyArray<GroupContract> = [
+    const someMoreValidGroups: Array<GroupContract> = [
       { ...anApimGroupContract, id: "group #3" },
       { ...anApimGroupContract, id: "group #4" }
     ];
@@ -254,7 +257,7 @@ describe("GetUser", () => {
       Promise.resolve([{ name: fakeUserName }])
     );
     mockUserGroupList.mockImplementation(() => {
-      const apimResponse = someValidGroups;
+      const apimResponse: GroupCollection = someValidGroups;
       // eslint-disable-next-line functional/immutable-data
       apimResponse["nextLink"] = "next-page";
       return Promise.resolve(apimResponse);

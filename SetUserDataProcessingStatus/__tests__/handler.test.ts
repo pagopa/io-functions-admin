@@ -17,6 +17,7 @@ import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/
 import { none, Option, some } from "fp-ts/lib/Option";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { pipe } from "fp-ts/lib/function";
+import { context } from "../../__mocks__/functions";
 
 let throwError = jest.fn(() => false);
 
@@ -62,7 +63,7 @@ describe("setUserDataProcessingStatusHandler", () => {
     const result = await setUserDataProcessingStatusHandler(
       mockUserDataProcessingModel
     )(
-      null,
+      context,
       aUserDataProcessingChoice,
       notExistingFiscalCode,
       UserDataProcessingStatusEnum.CLOSED
@@ -97,7 +98,7 @@ describe("setUserDataProcessingStatusHandler", () => {
     const result = await setUserDataProcessingStatusHandler(
       mockUserDataProcessingModel
     )(
-      null,
+      context,
       aUserDataProcessingChoice,
       aFiscalCode,
       UserDataProcessingStatusEnum.CLOSED
@@ -143,7 +144,7 @@ describe("setUserDataProcessingStatusHandler", () => {
     const result = await setUserDataProcessingStatusHandler(
       mockUserDataProcessingModel
     )(
-      null,
+      context,
       aUserDataProcessingChoice,
       aFiscalCode,
       UserDataProcessingStatusEnum.CLOSED
@@ -189,7 +190,7 @@ describe("setUserDataProcessingStatusHandler", () => {
     const result = await setUserDataProcessingStatusHandler(
       mockUserDataProcessingModel
     )(
-      null,
+      context,
       aUserDataProcessingChoice,
       aFiscalCode,
       // @ts-ignore to force bad behavior

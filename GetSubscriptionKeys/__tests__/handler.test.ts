@@ -1,8 +1,8 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-jest.mock('@azure/ms-rest-nodeauth', () => ({
+jest.mock("@azure/ms-rest-nodeauth", () => ({
   __esModule: true,
-  ...jest.requireActual('@azure/ms-rest-nodeauth')
+  ...jest.requireActual("@azure/ms-rest-nodeauth")
 }));
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
@@ -32,7 +32,7 @@ const mockedSubscription = {
 };
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
-    get: (_, __, subscriptionId) => {
+    get: (_: string, __: string, subscriptionId: string) => {
       if (subscriptionId === aValidSubscriptionId) {
         return Promise.resolve(mockedSubscription);
       }

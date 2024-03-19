@@ -13,7 +13,7 @@ const findEntry = (
     PartitionKey: UserDataProcessingChoice;
     RowKey: FiscalCode;
   }>
-) => (choice, fiscalCode) =>
+) => (choice: UserDataProcessingChoice, fiscalCode: FiscalCode) =>
   entries.length > 0
     ? entries
         .filter(e => e.PartitionKey === choice && e.RowKey === fiscalCode)
@@ -56,7 +56,7 @@ const storageTableMock = "FailedUserDataProcessing" as NonEmptyString;
 const fiscalCode1 = "UEEFON48A55Y758X" as FiscalCode;
 const fiscalCode2 = "VEEGON48A55Y758Z" as FiscalCode;
 
-const noFailedRequests = [];
+const noFailedRequests: typeof failedRequests = [];
 
 const failedRequests = [
   {

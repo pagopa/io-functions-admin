@@ -65,6 +65,9 @@ const updateUser = (
     TE.tryCatch(
       () =>
         client.users.update(
+          // TODO: Implement a validation step to ensure the existence of `userPrincipalName`
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
           user.userPrincipalName,
           withoutUndefinedValues({
             displayName:

@@ -8,9 +8,7 @@ import * as t from "io-ts";
 import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
 
 import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
-import * as A from "fp-ts/lib/Array";
 import * as ROA from "fp-ts/lib/ReadonlyArray";
-import { flatten, rights } from "fp-ts/lib/Array";
 
 import { Context } from "@azure/functions";
 
@@ -221,8 +219,8 @@ export const getAllMessageContents = (
 > =>
   pipe(
     messages,
-    A.map(_ => _.id),
-    A.map(messageId =>
+    ROA.map(_ => _.id),
+    ROA.map(messageId =>
       pipe(
         messageModel.getContentFromBlob(messageContentBlobService, messageId),
         TE.chainW(
@@ -241,7 +239,7 @@ export const getAllMessageContents = (
         )
       )
     ),
-    A.sequence(TE.ApplicativePar)
+    ROA.sequence(TE.ApplicativePar)
   );
 
 /**
@@ -253,8 +251,8 @@ export const getAllMessagesStatuses = (
 ): TE.TaskEither<ActivityResultQueryFailure, ReadonlyArray<MessageStatus>> =>
   pipe(
     messages,
-    A.map(_ => _.id),
-    A.map(messageId =>
+    ROA.map(_ => _.id),
+    ROA.map(messageId =>
       pipe(
         messageStatusModel.findLastVersionByModelId([messageId]),
         TE.mapLeft(failure =>
@@ -273,7 +271,7 @@ export const getAllMessagesStatuses = (
         )
       )
     ),
-    A.sequence(TE.ApplicativePar)
+    ROA.sequence(TE.ApplicativePar)
   );
 
 /**
@@ -290,8 +288,8 @@ export const findNotificationsForAllMessages = (
 > =>
   pipe(
     messages,
-    A.map(m => notificationModel.findNotificationForMessage(m.id)),
-    A.sequence(TE.ApplicativeSeq),
+    ROA.map(m => notificationModel.findNotificationForMessage(m.id)),
+    ROA.sequence(TE.ApplicativeSeq),
     TE.mapLeft(e =>
       ActivityResultQueryFailure.encode({
         kind: "QUERY_FAILURE",
@@ -304,8 +302,8 @@ export const findNotificationsForAllMessages = (
     // We just filter "none" elements
     TE.map(
       flow(
-        A.filter(O.isSome),
-        A.map(maybeNotification => maybeNotification.value)
+        ROA.filter(O.isSome),
+        ROA.map(maybeNotification => maybeNotification.value)
       )
     )
   );
@@ -321,14 +319,16 @@ export const findAllNotificationStatuses = (
     notifications,
 
     // compose a query for every supported channel type
-    A.reduce([], (queries, { id: notificationId }) => [
-      ...queries,
-      ...Object.values(NotificationChannelEnum).map(channel => [
-        notificationId,
-        channel
-      ])
-    ]),
-    A.map(([notificationId, channel]) =>
+    ROA.reduce(
+      [] as ReadonlyArray<readonly [NonEmptyString, NotificationChannelEnum]>,
+      (queries, { id: notificationId }) => [
+        ...queries,
+        ...Object.values(NotificationChannelEnum).map(
+          channel => [notificationId, channel] as const
+        )
+      ]
+    ),
+    ROA.map(([notificationId, channel]) =>
       pipe(
         notificationStatusModel.findOneNotificationStatusByNotificationChannel(
           notificationId,
@@ -344,13 +344,13 @@ export const findAllNotificationStatuses = (
         )
       )
     ),
-    A.sequence(TE.ApplicativePar),
+    ROA.sequence(TE.ApplicativePar),
 
     // filter empty results (it might not exist a content for a pair notification/channel)
     TE.map(
       flow(
-        A.filter(O.isSome),
-        A.map(someNotificationStatus => someNotificationStatus.value)
+        ROA.filter(O.isSome),
+        ROA.map(someNotificationStatus => someNotificationStatus.value)
       )
     )
   );
@@ -380,18 +380,18 @@ export const queryAllUserData = (
     // step 0: look for the profile
     getProfile(profileModel, fiscalCode),
     // step 1: get messages, which can be queried by only knowing the fiscal code
-    TE.chain(profile =>
+    TE.chainW(profile =>
       sequenceS(TE.ApplicativePar)({
         // queries all messages for the user
         messages: pipe(
           messageModel.findMessages(fiscalCode),
-          TE.chain(iterator =>
+          TE.chainW(iterator =>
             TE.tryCatch(
               () => asyncIteratorToArray(iterator),
               toCosmosErrorResponse
             )
           ),
-          TE.map(flatten),
+          TE.map(ROA.flatten),
           TE.mapLeft(_ =>
             ActivityResultQueryFailure.encode({
               kind: "QUERY_FAILURE",
@@ -408,7 +408,11 @@ export const queryAllUserData = (
                     reason: "Some messages cannot be decoded"
                   })
                 )
-              : TE.of(rights(results))
+              : TE.of(
+                  ROA.rights(results) as ReadonlyArray<
+                    RetrievedMessageWithoutContent
+                  >
+                )
           )
         ),
         messagesView: pipe(
@@ -428,7 +432,7 @@ export const queryAllUserData = (
           TE.chain(iter =>
             TE.tryCatch(() => asyncIteratorToArray(iter), toCosmosErrorResponse)
           ),
-          TE.map(flatten),
+          TE.map(ROA.flatten),
           TE.mapLeft(_ =>
             ActivityResultQueryFailure.encode({
               kind: "QUERY_FAILURE",
@@ -445,7 +449,7 @@ export const queryAllUserData = (
                     reason: "Some messages cannot be decoded"
                   })
                 )
-              : TE.of(rights(results))
+              : TE.of(ROA.rights(results))
           )
         ),
         profile: TE.of(profile),
@@ -469,7 +473,7 @@ export const queryAllUserData = (
       })
     ),
     // step 2: queries notifications and message contents, which need message data to be queried first
-    TE.chain(({ profile, messages, messagesView, servicesPreferences }) =>
+    TE.chainW(({ profile, messages, messagesView, servicesPreferences }) =>
       sequenceS(TE.ApplicativePar)({
         messageContents: getAllMessageContents(
           messageContentBlobService,
@@ -488,7 +492,7 @@ export const queryAllUserData = (
       })
     ),
     // step 3: queries notifications statuses
-    TE.bind("notificationStatuses", ({ notifications }) =>
+    TE.bindW("notificationStatuses", ({ notifications }) =>
       findAllNotificationStatuses(notificationStatusModel, notifications)
     ),
     TE.map(

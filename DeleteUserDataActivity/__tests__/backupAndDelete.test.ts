@@ -30,18 +30,17 @@ import { IBlobServiceInfo } from "../types";
 import { AuthenticationLockServiceMock } from "../../__mocks__/authenticationLockService.mock";
 import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
 
-const asyncIteratorOf = <T>(items: T[]): AsyncIterator<T[]> => {
-  const data = [...items];
-  return {
-    next: async () => {
-      const value = data.shift();
-      return {
-        done: typeof value === "undefined",
-        value: [value]
-      };
-    }
-  };
-};
+export async function* asyncIteratorOf<T>(items: T[]) {
+  for (const item of items) {
+    yield [item];
+  }
+}
+
+export async function* errorMessageIterator(error: any) {
+  //Sonarcloud requires at least one `yield` before `throw` operation
+  yield [E.right(aRetrievedMessageWithContent)];
+  throw error;
+}
 
 // MessageContentBlobService
 const messageContentBlobService = ({} as unknown) as BlobService;
@@ -287,6 +286,35 @@ describe(`backupAndDeleteAllUserData`, () => {
     })();
 
     expect(E.isRight(result)).toBe(true);
+  });
+
+  it("should stop if an error occurred retrieving messages", async () => {
+    const cosmosError = { kind: "COSMOS_ERROR_RESPONSE" };
+    mockFindMessages.mockImplementationOnce(() =>
+      TE.of(errorMessageIterator(cosmosError))
+    );
+
+    const result = await backupAndDeleteAllUserData({
+      authenticationLockService,
+      messageContentBlobService,
+      messageModel,
+      messageStatusModel,
+      messageViewModel,
+      notificationModel,
+      notificationStatusModel,
+      profileEmailsRepository,
+      profileModel,
+      servicePreferencesModel,
+      userDataBackup,
+      fiscalCode: aFiscalCode
+    })();
+
+    expect(result).toEqual(
+      E.left({
+        kind: "QUERY_FAILURE",
+        reason: `CosmosError: ${JSON.stringify(cosmosError)}`
+      })
+    );
   });
 
   it("should stop if there is an error while looking for a message View (404)", async () => {

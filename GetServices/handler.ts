@@ -19,11 +19,12 @@ import {
   ResponseErrorQuery
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
 
-import { pipe } from "fp-ts/lib/function";
+import { identity, pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as RMAP from "fp-ts/lib/ReadonlyMap";
-import * as RA from "fp-ts/lib/ReadonlyArray";
+import * as ROA from "fp-ts/lib/ReadonlyArray";
 import {
   asyncIteratorToArray,
   flattenAsyncIterator
@@ -70,22 +71,28 @@ export function GetServicesHandler(
       TE.map(results =>
         pipe(
           results,
-          RA.filter(E.isRight),
-          RA.map(e => e.right),
+          ROA.filter(E.isRight),
+          ROA.map(e => e.right),
           // create a Map (serviceId, lastVersionNumber)
           items =>
-            RA.reduce(
+            ROA.reduce(
               new Map<
                 typeof items[0]["serviceId"],
                 typeof items[0]["version"]
               >(),
-              (prev, curr: typeof items[0]) => {
+              (prev, curr: typeof items[0]) =>
                 // keep only the latest version
-                const isNewer =
-                  !prev.has(curr.serviceId) ||
-                  curr.version > prev.get(curr.serviceId);
-                return isNewer ? prev.set(curr.serviceId, curr.version) : prev;
-              }
+                pipe(
+                  prev.has(curr.serviceId),
+                  O.fromPredicate(identity),
+                  O.chainNullableK(() => prev.get(curr.serviceId)),
+                  O.fold(
+                    () => true,
+                    prevVersion => curr.version > prevVersion
+                  ),
+                  isNewer =>
+                    isNewer ? prev.set(curr.serviceId, curr.version) : prev
+                )
             )(items),
           // format into an array of { id, version }
           RMAP.collect(Ord)((serviceId, version) => ({

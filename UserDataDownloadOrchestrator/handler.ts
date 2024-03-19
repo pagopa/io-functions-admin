@@ -122,7 +122,7 @@ export const handler = function*(
         }
       ),
       SetUserDataProcessingStatusActivityResultSuccess.decode,
-      E.getOrElse(err => {
+      E.getOrElseW(err => {
         throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
           status: UserDataProcessingStatusEnum.WIP
         });
@@ -151,7 +151,7 @@ export const handler = function*(
         }
       ),
       SendUserDataDownloadMessageActivityResultSuccess.decode,
-      E.getOrElse(err => {
+      E.getOrElseW(err => {
         throw toActivityFailure(err, "SendUserDataDownloadMessageActivity");
       })
     );
@@ -166,7 +166,7 @@ export const handler = function*(
         }
       ),
       SetUserDataProcessingStatusActivityResultSuccess.decode,
-      E.getOrElse(err => {
+      E.getOrElseW(err => {
         throw toActivityFailure(err, "SetUserDataProcessingStatusActivity", {
           status: UserDataProcessingStatusEnum.CLOSED
         });
@@ -213,7 +213,7 @@ export const handler = function*(
         }
       ),
       SetUserDataProcessingStatusActivityResultSuccess.decode,
-      E.getOrElse(err => {
+      E.getOrElseW(err => {
         trackUserDataDownloadException(
           "unhandled_failed_status",
           new Error(readableReport(err)),

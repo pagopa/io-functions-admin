@@ -10,7 +10,7 @@ import { ResponseErrorFromValidationErrors } from "@pagopa/ts-commons/lib/respon
 
 export const CursorMiddleware: IRequestMiddleware<
   "IResponseErrorValidation",
-  NonNegativeInteger
+  NonNegativeInteger | undefined
 > = async request =>
   request.query.cursor
     ? pipe(

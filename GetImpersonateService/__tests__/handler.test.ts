@@ -1,18 +1,13 @@
-import { ApiManagementClient } from "@azure/arm-apimanagement";
-import { GroupContract } from "@azure/arm-apimanagement/esm/models";
+import {
+  GroupCollection,
+  GroupContract
+} from "@azure/arm-apimanagement/esm/models";
 import * as TE from "fp-ts/lib/TaskEither";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as ApimUtils from "../../utils/apim";
-import {
-  ApimRestError,
-  IAzureApimConfig,
-  IServicePrincipalCreds
-} from "../../utils/apim";
+import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
 import { GetImpersonateServiceHandler } from "../handler";
 import { RestError } from "@azure/ms-rest-js";
-import { pipe } from "fp-ts/lib/function";
-import { mapLeft } from "fp-ts/lib/Either";
-import { errorsToReadableMessages } from "@pagopa/ts-commons/lib/reporters";
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
@@ -40,7 +35,10 @@ const mockedSubscription = {
   ownerId: "/users/userId"
 };
 
-const mockedSubscriptionWithoutOwner = {
+const mockedSubscriptionWithoutOwner: {
+  displayName: string;
+  ownerId: string | undefined;
+} = {
   displayName: "without-woner",
   ownerId: undefined
 };
@@ -50,7 +48,7 @@ const anApimGroupContract: GroupContract = {
   displayName: "groupName"
 };
 
-const someValidGroups: ReadonlyArray<GroupContract> = [
+const someValidGroups: Array<GroupContract> = [
   { ...anApimGroupContract, id: "group #1" },
   { ...anApimGroupContract, id: "group #2" }
 ];
@@ -65,7 +63,7 @@ const mockedUserWithoutEmail = {
 };
 
 const mockUserGroupList = jest.fn().mockImplementation(() => {
-  const apimResponse = someValidGroups;
+  const apimResponse: GroupCollection = someValidGroups;
   // eslint-disable-next-line functional/immutable-data
   apimResponse["nextLink"] = "next-page";
   return Promise.resolve(apimResponse);
@@ -116,8 +114,8 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await getImpersonateServiceHandler(
       mockedContext as any,
-      undefined,
-      undefined
+      undefined as any, // Not used
+      undefined as any // Not used
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -133,7 +131,7 @@ describe("GetImpersonateServiceHandler", () => {
     );
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aBreakingApimSubscriptionId
     );
 
@@ -152,7 +150,7 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aValidSubscriptionIdWithouthOwner
     );
 
@@ -175,7 +173,7 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aValidSubscriptionIdWithouthOwner
     );
 
@@ -193,7 +191,7 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aNotExistingSubscriptionId
     );
 
@@ -211,7 +209,7 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aNotExistingSubscriptionId
     );
 
@@ -228,7 +226,7 @@ describe("GetImpersonateServiceHandler", () => {
 
     const response = await handler(
       mockedContext as any,
-      undefined,
+      undefined as any, // Not used
       aNotExistingSubscriptionId
     );
 

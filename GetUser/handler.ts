@@ -113,7 +113,7 @@ export function GetUserHandler(
             )
         )
       ),
-      TE.chain(taskResults =>
+      TE.chainW(taskResults =>
         pipe(
           taskResults.userList[0].name,
           NonEmptyString.decode,
@@ -130,7 +130,7 @@ export function GetUserHandler(
           TE.fromEither
         )
       ),
-      TE.chain(taskResults =>
+      TE.chainW(taskResults =>
         pipe(
           getUserGroups(
             taskResults.apiClient,
@@ -153,7 +153,7 @@ export function GetUserHandler(
 
         return { errorOrGroups };
       }),
-      TE.chain(taskResults =>
+      TE.chainW(taskResults =>
         pipe(
           getGraphRbacManagementClient(adb2cCredentials),
           TE.mapLeft(error =>
@@ -174,7 +174,11 @@ export function GetUserHandler(
           ),
           TE.map(([adb2User]) => ({
             ...taskResults,
-            token_name: adb2User[`${adb2cTokenAttributeName}`]
+            // Note: This workaround is necessary to enable strict typing.
+            // `adb2cTokenAttributeName` should be typed with the list of attributes allowed in this scenario,
+            // ensuring compatibility and adherence to specified attribute constraints.
+            token_name:
+              adb2User[`${adb2cTokenAttributeName}` as keyof typeof adb2User]
           }))
         )
       ),
@@ -188,8 +192,7 @@ export function GetUserHandler(
               )
             )
       ),
-
-      TE.chain(userInfo =>
+      TE.chainW(userInfo =>
         pipe(
           {
             // TODO: as both errorOrGroups and errorOrSubscriptions cannot be Left because of the previous checks,

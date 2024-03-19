@@ -194,7 +194,7 @@ const processFailedUserDataProcessing = async (
   );
   const { e1: resultOrError, e2: sResponse } = await insertEntityFn({
     PartitionKey: eg.String(processable.choice),
-    Reason: eg.String(processable.reason),
+    Reason: eg.String(processable.reason ?? "UNKNOWN"),
     RowKey: eg.String(processable.fiscalCode)
   });
   if (E.isLeft(resultOrError) && sResponse.statusCode !== 409) {
@@ -253,7 +253,7 @@ const getAction = (
     ? (): Promise<void> =>
         processClosedUserDataProcessing(context, processable, removeFailure)
     : // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-      () => void 0;
+      async () => void 0;
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions, sonarjs/cognitive-complexity
 export const triggerHandler = (

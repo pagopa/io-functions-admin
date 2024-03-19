@@ -93,8 +93,10 @@ export function UpdateServiceHandler(
      - when a service is created/updated using the old APIs a CosmosDBTrigger Azure Function will intercept it an write it into the new container but 
      only if the "cmsTag" field is not present, so when a service is updated using the old APIs the "cmsTag" field needs to be removed.
     */
-    // eslint-disable-next-line fp/no-delete, functional/immutable-data, @typescript-eslint/dot-notation
-    delete existingService["cmsTag"];
+    if ("cmsTag" in existingService) {
+      // eslint-disable-next-line fp/no-delete, functional/immutable-data, @typescript-eslint/dot-notation
+      delete existingService["cmsTag"];
+    }
 
     const errorOrUpdatedService = await serviceModel.update({
       ...existingService,

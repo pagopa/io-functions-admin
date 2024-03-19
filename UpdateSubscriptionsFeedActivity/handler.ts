@@ -135,7 +135,7 @@ export const updateSubscriptionFeed = async (
         ];
       }, [] as ReadonlyArray<SubscriptionFeedEntitySelector>)
     ),
-    O.getOrElse(() => [])
+    O.getOrElseW(() => [])
   );
 
   const allowInsertIfDeleted = decodedInput.subscriptionKind !== "SERVICE";

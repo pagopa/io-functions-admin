@@ -91,10 +91,10 @@ export const setUserDataProcessingStatusHandler = (
 
       return pipe(
         findLastVersionByModelIdTask,
-        TE.chain(
+        TE.chainW(
           flow(
             O.map(updateStatusTask),
-            O.getOrElse(() =>
+            O.getOrElseW(() =>
               TE.left(
                 ResponseErrorNotFound(
                   "Not Found",
