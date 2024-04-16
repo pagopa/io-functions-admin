@@ -61,7 +61,7 @@
     "@azure/data-tables": "^13.2.2",
     "@azure/graph": "^4.0.1",
     "@azure/ms-rest-js": "^2.6.4",
-    "@azure/ms-rest-nodeauth": "^2.0.6",
+    "@azure/ms-rest-nodeauth": "^3.0.0",
     "@pagopa/express-azure-functions": "^4.0.1",
     "@pagopa/handler-kit": "^1.1.0",
     "@pagopa/handler-kit-azure-func": "^1.2.1",
