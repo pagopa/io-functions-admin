@@ -27,6 +27,7 @@ import {
 } from "../utils/apim";
 import { userContractToApiUser } from "../utils/conversions";
 import { CursorMiddleware } from "../utils/middlewares/cursorMiddleware";
+import { UserContract } from "@azure/arm-apimanagement";
 
 type IGetSubscriptionKeysHandler = (
   context: Context,
@@ -40,23 +41,33 @@ export function GetUsersHandler(
   azureApimConfig: IAzureApimConfig,
   azureApimHost: string
 ): IGetSubscriptionKeysHandler {
+  const apimClient = getApiClient(
+    servicePrincipalCreds,
+    azureApimConfig.subscriptionId
+  );
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, cursor = 0) =>
     pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
-      TE.chain(apiClient =>
-        TE.tryCatch(
-          () =>
-            apiClient.user.listByService(
-              azureApimConfig.apimResourceGroup,
-              azureApimConfig.apim,
-              {
-                skip: cursor
-              }
-            ),
-          E.toError
-        )
+      apimClient.user.listByService(
+        azureApimConfig.apimResourceGroup,
+        azureApimConfig.apim,
+        {
+          skip: cursor
+        }
       ),
+      productListResponse =>
+        TE.tryCatch(
+          async () => {
+            // eslint-disable-next-line functional/no-let, prefer-const, functional/prefer-readonly-type
+            let items: UserContract[] = [];
+            for await (const x of productListResponse) {
+              // eslint-disable-next-line functional/immutable-data
+              items.push(x);
+            }
+            return items;
+          },
+          () => ResponseErrorInternal("Could not list the user by email.")
+        ),
       TE.chainW(userSubscriptionList =>
         pipe(
           userSubscriptionList,
@@ -66,12 +77,19 @@ export function GetUsersHandler(
             return ResponseErrorInternal("Validation error");
           }),
           E.map(users =>
+            // TODO: Da Capire se va bene, prima era presente un nextLink che se era valorizzato
+            // indicava che erano presenti altri utenti
+            // se presente appunto veniva valorizzato next con il link per la successiva chiamata
+            // ora é cambiato proprio il funzionamento del metodo dell'SDK, temo che li faccia fetchare tutti oneshot
+            // dato che si tratta di un PagedAsyncIterableIterator
+            // In tal caso forse dobbiamo aggiungere un parametro in piú all'api, top per limitare il fetch
             ResponseSuccessJson({
               items: users,
-              next: userSubscriptionList.nextLink
-                ? `https://${azureApimHost}/adm/users?cursor=${cursor +
-                    users.length}`
-                : undefined
+              next:
+                userSubscriptionList.length !== 0
+                  ? `https://${azureApimHost}/adm/users?cursor=${cursor +
+                      users.length}`
+                  : undefined
             })
           ),
           TE.fromEither
