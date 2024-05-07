@@ -1,6 +1,6 @@
 import { Context } from "@azure/functions";
 import * as express from "express";
-import * as A from "fp-ts/lib/Array";
+import * as RA from "fp-ts/lib/ReadonlyArray";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import {
@@ -19,6 +19,7 @@ import {
 } from "@pagopa/ts-commons/lib/responses";
 
 import { pipe } from "fp-ts/lib/function";
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { UserCollection } from "../generated/definitions/UserCollection";
 import {
   getApiClient,
@@ -47,12 +48,14 @@ export function GetUsersHandler(
       TE.chain(apiClient =>
         TE.tryCatch(
           () =>
-            apiClient.user.listByService(
-              azureApimConfig.apimResourceGroup,
-              azureApimConfig.apim,
-              {
-                skip: cursor
-              }
+            asyncIteratorToArray(
+              apiClient.user.listByService(
+                azureApimConfig.apimResourceGroup,
+                azureApimConfig.apim,
+                {
+                  skip: cursor
+                }
+              )
             ),
           E.toError
         )
@@ -60,7 +63,8 @@ export function GetUsersHandler(
       TE.chainW(userSubscriptionList =>
         pipe(
           userSubscriptionList,
-          A.traverse(E.Applicative)(userContractToApiUser),
+          RA.map(userContractToApiUser),
+          RA.sequence(E.Applicative),
           E.mapLeft(error => {
             context.log.error("GetUsers | ", error);
             return ResponseErrorInternal("Validation error");
@@ -68,7 +72,7 @@ export function GetUsersHandler(
           E.map(users =>
             ResponseSuccessJson({
               items: users,
-              next: userSubscriptionList.nextLink
+              next: userSubscriptionList.length
                 ? `https://${azureApimHost}/adm/users?cursor=${cursor +
                     users.length}`
                 : undefined

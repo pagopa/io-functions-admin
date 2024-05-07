@@ -23,6 +23,7 @@ import {
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { UserInfo } from "../generated/definitions/UserInfo";
 import {
@@ -82,25 +83,28 @@ export function GetUserHandler(
         internalErrorHandler("Could not get the APIM client.", error)
       ),
       TE.chain(apiClient =>
-        TE.tryCatch(
-          () =>
-            apiClient.user
-              .listByService(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                {
-                  filter: `email eq '${email}'`
-                }
+        pipe(
+          TE.tryCatch(
+            () =>
+              asyncIteratorToArray(
+                apiClient.user.listByService(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  {
+                    filter: `email eq '${email}'`
+                  }
+                )
+              ),
+            error =>
+              internalErrorHandler(
+                "Could not list the user by email.",
+                error as Error
               )
-              .then(userList => ({
-                apiClient,
-                userList
-              })),
-          error =>
-            internalErrorHandler(
-              "Could not list the user by email.",
-              error as Error
-            )
+          ),
+          TE.map(userList => ({
+            apiClient,
+            userList
+          }))
         )
       ),
       TE.chainW(

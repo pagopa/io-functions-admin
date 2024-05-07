@@ -1,11 +1,12 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-import { ApiManagementClient } from "@azure/arm-apimanagement";
 import {
+  ApiManagementClient,
   ProductContract,
   SubscriptionContract,
   UserContract
-} from "@azure/arm-apimanagement/esm/models";
+} from "@azure/arm-apimanagement";
+
 import { RestError } from "@azure/ms-rest-js";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
