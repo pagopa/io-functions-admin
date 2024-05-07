@@ -112,6 +112,8 @@ export function getGraphRbacManagementClient(
   );
 }
 
+// TODO: anche in questo metodo veniva tornato nextLink, che ora non viene piú ritornato dalla funzione dell'SDK
+// controllare bene e capire come sistemarlo del tutto
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export const getUserGroups = (
   apimClient: ApiManagementClient,
