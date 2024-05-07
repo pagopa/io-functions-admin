@@ -1,6 +1,6 @@
+/* eslint-disable max-lines-per-function */
+/* eslint-disable sonarjs/no-identical-functions */
 import { Context } from "@azure/functions";
-import * as express from "express";
-import * as TE from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -12,6 +12,9 @@ import {
   withRequestMiddlewares,
   wrapRequestHandler
 } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
+import * as express from "express";
+import * as O from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
 import { Errors } from "io-ts";
 
 import {
@@ -29,10 +32,10 @@ import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { ProductNamePayload } from "../generated/definitions/ProductNamePayload";
 import { Subscription } from "../generated/definitions/Subscription";
 import {
-  getApiClient,
   IAzureApimConfig,
-  isErrorStatusCode,
-  IServicePrincipalCreds
+  IServicePrincipalCreds,
+  getApiClient,
+  isErrorStatusCode
 } from "../utils/apim";
 import { subscriptionContractToApiSubscription } from "../utils/conversions";
 import {
@@ -87,40 +90,55 @@ export function CreateSubscriptionHandler(
         internalErrorHandler("Could not get the APIM client.", error)
       ),
       TE.chainW(apimClient =>
-        TE.tryCatch(
-          () =>
-            apimClient.user
-              .listByService(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                {
-                  filter: `email eq '${userEmail}'`
+        pipe(
+          apimClient.user.listByService(
+            azureApimConfig.apimResourceGroup,
+            azureApimConfig.apim,
+            {
+              filter: `email eq '${userEmail}'`
+            }
+          ),
+          // the first element does the job
+          productListResponse =>
+            TE.tryCatch(
+              async () => {
+                for await (const x of productListResponse) {
+                  return {
+                    apimClient,
+                    user: O.some(x)
+                  };
                 }
-              )
-              .then(userList => ({
-                apimClient,
-                userList
-              })),
-          error =>
-            internalErrorHandler(
-              "Could not list the user by email.",
-              error as Error
-            )
-        )
-      ),
-      TE.chainW(
-        TE.fromPredicate(
-          taskResults => taskResults.userList.length !== 0,
-          () =>
-            ResponseErrorNotFound(
-              "Not found",
-              "The provided user does not exist"
+                return {
+                  apimClient,
+                  user: O.none
+                };
+              },
+              error =>
+                internalErrorHandler(
+                  "Could not list the user by email.",
+                  error as Error
+                )
             )
         )
       ),
       TE.chainW(taskResults =>
         pipe(
-          taskResults.userList[0].id,
+          taskResults.user,
+          O.fold(
+            () =>
+              TE.left(
+                ResponseErrorNotFound(
+                  "Not found",
+                  "The provided user does not exist"
+                )
+              ),
+            user => TE.right({ apimClient: taskResults.apimClient, user })
+          )
+        )
+      ),
+      TE.chainW(taskResults =>
+        pipe(
+          taskResults.user.id,
           NonEmptyString.decode,
           TE.fromEither,
           TE.mapLeft(errors =>
@@ -137,41 +155,60 @@ export function CreateSubscriptionHandler(
       ),
       TE.chainW(taskResults =>
         pipe(
-          TE.tryCatch(
-            () =>
-              taskResults.apimClient.product.listByService(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                {
-                  filter: `name eq '${productNamePayload.product_name}'`
-                }
-              ),
-            error =>
-              internalErrorHandler(
-                "Could not list the products by name.",
-                error as Error
-              )
+          taskResults.apimClient.product.listByService(
+            azureApimConfig.apimResourceGroup,
+            azureApimConfig.apim,
+            {
+              filter: `name eq '${productNamePayload.product_name}'`
+            }
           ),
-          TE.map(productList => ({
-            apimClient: taskResults.apimClient,
-            productList,
-            userId: taskResults.userId
-          }))
-        )
-      ),
-      TE.chainW(
-        TE.fromPredicate(
-          taskResults => taskResults.productList.length !== 0,
-          () =>
-            ResponseErrorNotFound(
-              "Not found",
-              "The provided product does not exist"
+          // the first element does the job
+          productListResponse =>
+            TE.tryCatch(
+              async () => {
+                for await (const x of productListResponse) {
+                  return {
+                    apimClient: taskResults.apimClient,
+                    product: O.some(x),
+                    userId: taskResults.userId
+                  };
+                }
+                return {
+                  apimClient: taskResults.apimClient,
+                  product: O.none,
+                  userId: taskResults.userId
+                };
+              },
+              error =>
+                internalErrorHandler(
+                  "Could not list the products by name.",
+                  error as Error
+                )
             )
         )
       ),
       TE.chainW(taskResults =>
         pipe(
-          taskResults.productList[0].id,
+          taskResults.product,
+          O.fold(
+            () =>
+              TE.left(
+                ResponseErrorNotFound(
+                  "Not found",
+                  "The provided product does not exist"
+                )
+              ),
+            product =>
+              TE.right({
+                ...taskResults,
+                product
+              })
+          )
+        )
+      ),
+      TE.chainW(taskResults =>
+        pipe(
+          taskResults.product.id,
           NonEmptyString.decode,
           TE.fromEither,
           TE.mapLeft(errors =>
