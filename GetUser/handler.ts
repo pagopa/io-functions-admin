@@ -3,6 +3,7 @@ import * as express from "express";
 import { pipe } from "fp-ts/lib/function";
 import * as A from "fp-ts/lib/Array";
 import * as E from "fp-ts/lib/Either";
+import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
@@ -55,6 +56,10 @@ export function GetUserHandler(
   azureApimConfig: IAzureApimConfig,
   adb2cTokenAttributeName: NonEmptyString
 ): IGetSubscriptionKeysHandler {
+  const apimClient = getApiClient(
+    servicePrincipalCreds,
+    azureApimConfig.subscriptionId
+  );
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, email) => {
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -77,71 +82,64 @@ export function GetUserHandler(
         errorMessage
       );
     return pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
-      TE.mapLeft(error =>
-        internalErrorHandler("Could not get the APIM client.", error)
+      apimClient.user.listByService(
+        azureApimConfig.apimResourceGroup,
+        azureApimConfig.apim,
+        {
+          filter: `email eq '${email}'`
+        }
       ),
-      TE.chain(apiClient =>
+      productListResponse =>
         TE.tryCatch(
-          () =>
-            apiClient.user
-              .listByService(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                {
-                  filter: `email eq '${email}'`
-                }
-              )
-              .then(userList => ({
-                apiClient,
-                userList
-              })),
+          async () => {
+            for await (const x of productListResponse) {
+              return O.some(x);
+            }
+            return O.none;
+          },
           error =>
             internalErrorHandler(
               "Could not list the user by email.",
               error as Error
             )
-        )
-      ),
+        ),
       TE.chainW(
-        TE.fromPredicate(
-          taskResults => taskResults.userList.length !== 0,
+        O.fold(
           () =>
-            ResponseErrorNotFound(
-              "Not found",
-              "The required resource does not exist"
-            )
+            TE.left(
+              ResponseErrorNotFound(
+                "Not found",
+                "The provided user does not exist"
+              )
+            ),
+          user => TE.right(user)
         )
       ),
-      TE.chainW(taskResults =>
+      TE.chainW(user =>
         pipe(
-          taskResults.userList[0].name,
+          user.name,
           NonEmptyString.decode,
-          E.mapLeft(errors =>
+          TE.fromEither,
+          TE.mapLeft(errors =>
             internalValidationErrorHandler(
               "Could not get user name from user contract.",
               errors
             )
-          ),
-          E.map(userName => ({
-            apiClient: taskResults.apiClient,
-            userName
-          })),
-          TE.fromEither
+          )
         )
       ),
-      TE.chainW(taskResults =>
+      TE.chainW(userName =>
         pipe(
           getUserGroups(
-            taskResults.apiClient,
+            apimClient,
             azureApimConfig.apimResourceGroup,
             azureApimConfig.apim,
-            taskResults.userName
+            userName
           ),
           TE.mapLeft(error =>
             internalErrorHandler(
               "Could not get user groups and subscriptions from APIM.",
-              error
+              new Error(`APIM error status code: ${error.statusCode}`)
             )
           )
         )
