@@ -1,7 +1,6 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-import { ApiManagementClient } from "@azure/arm-apimanagement";
-import { GroupContract } from "@azure/arm-apimanagement/esm/models";
+import { ApiManagementClient, GroupContract } from "@azure/arm-apimanagement";
 import { right } from "fp-ts/lib/Either";
 import { fromEither, left } from "fp-ts/lib/TaskEither";
 import { UserGroup } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
@@ -109,7 +108,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.map(_ => _.displayName) }
+      { groups: fakeExistingGroups.map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -128,7 +127,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.map(_ => _.displayName) }
+      { groups: fakeExistingGroups.map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -145,7 +144,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.map(_ => _.displayName) }
+      { groups: fakeExistingGroups.map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseErrorNotFound");
@@ -164,7 +163,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.map(_ => _.displayName) }
+      { groups: fakeExistingGroups.map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -186,7 +185,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.map(_ => _.displayName) }
+      { groups: fakeExistingGroups.map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -211,7 +210,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.map(_ => _.displayName) }
+      { groups: fakeExistingGroups.map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -265,7 +264,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) }
+      { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -294,7 +293,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) }
+      { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -323,7 +322,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) }
+      { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -357,7 +356,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: updatedGroups.map(_ => _.displayName) }
+      { groups: updatedGroups.map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -388,7 +387,7 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: updatedGroups.map(_ => _.displayName) }
+      { groups: updatedGroups.map(_ => _.displayName) as any }
     );
 
     expect(response.kind).toEqual("IResponseSuccessJson");

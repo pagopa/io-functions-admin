@@ -1,7 +1,4 @@
-import {
-  GroupCollection,
-  GroupContract
-} from "@azure/arm-apimanagement/esm/models";
+import { GroupContract } from "@azure/arm-apimanagement";
 import * as TE from "fp-ts/lib/TaskEither";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as ApimUtils from "../../utils/apim";
@@ -63,9 +60,7 @@ const mockedUserWithoutEmail = {
 };
 
 const mockUserGroupList = jest.fn().mockImplementation(() => {
-  const apimResponse: GroupCollection = someValidGroups;
-  // eslint-disable-next-line functional/immutable-data
-  apimResponse["nextLink"] = "next-page";
+  const apimResponse = someValidGroups;
   return Promise.resolve(apimResponse);
 });
 const mockUserGroupListNext = jest

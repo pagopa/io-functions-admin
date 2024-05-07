@@ -115,7 +115,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       aNotExistingSubscriptionId,
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
-    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorNotFound");
   });
 
@@ -132,7 +131,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       aBreakingApimSubscriptionId,
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
-    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
@@ -150,7 +148,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       aValidSubscriptionId,
       { key_type: SubscriptionKeyTypeEnum.PRIMARY_KEY }
     );
-    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(firstResponse).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",

@@ -1,11 +1,12 @@
 // eslint-disable @typescript-eslint/no-explicit-any
-import { ApiManagementClient } from "@azure/arm-apimanagement";
 import {
+  ApiManagementClient,
   GroupCollection,
   GroupContract,
   SubscriptionCollection,
   SubscriptionContract
-} from "@azure/arm-apimanagement/esm/models";
+} from "@azure/arm-apimanagement";
+
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
@@ -272,7 +273,7 @@ describe("GetUser", () => {
       description: "group description",
       displayName: "groupName",
       externalId: undefined,
-      groupContractType: "custom",
+      typePropertiesType: "custom",
       id: undefined,
       name: undefined,
       type: undefined
@@ -333,18 +334,14 @@ describe("GetUser", () => {
       Promise.resolve([{ name: fakeUserName }])
     );
     mockUserGroupList.mockImplementation(() => {
-      const apimResponse: GroupCollection = someValidGroups;
-      // eslint-disable-next-line functional/immutable-data
-      apimResponse["nextLink"] = "next-page";
+      const apimResponse = someValidGroups;
       return Promise.resolve(apimResponse);
     });
     mockUserGroupListNext.mockImplementation(() =>
       Promise.resolve(someMoreValidGroups)
     );
     mockUserSubscriptionList.mockImplementation(() => {
-      const apimResponse: SubscriptionCollection = someValidSubscriptions;
-      // eslint-disable-next-line functional/immutable-data
-      apimResponse["nextLink"] = "next-page";
+      const apimResponse = someValidSubscriptions;
       return Promise.resolve(apimResponse);
     });
     mockUserSubscriptionListNext.mockImplementation(() =>
