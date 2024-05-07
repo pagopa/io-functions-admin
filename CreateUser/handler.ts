@@ -45,6 +45,10 @@ export function CreateUserHandler(
   azureApimConfig: IAzureApimConfig,
   adb2cTokenAttributeName: NonEmptyString
 ): ICreateUserHandler {
+  const apimClient = getApiClient(
+    apimCredentials,
+    azureApimConfig.subscriptionId
+  );
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, userPayload) => {
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -98,21 +102,10 @@ export function CreateUserHandler(
           )
         )
       ),
-      TE.chain(userCreateResponse =>
-        pipe(
-          getApiClient(apimCredentials, azureApimConfig.subscriptionId),
-          TE.mapLeft(error =>
-            internalErrorHandler(
-              "Could not get the API management client",
-              error
-            )
-          ),
-          TE.map(apimClient => ({
-            apimClient,
-            objectId: userCreateResponse.objectId
-          }))
-        )
-      ),
+      TE.map(userCreateResponse => ({
+        apimClient,
+        objectId: userCreateResponse.objectId
+      })),
       TE.chainW(taskResults =>
         pipe(
           TE.tryCatch(
