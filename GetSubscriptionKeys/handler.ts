@@ -16,6 +16,7 @@ import {
 import { pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -32,15 +33,18 @@ import {
 } from "../utils/apim";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 
+type SubscriptionKeysResponse = t.TypeOf<typeof SubscriptionKeysResponse>;
+const SubscriptionKeysResponse = t.type({
+  primary_key: t.string,
+  secondary_key: t.string
+});
+
 type IGetSubscriptionKeysHandler = (
   context: Context,
   auth: IAzureApiAuthorization,
   serviceId: ServiceId
 ) => Promise<
-  | IResponseSuccessJson<{
-      readonly primary_key: string;
-      readonly secondary_key: string;
-    }>
+  | IResponseSuccessJson<SubscriptionKeysResponse>
   | IResponseErrorNotFound
   | IResponseErrorInternal
 >;
@@ -50,26 +54,33 @@ export function GetSubscriptionKeysHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
+  const apimClient = getApiClient(
+    servicePrincipalCreds,
+    azureApimConfig.subscriptionId
+  );
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, serviceId) =>
     pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
-      TE.chain(apiClient =>
-        TE.tryCatch(
-          () =>
-            apiClient.subscription.get(
-              azureApimConfig.apimResourceGroup,
-              azureApimConfig.apim,
-              serviceId
-            ),
-          E.toError
-        )
+      TE.tryCatch(
+        () =>
+          apimClient.subscription.get(
+            azureApimConfig.apimResourceGroup,
+            azureApimConfig.apim,
+            serviceId
+          ),
+        E.toError
       ),
-      TE.map(subscription =>
-        ResponseSuccessJson({
-          primary_key: subscription.primaryKey,
-          secondary_key: subscription.secondaryKey
-        })
+      TE.chainW(subscription =>
+        pipe(
+          {
+            primary_key: subscription.primaryKey,
+            secondary_key: subscription.secondaryKey
+          },
+          SubscriptionKeysResponse.decode,
+          E.mapLeft(E.toError),
+          E.map(ResponseSuccessJson),
+          TE.fromEither
+        )
       ),
       TE.mapLeft(error => {
         context.log.error(error);
