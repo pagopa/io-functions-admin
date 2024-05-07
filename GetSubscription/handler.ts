@@ -1,7 +1,6 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable sonarjs/no-identical-functions */
 import { Context } from "@azure/functions";
-import * as express from "express";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -20,7 +19,10 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import * as express from "express";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
 
 import { SubscriptionWithoutKeys } from "../generated/definitions/SubscriptionWithoutKeys";
 import {
@@ -45,30 +47,38 @@ export function GetSubscriptionHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionHandler {
+  const apiClient = getApiClient(
+    servicePrincipalCreds,
+    azureApimConfig.subscriptionId
+  );
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, subscriptionId) =>
     pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
-      TE.chain(apiClient =>
-        TE.tryCatch(
-          () =>
-            apiClient.subscription.get(
-              azureApimConfig.apimResourceGroup,
-              azureApimConfig.apim,
-              subscriptionId
+      TE.tryCatch(
+        () =>
+          apiClient.subscription.get(
+            azureApimConfig.apimResourceGroup,
+            azureApimConfig.apim,
+            subscriptionId
+          ),
+        E.toError
+      ),
+      TE.chainW(subscription =>
+        pipe(
+          {
+            id: subscription.id,
+            owner_id: parseOwnerIdFullPath(
+              subscription.ownerId as NonEmptyString
             ),
-          E.toError
+            scope: subscription.scope
+          },
+          SubscriptionWithoutKeys.decode,
+          E.mapLeft(E.toError),
+          E.map(ResponseSuccessJson),
+          TE.fromEither
         )
       ),
-      TE.map(subscription =>
-        ResponseSuccessJson({
-          id: subscription.id,
-          owner_id: parseOwnerIdFullPath(
-            subscription.ownerId as NonEmptyString
-          ),
-          scope: subscription.scope
-        })
-      ),
+      x => x,
       TE.mapLeft(error => {
         context.log.error(error);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

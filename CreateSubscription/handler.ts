@@ -84,61 +84,49 @@ export function CreateSubscriptionHandler(
         errors,
         errorMessage
       );
+    const apimClient = getApiClient(
+      servicePrincipalCreds,
+      azureApimConfig.subscriptionId
+    );
+
     return pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
-      TE.mapLeft(error =>
-        internalErrorHandler("Could not get the APIM client.", error)
+      apimClient.user.listByService(
+        azureApimConfig.apimResourceGroup,
+        azureApimConfig.apim,
+        {
+          filter: `email eq '${userEmail}'`
+        }
       ),
-      TE.chainW(apimClient =>
-        pipe(
-          apimClient.user.listByService(
-            azureApimConfig.apimResourceGroup,
-            azureApimConfig.apim,
-            {
-              filter: `email eq '${userEmail}'`
+      // the first element does the job
+      productListResponse =>
+        TE.tryCatch(
+          async () => {
+            for await (const x of productListResponse) {
+              return O.some(x);
             }
-          ),
-          // the first element does the job
-          productListResponse =>
-            TE.tryCatch(
-              async () => {
-                for await (const x of productListResponse) {
-                  return {
-                    apimClient,
-                    user: O.some(x)
-                  };
-                }
-                return {
-                  apimClient,
-                  user: O.none
-                };
-              },
-              error =>
-                internalErrorHandler(
-                  "Could not list the user by email.",
-                  error as Error
-                )
+            return O.none;
+          },
+          error =>
+            internalErrorHandler(
+              "Could not list the user by email.",
+              error as Error
             )
+        ),
+      TE.chainW(
+        O.fold(
+          () =>
+            TE.left(
+              ResponseErrorNotFound(
+                "Not found",
+                "The provided user does not exist"
+              )
+            ),
+          user => TE.right(user)
         )
       ),
-      TE.chainW(taskResults =>
+      TE.chainW(user =>
         pipe(
-          taskResults.user,
-          O.fold(
-            () =>
-              TE.left(
-                ResponseErrorNotFound(
-                  "Not found",
-                  "The provided user does not exist"
-                )
-              ),
-            user => TE.right({ apimClient: taskResults.apimClient, user })
-          )
-        )
-      ),
-      TE.chainW(taskResults =>
-        pipe(
-          taskResults.user.id,
+          user.id,
           NonEmptyString.decode,
           TE.fromEither,
           TE.mapLeft(errors =>
@@ -146,16 +134,12 @@ export function CreateSubscriptionHandler(
               "Could not get user id from user contract.",
               errors
             )
-          ),
-          TE.map(userId => ({
-            apimClient: taskResults.apimClient,
-            userId
-          }))
+          )
         )
       ),
-      TE.chainW(taskResults =>
+      TE.chainW(userId =>
         pipe(
-          taskResults.apimClient.product.listByService(
+          apimClient.product.listByService(
             azureApimConfig.apimResourceGroup,
             azureApimConfig.apim,
             {
@@ -168,15 +152,13 @@ export function CreateSubscriptionHandler(
               async () => {
                 for await (const x of productListResponse) {
                   return {
-                    apimClient: taskResults.apimClient,
                     product: O.some(x),
-                    userId: taskResults.userId
+                    userId
                   };
                 }
                 return {
-                  apimClient: taskResults.apimClient,
                   product: O.none,
-                  userId: taskResults.userId
+                  userId
                 };
               },
               error =>
@@ -218,7 +200,6 @@ export function CreateSubscriptionHandler(
             )
           ),
           TE.map(productId => ({
-            apimClient: taskResults.apimClient,
             productId,
             userId: taskResults.userId
           }))
@@ -227,7 +208,7 @@ export function CreateSubscriptionHandler(
       TE.chainW(taskResults =>
         pipe(
           () =>
-            taskResults.apimClient.subscription.createOrUpdate(
+            apimClient.subscription.createOrUpdate(
               azureApimConfig.apimResourceGroup,
               azureApimConfig.apim,
               subscriptionId,
