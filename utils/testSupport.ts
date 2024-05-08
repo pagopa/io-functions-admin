@@ -13,8 +13,6 @@ export const ReadonlyArrayToAsyncIterable = <T>(
   return {
     next(): Promise<IteratorResult<T>> {
       if (index < array.length) {
-        // eslint-disable-next-line no-console
-        console.log(`Returning value at index ${index}`);
         return Promise.resolve({ value: array[index++], done: false });
       } else {
         return Promise.resolve({ value: undefined, done: true });
@@ -22,14 +20,6 @@ export const ReadonlyArrayToAsyncIterable = <T>(
     }
   };
 };
-
-export const ReadonlyArrayToAsyncIterableG = <T>(array: ReadonlyArray<T>) =>
-  (async function*() {
-    let index = 0;
-    while (index < array.length) {
-      yield array[index++];
-    }
-  })();
 
 export const ArrayToAsyncIterable = <T>(array: T[]): AsyncIterator<T> => {
   let index = 0;

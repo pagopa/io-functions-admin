@@ -1,17 +1,17 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
 import { ApiManagementClient, GroupContract } from "@azure/arm-apimanagement";
+import { UserGroup } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { right } from "fp-ts/lib/Either";
 import { fromEither, left } from "fp-ts/lib/TaskEither";
-import { UserGroup } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { EmailAddress } from "../../generated/definitions/EmailAddress";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
-import { UpdateUserGroupHandler } from "../handler";
 import {
   ArrayToAsyncIterable,
   ReadonlyArrayToAsyncIterable
 } from "../../utils/testSupport";
+import { UpdateUserGroupHandler } from "../handler";
 
 jest.mock("@azure/arm-apimanagement");
 
@@ -119,9 +119,15 @@ describe("UpdateUserGroups", () => {
   });
 
   it("should return an internal error response if the API management client can not list the users", async () => {
-    mockUserListByService.mockReturnValue(() => [
-      Promise.reject("Error on users list")
-    ]);
+    mockUserListByService.mockImplementation(() => {
+      return {
+        next: () => Promise.reject(new Error("Error on users list")),
+        [Symbol.asyncIterator]() {
+          return this;
+        }
+      };
+    });
+
     const updateUserGroupHandler = UpdateUserGroupHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -138,12 +144,7 @@ describe("UpdateUserGroups", () => {
   });
 
   it("should return a not found error response if the API management client returns no user", async () => {
-    mockUserListByService.mockImplementation(() => ({
-      next: async () => ({ done: true, value: undefined }),
-      [Symbol.asyncIterator]() {
-        return this;
-      }
-    }));
+    mockUserListByService.mockImplementation(() => ArrayToAsyncIterable([]));
     const updateUserGroupHandler = UpdateUserGroupHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -423,9 +424,6 @@ describe("UpdateUserGroups", () => {
       fakeUserEmail,
       { groups: updatedGroups.map(_ => _.displayName) as any }
     );
-
-    console.log("RESPONSEE TEST", response);
-
     expect(response.kind).toEqual("IResponseSuccessJson");
     groupsToBeRemoved.forEach(groupContract =>
       expect(mockGroupUserDeleteMethod).toHaveBeenCalledWith(
