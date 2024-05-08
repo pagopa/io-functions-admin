@@ -8,6 +8,10 @@ import { EmailAddress } from "../../generated/definitions/EmailAddress";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
 import { UpdateUserGroupHandler } from "../handler";
+import {
+  ArrayToAsyncIterable,
+  ReadonlyArrayToAsyncIterable
+} from "../../utils/testSupport";
 
 jest.mock("@azure/arm-apimanagement");
 
@@ -73,7 +77,7 @@ mockApiManagementClient.mockImplementation(() => ({
   },
   groupUser: {
     create: mockGroupUserCreate,
-    deleteMethod: mockGroupUserDeleteMethod
+    delete: mockGroupUserDeleteMethod
   },
   user: {
     listByService: mockUserListByService
@@ -115,9 +119,9 @@ describe("UpdateUserGroups", () => {
   });
 
   it("should return an internal error response if the API management client can not list the users", async () => {
-    mockUserListByService.mockImplementation(() =>
+    mockUserListByService.mockReturnValue(() => [
       Promise.reject("Error on users list")
-    );
+    ]);
     const updateUserGroupHandler = UpdateUserGroupHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -134,7 +138,12 @@ describe("UpdateUserGroups", () => {
   });
 
   it("should return a not found error response if the API management client returns no user", async () => {
-    mockUserListByService.mockImplementation(() => Promise.resolve([]));
+    mockUserListByService.mockImplementation(() => ({
+      next: async () => ({ done: true, value: undefined }),
+      [Symbol.asyncIterator]() {
+        return this;
+      }
+    }));
     const updateUserGroupHandler = UpdateUserGroupHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -152,7 +161,7 @@ describe("UpdateUserGroups", () => {
 
   it("should return an internal error response if the API management client list a user with an invalid name", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: "" }])
+      ArrayToAsyncIterable([{ name: "" }])
     );
     const updateUserGroupHandler = UpdateUserGroupHandler(
       fakeServicePrincipalCredentials,
@@ -171,11 +180,16 @@ describe("UpdateUserGroups", () => {
 
   it("should return an internal error response if the API management client can not list the current user groups", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: fakeUserName }])
+      ArrayToAsyncIterable([{ name: fakeUserName }])
     );
-    mockUserGroupList.mockImplementation(() =>
-      Promise.reject(Error("Error on user groups list"))
-    );
+    mockUserListByService.mockImplementation(() => {
+      return {
+        next: () => Promise.reject(new Error("Error on user groups list")),
+        [Symbol.asyncIterator]() {
+          return this;
+        }
+      };
+    });
     const updateUserGroupHandler = UpdateUserGroupHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -193,14 +207,20 @@ describe("UpdateUserGroups", () => {
 
   it("should return an internal error response if the API management client can not list the groups", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: fakeUserName }])
+      ArrayToAsyncIterable([{ name: fakeUserName }])
     );
     mockUserGroupList.mockImplementation(() =>
       Promise.resolve(fakeExistingGroups)
     );
-    mockGroupListByService.mockImplementation(() =>
-      Promise.reject(Error("Error on groups list"))
-    );
+    mockGroupListByService.mockImplementation(() => {
+      return {
+        next: () => Promise.reject(new Error("Error on user groups list")),
+        [Symbol.asyncIterator]() {
+          return this;
+        }
+      };
+    });
+
     const updateUserGroupHandler = UpdateUserGroupHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -218,13 +238,14 @@ describe("UpdateUserGroups", () => {
 
   it("should return a bad request error response if some groups in the request payload do not exist", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: fakeUserName }])
+      ArrayToAsyncIterable([{ name: fakeUserName }])
     );
     mockUserGroupList.mockImplementation(() =>
-      Promise.resolve(fakeExistingGroups)
+      ReadonlyArrayToAsyncIterable(fakeExistingGroups)
     );
+
     mockGroupListByService.mockImplementation(() =>
-      Promise.resolve(fakeExistingGroups)
+      ReadonlyArrayToAsyncIterable(fakeExistingGroups)
     );
     const updateUserGroupHandler = UpdateUserGroupHandler(
       fakeServicePrincipalCredentials,
@@ -243,14 +264,16 @@ describe("UpdateUserGroups", () => {
 
   it("should return an internal error response if the API management client can not associate the user with a group", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: fakeUserName }])
+      ArrayToAsyncIterable([{ name: fakeUserName }])
     );
     mockUserGroupList.mockImplementation(() =>
-      Promise.resolve(fakeExistingGroups.slice(0, 3))
+      ReadonlyArrayToAsyncIterable(fakeExistingGroups.slice(0, 3))
     );
+
     mockGroupListByService.mockImplementation(() =>
-      Promise.resolve(fakeExistingGroups)
+      ReadonlyArrayToAsyncIterable(fakeExistingGroups)
     );
+
     mockGroupUserCreate.mockImplementation(() =>
       Promise.reject("Error on group user create")
     );
@@ -272,13 +295,13 @@ describe("UpdateUserGroups", () => {
 
   it("should return an internal error response if the API management client can not remove an association of the user with a group", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: fakeUserName }])
+      ArrayToAsyncIterable([{ name: fakeUserName }])
     );
     mockUserGroupList.mockImplementation(() =>
-      Promise.resolve(fakeExistingGroups.slice(0, 3))
+      ReadonlyArrayToAsyncIterable(fakeExistingGroups.slice(0, 3))
     );
     mockGroupListByService.mockImplementation(() =>
-      Promise.resolve(fakeExistingGroups)
+      ReadonlyArrayToAsyncIterable(fakeExistingGroups)
     );
     mockGroupUserCreate.mockImplementation(() => Promise.resolve());
     mockGroupUserDeleteMethod.mockImplementation(() =>
@@ -301,15 +324,23 @@ describe("UpdateUserGroups", () => {
 
   it("should return an internal error response if the API management client can not list the updated user groups", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: fakeUserName }])
+      ArrayToAsyncIterable([{ name: fakeUserName }])
     );
     mockUserGroupList
       .mockImplementationOnce(() =>
-        Promise.resolve(fakeExistingGroups.slice(0, 3))
+        ReadonlyArrayToAsyncIterable(fakeExistingGroups.slice(0, 3))
       )
-      .mockImplementationOnce(() => Promise.reject("Error on user group list"));
+      .mockImplementationOnce(() => {
+        return {
+          next: () => Promise.reject(new Error("Error on user groups list")),
+          [Symbol.asyncIterator]() {
+            return this;
+          }
+        };
+      });
+
     mockGroupListByService.mockImplementation(() =>
-      Promise.resolve(fakeExistingGroups)
+      ReadonlyArrayToAsyncIterable(fakeExistingGroups)
     );
     mockGroupUserCreate.mockImplementation(() => Promise.resolve());
     mockGroupUserDeleteMethod.mockImplementation(() => Promise.resolve());
@@ -331,19 +362,19 @@ describe("UpdateUserGroups", () => {
   it("should return an internal error response if the API management client lists some invalid updated user groups", async () => {
     const updatedGroups = fakeExistingGroups.slice(1, 4);
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: fakeUserName }])
+      ArrayToAsyncIterable([{ name: fakeUserName }])
     );
     mockUserGroupList
       .mockImplementationOnce(() =>
-        Promise.resolve(fakeExistingGroups.slice(0, 3))
+        ReadonlyArrayToAsyncIterable(fakeExistingGroups.slice(0, 3))
       )
       .mockImplementationOnce(() =>
-        Promise.resolve(
+        ArrayToAsyncIterable(
           updatedGroups.slice(-1, 1).concat([{ displayName: undefined as any }])
         )
       );
     mockGroupListByService.mockImplementation(() =>
-      Promise.resolve(fakeExistingGroups)
+      ReadonlyArrayToAsyncIterable(fakeExistingGroups)
     );
     mockGroupUserCreate.mockImplementation(() => Promise.resolve());
     mockGroupUserDeleteMethod.mockImplementation(() => Promise.resolve());
@@ -367,17 +398,20 @@ describe("UpdateUserGroups", () => {
     const groupsToBeRemoved = userCurrentGroups.slice(0, 2);
     const groupsToBeAssociated = fakeExistingGroups.slice(4, 6);
     const updatedGroups = fakeExistingGroups.slice(2, 6);
+
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ name: fakeUserName }])
+      ArrayToAsyncIterable([{ name: fakeUserName }])
     );
     mockUserGroupList
-      .mockImplementationOnce(() => Promise.resolve(userCurrentGroups))
-      .mockImplementationOnce(() => Promise.resolve(updatedGroups));
+      .mockImplementationOnce(() => ArrayToAsyncIterable(userCurrentGroups))
+      .mockImplementationOnce(() => ArrayToAsyncIterable(updatedGroups));
     mockGroupListByService.mockImplementation(() =>
-      Promise.resolve(fakeExistingGroups)
+      ReadonlyArrayToAsyncIterable(fakeExistingGroups)
     );
+
     mockGroupUserCreate.mockImplementation(() => Promise.resolve());
     mockGroupUserDeleteMethod.mockImplementation(() => Promise.resolve());
+
     const updateUserGroupHandler = UpdateUserGroupHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -389,6 +423,8 @@ describe("UpdateUserGroups", () => {
       fakeUserEmail,
       { groups: updatedGroups.map(_ => _.displayName) as any }
     );
+
+    console.log("RESPONSEE TEST", response);
 
     expect(response.kind).toEqual("IResponseSuccessJson");
     groupsToBeRemoved.forEach(groupContract =>
