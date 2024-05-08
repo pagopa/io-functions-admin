@@ -1,8 +1,4 @@
 import { Context } from "@azure/functions";
-import * as express from "express";
-import * as RA from "fp-ts/lib/ReadonlyArray";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -17,14 +13,19 @@ import {
   ResponseErrorInternal,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
+import * as express from "express";
+import * as E from "fp-ts/lib/Either";
+import * as RA from "fp-ts/lib/ReadonlyArray";
+import * as TE from "fp-ts/lib/TaskEither";
 
+import { asyncIteratorToPageArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import { pipe } from "fp-ts/lib/function";
-import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { UserCollection } from "../generated/definitions/UserCollection";
 import {
-  getApiClient,
   IAzureApimConfig,
-  IServicePrincipalCreds
+  IServicePrincipalCreds,
+  getApiClient
 } from "../utils/apim";
 import { userContractToApiUser } from "../utils/conversions";
 import { CursorMiddleware } from "../utils/middlewares/cursorMiddleware";
@@ -39,7 +40,8 @@ type IGetSubscriptionKeysHandler = (
 export function GetUsersHandler(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
-  azureApimHost: string
+  azureApimHost: string,
+  pageSize: NonNegativeInteger
 ): IGetSubscriptionKeysHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, cursor = 0) =>
@@ -48,18 +50,20 @@ export function GetUsersHandler(
       TE.chain(apiClient =>
         TE.tryCatch(
           () =>
-            asyncIteratorToArray(
+            asyncIteratorToPageArray(
               apiClient.user.listByService(
                 azureApimConfig.apimResourceGroup,
                 azureApimConfig.apim,
                 {
                   skip: cursor
                 }
-              )
+              ),
+              pageSize
             ),
           E.toError
         )
       ),
+      TE.map(x => x.results),
       TE.chainW(userSubscriptionList =>
         pipe(
           userSubscriptionList,
@@ -96,12 +100,14 @@ export function GetUsersHandler(
 export function GetUsers(
   servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
-  functionsUrl: string
+  functionsUrl: string,
+  pageSize: NonNegativeInteger
 ): express.RequestHandler {
   const handler = GetUsersHandler(
     servicePrincipalCreds,
     azureApimConfig,
-    functionsUrl
+    functionsUrl,
+    pageSize
   );
 
   const middlewaresWrap = withRequestMiddlewares(
