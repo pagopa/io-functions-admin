@@ -15,6 +15,7 @@ import { UserInfo } from "../../generated/definitions/UserInfo";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
 import { subscriptionContractToApiSubscription } from "../../utils/conversions";
+import { ArrayToAsyncIterable } from "../../utils/testSupport";
 import { CreateSubscriptionHandler } from "../handler";
 
 jest.mock("@azure/arm-apimanagement");
@@ -116,9 +117,14 @@ describe("CreateSubscription", () => {
   });
 
   it("should return an internal error response if the API management client can not list the users", async () => {
-    mockUserListByService.mockImplementation(() =>
-      Promise.reject("Error on users list")
-    );
+    mockUserListByService.mockImplementation(() => {
+      return {
+        next: () => Promise.reject(new Error("Error on users list")),
+        [Symbol.asyncIterator]() {
+          return this;
+        }
+      };
+    });
     const createSubscriptionHandler = CreateSubscriptionHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -135,7 +141,7 @@ describe("CreateSubscription", () => {
   });
 
   it("should return a not found error response if the API management client returns no user", async () => {
-    mockUserListByService.mockImplementation(() => Promise.resolve([]));
+    mockUserListByService.mockImplementation(() => ArrayToAsyncIterable([]));
     const createSubscriptionHandler = CreateSubscriptionHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -153,7 +159,7 @@ describe("CreateSubscription", () => {
 
   it("should return an internal error response if the API management client list a user without a valid id", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ id: "" }])
+      ArrayToAsyncIterable([{ id: "" }])
     );
     const createSubscriptionHandler = CreateSubscriptionHandler(
       fakeServicePrincipalCredentials,
@@ -172,11 +178,18 @@ describe("CreateSubscription", () => {
 
   it("should return an internal error response if the API management client can not list the products", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ id: fakeUserId }])
+      ArrayToAsyncIterable([{ id: fakeUserId }])
     );
-    mockProductList.mockImplementation(() =>
-      Promise.reject(Error("Error on product list"))
-    );
+
+    mockProductList.mockImplementation(() => {
+      return {
+        next: () => Promise.reject(new Error("Error on product list")),
+        [Symbol.asyncIterator]() {
+          return this;
+        }
+      };
+    });
+
     const createSubscriptionHandler = CreateSubscriptionHandler(
       fakeServicePrincipalCredentials,
       fakeApimConfig
@@ -194,9 +207,9 @@ describe("CreateSubscription", () => {
 
   it("should return a not found error response if the API management client returns no product", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ id: fakeUserId }])
+      ArrayToAsyncIterable([{ id: fakeUserId }])
     );
-    mockProductList.mockImplementation(() => Promise.resolve([]));
+    mockProductList.mockImplementation(() => ArrayToAsyncIterable([]));
 
     const createSubscriptionHandler = CreateSubscriptionHandler(
       fakeServicePrincipalCredentials,
@@ -215,10 +228,10 @@ describe("CreateSubscription", () => {
 
   it("should return an internal error response if the API management client list a product without a valid id", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ id: fakeUserId }])
+      ArrayToAsyncIterable([{ id: fakeUserId }])
     );
     mockProductList.mockImplementation(() =>
-      Promise.resolve([{ displayName: fakePayload.product_name }])
+      ArrayToAsyncIterable([{ displayName: fakePayload.product_name }])
     );
     const createSubscriptionHandler = CreateSubscriptionHandler(
       fakeServicePrincipalCredentials,
@@ -237,10 +250,10 @@ describe("CreateSubscription", () => {
 
   it("should return an internal error response if the API management client can not create the subscriiption", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ id: fakeUserId }])
+      ArrayToAsyncIterable([{ id: fakeUserId }])
     );
     mockProductList.mockImplementation(() =>
-      Promise.resolve([aFakeApimProductContract])
+      ArrayToAsyncIterable([aFakeApimProductContract])
     );
     mockSubscriptionCreateOrUpdate.mockImplementation(() =>
       Promise.reject(Error("Error on subscription create or update"))
@@ -262,10 +275,10 @@ describe("CreateSubscription", () => {
 
   it("should return an internal error response if the API management client lists invalid subscriptions", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([{ id: fakeUserId }])
+      ArrayToAsyncIterable([{ id: fakeUserId }])
     );
     mockProductList.mockImplementation(() =>
-      Promise.resolve([{ displayName: "product name", id: "product-id" }])
+      ArrayToAsyncIterable([{ displayName: "product name", id: "product-id" }])
     );
     mockSubscriptionCreateOrUpdate.mockImplementation(() =>
       Promise.resolve([{ groupContractType: "invalid" }])
@@ -287,10 +300,10 @@ describe("CreateSubscription", () => {
 
   it("should return the subscription created", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([aFakeApimUser])
+      ArrayToAsyncIterable([aFakeApimUser])
     );
     mockProductList.mockImplementation(() =>
-      Promise.resolve([aFakeApimProductContract])
+      ArrayToAsyncIterable([aFakeApimProductContract])
     );
     mockSubscriptionCreateOrUpdate.mockImplementation(() =>
       Promise.resolve(aFakeApimSubscriptionContract)
@@ -320,10 +333,10 @@ describe("CreateSubscription", () => {
 
   it("should return too many requests if APIM respinds with 412", async () => {
     mockUserListByService.mockImplementation(() =>
-      Promise.resolve([aFakeApimUser])
+      ArrayToAsyncIterable([aFakeApimUser])
     );
     mockProductList.mockImplementation(() =>
-      Promise.resolve([aFakeApimProductContract])
+      ArrayToAsyncIterable([aFakeApimProductContract])
     );
     mockSubscriptionCreateOrUpdate.mockImplementation(() =>
       Promise.reject(new RestError("", "", 412))
