@@ -63,10 +63,9 @@ export function GetUsersHandler(
           E.toError
         )
       ),
-      TE.map(x => x.results),
       TE.chainW(userSubscriptionList =>
         pipe(
-          userSubscriptionList,
+          userSubscriptionList.results,
           RA.map(userContractToApiUser),
           RA.sequence(E.Applicative),
           E.mapLeft(error => {
@@ -76,10 +75,11 @@ export function GetUsersHandler(
           E.map(users =>
             ResponseSuccessJson({
               items: users,
-              next: userSubscriptionList.length
-                ? `https://${azureApimHost}/adm/users?cursor=${cursor +
-                    users.length}`
-                : undefined
+              next:
+                userSubscriptionList.results.length === pageSize
+                  ? `https://${azureApimHost}/adm/users?cursor=${cursor +
+                      users.length}`
+                  : undefined
             })
           ),
           TE.fromEither
