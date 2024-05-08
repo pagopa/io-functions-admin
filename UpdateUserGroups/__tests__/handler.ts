@@ -185,7 +185,7 @@ describe("UpdateUserGroups", () => {
     );
     mockUserListByService.mockImplementation(() => {
       return {
-        next: () => Promise.reject(new Error("Error on user groups list")),
+        next: () => Promise.reject(new Error("Error on user list by service")),
         [Symbol.asyncIterator]() {
           return this;
         }
@@ -211,7 +211,7 @@ describe("UpdateUserGroups", () => {
       ArrayToAsyncIterable([{ name: fakeUserName }])
     );
     mockUserGroupList.mockImplementation(() =>
-      Promise.resolve(fakeExistingGroups)
+      ReadonlyArrayToAsyncIterable(fakeExistingGroups)
     );
     mockGroupListByService.mockImplementation(() => {
       return {
