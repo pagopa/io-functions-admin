@@ -32,7 +32,7 @@ const mockedSubscription = {
 };
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
-    get: (_: string, __: string, subscriptionId: string) => {
+    listSecrets: (_: string, __: string, subscriptionId: string) => {
       if (subscriptionId === aValidSubscriptionId) {
         return Promise.resolve(mockedSubscription);
       }
