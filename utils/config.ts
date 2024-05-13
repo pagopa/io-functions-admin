@@ -79,7 +79,7 @@ export const IConfig = t.intersection([
 
     GET_USERS_PAGE_SIZE: withDefault(
       IntegerFromString.pipe(NonNegativeInteger),
-      ("20" as unknown) as NonNegativeInteger
+      ("100" as unknown) as NonNegativeInteger
     ),
 
     INSTANT_DELETE_ENABLED_USERS: CommaSeparatedListOf(FiscalCode)

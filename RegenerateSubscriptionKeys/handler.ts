@@ -88,7 +88,7 @@ export function RegenerateSubscriptionKeysHandler(
           TE.chain(() =>
             TE.tryCatch(
               () =>
-                apiClient.subscription.get(
+                apiClient.subscription.listSecrets(
                   azureApimConfig.apimResourceGroup,
                   azureApimConfig.apim,
                   serviceId

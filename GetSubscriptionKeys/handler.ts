@@ -58,7 +58,7 @@ export function GetSubscriptionKeysHandler(
       TE.chain(apiClient =>
         TE.tryCatch(
           () =>
-            apiClient.subscription.get(
+            apiClient.subscription.listSecrets(
               azureApimConfig.apimResourceGroup,
               azureApimConfig.apim,
               serviceId
