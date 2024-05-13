@@ -60,7 +60,7 @@ mockRegenerateSecondaryKey.mockImplementation(regenerateKeyImplementation);
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    get: (_: string, __: string, subscriptionId: string) => {
+    listSecrets: (_: string, __: string, subscriptionId: string) => {
       if (subscriptionId === aValidSubscriptionId) {
         return Promise.resolve(mockedSubscription);
       }
