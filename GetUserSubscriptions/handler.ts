@@ -1,5 +1,7 @@
-import { ApiManagementClient } from "@azure/arm-apimanagement";
-import { SubscriptionContract } from "@azure/arm-apimanagement/esm/models";
+import {
+  ApiManagementClient,
+  SubscriptionContract
+} from "@azure/arm-apimanagement";
 import { Context } from "@azure/functions";
 import * as express from "express";
 import { pipe } from "fp-ts/lib/function";
@@ -26,6 +28,7 @@ import {
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { UserInfoAndSubscriptions } from "../generated/definitions/UserInfoAndSubscriptions";
 import {
@@ -61,28 +64,13 @@ function getUserSubscriptions(
   apim: string,
   userName: string
 ): TE.TaskEither<Error, ReadonlyArray<SubscriptionContract>> {
-  return TE.tryCatch(async () => {
-    // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
-    const subscriptionList: SubscriptionContract[] = [];
-    const subscriptionListResponse = await apimClient.userSubscription.list(
-      apimResourceGroup,
-      apim,
-      userName
-    );
-    // eslint-disable-next-line functional/immutable-data
-    subscriptionList.push(...subscriptionListResponse);
-    // eslint-disable-next-line functional/no-let
-    let nextLink = subscriptionListResponse.nextLink;
-    while (nextLink) {
-      const nextSubscriptionList = await apimClient.userSubscription.listNext(
-        nextLink
-      );
-      // eslint-disable-next-line functional/immutable-data
-      subscriptionList.push(...nextSubscriptionList);
-      nextLink = nextSubscriptionList.nextLink;
-    }
-    return subscriptionList;
-  }, E.toError);
+  return TE.tryCatch(
+    () =>
+      asyncIteratorToArray(
+        apimClient.userSubscription.list(apimResourceGroup, apim, userName)
+      ),
+    E.toError
+  );
 }
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
@@ -119,25 +107,28 @@ export function GetUserSubscriptionsHandler(
         internalErrorHandler("Could not get the APIM client.", error)
       ),
       TE.chain(apiClient =>
-        TE.tryCatch(
-          () =>
-            apiClient.user
-              .listByService(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                {
-                  filter: `email eq '${email}'`
-                }
+        pipe(
+          TE.tryCatch(
+            () =>
+              asyncIteratorToArray(
+                apiClient.user.listByService(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  {
+                    filter: `email eq '${email}'`
+                  }
+                )
+              ),
+            error =>
+              internalErrorHandler(
+                "Could not list the user by email.",
+                error as Error
               )
-              .then(userList => ({
-                apiClient,
-                userList
-              })),
-          error =>
-            internalErrorHandler(
-              "Could not list the user by email.",
-              error as Error
-            )
+          ),
+          TE.map(userList => ({
+            apiClient,
+            userList
+          }))
         )
       ),
       TE.chainW(

@@ -12,6 +12,11 @@ import { MailerConfig } from "@pagopa/io-functions-commons/dist/src/mailer";
 import { CommaSeparatedListOf } from "@pagopa/ts-commons/lib/comma-separated-list";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { withDefault } from "@pagopa/ts-commons/lib/types";
+import {
+  IntegerFromString,
+  NonNegativeInteger
+} from "@pagopa/ts-commons/lib/numbers";
 
 // global app configuration
 export type IConfig = t.TypeOf<typeof IConfig>;
@@ -71,6 +76,11 @@ export const IConfig = t.intersection([
 
     PROFILE_EMAILS_STORAGE_CONNECTION_STRING: NonEmptyString,
     PROFILE_EMAILS_TABLE_NAME: NonEmptyString,
+
+    GET_USERS_PAGE_SIZE: withDefault(
+      IntegerFromString.pipe(NonNegativeInteger),
+      ("100" as unknown) as NonNegativeInteger
+    ),
 
     INSTANT_DELETE_ENABLED_USERS: CommaSeparatedListOf(FiscalCode)
     /* eslint-enable sort-keys */

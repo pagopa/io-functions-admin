@@ -66,7 +66,7 @@ export function GetSubscriptionHandler(
           owner_id: parseOwnerIdFullPath(
             subscription.ownerId as NonEmptyString
           ),
-          scope: subscription.scope
+          scope: subscription.scope as NonEmptyString
         })
       ),
       TE.mapLeft(error => {

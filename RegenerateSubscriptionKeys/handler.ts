@@ -24,6 +24,7 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { pipe } from "fp-ts/lib/function";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { ServiceId } from "../generated/definitions/ServiceId";
 import { SubscriptionKeys } from "../generated/definitions/SubscriptionKeys";
 import { SubscriptionKeyTypeEnum } from "../generated/definitions/SubscriptionKeyType";
@@ -87,7 +88,7 @@ export function RegenerateSubscriptionKeysHandler(
           TE.chain(() =>
             TE.tryCatch(
               () =>
-                apiClient.subscription.get(
+                apiClient.subscription.listSecrets(
                   azureApimConfig.apimResourceGroup,
                   azureApimConfig.apim,
                   serviceId
@@ -99,8 +100,8 @@ export function RegenerateSubscriptionKeysHandler(
       ),
       TE.map(subscription =>
         ResponseSuccessJson({
-          primary_key: subscription.primaryKey,
-          secondary_key: subscription.secondaryKey
+          primary_key: subscription.primaryKey as NonEmptyString,
+          secondary_key: subscription.secondaryKey as NonEmptyString
         })
       ),
       TE.mapLeft(error => {

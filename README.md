@@ -45,6 +45,7 @@ they may be customized as needed.
 | MAILHOG_HOSTNAME                 | Required on development, the host name of the MailHog SMTP server                                | string |
 | SubscriptionFeedStorageConnection| Storage connection string for subscription feed                                                  | string |
 | SUBSCRIPTIONS_FEED_TABLE         | Table name for the Subscriptions Feed in the storage                                             | string |  
+| GET_USERS_PAGE_SIZE              | Number of elements to be fetched and returned on GetUsers Api invoke (Default=100)               | number |  
 
 
 #### Feature flags

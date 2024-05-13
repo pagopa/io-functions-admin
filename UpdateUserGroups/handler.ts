@@ -1,6 +1,5 @@
 /* eslint-disable max-lines-per-function */
-import { ApiManagementClient } from "@azure/arm-apimanagement";
-import { GroupContract } from "@azure/arm-apimanagement/esm/models";
+import { ApiManagementClient, GroupContract } from "@azure/arm-apimanagement";
 import { Context } from "@azure/functions";
 import * as express from "express";
 import { sequenceT } from "fp-ts/lib/Apply";
@@ -34,6 +33,7 @@ import {
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { pipe } from "fp-ts/lib/function";
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { GroupCollection } from "../generated/definitions/GroupCollection";
 import { UserGroupsPayload } from "../generated/definitions/UserGroupsPayload";
@@ -69,25 +69,13 @@ function getGroups(
   apimResourceGroup: string,
   apim: string
 ): TE.TaskEither<Error, ReadonlyArray<GroupContract>> {
-  return TE.tryCatch(async () => {
-    // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
-    const groupList: GroupContract[] = [];
-    const groupListResponse = await apimClient.group.listByService(
-      apimResourceGroup,
-      apim
-    );
-    // eslint-disable-next-line functional/immutable-data
-    groupList.push(...groupListResponse);
-    // eslint-disable-next-line functional/no-let
-    let nextLink = groupListResponse.nextLink;
-    while (nextLink) {
-      const nextGroupList = await apimClient.group.listByServiceNext(nextLink);
-      // eslint-disable-next-line functional/immutable-data
-      groupList.push(...nextGroupList);
-      nextLink = nextGroupList.nextLink;
-    }
-    return groupList;
-  }, E.toError);
+  return TE.tryCatch(
+    () =>
+      asyncIteratorToArray(
+        apimClient.group.listByService(apimResourceGroup, apim)
+      ),
+    E.toError
+  );
 }
 
 interface IGroupsClusterization {
@@ -165,25 +153,28 @@ export function UpdateUserGroupHandler(
         internalErrorHandler("Could not get the APIM client.", error)
       ),
       TE.chain(apimClient =>
-        TE.tryCatch(
-          () =>
-            apimClient.user
-              .listByService(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                {
-                  filter: `email eq '${email}'`
-                }
+        pipe(
+          TE.tryCatch(
+            () =>
+              asyncIteratorToArray(
+                apimClient.user.listByService(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  {
+                    filter: `email eq '${email}'`
+                  }
+                )
+              ),
+            error =>
+              internalErrorHandler(
+                "Could not list the user by email.",
+                error as Error
               )
-              .then(userList => ({
-                apimClient,
-                userList
-              })),
-          error =>
-            internalErrorHandler(
-              "Could not list the user by email.",
-              error as Error
-            )
+          ),
+          TE.map(userList => ({
+            apimClient,
+            userList
+          }))
         )
       ),
       TE.chainW(
@@ -290,7 +281,7 @@ export function UpdateUserGroupHandler(
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           taskResults.existingGroups,
-          taskResults.currentUserGroups,
+          taskResults.currentUserGroups as ReadonlyArray<string>,
           userGroupsPayload.groups
         );
         const errorOrUserContractsWithAssociatedGroups = pipe(
@@ -317,7 +308,7 @@ export function UpdateUserGroupHandler(
           A.traverse(TE.ApplicativeSeq)(groupName =>
             TE.tryCatch(
               () =>
-                taskResults.apimClient.groupUser.deleteMethod(
+                taskResults.apimClient.groupUser.delete(
                   azureApimConfig.apimResourceGroup,
                   azureApimConfig.apim,
                   groupName,

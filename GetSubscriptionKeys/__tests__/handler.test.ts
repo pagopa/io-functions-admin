@@ -32,7 +32,7 @@ const mockedSubscription = {
 };
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
-    get: (_: string, __: string, subscriptionId: string) => {
+    listSecrets: (_: string, __: string, subscriptionId: string) => {
       if (subscriptionId === aValidSubscriptionId) {
         return Promise.resolve(mockedSubscription);
       }
@@ -82,7 +82,6 @@ describe("GetSubscriptionKeysHandler", () => {
       undefined as any,
       aNotExistingSubscriptionId
     );
-    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorNotFound");
   });
 
@@ -96,7 +95,6 @@ describe("GetSubscriptionKeysHandler", () => {
       undefined as any,
       aBreakingApimSubscriptionId
     );
-    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
 
@@ -110,7 +108,6 @@ describe("GetSubscriptionKeysHandler", () => {
       undefined as any,
       aValidSubscriptionId
     );
-    expect(msRestNodeAuth.loginWithServicePrincipalSecret).toBeCalled();
     expect(response).toEqual({
       apply: expect.any(Function),
       kind: "IResponseSuccessJson",

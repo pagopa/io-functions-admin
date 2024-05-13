@@ -1,9 +1,9 @@
-import { ApiManagementClient } from "@azure/arm-apimanagement";
 import {
+  ApiManagementClient,
   GroupContract,
   SubscriptionGetResponse,
   UserGetResponse
-} from "@azure/arm-apimanagement/esm/models";
+} from "@azure/arm-apimanagement";
 import { GraphRbacManagementClient } from "@azure/graph";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { toError } from "fp-ts/lib/Either";
@@ -21,6 +21,8 @@ import {
 import { parse } from "fp-ts/lib/Json";
 import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { ClientSecretCredential } from "@azure/identity";
 export interface IServicePrincipalCreds {
   readonly clientId: string;
   readonly secret: string;
@@ -75,15 +77,12 @@ export function getApiClient(
   subscriptionId: string
 ): TE.TaskEither<Error, ApiManagementClient> {
   return pipe(
-    TE.tryCatch(
-      () =>
-        msRestNodeAuth.loginWithServicePrincipalSecret(
-          servicePrincipalCreds.clientId,
-          servicePrincipalCreds.secret,
-          servicePrincipalCreds.tenantId
-        ),
-      toError
+    new ClientSecretCredential(
+      servicePrincipalCreds.tenantId,
+      servicePrincipalCreds.clientId,
+      servicePrincipalCreds.secret
     ),
+    TE.right,
     TE.map(credentials => new ApiManagementClient(credentials, subscriptionId))
   );
 }
@@ -120,26 +119,13 @@ export function getUserGroups(
   userName: string
 ): TE.TaskEither<Error, ReadonlyArray<GroupContract>> {
   return pipe(
-    TE.tryCatch(async () => {
-      // eslint-disable-next-line functional/prefer-readonly-type, functional/no-let
-      const groupList: GroupContract[] = [];
-      const groupListResponse = await apimClient.userGroup.list(
-        apimResourceGroup,
-        apim,
-        userName
-      );
-      // eslint-disable-next-line functional/immutable-data
-      groupList.push(...groupListResponse);
-      // eslint-disable-next-line functional/no-let
-      let nextLink = groupListResponse.nextLink;
-      while (nextLink) {
-        const nextGroupList = await apimClient.userGroup.listNext(nextLink);
-        // eslint-disable-next-line functional/immutable-data
-        groupList.push(...nextGroupList);
-        nextLink = nextGroupList.nextLink;
-      }
-      return groupList;
-    }, toError)
+    TE.tryCatch(
+      () =>
+        asyncIteratorToArray(
+          apimClient.userGroup.list(apimResourceGroup, apim, userName)
+        ),
+      toError
+    )
   );
 }
 

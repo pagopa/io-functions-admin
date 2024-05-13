@@ -1,13 +1,11 @@
-import {
-  GroupCollection,
-  GroupContract
-} from "@azure/arm-apimanagement/esm/models";
-import * as TE from "fp-ts/lib/TaskEither";
+import { GroupContract } from "@azure/arm-apimanagement";
+import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import * as TE from "fp-ts/lib/TaskEither";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { ArrayToAsyncIterable } from "../../utils/testSupport";
 import { GetImpersonateServiceHandler } from "../handler";
-import { RestError } from "@azure/ms-rest-js";
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
@@ -50,9 +48,7 @@ const anApimGroupContract: GroupContract = {
 
 const someValidGroups: Array<GroupContract> = [
   { ...anApimGroupContract, id: "group #1" },
-  { ...anApimGroupContract, id: "group #2" }
-];
-const someMoreValidGroups: ReadonlyArray<GroupContract> = [
+  { ...anApimGroupContract, id: "group #2" },
   { ...anApimGroupContract, id: "group #3" },
   { ...anApimGroupContract, id: "group #4" }
 ];
@@ -62,15 +58,10 @@ const mockedUserWithoutEmail = {
   surname: "test"
 };
 
-const mockUserGroupList = jest.fn().mockImplementation(() => {
-  const apimResponse: GroupCollection = someValidGroups;
-  // eslint-disable-next-line functional/immutable-data
-  apimResponse["nextLink"] = "next-page";
-  return Promise.resolve(apimResponse);
-});
-const mockUserGroupListNext = jest
+const mockUserGroupList = jest
   .fn()
-  .mockImplementation(() => Promise.resolve(someMoreValidGroups));
+  .mockImplementation(() => ArrayToAsyncIterable(someValidGroups));
+
 const mockUserSubscriptionGet = jest
   .fn()
   .mockImplementation(() => Promise.resolve(mockedSubscription));
@@ -80,8 +71,7 @@ const mockUserGet = jest
 
 const mockApiManagementClient = {
   userGroup: {
-    list: mockUserGroupList,
-    listNext: mockUserGroupListNext
+    list: mockUserGroupList
   },
   subscription: {
     get: mockUserSubscriptionGet
@@ -176,6 +166,8 @@ describe("GetImpersonateServiceHandler", () => {
       undefined as any, // Not used
       aValidSubscriptionIdWithouthOwner
     );
+
+    console.log("RESPONSE IS", response);
 
     expect(response.kind).toEqual("IResponseErrorNotFound");
   });

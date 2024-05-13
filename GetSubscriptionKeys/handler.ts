@@ -24,6 +24,7 @@ import {
   ResponseErrorNotFound,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { ServiceId } from "../generated/definitions/ServiceId";
 import {
   getApiClient,
@@ -57,7 +58,7 @@ export function GetSubscriptionKeysHandler(
       TE.chain(apiClient =>
         TE.tryCatch(
           () =>
-            apiClient.subscription.get(
+            apiClient.subscription.listSecrets(
               azureApimConfig.apimResourceGroup,
               azureApimConfig.apim,
               serviceId
@@ -67,8 +68,8 @@ export function GetSubscriptionKeysHandler(
       ),
       TE.map(subscription =>
         ResponseSuccessJson({
-          primary_key: subscription.primaryKey,
-          secondary_key: subscription.secondaryKey
+          primary_key: subscription.primaryKey as NonEmptyString,
+          secondary_key: subscription.secondaryKey as NonEmptyString
         })
       ),
       TE.mapLeft(error => {

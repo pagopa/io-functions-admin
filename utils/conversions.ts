@@ -2,7 +2,7 @@ import {
   GroupContract,
   SubscriptionContract,
   UserContract
-} from "@azure/arm-apimanagement/esm/models";
+} from "@azure/arm-apimanagement";
 import * as E from "fp-ts/lib/Either";
 import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
 import { ServiceMetadata as ApiServiceMetadata } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceMetadata";

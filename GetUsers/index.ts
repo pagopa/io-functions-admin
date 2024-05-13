@@ -41,7 +41,12 @@ secureExpressApp(app);
 // Add express route
 app.get(
   "/adm/users",
-  GetUsers(servicePrincipalCreds, azureApimConfig, azureApimHost)
+  GetUsers(
+    servicePrincipalCreds,
+    azureApimConfig,
+    azureApimHost,
+    config.GET_USERS_PAGE_SIZE
+  )
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);

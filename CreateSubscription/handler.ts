@@ -25,6 +25,7 @@ import {
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { flow, identity, pipe } from "fp-ts/lib/function";
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { ProductNamePayload } from "../generated/definitions/ProductNamePayload";
 import { Subscription } from "../generated/definitions/Subscription";
@@ -87,25 +88,28 @@ export function CreateSubscriptionHandler(
         internalErrorHandler("Could not get the APIM client.", error)
       ),
       TE.chainW(apimClient =>
-        TE.tryCatch(
-          () =>
-            apimClient.user
-              .listByService(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                {
-                  filter: `email eq '${userEmail}'`
-                }
+        pipe(
+          TE.tryCatch(
+            () =>
+              asyncIteratorToArray(
+                apimClient.user.listByService(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  {
+                    filter: `email eq '${userEmail}'`
+                  }
+                )
+              ),
+            error =>
+              internalErrorHandler(
+                "Could not list the user by email.",
+                error as Error
               )
-              .then(userList => ({
-                apimClient,
-                userList
-              })),
-          error =>
-            internalErrorHandler(
-              "Could not list the user by email.",
-              error as Error
-            )
+          ),
+          TE.map(userList => ({
+            apimClient,
+            userList
+          }))
         )
       ),
       TE.chainW(
@@ -139,12 +143,14 @@ export function CreateSubscriptionHandler(
         pipe(
           TE.tryCatch(
             () =>
-              taskResults.apimClient.product.listByService(
-                azureApimConfig.apimResourceGroup,
-                azureApimConfig.apim,
-                {
-                  filter: `name eq '${productNamePayload.product_name}'`
-                }
+              asyncIteratorToArray(
+                taskResults.apimClient.product.listByService(
+                  azureApimConfig.apimResourceGroup,
+                  azureApimConfig.apim,
+                  {
+                    filter: `name eq '${productNamePayload.product_name}'`
+                  }
+                )
               ),
             error =>
               internalErrorHandler(
