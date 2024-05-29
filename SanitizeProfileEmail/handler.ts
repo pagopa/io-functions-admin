@@ -42,7 +42,8 @@ const getProfile = (fiscalCode: ProfileToSanitize["fiscalCode"]) => (
 const isProfileEligibleForUpdate = (duplicatedEmail: EmailString) => (
   profile: RetrievedProfile
 ): boolean =>
-  profile.isEmailValidated === true && profile.email === duplicatedEmail;
+  profile.isEmailValidated === true &&
+  profile.email?.toLowerCase() === duplicatedEmail.toLowerCase();
 
 const getProfileForUpdate = (
   profile: ProfileToSanitize

@@ -110,7 +110,7 @@ describe("Given a list a profiles to be sanitized with their duplicated e-mail a
     // 3. should have an item in the profile collection
     const profiles: ProfileToSanitize[] = [
       {
-        email: mocks.email,
+        email: mocks.email.toUpperCase() as EmailString,
         fiscalCode: mocks.fiscalCodes.TO_SANITIZE
       },
       {
