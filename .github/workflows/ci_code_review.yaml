@@ -1,0 +1,18 @@
+name: PR - Code Review
+
+on:
+  workflow_dispatch:
+  # pull_request:
+  #   types:
+  #     - opened
+  #     - edited
+  #     - synchronize
+  #     - reopened
+  #     - ready_for_review
+
+jobs:
+  prod_itn_core_code_review:
+    uses: pagopa/dx/.github/workflows/js_code_review.yaml@main
+    name: Prod - Code Review
+    secrets: inherit
+

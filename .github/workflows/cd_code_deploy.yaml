@@ -1,0 +1,31 @@
+name: Merge - Code Deploy
+
+on: 
+  workflow_dispatch:
+    inputs:
+      release_sevmver:
+        description: 'When packing a release, define the version bump to apply'
+        type: choice
+        required: false
+        options:
+          - major
+          - minor
+          - patch
+        default: minor
+  # push:
+  #   branches:
+  #     - main
+
+jobs:
+  prod_itn_core_deploy:
+    uses: pagopa/dx/.github/workflows/function_app_deploy.yaml@main
+    name: Prod - Code Deploy
+    secrets: inherit
+    with:
+      environment: prod
+      workspace_name: .
+      resource_group_name: io-p-admin-rg
+      function_app_name: io-p-admin-fn
+      health_check_path: /info
+      use_staging_slot: true
+      use_private_agent: false
