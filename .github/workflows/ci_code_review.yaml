@@ -21,6 +21,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      name: Checkout
+
     - name: Node Job Setup
       uses: ./.github/actions/node-job-setup
       with:
@@ -33,6 +36,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      name: Checkout
+
     - name: Node Job Setup
       uses: ./.github/actions/node-job-setup
 
@@ -46,6 +52,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      name: Checkout
+      
     - name: Node Job Setup
       uses: ./.github/actions/node-job-setup
 
