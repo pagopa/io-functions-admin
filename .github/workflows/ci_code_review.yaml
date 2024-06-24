@@ -24,10 +24,14 @@ jobs:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       name: Checkout
 
-    - name: Node Job Setup
-      uses: ./.github/actions/node-job-setup
+    - name: Setup Node.js
+      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
       with:
-        persistCredentials: false
+        node-version-file: ".node-version"
+        cache: "yarn"
+
+    - name: Install dependencies
+      run: yarn install --immutable
 
     - name: Build
       run: yarn build
@@ -39,8 +43,14 @@ jobs:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       name: Checkout
 
-    - name: Node Job Setup
-      uses: ./.github/actions/node-job-setup
+    - name: Setup Node.js
+      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      with:
+        node-version-file: ".node-version"
+        cache: "yarn"
+        
+    - name: Install dependencies
+      run: yarn install --immutable
 
     - name: Lint
       run: yarn lint
@@ -54,9 +64,15 @@ jobs:
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       name: Checkout
-      
-    - name: Node Job Setup
-      uses: ./.github/actions/node-job-setup
+
+    - name: Setup Node.js
+      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      with:
+        node-version-file: ".node-version"
+        cache: "yarn"
+        
+    - name: Install dependencies
+      run: yarn install --immutable
 
     - name: Generate definitions
       run: yarn generate
@@ -66,5 +82,3 @@ jobs:
 
     - name: Upload coverage to Codecov
       run: bash <(curl -s https://codecov.io/bash)
-      # env:
-      #   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
