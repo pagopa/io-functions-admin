@@ -40,43 +40,43 @@ name: Merge - Code Deploy
 
 on:
   workflow_dispatch:  # Manual trigger only
-  inputs:
-    resource_group_name:
-      description: Function App resource group name.
-      required: true
-      default: 'io-p-admin-rg'
-    function_app_name:
-      description: Function App name.
-      required: true
-      default: 'io-p-admin-fn'
-    # workspace_name:
-    #   description: The name of the workspace to create the artifact for.
-    #   required: true
-    #   type: choice
-    #   options:
-    #     - io-sm-onboarding-fn
-    health_check_path:
-      description: The health probe path exposed by the Function App.
-      type: string
-      required: false
-      default: '/info'
-    environment:
-      description: Environment where the artifact will be deployed.
-      required: false
-      default: 'prod'
-      type: choice
-      options:
-        - prod
-    use_private_agent:
-      description: Use a private agent to deploy the built artifact.
-      type: boolean
-      required: false
-      default: false
-    use_staging_slot:
-      description: True if artifact should be deployed to staging slot
-      type: boolean
-      required: false
-      default: true
+    inputs:
+      resource_group_name:
+        description: Function App resource group name.
+        required: true
+        default: 'io-p-admin-rg'
+      function_app_name:
+        description: Function App name.
+        required: true
+        default: 'io-p-admin-fn'
+      # workspace_name:
+      #   description: The name of the workspace to create the artifact for.
+      #   required: true
+      #   type: choice
+      #   options:
+      #     - io-sm-onboarding-fn
+      health_check_path:
+        description: The health probe path exposed by the Function App.
+        type: string
+        required: false
+        default: '/info'
+      environment:
+        description: Environment where the artifact will be deployed.
+        required: false
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+      use_private_agent:
+        description: Use a private agent to deploy the built artifact.
+        type: boolean
+        required: false
+        default: false
+      use_staging_slot:
+        description: True if artifact should be deployed to staging slot
+        type: boolean
+        required: false
+        default: true
 
 env:
 BUNDLE_NAME: bundle

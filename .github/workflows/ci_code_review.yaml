@@ -30,8 +30,8 @@ jobs:
         node-version-file: ".node-version"
         cache: "yarn"
 
-    # - name: Install dependencies
-    #   run: yarn install --immutable
+    - name: Install dependencies
+      run: yarn install --immutable
 
     - name: Build
       run: yarn build
@@ -49,8 +49,8 @@ jobs:
         node-version-file: ".node-version"
         cache: "yarn"
         
-    # - name: Install dependencies
-    #   run: yarn install --immutable
+    - name: Install dependencies
+      run: yarn install --immutable
 
     - name: Lint
       run: yarn lint
@@ -71,8 +71,8 @@ jobs:
         node-version-file: ".node-version"
         cache: "yarn"
         
-    # - name: Install dependencies
-    #   run: yarn install --immutable
+    - name: Install dependencies
+      run: yarn install --immutable
 
     - name: Generate definitions
       run: yarn generate
