@@ -1,39 +1,206 @@
 name: Merge - Code Deploy
 
-on: 
-  workflow_dispatch:
-    inputs:
-      release_sevmver:
-        description: 'When packing a release, define the version bump to apply'
-        type: choice
-        required: false
-        options:
-          - major
-          - minor
-          - patch
-        default: minor
-  # push:
-  #   branches:
-  #     - main
+# on: 
+#   workflow_dispatch:
+#     inputs:
+#       release_sevmver:
+#         description: 'When packing a release, define the version bump to apply'
+#         type: choice
+#         required: false
+#         options:
+#           - major
+#           - minor
+#           - patch
+#         default: minor
+#   # push:
+#   #   branches:
+#   #     - main
+
+# jobs:
+#   prod_itn_core_deploy:
+#     uses: pagopa/dx/.github/workflows/function_app_deploy.yaml@main
+#     name: Prod - Code Deploy
+#     secrets: inherit
+#     with:
+#       environment: prod
+#       workspace_name: .
+#       resource_group_name: io-p-admin-rg
+#       function_app_name: io-p-admin-fn
+#       health_check_path: /info
+#       use_staging_slot: true
+#       use_private_agent: false
+  
+#   publish_client_sdk_to_npm:
+#     uses: pagopa/dx/.github/workflows/client-sdk-publish-template.yaml@EC-337-add-functions-template #main
+#     name: Publish Client SDK to NPM
+#     needs: prod_itn_core_deploy
+#     secrets: inherit
+#     with:
+#       openapiSpecPath: 'openapi/index.yaml'
+
+on:
+  workflow_dispatch:  # Manual trigger only
+  inputs:
+    resource_group_name:
+      description: Function App resource group name.
+      required: true
+      default: 'io-p-admin-rg'
+    function_app_name:
+      description: Function App name.
+      required: true
+      default: 'io-p-admin-fn'
+    # workspace_name:
+    #   description: The name of the workspace to create the artifact for.
+    #   required: true
+    #   type: choice
+    #   options:
+    #     - io-sm-onboarding-fn
+    health_check_path:
+      description: The health probe path exposed by the Function App.
+      type: string
+      required: false
+      default: '/info'
+    environment:
+      description: Environment where the artifact will be deployed.
+      required: false
+      default: 'prod'
+      type: choice
+      options:
+        - prod
+    use_private_agent:
+      description: Use a private agent to deploy the built artifact.
+      type: boolean
+      required: false
+      default: false
+    use_staging_slot:
+      description: True if artifact should be deployed to staging slot
+      type: boolean
+      required: false
+      default: true
+
+env:
+BUNDLE_NAME: bundle
+# BASE_DIRECTORY: ./apps/sm-onboarding
 
 jobs:
-  prod_itn_core_deploy:
-    uses: pagopa/dx/.github/workflows/function_app_deploy.yaml@main
-    name: Prod - Code Deploy
-    secrets: inherit
-    with:
-      environment: prod
-      workspace_name: .
-      resource_group_name: io-p-admin-rg
-      function_app_name: io-p-admin-fn
-      health_check_path: /info
-      use_staging_slot: true
-      use_private_agent: false
-  
-  publish_client_sdk_to_npm:
-    uses: pagopa/dx/.github/workflows/client-sdk-publish-template.yaml@EC-337-add-functions-template #main
-    name: Publish Client SDK to NPM
-    needs: prod_itn_core_deploy
-    secrets: inherit
-    with:
-      openapiSpecPath: 'openapi/index.yaml'
+  build:
+    name: Build Artifact
+    runs-on: ubuntu-20.04
+    env:
+      WORKSPACE: . # ${{ inputs.workspace_name }}
+
+    steps:
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        name: Checkout
+
+      - name: Force tags download
+        run: |
+          git pull --tags
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # v3
+        with:
+          node-version-file: '${{ env.WORKSPACE }}/.node-version'
+          cache: 'yarn'
+          cache-dependency-path: |
+            ${{ env.WORKSPACE }}/yarn.lock
+            ${{ env.WORKSPACE }}/package.json
+
+      - name: Install dependencies
+        run: yarn install --immutable
+        working-directory: ${{ env.WORKSPACE }}
+
+      - name: Build
+        run: yarn build
+        working-directory: ${{ env.WORKSPACE }}
+
+      - name: Build the Function App Artifact
+        id: make-function-app-artifact
+        run: |
+          npm pkg set --json "bundledDependencies"=true
+          npm pkg set --json "files"='["**/function.json", "dist", "host.json","extensions.csproj"]'
+          npx npm-pack-zip
+          package_name=$(jq -r .name package.json)
+          mv ${package_name//\/}.zip ${{ env.BUNDLE_NAME }}.zip
+          echo "artifact-path=$(realpath ${{ env.BUNDLE_NAME }}.zip)" >> "$GITHUB_OUTPUT"
+        working-directory: ${{ env.WORKSPACE }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        with:
+          name: ${{ env.BUNDLE_NAME }}
+          path: ${{ steps.make-function-app-artifact.outputs.artifact-path }}
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy
+    needs: [build]
+    runs-on: ${{ inputs.use_private_agent == true && 'self-hosted' || 'ubuntu-20.04' }}
+    environment: app-${{ inputs.environment }}-cd
+    permissions:
+      id-token: write
+      contents: read
+    env:
+        ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+        RESOURCE_GROUP_NAME: ${{ inputs.resource_group_name }}
+        FUNCTION_APP_NAME: ${{ inputs.function_app_name}}
+        USE_STAGING_SLOT: ${{ inputs.use_staging_slot }}
+        HEALTH_CHECK_PATH: ${{ inputs.health_check_path }}
+
+    steps:
+
+      - name: Download Artifact
+        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
+        with:
+          name: ${{ env.BUNDLE_NAME }}
+
+      - name: Azure Login
+        uses: azure/login@v2 # v2.0.0
+        with:
+          client-id: ${{ env.ARM_CLIENT_ID }}
+          tenant-id: ${{ env.ARM_TENANT_ID }}
+          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+
+      - name: Deploy
+        uses: azure/webapps-deploy@v2
+        if: ${{ env.USE_STAGING_SLOT == 'false' }}
+        with:
+          resource-group-name: ${{ env.RESOURCE_GROUP_NAME }}
+          app-name: ${{ env.FUNCTION_APP_NAME }}
+          package: ${{ env.BUNDLE_NAME }}.zip
+
+      - name: Deploy to Staging Slot
+        uses: azure/webapps-deploy@v2
+        if: ${{ env.USE_STAGING_SLOT == 'true' }}
+        with:
+          resource-group-name: ${{ env.RESOURCE_GROUP_NAME }}
+          app-name: ${{ env.FUNCTION_APP_NAME }}
+          slot-name: staging
+          package: ${{ env.BUNDLE_NAME }}.zip
+
+      - name: Ping Staging Health
+        if: ${{ env.USE_STAGING_SLOT == 'true' }}
+        run: |
+          curl \
+            --retry 5 \
+            --retry-max-time 120 \
+            --retry-all-errors \
+            -f 'https://${{ env.FUNCTION_APP_NAME }}-staging.azurewebsites.net${{ env.HEALTH_CHECK_PATH }}'
+
+      - name: Swap Staging and Production Slots
+        if: ${{ env.USE_STAGING_SLOT == 'true' }}
+        run: |
+          az webapp deployment slot swap \
+            -g ${{ env.RESOURCE_GROUP_NAME }} \
+            -n ${{ env.FUNCTION_APP_NAME }} \
+            --slot staging \
+            --target-slot production
