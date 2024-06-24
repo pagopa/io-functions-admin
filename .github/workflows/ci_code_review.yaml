@@ -2,9 +2,6 @@ name: PR - Code Review
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - EC-337-functions-cicd-pipelines
   # pull_request:
   #   types:
   #     - opened
@@ -12,10 +9,50 @@ on:
   #     - synchronize
   #     - reopened
   #     - ready_for_review
+  #   paths:
+  #     - "src/domains/functions**"
+  #     - ".github/workflows/functions**.yml"
 
 jobs:
-  prod_itn_core_code_review:
-    uses: pagopa/dx/.github/workflows/js_code_review.yaml@main
-    name: Prod - Code Review
-    secrets: inherit
+  build:
+    runs-on: windows-latest
 
+    steps:
+    - name: Node Job Setup
+      uses: ./.github/actions/node-job-setup-template.yaml
+      with:
+        persistCredentials: false
+
+    - name: Build
+      run: yarn build
+
+  static_analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Node Job Setup
+      uses: ./.github/actions/node-job-setup-template.yaml
+
+    - name: Lint
+      run: yarn lint
+
+    - name: Lint API
+      run: yarn lint-api
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Node Job Setup
+      uses: ./.github/actions/node-job-setup-template.yaml
+
+    - name: Generate definitions
+      run: yarn generate
+
+    - name: Run unit tests
+      run: yarn test:coverage
+
+    - name: Upload coverage to Codecov
+      run: bash <(curl -s https://codecov.io/bash)
+      # env:
+      #   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

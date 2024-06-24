@@ -1,0 +1,67 @@
+name: 'Node Job Setup'
+description: 'Setup Node.js environment and install dependencies'
+
+inputs:
+  gitReference:
+    description: 'The branch, tag, or commit to checkout'
+    required: false
+    default: 'none'
+  persistCredentials:
+    description: 'Whether to persist credentials when checking out code'
+    required: false
+    default: 'false'
+  projectDir:
+    description: 'Optional sub path where the project to be initialized is located'
+    required: false
+    default: '.'
+  nodeVersion:
+    description: 'Node version to use'
+    required: false
+    default: 'none'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        persist-credentials: ${{ inputs.persistCredentials }}
+
+    - name: Checkout reference
+      if: ${{ inputs.gitReference != 'none' }}
+      run: |
+        git fetch && git checkout ${{ inputs.gitReference }}
+
+    - name: Move to project folder
+      run: |
+        cd ${{ inputs.projectDir }}
+        echo "current folder: $(pwd)"
+
+    - name: Determine Node.js version from template param
+      if: ${{ inputs.nodeVersion != 'none' }}
+      run: |
+        echo "current folder: $(pwd)"
+        FROM_PARAM=${{ inputs.nodeVersion }}
+        echo "set FROM_PARAM='$FROM_PARAM'"
+        echo "NODE_VERSION=$FROM_PARAM" >> $GITHUB_ENV
+
+    - name: Determine Node.js version from source
+      if: ${{ inputs.nodeVersion == 'none' }}
+      run: |
+        echo "current folder: $(pwd)"
+        FROM_SOURCE=$(cat .node-version || cat .nvmrc)
+        ls .node-version && echo ".node-version found, value: '$(cat .node-version)'" || echo ".node-version not found"
+        ls .nvmrc && echo ".nvmrc found, value: '$(cat .nvmrc)'" || echo ".nvmrc not found"
+        echo "set FROM_SOURCE='$FROM_SOURCE'"
+        echo "NODE_VERSION=$FROM_SOURCE" >> $GITHUB_ENV
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Install node modules
+      run: |
+        echo "current folder: $(pwd)"
+        yarn install --frozen-lockfile --no-progress --non-interactive
+      working-directory: ${{ inputs.projectDir }}

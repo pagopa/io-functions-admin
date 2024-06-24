@@ -1,0 +1,95 @@
+name: Publish Client SDK to NPM
+
+#original: https://github.com/pagopa/azure-pipeline-templates/blob/7d4e7b23ac02137a852aab2eda3e060591b7eaf7/templates/client-sdk-publish/template.yaml#L4
+
+on:
+  workflow_call:
+    inputs:
+      openapiSpecPath:
+        required: true
+        type: string
+      apiProjectDir:
+        required: true
+        type: string
+        default: '.'
+      sdkPackageName:
+        required: false
+        type: string
+        default: ''
+      generatorPackageName:
+        required: true
+        type: string
+        default: '@pagopa/openapi-codegen-ts'
+      npmRegistry:
+        required: true
+        type: string
+        default: 'https://registry.npmjs.org/'
+      artifactName:
+        required: true
+        type: string
+        default: 'Bundle_SDK'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      name: Checkout
+
+    - name: Setup Node.js
+      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      with:
+        node-version-file: ".node-version"
+        cache: "yarn"
+        cache-dependency-path: "./yarn.lock"
+
+    - name: Install Yarn
+      run: npm install -g yarn
+
+    - name: Setup conditional variables
+      id: setvarStep
+      run: |
+        # Set SDK package name, if needed
+        [ "${{ inputs.sdkPackageName }}" == "" ] && PKG_NAME_PARAM='' || PKG_NAME_PARAM='--package-name ${{ inputs.sdkPackageName }}'
+        echo "codegenPackageNameParameter=$PKG_NAME_PARAM" >> $GITHUB_ENV
+
+        # Set generated code base directory
+        GENERATED_CODE_DIR=${RUNNER_TEMP}/generated_${{ inputs.artifactName }}
+        echo "generatedCodeDir=$GENERATED_CODE_DIR" >> $GITHUB_ENV
+
+    - name: Generate client and definitions
+      run: |
+        set -euo pipefail
+        PACKAGE=${{ inputs.generatorPackageName }}
+        # If the application uses a specific version of the generator package, use it; otherwise, just use the latest version from the registry
+        CODEGEN_VERSION=$(yarn list --depth=0 | grep $PACKAGE | grep -Eo "([0-9]+\.)+[0-9]+" || echo '*')
+        # Execute the generator fetching the specific package from the registry
+        npx -p $PACKAGE@$CODEGEN_VERSION gen-api-sdk --api-spec ${{ inputs.openapiSpecPath }} --out-dir $GENERATED_CODE_DIR $codegenPackageNameParameter --request-types --response-decoders --client
+      working-directory: ${{ inputs.apiProjectDir }}
+
+    - name: Install dependencies
+      run: yarn install --immutable
+      working-directory: ${{ env.generatedCodeDir }}
+
+    - name: Build dependencies
+      run: yarn build
+      working-directory: ${{ env.generatedCodeDir }}
+
+    - name: Publish artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ inputs.artifactName }}
+        path: ${{ env.generatedCodeDir }}
+
+    - name: Publish to NPM
+      env:
+        NPM_CONNECTION: ${{ secrets.NPM_CONNECTION }}
+      run: |
+        echo "//${{ inputs.npmRegistry }}:_authToken=${NPM_CONNECTION}" > .npmrc
+        yarn publish --access public --registry ${{ inputs.npmRegistry }}
+      working-directory: ${{ env.generatedCodeDir }}
