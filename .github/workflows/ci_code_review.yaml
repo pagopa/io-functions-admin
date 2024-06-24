@@ -2,6 +2,9 @@ name: PR - Code Review
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - EC-337-functions-cicd-pipelines
   # pull_request:
   #   types:
   #     - opened

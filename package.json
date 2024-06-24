@@ -5,7 +5,8 @@
   "scripts": {
     "prebuild": "shx rm -rf dist && yarn generate",
     "postbuild": "npx dependency-check package.json --no-dev --missing ./dist/**/*.js",
-    "build": "tsc",
+    "build": "turbo run build",
+    "code-review": "turbo run typecheck format:check lint test",
     "watch": "tsc -w",
     "prestart": "func extensions install --javascript",
     "start": "dotenv -e .env func start --javascript",
