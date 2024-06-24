@@ -22,7 +22,7 @@ jobs:
 
     steps:
     - name: Node Job Setup
-      uses: ./.github/actions/node-job-setup-template.yaml
+      uses: ./.github/actions/node-job-setup
       with:
         persistCredentials: false
 
@@ -34,7 +34,7 @@ jobs:
 
     steps:
     - name: Node Job Setup
-      uses: ./.github/actions/node-job-setup-template.yaml
+      uses: ./.github/actions/node-job-setup
 
     - name: Lint
       run: yarn lint
@@ -47,7 +47,7 @@ jobs:
 
     steps:
     - name: Node Job Setup
-      uses: ./.github/actions/node-job-setup-template.yaml
+      uses: ./.github/actions/node-job-setup
 
     - name: Generate definitions
       run: yarn generate
