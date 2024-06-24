@@ -1,31 +1,32 @@
-resource "github_branch_default" "default_main" {
+resource "github_branch_default" "default_master" {
   repository = github_repository.this.name
-  branch     = "main"
+  branch     = "master"
 }
 
-resource "github_branch_protection" "main" {
-  repository_id = github_repository.this.name
-  pattern       = "main"
+resource "github_branch_protection" "master" {
+  repository_id = data.github_repository.this.node_id
+  pattern       = "master"
 
   force_push_bypassers = []
 
   required_status_checks {
-    strict   = true
-    contexts = []
+    strict   = false
+    contexts = ["io-functions-admin.code-review"]
   }
 
-  require_conversation_resolution = true
-  required_linear_history         = true
+  require_conversation_resolution = false
+  required_linear_history         = false
 
   #tfsec:ignore:github-branch_protections-require_signed_commits
   require_signed_commits = false
 
   required_pull_request_reviews {
     dismiss_stale_reviews           = false
-    require_code_owner_reviews      = true
+    require_code_owner_reviews      = false
     required_approving_review_count = 1
-    pull_request_bypassers = []
-    restrict_dismissals = true
+    # pull_request_bypassers = []
+    # dismissal_restrictions = []
+    restrict_dismissals = false
   }
 
   allows_deletions = false

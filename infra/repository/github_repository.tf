@@ -5,13 +5,13 @@ resource "github_repository" "this" {
   #tfsec:ignore:github-repositories-private
   visibility = "public"
 
-  allow_auto_merge            = false
-  allow_update_branch         = true
-  allow_rebase_merge          = false
+  allow_auto_merge            = true
+  allow_update_branch         = false
+  allow_rebase_merge          = true
   allow_merge_commit          = false
   allow_squash_merge          = true
-  squash_merge_commit_title   = "PR_TITLE"
-  squash_merge_commit_message = "BLANK"
+  squash_merge_commit_title   = "COMMIT_OR_PR_TITLE"
+  squash_merge_commit_message = "COMMIT_MESSAGES"
 
   delete_branch_on_merge = true
 
@@ -22,9 +22,9 @@ resource "github_repository" "this" {
   has_downloads   = true
 
 
-  topics = ["io-functions-admin", "io"]
+  # topics = ["io-functions-admin", "io"]
 
   vulnerability_alerts = true
 
-  archive_on_destroy = false
+  # archive_on_destroy = false
 }
