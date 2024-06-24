@@ -29,3 +29,11 @@ jobs:
       health_check_path: /info
       use_staging_slot: true
       use_private_agent: false
+  
+  publish_client_sdk_to_npm:
+    uses: pagopa/dx/.github/workflows/client-sdk-publish-template.yaml@EC-337-add-functions-template #main
+    name: Publish Client SDK to NPM
+    needs: prod_itn_core_deploy
+    secrets: inherit
+    with:
+      openapiSpecPath: 'openapi/index.yaml'
