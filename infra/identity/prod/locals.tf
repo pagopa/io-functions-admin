@@ -13,6 +13,6 @@ locals {
     CreatedBy   = "Terraform"
     Environment = "Prod"
     Owner       = "IO"
-    Source      ="https://github.com/pagopa/io-functions-admin/blob/main/infra/identity/prod"
+    Source      = "https://github.com/pagopa/io-functions-admin/blob/main/infra/identity/prod"
   }
 }
