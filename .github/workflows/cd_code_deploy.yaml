@@ -1,43 +1,5 @@
 name: Merge - Code Deploy
 
-# on: 
-#   workflow_dispatch:
-#     inputs:
-#       release_sevmver:
-#         description: 'When packing a release, define the version bump to apply'
-#         type: choice
-#         required: false
-#         options:
-#           - major
-#           - minor
-#           - patch
-#         default: minor
-#   # push:
-#   #   branches:
-#   #     - main
-
-# jobs:
-#   prod_itn_core_deploy:
-#     uses: pagopa/dx/.github/workflows/function_app_deploy.yaml@main
-#     name: Prod - Code Deploy
-#     secrets: inherit
-#     with:
-#       environment: prod
-#       workspace_name: .
-#       resource_group_name: io-p-admin-rg
-#       function_app_name: io-p-admin-fn
-#       health_check_path: /info
-#       use_staging_slot: true
-#       use_private_agent: false
-  
-#   publish_client_sdk_to_npm:
-#     uses: pagopa/dx/.github/workflows/client-sdk-publish-template.yaml@EC-337-add-functions-template #main
-#     name: Publish Client SDK to NPM
-#     needs: prod_itn_core_deploy
-#     secrets: inherit
-#     with:
-#       openapiSpecPath: 'openapi/index.yaml'
-
 on:
   workflow_dispatch:  # Manual trigger only
     inputs:
@@ -103,22 +65,19 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-      - name: Setup Node.js environment
-        uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # v3
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
-          node-version-file: '${{ env.WORKSPACE }}/.node-version'
-          cache: 'yarn'
-          cache-dependency-path: |
-            ${{ env.WORKSPACE }}/yarn.lock
-            ${{ env.WORKSPACE }}/package.json
+          node-version-file: ".node-version"
+          cache: "yarn"
 
       - name: Install dependencies
         run: yarn install --immutable
-        working-directory: ${{ env.WORKSPACE }}
+        # working-directory: ${{ env.WORKSPACE }}
 
       - name: Build
         run: yarn build
-        working-directory: ${{ env.WORKSPACE }}
+        # working-directory: ${{ env.WORKSPACE }}
 
       - name: Build the Function App Artifact
         id: make-function-app-artifact
@@ -129,7 +88,7 @@ jobs:
           package_name=$(jq -r .name package.json)
           mv ${package_name//\/}.zip ${{ env.BUNDLE_NAME }}.zip
           echo "artifact-path=$(realpath ${{ env.BUNDLE_NAME }}.zip)" >> "$GITHUB_OUTPUT"
-        working-directory: ${{ env.WORKSPACE }}
+        # working-directory: ${{ env.WORKSPACE }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
@@ -204,3 +163,10 @@ jobs:
             -n ${{ env.FUNCTION_APP_NAME }} \
             --slot staging \
             --target-slot production
+      
+      - name: Publish Client SDK to NPM
+        run: |
+          npm ci
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
