@@ -41,8 +41,8 @@ on:
         default: true
 
 env:
-BUNDLE_NAME: bundle
-# BASE_DIRECTORY: ./apps/sm-onboarding
+  BUNDLE_NAME: bundle
+  # BASE_DIRECTORY: ./apps/sm-onboarding
 
 jobs:
   build:
@@ -167,6 +167,6 @@ jobs:
       - name: Publish Client SDK to NPM
         run: |
           npm ci
-          npm publish --access public
+          npm publish --access public --dry-run
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
