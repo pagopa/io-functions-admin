@@ -73,11 +73,9 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --immutable
-        # working-directory: ${{ env.WORKSPACE }}
 
       - name: Build
         run: yarn build
-        # working-directory: ${{ env.WORKSPACE }}
 
       - name: Build the Function App Artifact
         id: make-function-app-artifact
@@ -88,7 +86,6 @@ jobs:
           package_name=$(jq -r .name package.json)
           mv ${package_name//\/}.zip ${{ env.BUNDLE_NAME }}.zip
           echo "artifact-path=$(realpath ${{ env.BUNDLE_NAME }}.zip)" >> "$GITHUB_OUTPUT"
-        # working-directory: ${{ env.WORKSPACE }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
