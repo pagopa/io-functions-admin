@@ -4,12 +4,12 @@
         "type": "cosmosDBTrigger",
         "name": "documents",
         "direction": "in",
-        "leaseCollectionName": "change-feed-leases",
-        "leaseCollectionPrefix": "userDataProcessing",
-        "connectionStringSetting": "COSMOSDB_CONNECTION_STRING",
+        "leaseContainerName": "change-feed-leases",
+        "leaseContainerPrefix": "userDataProcessing",
+        "connection": "COSMOSDB_CONNECTION_STRING",
         "databaseName": "%COSMOSDB_NAME%",
-        "collectionName": "user-data-processing",
-        "createLeaseCollectionIfNotExists": true
+        "containerName": "user-data-processing",
+        "createLeaseContainerIfNotExists": true
       },
       {
         "name": "starter",
