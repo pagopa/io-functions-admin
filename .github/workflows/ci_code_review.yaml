@@ -2,30 +2,23 @@ name: PR - Code Review
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - EC-337-functions-cicd-pipelines
-  # pull_request:
-  #   types:
-  #     - opened
-  #     - edited
-  #     - synchronize
-  #     - reopened
-  #     - ready_for_review
-  #   paths:
-  #     - "src/domains/functions**"
-  #     - ".github/workflows/functions**.yml"
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - "*"
+      - "!infra/*"
+      - "!.github/*"
 
 jobs:
-  build_and_static_analysis:
-    runs-on: ubuntu-latest
+  js_code_review:
+    runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      name: Checkout
+    - name: Check-out code
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
     - name: Setup Node.js
-      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+      uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
       with:
         node-version-file: ".node-version"
         cache: "yarn"
@@ -42,27 +35,20 @@ jobs:
     - name: Lint API
       run: yarn lint-api
 
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      name: Checkout
-
-    - name: Setup Node.js
-      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
-      with:
-        node-version-file: ".node-version"
-        cache: "yarn"
-        
-    - name: Install dependencies
-      run: yarn install --immutable
-
-    - name: Generate definitions
+    - name: Generate models
       run: yarn generate
 
-    - name: Run unit tests
+    - name: Unit tests exec
       run: yarn test:coverage
 
-    - name: Upload coverage to Codecov
-      run: bash <(curl -s https://codecov.io/bash)
+    # Codecov provides reports and metrics about test coverage data.
+    # To enable set CODECOV_TOKEN secret at repo level and make sure
+    # that your "code-review" script creates a "coverage/" folder in
+    # the root workspace.
+    - name: Upload coverage report to codecov.io
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      if: ${{ env.CODECOV_TOKEN != '' }}
+      uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
+      with:
+        token: ${{ env.CODECOV_TOKEN }}
