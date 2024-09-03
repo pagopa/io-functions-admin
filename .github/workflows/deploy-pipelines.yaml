@@ -1,11 +1,14 @@
-name: Code Deploy - PROD
+name: Deploy Pipelines - PROD
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - EC-337-functions-cicd-pipelines
       
 jobs:
   deploy_on_prod:
-    uses: ./.github/workflows/cd_code_deploy.yaml
+    uses: pagopa/dx/.github/workflows/legacy_deploy_pipelines.yaml@workflow-functions-test
     name: Deploy on PROD
     secrets: inherit
     with:
@@ -14,3 +17,4 @@ jobs:
       app_name: 'io-p-admin-fn'
       use_staging_slot: true
       use_private_agent: false
+      health_check_path: '/info'
