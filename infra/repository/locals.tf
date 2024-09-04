@@ -8,11 +8,11 @@ locals {
     "ARM_SUBSCRIPTION_ID" = data.azurerm_subscription.current.subscription_id
   }
 
-  # ci = {
-  #   secrets = {
-  #     "ARM_CLIENT_ID" = data.azurerm_user_assigned_identity.identity_prod_ci.client_id
-  #   }
-  # }
+  ci = {
+    secrets = {
+      "ARM_CLIENT_ID" = data.azurerm_user_assigned_identity.identity_prod_ci.client_id
+    }
+  }
 
   cd = {
     secrets = {
