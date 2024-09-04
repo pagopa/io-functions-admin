@@ -1,6 +1,6 @@
 resource "github_repository_environment" "github_repository_environment_prod_ci" {
-  environment = "prod-ci"
-  repository  = github_repository.this.name
+  environment         = "prod-ci"
+  repository          = github_repository.this.name
   prevent_self_review = false
 }
 
