@@ -29,10 +29,6 @@ module "federated_identities" {
 
   repositories = [local.repo_name]
 
-  continuos_integration = {
-    enable = false
-  }
-
   continuos_delivery = {
     enable = true
     roles = {
