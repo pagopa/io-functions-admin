@@ -21,10 +21,5 @@ resource "github_repository" "this" {
   has_issues      = false
   has_downloads   = true
 
-
-  # topics = ["io-functions-admin", "io"]
-
   vulnerability_alerts = true
-
-  # archive_on_destroy = false
 }
