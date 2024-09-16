@@ -1,0 +1,1425 @@
+[0m[1mdata.azurerm_key_vault.common: Reading...[0m[0m
+[0m[1mdata.azurerm_api_management.apim: Reading...[0m[0m
+[0m[1mdata.azurerm_api_management.apim: Read complete after 1s [id=/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-internal/providers/Microsoft.ApiManagement/service/io-p-apim-v2-api][0m
+[0m[1mmodule.apim_weu.azurerm_api_management_named_value.io_fn3_admin_url_v2: Refreshing state... [id=/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-internal/providers/Microsoft.ApiManagement/service/io-p-apim-v2-api/namedValues/io-fn3-admin-url][0m
+[0m[1mmodule.apim_weu.module.apim_v2_product_admin.azurerm_api_management_product.this: Refreshing state... [id=/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-internal/providers/Microsoft.ApiManagement/service/io-p-apim-v2-api/products/io-admin-api][0m
+[0m[1mmodule.apim_weu.module.api_v2_admin.azurerm_api_management_api.this: Refreshing state... [id=/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-internal/providers/Microsoft.ApiManagement/service/io-p-apim-v2-api/apis/io-admin-api][0m
+[0m[1mdata.azurerm_key_vault.common: Read complete after 1s [id=/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-common/providers/Microsoft.KeyVault/vaults/io-p-kv-common][0m
+[0m[1mmodule.apim_weu.data.azurerm_key_vault_secret.io_fn3_admin_key_secret_v2: Reading...[0m[0m
+[0m[1mmodule.apim_weu.module.apim_v2_product_admin.azurerm_api_management_product_policy.this[0]: Refreshing state... [id=/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-internal/providers/Microsoft.ApiManagement/service/io-p-apim-v2-api/products/io-admin-api][0m
+[0m[1mmodule.apim_weu.module.api_v2_admin.azurerm_api_management_product_api.this["io-admin-api"]: Refreshing state... [id=/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-internal/providers/Microsoft.ApiManagement/service/io-p-apim-v2-api/products/io-admin-api/apis/io-admin-api][0m
+[0m[1mmodule.apim_weu.module.api_v2_admin.azurerm_api_management_api_policy.this[0]: Refreshing state... [id=/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-internal/providers/Microsoft.ApiManagement/service/io-p-apim-v2-api/apis/io-admin-api][0m
+[0m[1mmodule.apim_weu.data.azurerm_key_vault_secret.io_fn3_admin_key_secret_v2: Read complete after 2s [id=https://io-p-kv-common.vault.azure.net/secrets/fn3admin-KEY-APIM/a302ea43dde048d181563afbf517c448][0m
+[0m[1mmodule.apim_weu.azurerm_api_management_named_value.io_fn3_admin_key_v2: Refreshing state... [id=/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-internal/providers/Microsoft.ApiManagement/service/io-p-apim-v2-api/namedValues/io-fn3-admin-key][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [33m~[0m update in-place[0m
+
+Terraform will perform the following actions:
+
+[1m  # module.apim_weu.azurerm_api_management_named_value.io_fn3_admin_key_v2[0m will be updated in-place
+[0m  [33m~[0m[0m resource "azurerm_api_management_named_value" "io_fn3_admin_key_v2" {
+        id                  = "/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-internal/providers/Microsoft.ApiManagement/service/io-p-apim-v2-api/namedValues/io-fn3-admin-key"
+        name                = "io-fn3-admin-key"
+        tags                = []
+      [32m+[0m[0m value               = (sensitive value)
+        [90m# (4 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # module.apim_weu.module.api_v2_admin.azurerm_api_management_api.this[0m will be updated in-place
+[0m  [33m~[0m[0m resource "azurerm_api_management_api" "this" {
+        id                    = "/subscriptions/ec285037-c673-4f58-b594-d7c480da4e8b/resourceGroups/io-p-rg-internal/providers/Microsoft.ApiManagement/service/io-p-apim-v2-api/apis/io-admin-api"
+        name                  = "io-admin-api"
+        [90m# (18 unchanged attributes hidden)[0m[0m
+
+      [32m+[0m[0m import {
+          [32m+[0m[0m content_format = "swagger-json"
+          [32m+[0m[0m content_value  = jsonencode(
+                {
+                  [32m+[0m[0m basePath            = "/adm"
+                  [32m+[0m[0m consumes            = [
+                      [32m+[0m[0m "application/json",
+                    ]
+                  [32m+[0m[0m definitions         = {
+                      [32m+[0m[0m CIDR                       = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/CIDR"
+                        }
+                      [32m+[0m[0m CIDRsPayload               = {
+                          [32m+[0m[0m items = {
+                              [32m+[0m[0m "$ref" = "#/definitions/CIDR"
+                            }
+                          [32m+[0m[0m type  = "array"
+                        }
+                      [32m+[0m[0m CommonServiceMetadata      = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/CommonServiceMetadata"
+                        }
+                      [32m+[0m[0m CommonServicePayload       = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/CommonServicePayload"
+                        }
+                      [32m+[0m[0m DepartmentName             = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/DepartmentName"
+                        }
+                      [32m+[0m[0m DevelopmentProfile         = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m email = {
+                                  [32m+[0m[0m "$ref" = "#/definitions/EmailAddress"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "email",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m EmailAddress               = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/EmailAddress"
+                        }
+                      [32m+[0m[0m ExtendedProfile            = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/ExtendedProfile"
+                        }
+                      [32m+[0m[0m ExtendedServicePayload     = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/ExtendedServicePayload"
+                        }
+                      [32m+[0m[0m FiscalCode                 = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/FiscalCode"
+                        }
+                      [32m+[0m[0m Group                      = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m display_name = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m id           = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m name         = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "display_name",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m GroupCollection            = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m items = {
+                                  [32m+[0m[0m items = {
+                                      [32m+[0m[0m "$ref" = "#/definitions/Group"
+                                    }
+                                  [32m+[0m[0m type  = "array"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "items",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m HiddenServicePayload       = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/HiddenServicePayload"
+                        }
+                      [32m+[0m[0m ImpersonatedService        = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/ImpersonatedService"
+                        }
+                      [32m+[0m[0m Logo                       = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m logo = {
+                                  [32m+[0m[0m format    = "byte"
+                                  [32m+[0m[0m minLength = 1
+                                  [32m+[0m[0m type      = "string"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "logo",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m MaxAllowedPaymentAmount    = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/MaxAllowedPaymentAmount"
+                        }
+                      [32m+[0m[0m OrganizationFiscalCode     = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/OrganizationFiscalCode"
+                        }
+                      [32m+[0m[0m OrganizationName           = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/OrganizationName"
+                        }
+                      [32m+[0m[0m ProblemJson                = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/ProblemJson"
+                        }
+                      [32m+[0m[0m ProductNamePayload         = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m product_name = {
+                                  [32m+[0m[0m minLength = 1
+                                  [32m+[0m[0m type      = "string"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "product_name",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m ServerInfo                 = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m version = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "version",
+                            ]
+                          [32m+[0m[0m title      = "Server information"
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m Service                    = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/Service"
+                        }
+                      [32m+[0m[0m ServiceCategory            = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/ServiceCategory"
+                        }
+                      [32m+[0m[0m ServiceCollection          = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m items     = {
+                                  [32m+[0m[0m items = {
+                                      [32m+[0m[0m "$ref" = "#/definitions/ServiceIdWithVersion"
+                                    }
+                                  [32m+[0m[0m type  = "array"
+                                }
+                              [32m+[0m[0m page_size = {
+                                  [32m+[0m[0m type = "number"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "items",
+                              [32m+[0m[0m "page_size",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m ServiceId                  = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/ServiceId"
+                        }
+                      [32m+[0m[0m ServiceIdWithVersion       = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m id      = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m version = {
+                                  [32m+[0m[0m type = "integer"
+                                }
+                            }
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m ServiceMetadata            = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/ServiceMetadata"
+                        }
+                      [32m+[0m[0m ServiceName                = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/ServiceName"
+                        }
+                      [32m+[0m[0m ServicePayload             = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/ServicePayload"
+                        }
+                      [32m+[0m[0m ServiceScope               = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/ServiceScope"
+                        }
+                      [32m+[0m[0m SpecialServiceCategory     = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/SpecialServiceCategory"
+                        }
+                      [32m+[0m[0m SpecialServiceMetadata     = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/SpecialServiceMetadata"
+                        }
+                      [32m+[0m[0m StandardServiceCategory    = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/StandardServiceCategory"
+                        }
+                      [32m+[0m[0m StandardServiceMetadata    = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/StandardServiceMetadata"
+                        }
+                      [32m+[0m[0m Subscription               = {
+                          [32m+[0m[0m allOf = [
+                              [32m+[0m[0m {
+                                  [32m+[0m[0m "$ref" = "#/definitions/SubscriptionKeys"
+                                },
+                              [32m+[0m[0m {
+                                  [32m+[0m[0m properties = {
+                                      [32m+[0m[0m id    = {
+                                          [32m+[0m[0m type = "string"
+                                        }
+                                      [32m+[0m[0m scope = {
+                                          [32m+[0m[0m type = "string"
+                                        }
+                                    }
+                                  [32m+[0m[0m required   = [
+                                      [32m+[0m[0m "scope",
+                                    ]
+                                  [32m+[0m[0m type       = "object"
+                                },
+                            ]
+                        }
+                      [32m+[0m[0m SubscriptionCIDRs          = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m cidrs = {
+                                  [32m+[0m[0m items = {
+                                      [32m+[0m[0m "$ref" = "#/definitions/CIDR"
+                                    }
+                                  [32m+[0m[0m type  = "array"
+                                }
+                              [32m+[0m[0m id    = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "id",
+                              [32m+[0m[0m "cidrs",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m SubscriptionKeyType        = {
+                          [32m+[0m[0m type              = "string"
+                          [32m+[0m[0m x-extensible-enum = [
+                              [32m+[0m[0m "PRIMARY_KEY",
+                              [32m+[0m[0m "SECONDARY_KEY",
+                            ]
+                        }
+                      [32m+[0m[0m SubscriptionKeyTypePayload = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m key_type = {
+                                  [32m+[0m[0m "$ref" = "#/definitions/SubscriptionKeyType"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "key_type",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m SubscriptionKeys           = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m primary_key   = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m secondary_key = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "primary_key",
+                              [32m+[0m[0m "secondary_key",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m SubscriptionState          = {
+                          [32m+[0m[0m type              = "string"
+                          [32m+[0m[0m x-extensible-enum = [
+                              [32m+[0m[0m "active",
+                              [32m+[0m[0m "cancelled",
+                              [32m+[0m[0m "expired",
+                              [32m+[0m[0m "rejected",
+                              [32m+[0m[0m "submitted",
+                              [32m+[0m[0m "suspended",
+                            ]
+                        }
+                      [32m+[0m[0m SubscriptionWithoutKeys    = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m id       = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m owner_id = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m scope    = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "scope",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m User                       = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m email             = {
+                                  [32m+[0m[0m "$ref" = "#/definitions/EmailAddress"
+                                }
+                              [32m+[0m[0m first_name        = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m id                = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m identities        = {
+                                  [32m+[0m[0m items = {
+                                      [32m+[0m[0m "$ref" = "#/definitions/UserIdentityContract"
+                                    }
+                                  [32m+[0m[0m type  = "array"
+                                }
+                              [32m+[0m[0m last_name         = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m name              = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m note              = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m registration_date = {
+                                  [32m+[0m[0m format = "date-time"
+                                  [32m+[0m[0m type   = "string"
+                                }
+                              [32m+[0m[0m state             = {
+                                  [32m+[0m[0m "$ref" = "#/definitions/UserState"
+                                }
+                              [32m+[0m[0m type              = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                            }
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m UserCollection             = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m items = {
+                                  [32m+[0m[0m items = {
+                                      [32m+[0m[0m "$ref" = "#/definitions/User"
+                                    }
+                                  [32m+[0m[0m type  = "array"
+                                }
+                              [32m+[0m[0m next  = {
+                                  [32m+[0m[0m description = "The link to the next page of results"
+                                  [32m+[0m[0m format      = "url"
+                                  [32m+[0m[0m type        = "string"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "items",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m UserCreated                = {
+                          [32m+[0m[0m allOf = [
+                              [32m+[0m[0m {
+                                  [32m+[0m[0m "$ref" = "#/definitions/UserPayload"
+                                },
+                              [32m+[0m[0m {
+                                  [32m+[0m[0m properties = {
+                                      [32m+[0m[0m id = {
+                                          [32m+[0m[0m type = "string"
+                                        }
+                                    }
+                                  [32m+[0m[0m required   = [
+                                      [32m+[0m[0m "id",
+                                    ]
+                                  [32m+[0m[0m type       = "object"
+                                },
+                            ]
+                        }
+                      [32m+[0m[0m UserGroupsPayload          = {
+                          [32m+[0m[0m description = <<-EOT
+                                All the groups with which the user must be associated.
+                                The already existing associations with groups which are not included in this object will be deleted.
+                            EOT
+                          [32m+[0m[0m example     = {
+                              [32m+[0m[0m groups = [
+                                  [32m+[0m[0m "ApiInfoRead",
+                                  [32m+[0m[0m "ApiLimitedMessageWrite",
+                                  [32m+[0m[0m "ApiMessageRead",
+                                ]
+                            }
+                          [32m+[0m[0m properties  = {
+                              [32m+[0m[0m groups = {
+                                  [32m+[0m[0m items = {
+                                      [32m+[0m[0m description = "The value of `displayName` property of the group on the APIM"
+                                      [32m+[0m[0m minLength   = 1
+                                      [32m+[0m[0m type        = "string"
+                                    }
+                                  [32m+[0m[0m type  = "array"
+                                }
+                            }
+                          [32m+[0m[0m required    = [
+                              [32m+[0m[0m "groups",
+                            ]
+                          [32m+[0m[0m type        = "object"
+                        }
+                      [32m+[0m[0m UserIdentityContract       = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m id       = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                              [32m+[0m[0m provider = {
+                                  [32m+[0m[0m type = "string"
+                                }
+                            }
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m UserInfo                   = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m groups        = {
+                                  [32m+[0m[0m items = {
+                                      [32m+[0m[0m "$ref" = "#/definitions/Group"
+                                    }
+                                  [32m+[0m[0m type  = "array"
+                                }
+                              [32m+[0m[0m subscriptions = {
+                                  [32m+[0m[0m items = {
+                                      [32m+[0m[0m "$ref" = "#/definitions/Subscription"
+                                    }
+                                  [32m+[0m[0m type  = "array"
+                                }
+                              [32m+[0m[0m token_name    = {
+                                  [32m+[0m[0m minLength = 1
+                                  [32m+[0m[0m type      = "string"
+                                }
+                            }
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m UserPayload                = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m email      = {
+                                  [32m+[0m[0m "$ref" = "#/definitions/EmailAddress"
+                                }
+                              [32m+[0m[0m first_name = {
+                                  [32m+[0m[0m minLength = 1
+                                  [32m+[0m[0m type      = "string"
+                                }
+                              [32m+[0m[0m last_name  = {
+                                  [32m+[0m[0m minLength = 1
+                                  [32m+[0m[0m type      = "string"
+                                }
+                              [32m+[0m[0m token_name = {
+                                  [32m+[0m[0m minLength = 1
+                                  [32m+[0m[0m type      = "string"
+                                }
+                            }
+                          [32m+[0m[0m required   = [
+                              [32m+[0m[0m "email",
+                              [32m+[0m[0m "first_name",
+                              [32m+[0m[0m "last_name",
+                            ]
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m UserState                  = {
+                          [32m+[0m[0m type              = "string"
+                          [32m+[0m[0m x-extensible-enum = [
+                              [32m+[0m[0m "active",
+                              [32m+[0m[0m "blocked",
+                              [32m+[0m[0m "pending",
+                              [32m+[0m[0m "deleted",
+                            ]
+                        }
+                      [32m+[0m[0m UserUpdatePayload          = {
+                          [32m+[0m[0m properties = {
+                              [32m+[0m[0m first_name = {
+                                  [32m+[0m[0m minLength = 1
+                                  [32m+[0m[0m type      = "string"
+                                }
+                              [32m+[0m[0m last_name  = {
+                                  [32m+[0m[0m minLength = 1
+                                  [32m+[0m[0m type      = "string"
+                                }
+                              [32m+[0m[0m token_name = {
+                                  [32m+[0m[0m minLength = 1
+                                  [32m+[0m[0m type      = "string"
+                                }
+                            }
+                          [32m+[0m[0m type       = "object"
+                        }
+                      [32m+[0m[0m UserUpdated                = {
+                          [32m+[0m[0m allOf = [
+                              [32m+[0m[0m {
+                                  [32m+[0m[0m "$ref" = "#/definitions/UserUpdatePayload"
+                                },
+                              [32m+[0m[0m {
+                                  [32m+[0m[0m properties = {
+                                      [32m+[0m[0m email = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/EmailAddress"
+                                        }
+                                      [32m+[0m[0m id    = {
+                                          [32m+[0m[0m type = "string"
+                                        }
+                                    }
+                                  [32m+[0m[0m required   = [
+                                      [32m+[0m[0m "id",
+                                      [32m+[0m[0m "email",
+                                    ]
+                                  [32m+[0m[0m type       = "object"
+                                },
+                            ]
+                        }
+                      [32m+[0m[0m VisibleServicePayload      = {
+                          [32m+[0m[0m "$ref" = "https://raw.githubusercontent.com/pagopa/io-functions-commons/v28.7.1/openapi/definitions.yaml#/VisibleServicePayload"
+                        }
+                    }
+                  [32m+[0m[0m host                = "api.io.pagopa.it"
+                  [32m+[0m[0m info                = {
+                      [32m+[0m[0m contact     = {
+                          [32m+[0m[0m name = "Digital Transformation Team"
+                          [32m+[0m[0m url  = "https://forum.italia.it/c/progetto-io"
+                        }
+                      [32m+[0m[0m description = <<-EOT
+                            # Warning
+                            **This is an experimental API that is (most probably) going to change as we evolve the IO platform.**
+                            # Introduction
+                            This is the documentation of the IO API for administration purpose of the platform.
+                        EOT
+                      [32m+[0m[0m title       = "IO API for administration purpose"
+                      [32m+[0m[0m version     = "1.1.0"
+                      [32m+[0m[0m x-logo      = {
+                          [32m+[0m[0m url = "https://io.italia.it/assets/img/io-logo-blue.svg"
+                        }
+                    }
+                  [32m+[0m[0m parameters          = {
+                      [32m+[0m[0m SandboxFiscalCode = {
+                          [32m+[0m[0m description = "The user's sandbox fiscal code, all upper case."
+                          [32m+[0m[0m in          = "path"
+                          [32m+[0m[0m maxLength   = 16
+                          [32m+[0m[0m minLength   = 16
+                          [32m+[0m[0m name        = "fiscal_code"
+                          [32m+[0m[0m pattern     = "[A-Z]{6}[0-9]{2}A[0-9]{2}Y[0-9]{3}X"
+                          [32m+[0m[0m required    = true
+                          [32m+[0m[0m type        = "string"
+                          [32m+[0m[0m x-example   = "SPNDNL80A13Y555X"
+                        }
+                    }
+                  [32m+[0m[0m paths               = {
+                      [32m+[0m[0m "/development-profiles/{fiscal_code}"            = {
+                          [32m+[0m[0m post = {
+                              [32m+[0m[0m description = <<-EOT
+                                    Create a development profile for the user identified by the
+                                    provided fiscal code.
+                                EOT
+                              [32m+[0m[0m operationId = "createDevelopmentProfile"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m "$ref" = "#/parameters/SandboxFiscalCode"
+                                    },
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m in         = "body"
+                                      [32m+[0m[0m name       = "body"
+                                      [32m+[0m[0m schema     = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/DevelopmentProfile"
+                                        }
+                                      [32m+[0m[0m x-examples = {
+                                          [32m+[0m[0m "application/json" = {
+                                              [32m+[0m[0m email = "foobar@example.com"
+                                            }
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "Profile updated."
+                                      [32m+[0m[0m examples    = {
+                                          [32m+[0m[0m "application/json" = {
+                                              [32m+[0m[0m email   = "foobar@example.com"
+                                              [32m+[0m[0m version = 0
+                                            }
+                                        }
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/ExtendedProfile"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Invalid payload."
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/ProblemJson"
+                                        }
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "409" = {
+                                      [32m+[0m[0m description = "Conflict."
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/ProblemJson"
+                                        }
+                                    }
+                                  [32m+[0m[0m "429" = {
+                                      [32m+[0m[0m description = "Too many requests"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Create DevelopmentProfile"
+                              [32m+[0m[0m tags        = [
+                                  [32m+[0m[0m "restricted",
+                                ]
+                            }
+                        }
+                      [32m+[0m[0m "/impersonate-service/{serviceId}"               = {
+                          [32m+[0m[0m get = {
+                              [32m+[0m[0m operationId = "getImpersonatedService"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "the serviceId of the target service."
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "serviceId"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "data required to impersonte a service"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/ImpersonatedService"
+                                        }
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "service or service owner not found"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Gets the data to impersonate a service"
+                            }
+                        }
+                      [32m+[0m[0m "/organizations/{organization_fiscal_code}/logo" = {
+                          [32m+[0m[0m parameters = [
+                              [32m+[0m[0m {
+                                  [32m+[0m[0m description = "The organization's fiscal code"
+                                  [32m+[0m[0m in          = "path"
+                                  [32m+[0m[0m name        = "organization_fiscal_code"
+                                  [32m+[0m[0m required    = true
+                                  [32m+[0m[0m type        = "string"
+                                },
+                            ]
+                          [32m+[0m[0m put        = {
+                              [32m+[0m[0m description = "Upload an organization logo for the given organization fiscal code."
+                              [32m+[0m[0m operationId = "uploadOrganizationLogo"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The logo payload"
+                                      [32m+[0m[0m in          = "body"
+                                      [32m+[0m[0m name        = "body"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/Logo"
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "201" = {
+                                      [32m+[0m[0m description = "Logo uploaded."
+                                      [32m+[0m[0m headers     = {
+                                          [32m+[0m[0m Location = {
+                                              [32m+[0m[0m description = "Link to the uploaded logo"
+                                              [32m+[0m[0m type        = "string"
+                                            }
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Invalid payload."
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/ProblemJson"
+                                        }
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Upload Organization Logo"
+                            }
+                        }
+                      [32m+[0m[0m "/services"                                      = {
+                          [32m+[0m[0m get  = {
+                              [32m+[0m[0m description = "Gets the list of all existing services."
+                              [32m+[0m[0m operationId = "getServices"
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "The list of server."
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/ServiceCollection"
+                                        }
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error."
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Get Services"
+                            }
+                          [32m+[0m[0m post = {
+                              [32m+[0m[0m description = <<-EOT
+                                    Create a new Service with the attributes provided in the requst
+                                    payload.
+                                EOT
+                              [32m+[0m[0m operationId = "createService"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The Service payload."
+                                      [32m+[0m[0m in          = "body"
+                                      [32m+[0m[0m name        = "body"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/Service"
+                                        }
+                                      [32m+[0m[0m x-examples  = {
+                                          [32m+[0m[0m "application/json" = {
+                                              [32m+[0m[0m authorized_cidrs      = []
+                                              [32m+[0m[0m authorized_recipients = [
+                                                  [32m+[0m[0m "XXXYYY79A95Y000X",
+                                                ]
+                                              [32m+[0m[0m department_name       = "dept"
+                                              [32m+[0m[0m organization_name     = "org"
+                                              [32m+[0m[0m service_id            = "2b3e728c1a5d1efa035c"
+                                              [32m+[0m[0m service_name          = "service"
+                                            }
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "Service created."
+                                      [32m+[0m[0m examples    = {
+                                          [32m+[0m[0m "application/json" = {
+                                              [32m+[0m[0m authorized_cidrs      = []
+                                              [32m+[0m[0m authorized_recipients = [
+                                                  [32m+[0m[0m "XXXYYY79A95Y000X",
+                                                ]
+                                              [32m+[0m[0m department_name       = "dept"
+                                              [32m+[0m[0m id                    = "2b3e728c1a5d1efa035c-0000000000000001"
+                                              [32m+[0m[0m organization_name     = "org"
+                                              [32m+[0m[0m service_id            = "2b3e728c1a5d1efa035c"
+                                              [32m+[0m[0m service_name          = "service"
+                                              [32m+[0m[0m version               = 1
+                                            }
+                                        }
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/Service"
+                                        }
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Create Service"
+                            }
+                        }
+                      [32m+[0m[0m "/services/{service_id}"                         = {
+                          [32m+[0m[0m get        = {
+                              [32m+[0m[0m description = "A previously created service with the provided service ID is returned."
+                              [32m+[0m[0m operationId = "getService"
+                              [32m+[0m[0m parameters  = []
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "Service found."
+                                      [32m+[0m[0m examples    = {
+                                          [32m+[0m[0m "application/json" = {
+                                              [32m+[0m[0m authorized_cidrs      = []
+                                              [32m+[0m[0m authorized_recipients = [
+                                                  [32m+[0m[0m "XXXYYY79A95Y000X",
+                                                ]
+                                              [32m+[0m[0m department_name       = "dept"
+                                              [32m+[0m[0m id                    = "2b3e728c1a5d1efa035c-0000000000000001"
+                                              [32m+[0m[0m organization_name     = "org"
+                                              [32m+[0m[0m service_id            = "2b3e728c1a5d1efa035c"
+                                              [32m+[0m[0m service_name          = "service"
+                                              [32m+[0m[0m version               = 1
+                                            }
+                                        }
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/Service"
+                                        }
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "No service found for the provided ID."
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Get Service"
+                            }
+                          [32m+[0m[0m parameters = [
+                              [32m+[0m[0m {
+                                  [32m+[0m[0m description = "The ID of an existing Service."
+                                  [32m+[0m[0m in          = "path"
+                                  [32m+[0m[0m name        = "service_id"
+                                  [32m+[0m[0m required    = true
+                                  [32m+[0m[0m type        = "string"
+                                },
+                            ]
+                          [32m+[0m[0m put        = {
+                              [32m+[0m[0m description = <<-EOT
+                                    Update an existing service with the attributes provided in the
+                                    request payload.
+                                EOT
+                              [32m+[0m[0m operationId = "updateService"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The Service payload."
+                                      [32m+[0m[0m in          = "body"
+                                      [32m+[0m[0m name        = "body"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/Service"
+                                        }
+                                      [32m+[0m[0m x-examples  = {
+                                          [32m+[0m[0m "application/json" = {
+                                              [32m+[0m[0m authorized_cidrs      = []
+                                              [32m+[0m[0m authorized_recipients = [
+                                                  [32m+[0m[0m "XXXYYY79A95Y000X",
+                                                ]
+                                              [32m+[0m[0m department_name       = "dept"
+                                              [32m+[0m[0m organization_name     = "org"
+                                              [32m+[0m[0m service_id            = "2b3e728c1a5d1efa035c"
+                                              [32m+[0m[0m service_name          = "service"
+                                            }
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "Service updated."
+                                      [32m+[0m[0m examples    = {
+                                          [32m+[0m[0m "application/json" = {
+                                              [32m+[0m[0m authorized_cidrs      = []
+                                              [32m+[0m[0m authorized_recipients = [
+                                                  [32m+[0m[0m "XXXYYY79A95Y000X",
+                                                ]
+                                              [32m+[0m[0m department_name       = "dept"
+                                              [32m+[0m[0m id                    = "2b3e728c1a5d1efa035c-0000000000000001"
+                                              [32m+[0m[0m organization_name     = "org"
+                                              [32m+[0m[0m service_id            = "2b3e728c1a5d1efa035c"
+                                              [32m+[0m[0m service_name          = "service"
+                                              [32m+[0m[0m version               = 1
+                                            }
+                                        }
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/Service"
+                                        }
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "No service found for the provided ID."
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Update Service"
+                            }
+                        }
+                      [32m+[0m[0m "/services/{service_id}/keys"                    = {
+                          [32m+[0m[0m get = {
+                              [32m+[0m[0m operationId = "getSubscriptionKeys"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The ID of an existing Service."
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "service_id"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "The subscription keys for the service"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/SubscriptionKeys"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Bad request"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "Subscription not found"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Gets the subscription keys for the Service identified by the provided service_id"
+                            }
+                          [32m+[0m[0m put = {
+                              [32m+[0m[0m operationId = "RegenerateSubscriptionKeys"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The ID of an existing Service."
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "service_id"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The type of the key to be regenerated"
+                                      [32m+[0m[0m in          = "body"
+                                      [32m+[0m[0m name        = "body"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/SubscriptionKeyTypePayload"
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "The subscription keys for the service"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/SubscriptionKeys"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Bad request"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "Subscription not found"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Regenerate a subscription key for the Service identified by the provided service_id"
+                            }
+                        }
+                      [32m+[0m[0m "/services/{service_id}/logo"                    = {
+                          [32m+[0m[0m parameters = [
+                              [32m+[0m[0m {
+                                  [32m+[0m[0m description = "The ID of a existing Service."
+                                  [32m+[0m[0m in          = "path"
+                                  [32m+[0m[0m name        = "service_id"
+                                  [32m+[0m[0m required    = true
+                                  [32m+[0m[0m type        = "string"
+                                },
+                            ]
+                          [32m+[0m[0m put        = {
+                              [32m+[0m[0m operationId = "uploadServiceLogo"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The logo payload"
+                                      [32m+[0m[0m in          = "body"
+                                      [32m+[0m[0m name        = "body"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/Logo"
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "201" = {
+                                      [32m+[0m[0m description = "Logo uploaded."
+                                      [32m+[0m[0m headers     = {
+                                          [32m+[0m[0m Location = {
+                                              [32m+[0m[0m description = "Link to the uploaded logo"
+                                              [32m+[0m[0m type        = "string"
+                                            }
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Invalid payload."
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/ProblemJson"
+                                        }
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "No service found for the provided ID."
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Upload service logo."
+                            }
+                        }
+                      [32m+[0m[0m "/subscriptions/{subscription_id}"               = {
+                          [32m+[0m[0m get = {
+                              [32m+[0m[0m description = "Get a specific subscription information, that belongs to a particular subscription Id"
+                              [32m+[0m[0m operationId = "getSubscription"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The ID of an existing Subscription."
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "subscription_id"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "Retrieved Subscription information."
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/SubscriptionWithoutKeys"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Bad request"
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "Subscription not found"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Get Subscription"
+                            }
+                        }
+                      [32m+[0m[0m "/subscriptions/{subscription_id}/cidrs"         = {
+                          [32m+[0m[0m get = {
+                              [32m+[0m[0m description = "Get authorized cidrs for a Subscription"
+                              [32m+[0m[0m operationId = "getSubscriptionCidrs"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The id of the Subscription"
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "subscription_id"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "CIDRs"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/SubscriptionCIDRs"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Bad request"
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "Resource (User or Product) not found"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Get Subscription CIDRs"
+                            }
+                          [32m+[0m[0m put = {
+                              [32m+[0m[0m description = "Update authorized cidrs for a Subscription"
+                              [32m+[0m[0m operationId = "updateSubscriptionCidrs"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The id of the Subscription"
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "subscription_id"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m in       = "body"
+                                      [32m+[0m[0m name     = "body"
+                                      [32m+[0m[0m required = true
+                                      [32m+[0m[0m schema   = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/CIDRsPayload"
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "The updated CIDRs"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/SubscriptionCIDRs"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Bad request"
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "Resource (User or Product) not found"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Update Subscription CIDRs"
+                            }
+                        }
+                      [32m+[0m[0m "/users"                                         = {
+                          [32m+[0m[0m get  = {
+                              [32m+[0m[0m operationId = "getUsers"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "the number of items to skip."
+                                      [32m+[0m[0m in          = "query"
+                                      [32m+[0m[0m minimum     = 1
+                                      [32m+[0m[0m name        = "cursor"
+                                      [32m+[0m[0m type        = "integer"
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "List of users"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/UserCollection"
+                                        }
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Gets the list of users"
+                            }
+                          [32m+[0m[0m post = {
+                              [32m+[0m[0m description = "Create a new user with a random password in the Active Directory Azure B2C, then create a corresponding user on the API management resource."
+                              [32m+[0m[0m operationId = "createUser"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m in       = "body"
+                                      [32m+[0m[0m name     = "body"
+                                      [32m+[0m[0m required = true
+                                      [32m+[0m[0m schema   = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/UserPayload"
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "The new User"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/UserCreated"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Bad request"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Create user"
+                            }
+                        }
+                      [32m+[0m[0m "/users/{email}"                                 = {
+                          [32m+[0m[0m get = {
+                              [32m+[0m[0m description = "Gets the user information, that is the complete list of subscription and the complete list of groups for the User identified by the provided email"
+                              [32m+[0m[0m operationId = "getUser"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The email of the User"
+                                      [32m+[0m[0m format      = "email"
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "email"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "User subscriptions and groups"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/UserInfo"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Bad request"
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "User not found"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Get user"
+                            }
+                          [32m+[0m[0m put = {
+                              [32m+[0m[0m description = "Update an existing ADB2C User."
+                              [32m+[0m[0m operationId = "updateUser"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The email of the User"
+                                      [32m+[0m[0m format      = "email"
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "email"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m in       = "body"
+                                      [32m+[0m[0m name     = "body"
+                                      [32m+[0m[0m required = true
+                                      [32m+[0m[0m schema   = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/UserUpdatePayload"
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "The updated User"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/UserUpdated"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Bad request"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Update user"
+                            }
+                        }
+                      [32m+[0m[0m "/users/{email}/groups"                          = {
+                          [32m+[0m[0m put = {
+                              [32m+[0m[0m description = "Update the list of groups (permissions) associated to the User identified by the provided email"
+                              [32m+[0m[0m operationId = "updateGroups"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The email of the User"
+                                      [32m+[0m[0m format      = "email"
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "email"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m in       = "body"
+                                      [32m+[0m[0m name     = "body"
+                                      [32m+[0m[0m required = true
+                                      [32m+[0m[0m schema   = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/UserGroupsPayload"
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "The list of groups associated to the User"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/GroupCollection"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Bad request"
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "Resource (User or Product) not found"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Update user groups"
+                            }
+                        }
+                      [32m+[0m[0m "/users/{email}/subscriptions/{subscription_id}" = {
+                          [32m+[0m[0m put = {
+                              [32m+[0m[0m description = "Create a Subscription identified by the provided subscription id for the User identified by the provided email"
+                              [32m+[0m[0m operationId = "createSubscription"
+                              [32m+[0m[0m parameters  = [
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The email of the User"
+                                      [32m+[0m[0m format      = "email"
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "email"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m description = "The id of the Subscription"
+                                      [32m+[0m[0m in          = "path"
+                                      [32m+[0m[0m name        = "subscription_id"
+                                      [32m+[0m[0m required    = true
+                                      [32m+[0m[0m type        = "string"
+                                    },
+                                  [32m+[0m[0m {
+                                      [32m+[0m[0m in       = "body"
+                                      [32m+[0m[0m name     = "body"
+                                      [32m+[0m[0m required = true
+                                      [32m+[0m[0m schema   = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/ProductNamePayload"
+                                        }
+                                    },
+                                ]
+                              [32m+[0m[0m responses   = {
+                                  [32m+[0m[0m "200" = {
+                                      [32m+[0m[0m description = "The subscription created"
+                                      [32m+[0m[0m schema      = {
+                                          [32m+[0m[0m "$ref" = "#/definitions/Subscription"
+                                        }
+                                    }
+                                  [32m+[0m[0m "400" = {
+                                      [32m+[0m[0m description = "Bad request"
+                                    }
+                                  [32m+[0m[0m "401" = {
+                                      [32m+[0m[0m description = "Unauthorized"
+                                    }
+                                  [32m+[0m[0m "403" = {
+                                      [32m+[0m[0m description = "Forbidden"
+                                    }
+                                  [32m+[0m[0m "404" = {
+                                      [32m+[0m[0m description = "Resource (User or Product) not found"
+                                    }
+                                  [32m+[0m[0m "500" = {
+                                      [32m+[0m[0m description = "Internal server error"
+                                    }
+                                }
+                              [32m+[0m[0m summary     = "Create subscription"
+                            }
+                        }
+                    }
+                  [32m+[0m[0m produces            = [
+                      [32m+[0m[0m "application/json",
+                    ]
+                  [32m+[0m[0m responses           = {}
+                  [32m+[0m[0m schemes             = [
+                      [32m+[0m[0m "https",
+                    ]
+                  [32m+[0m[0m security            = [
+                      [32m+[0m[0m {
+                          [32m+[0m[0m SubscriptionKey = []
+                        },
+                    ]
+                  [32m+[0m[0m securityDefinitions = {
+                      [32m+[0m[0m SubscriptionKey = {
+                          [32m+[0m[0m description = "The API key obtained through the developer portal."
+                          [32m+[0m[0m in          = "header"
+                          [32m+[0m[0m name        = "Ocp-Apim-Subscription-Key"
+                          [32m+[0m[0m type        = "apiKey"
+                        }
+                    }
+                  [32m+[0m[0m swagger             = "2.0"
+                }
+            )
+        }
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1mPlan:[0m 0 to add, 2 to change, 0 to destroy.
+[0m[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
