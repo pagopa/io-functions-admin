@@ -17,7 +17,7 @@ export const userDataDownloadMessage = (
   i tuoi dati sono pronti per essere consultati.
   
   Qui trovi il link per scaricare i dati principali che trattiamo tramite l’App IO.
-  I dati sono compressi in un file .zip, che sarà disponibile per i prossimi 15 giorni, dopodichè verrà cancellato dai nostri sistemi, ma potrai sempre effettuare una nuova richiesta.
+  I dati sono compressi in un file .zip, che sarà disponibile per i prossimi 15 giorni, dopodiché verrà cancellato dai nostri sistemi, ma potrai sempre effettuare una nuova richiesta.
   
   Premi sul link qui sotto:
   
