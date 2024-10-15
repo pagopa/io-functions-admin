@@ -14,69 +14,41 @@ export const userDataDownloadMessage = (
     {
       content: {
         markdown: `Ciao,
-  abbiamo completato la gestione della richiesta di accesso ai tuoi dati.
+  i tuoi dati sono pronti per essere consultati.
   
-  Qui trovi il link per scaricare i dati personali che trattiamo tramite l’App IO.
-  I dati sono compressi in un file zip, che è disponibile per i prossimi 15 giorni.
+  Qui trovi il link per scaricare i dati principali che trattiamo tramite l’App IO.
+  I dati sono compressi in un file .zip, che sarà disponibile per i prossimi 15 giorni, dopodiché verrà cancellato dai nostri sistemi, ma potrai sempre effettuare una nuova richiesta.
   
-  Clicca il link qui sotto:
+  Premi sul link qui sotto:
   
-  [Link all'archivio ZIP](${publicDownloadBaseUrl}/${blobName})
+  [Link al file](${publicDownloadBaseUrl}/${blobName})
   
   Oppure copia e incolla l’indirizzo nel tuo browser:
   
   \`${publicDownloadBaseUrl}/${blobName}\`
   
-  Per aprire il file ZIP, usa questa password:
+  Per aprire il file .zip, usa questa password:
   
   \`${password}\`
   
-  I dati contenuti nello zip sono in formato yaml: un formato standard che in informatica consente lo scambio di dati fra applicazioni diverse.
+  I dati contenuti nel file .zip sono in formato yaml, un formato standard che in informatica consente lo scambio di dati fra applicazioni diverse.
   
-  Nello zip, potrai trovare:
-  - Il testo dei Messaggi da te ricevuti;
-  - Le tue preferenze di notifica;
-  - L’indirizzo email  da te indicato e, se del caso, la conferma della sua validazione;
-  - Il tuo codice fiscale.  
+  Nel file puoi trovare:
+  - il testo dei Messaggi da te ricevuti;
+  - le tue preferenze di notifica;
+  - l’indirizzo email da te indicato e, se del caso, la conferma della sua validazione;
+  - il tuo codice fiscale.  
   
   ## Come scaricare i dati
   
-  Per una migliore esperienza utente, ti consigliamo di copiare il link che hai ricevuto e aprirlo da PC.
-  
-  E’ possibile effettuare lo scaricamento anche da smartphone, qualora tu avessi un’app di file explorer installata. L’app ti servirà per aprire l’archivio.zip una volta scaricato.
-  Di seguito trovi le istruzioni per i due diversi sistemi operativi.
-  
-  Dispositivi iOS:
-  - Premi il link che ti abbiamo inviato qui sopra
-  - Verrai reindirizzato alla finestra del browser in cui ti verrà chiesto se vuoi davvero scaricare un archivio.zip il cui nome inizia con il tuo codice fiscale
-  - Clicca su “Scarica”
-  - Viene visualizzata una freccia alla destra della barra del browser. Cliccala e poi clicca sul titolo del file.
-  - Se hai l’app File installata, ti si aprirà una finestra in cui potrai visualizzare il pacchetto.
-  - Clicca sul documento e inserisci la password per decomprimere il file.
-  
-  Dispositivi Android:
-  - Premi il link qui sopra
-  - Verrai reindirizzato alla finestra del browser, in cui una notifica a fondo pagina ti informa dello scaricamento in corso.
-  - Al termine dello scaricamento, clicca la notifica per aprire il file.
-  - Seleziona l’app con cui aprire il file zip
-  - Clicca sul documento e inserisci la password per decomprimere il file.  
+  Per una migliore esperienza utente, ti consigliamo di copiare il link che hai ricevuto e aprirlo da PC. Puoi farlo anche da smartphone, ma in tal caso avrai bisogno di un'applicazione apposita per aprire il file in formato .zip.
+  Una volta completato il download, ti basterà inserire la password che trovi in questo messaggio per accedere al file.
   
   ## Informazioni sul trattamento dei tuoi dati
-  
-  Ai sensi del GDPR, ti confermiamo che trattiamo i tuoi dati personali all’interno dell’App Io.
-  In particolare,  trattiamo i tuoi dati identificativi e di contatto per finalità di identificazione e autenticazione, registrazione delle preferenze e invio di messaggi strettamente legati al funzionamento dell’App, nonché di assistenza e debug e attività volte ad assicurare la sicurezza. Inoltre, come responsabili del trattamento degli Enti Erogatori, per consentirti di usufruire dei Servizi, trattiamo oltre ai tuoi dati identificativi e di contatto, anche i dati contenuti nei messaggi.
-  
-  Alcuni dei dati da noi trattati sono raccolti dal tuo provider Spid al momento della tua registrazione ovvero, qualora tu ti sia registrato tramite CIE, dal Ministero dell’Interno.
-  
-  I tuoi dati sono trattati anche per tramite di fornitori terzi, situati in paesi al di fuori dello SEE. Utilizziamo per i trasferimenti extra UE le garanzie previste dagli art. 44 e seguenti del GDPR. In particolare, utilizziamo fornitori certificati Privacy Shield e, in ogni caso, laddove necessario, abbiamo vincolato tali fornitori al rispetto delle condizioni contrattuali tipo approvate dalla Commissione. 
-  
-  Conserviamo i tuoi dati per un tempo limitato. In particolare, I dati relativi ai Messaggi inviati per conto degli Enti Erogatori sono cancellati dopo 3 anni dalla loro ricezione e i tuoi dati identificativi sono conservati per un periodo massimo di 10 anni dalla tua cancellazione.
-  
-  Puoi richiedere di esercitare il tuo diritto di limitazione e opposizione del trattamento e a chiedere la rettifica del tuo indirizzo email. Potrai inoltre rivolgerti al Garante per la protezione dei dati personali.
-  Con riferimento ai dati dei Servizi offerti dagli Enti Erogatori, tutti i diritti dovranno essere esercitati presso di loro.
-  
-  Puoi trovare tutte le informazioni sul trattamento dei tuoi dati nella nostra [Informativa Privacy](ioit://PROFILE_PRIVACY) che è accessibile in ogni momento nella sezione Profilo/Privacy e Condizioni d’uso.
-  Se ti servono dettagli o informazioni su questi dati, ti invitiamo a scrivere all’indirizzo email dpo@pagopa.it.
+  Ti ricordiamo che puoi sempre esercitare i diritti previsti dagli artt. 15 - 22 del GDPR con riferimento ai dati presenti su IO. Con riferimento ai dati dei servizi offerti dagli enti erogatori, tutti i diritti dovranno essere esercitati presso di loro.
+ 
+  Puoi trovare tutte le informazioni sul trattamento dei tuoi dati nella nostra[Informativa Privacy](ioit://PROFILE_PRIVACY), sempre disponibile in app e all'indirizzo <https://io.italia.it/app-content/tos_privacy.html>.
+ Per ulteriori dettagli o informazioni su questi dati, ti invitiamo a scrivere all’indirizzo email <dpo@pagopa.it> o a contattarci tramite l'apposito [modulo di contatto](https://privacyportal-de.onetrust.com/webform/77f17844-04c3-4969-a11d-462ee77acbe1/9ab6533d-be4a-482e-929a-0d8d2ab29df8).
   
   Grazie ancora per aver utilizzato IO!
   Il Team Privacy di PagoPA S.p.A.
