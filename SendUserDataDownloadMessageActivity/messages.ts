@@ -41,7 +41,7 @@ export const userDataDownloadMessage = (
   
   ## Come scaricare i dati
   
-  Per una migliore esperienza utente, ti consigliamo di copiare il link che hai ricevuto e aprirlo da PC. Puoi farlo anche da smartphone, ma in tal caso avrai bisogno di un'applicazione apposita per aprire il file in formato .zip.<br>
+  Per una migliore esperienza utente, ti consigliamo di copiare il link che hai ricevuto e aprirlo da PC. Puoi farlo anche da smartphone, ma in tal caso avrai bisogno di un'applicazione apposita per aprire il file in formato .zip.
   Una volta completato il download, ti basterà inserire la password che trovi in questo messaggio per accedere al file.
   
   ## Informazioni sul trattamento dei tuoi dati
