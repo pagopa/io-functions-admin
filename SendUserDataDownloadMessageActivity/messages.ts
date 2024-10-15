@@ -47,7 +47,7 @@ export const userDataDownloadMessage = (
   ## Informazioni sul trattamento dei tuoi dati
   Ti ricordiamo che puoi sempre esercitare i diritti previsti dagli artt. 15 - 22 del GDPR con riferimento ai dati presenti su IO. Con riferimento ai dati dei servizi offerti dagli enti erogatori, tutti i diritti dovranno essere esercitati presso di loro.
  
-  Puoi trovare tutte le informazioni sul trattamento dei tuoi dati nella nostra[Informativa Privacy](ioit://PROFILE_PRIVACY), sempre disponibile in app e all'indirizzo <nibile in app e all’inidirizzo https://io.italia.it/app-content/tos_privacy.html>.
+  Puoi trovare tutte le informazioni sul trattamento dei tuoi dati nella nostra[Informativa Privacy](ioit://PROFILE_PRIVACY), sempre disponibile in app e all'indirizzo <https://io.italia.it/app-content/tos_privacy.html>.
  Per ulteriori dettagli o informazioni su questi dati, ti invitiamo a scrivere all’indirizzo email <dpo@pagopa.it> o a contattarci tramite l'apposito [modulo di contatto](https://privacyportal-de.onetrust.com/webform/77f17844-04c3-4969-a11d-462ee77acbe1/9ab6533d-be4a-482e-929a-0d8d2ab29df8).
   
   Grazie ancora per aver utilizzato IO!
