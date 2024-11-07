@@ -17,7 +17,7 @@
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_apim_itn"></a> [apim\_itn](#module\_apim\_itn) | ../_modules/apim_itn | n/a |
+| <a name="module_apim_itn"></a> [apim\_itn](#module\_apim\_itn) | ../_modules/apim | n/a |
 | <a name="module_apim_weu"></a> [apim\_weu](#module\_apim\_weu) | ../_modules/apim | n/a |
 
 ## Resources

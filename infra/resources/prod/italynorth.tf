@@ -1,6 +1,6 @@
 
 module "apim_itn" {
-  source = "../_modules/apim_itn"
+  source = "../_modules/apim"
 
   apim_name                = data.azurerm_api_management.apim_itn.name
   apim_resource_group_name = data.azurerm_api_management.apim_itn.resource_group_name
