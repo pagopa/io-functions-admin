@@ -36,7 +36,7 @@ export const trackUserDataDeleteException = (
     tagOverrides: {
       "ai.operation.id": userDataProcessing.userDataProcessingId,
       "ai.operation.parentId": userDataProcessing.userDataProcessingId,
-      samplingEnabled: isSampled ? "true" : "false"
+      samplingEnabled: String(isSampled)
     }
   });
 
