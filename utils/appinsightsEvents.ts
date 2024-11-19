@@ -24,7 +24,8 @@ export const trackUserDataDeleteEvent = (
 export const trackUserDataDeleteException = (
   eventName: string,
   exception: Error,
-  userDataProcessing: UserDataProcessing
+  userDataProcessing: UserDataProcessing,
+  isSampled: boolean = true
 ) =>
   trackException({
     exception,
@@ -34,7 +35,8 @@ export const trackUserDataDeleteException = (
     },
     tagOverrides: {
       "ai.operation.id": userDataProcessing.userDataProcessingId,
-      "ai.operation.parentId": userDataProcessing.userDataProcessingId
+      "ai.operation.parentId": userDataProcessing.userDataProcessingId,
+      samplingEnabled: isSampled ? "true" : "false"
     }
   });
 
