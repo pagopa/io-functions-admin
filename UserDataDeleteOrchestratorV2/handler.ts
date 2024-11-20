@@ -657,10 +657,12 @@ export const createUserDataDeleteOrchestratorHandler = (
         )}`
       );
 
+      // Unsampled tracking of failure
       trackUserDataDeleteException(
         "failed",
         E.toError(error),
-        currentUserDataProcessing
+        currentUserDataProcessing,
+        false
       );
 
       const orchestrationFailure = pipe(
@@ -695,7 +697,8 @@ export const createUserDataDeleteOrchestratorHandler = (
           trackUserDataDeleteException(
             "unhandled_failed_status",
             new Error(readableReport(err)),
-            currentUserDataProcessing
+            currentUserDataProcessing,
+            false
           );
           throw new Error(
             `Activity SetUserDataProcessingStatusActivity (status=FAILED) failed: ${readableReport(
