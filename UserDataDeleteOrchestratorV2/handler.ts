@@ -662,6 +662,7 @@ export const createUserDataDeleteOrchestratorHandler = (
         "failed",
         E.toError(error),
         currentUserDataProcessing,
+        context,
         false
       );
 
@@ -698,6 +699,7 @@ export const createUserDataDeleteOrchestratorHandler = (
             "unhandled_failed_status",
             new Error(readableReport(err)),
             currentUserDataProcessing,
+            context,
             false
           );
           throw new Error(
