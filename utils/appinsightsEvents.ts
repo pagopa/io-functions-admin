@@ -33,19 +33,22 @@ export const trackUserDataDeleteException = (
   context: IOrchestrationFunctionContext,
   isSampled: boolean = true
 ) =>
-  trackException({
-    exception,
-    properties: {
-      [USER_DATA_PROCESSING_ID_KEY]: userDataProcessing.userDataProcessingId,
-      isReplay: context.df.isReplaying,
-      name: `user.data.delete.${eventName}`
-    },
-    tagOverrides: {
-      "ai.operation.id": userDataProcessing.userDataProcessingId,
-      "ai.operation.parentId": userDataProcessing.userDataProcessingId,
-      samplingEnabled: String(isSampled)
-    }
-  });
+  // avoiding duplicate exceptions
+  context.df.isReplaying
+    ? void 0
+    : trackException({
+        exception,
+        properties: {
+          [USER_DATA_PROCESSING_ID_KEY]:
+            userDataProcessing.userDataProcessingId,
+          name: `user.data.delete.${eventName}`
+        },
+        tagOverrides: {
+          "ai.operation.id": userDataProcessing.userDataProcessingId,
+          "ai.operation.parentId": userDataProcessing.userDataProcessingId,
+          samplingEnabled: String(isSampled)
+        }
+      });
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDownloadEvent = (
@@ -72,16 +75,19 @@ export const trackUserDataDownloadException = (
   context: IOrchestrationFunctionContext,
   isSampled: boolean = true
 ) =>
-  trackException({
-    exception,
-    properties: {
-      [USER_DATA_PROCESSING_ID_KEY]: userDataProcessing.userDataProcessingId,
-      isReplay: context.df.isReplaying,
-      name: `user.data.download.${eventName}`
-    },
-    tagOverrides: {
-      "ai.operation.id": userDataProcessing.userDataProcessingId,
-      "ai.operation.parentId": userDataProcessing.userDataProcessingId,
-      samplingEnabled: String(isSampled)
-    }
-  });
+  // avoiding duplicate exceptions
+  context.df.isReplaying
+    ? void 0
+    : trackException({
+        exception,
+        properties: {
+          [USER_DATA_PROCESSING_ID_KEY]:
+            userDataProcessing.userDataProcessingId,
+          name: `user.data.download.${eventName}`
+        },
+        tagOverrides: {
+          "ai.operation.id": userDataProcessing.userDataProcessingId,
+          "ai.operation.parentId": userDataProcessing.userDataProcessingId,
+          samplingEnabled: String(isSampled)
+        }
+      });
