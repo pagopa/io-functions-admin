@@ -1,7 +1,12 @@
 // eslint-disable sonarjs/no-duplicate-string
 
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { trackEvent, trackException } from "./appinsights";
+import { IOrchestrationFunctionContext } from "durable-functions/lib/src/iorchestrationfunctioncontext";
+import {
+  trackEvent,
+  trackException,
+  USER_DATA_PROCESSING_ID_KEY
+} from "./appinsights";
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDeleteEvent = (
@@ -12,7 +17,7 @@ export const trackUserDataDeleteEvent = (
     // eslint-disable-next-line sonarjs/no-duplicate-string
     name: `user.data.delete.${eventName}`,
     properties: {
-      userDataProcessingId: userDataProcessing.userDataProcessingId
+      [USER_DATA_PROCESSING_ID_KEY]: userDataProcessing.userDataProcessingId
     },
     tagOverrides: {
       "ai.operation.id": userDataProcessing.userDataProcessingId,
@@ -25,20 +30,25 @@ export const trackUserDataDeleteException = (
   eventName: string,
   exception: Error,
   userDataProcessing: UserDataProcessing,
+  context: IOrchestrationFunctionContext,
   isSampled: boolean = true
 ) =>
-  trackException({
-    exception,
-    properties: {
-      name: `user.data.delete.${eventName}`,
-      userDataProcessingId: userDataProcessing.userDataProcessingId
-    },
-    tagOverrides: {
-      "ai.operation.id": userDataProcessing.userDataProcessingId,
-      "ai.operation.parentId": userDataProcessing.userDataProcessingId,
-      samplingEnabled: String(isSampled)
-    }
-  });
+  // avoiding duplicate exceptions
+  context.df.isReplaying
+    ? void 0
+    : trackException({
+        exception,
+        properties: {
+          [USER_DATA_PROCESSING_ID_KEY]:
+            userDataProcessing.userDataProcessingId,
+          name: `user.data.delete.${eventName}`
+        },
+        tagOverrides: {
+          "ai.operation.id": userDataProcessing.userDataProcessingId,
+          "ai.operation.parentId": userDataProcessing.userDataProcessingId,
+          samplingEnabled: String(isSampled)
+        }
+      });
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDownloadEvent = (
@@ -49,7 +59,7 @@ export const trackUserDataDownloadEvent = (
     // eslint-disable-next-line sonarjs/no-duplicate-string
     name: `user.data.download.${eventName}`,
     properties: {
-      userDataProcessingId: userDataProcessing.userDataProcessingId
+      [USER_DATA_PROCESSING_ID_KEY]: userDataProcessing.userDataProcessingId
     },
     tagOverrides: {
       "ai.operation.id": userDataProcessing.userDataProcessingId,
@@ -61,16 +71,23 @@ export const trackUserDataDownloadEvent = (
 export const trackUserDataDownloadException = (
   eventName: string,
   exception: Error,
-  userDataProcessing: UserDataProcessing
+  userDataProcessing: UserDataProcessing,
+  context: IOrchestrationFunctionContext,
+  isSampled: boolean = true
 ) =>
-  trackException({
-    exception,
-    properties: {
-      name: `user.data.download.${eventName}`,
-      userDataProcessingId: userDataProcessing.userDataProcessingId
-    },
-    tagOverrides: {
-      "ai.operation.id": userDataProcessing.userDataProcessingId,
-      "ai.operation.parentId": userDataProcessing.userDataProcessingId
-    }
-  });
+  // avoiding duplicate exceptions
+  context.df.isReplaying
+    ? void 0
+    : trackException({
+        exception,
+        properties: {
+          [USER_DATA_PROCESSING_ID_KEY]:
+            userDataProcessing.userDataProcessingId,
+          name: `user.data.download.${eventName}`
+        },
+        tagOverrides: {
+          "ai.operation.id": userDataProcessing.userDataProcessingId,
+          "ai.operation.parentId": userDataProcessing.userDataProcessingId,
+          samplingEnabled: String(isSampled)
+        }
+      });
