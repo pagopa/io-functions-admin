@@ -68,16 +68,20 @@ export const trackUserDataDownloadEvent = (
 export const trackUserDataDownloadException = (
   eventName: string,
   exception: Error,
-  userDataProcessing: UserDataProcessing
+  userDataProcessing: UserDataProcessing,
+  context: IOrchestrationFunctionContext,
+  isSampled: boolean = true
 ) =>
   trackException({
     exception,
     properties: {
       [USER_DATA_PROCESSING_ID_KEY]: userDataProcessing.userDataProcessingId,
+      isReplay: context.df.isReplaying,
       name: `user.data.download.${eventName}`
     },
     tagOverrides: {
       "ai.operation.id": userDataProcessing.userDataProcessingId,
-      "ai.operation.parentId": userDataProcessing.userDataProcessingId
+      "ai.operation.parentId": userDataProcessing.userDataProcessingId,
+      samplingEnabled: String(isSampled)
     }
   });

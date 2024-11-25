@@ -180,7 +180,9 @@ export const handler = function*(
     trackUserDataDownloadException(
       "failed",
       E.toError(error),
-      currentUserDataProcessing
+      currentUserDataProcessing,
+      context,
+      false
     );
 
     context.log.error(`${logPrefix}|ERROR|${JSON.stringify(error)}`);
@@ -217,7 +219,9 @@ export const handler = function*(
         trackUserDataDownloadException(
           "unhandled_failed_status",
           new Error(readableReport(err)),
-          currentUserDataProcessing
+          currentUserDataProcessing,
+          context,
+          false
         );
 
         throw new Error(
