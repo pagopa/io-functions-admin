@@ -13,5 +13,5 @@ jobs:
       resource_group_name: 'io-p-admin-rg'
       app_name: 'io-p-admin-fn'
       use_staging_slot: true
-      use_private_agent: false
+      use_private_agent: true
       health_check_path: '/info'
