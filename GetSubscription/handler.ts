@@ -26,7 +26,6 @@ import { SubscriptionWithoutKeys } from "../generated/definitions/SubscriptionWi
 import {
   getApiClient,
   IAzureApimConfig,
-  IServicePrincipalCreds,
   parseOwnerIdFullPath
 } from "../utils/apim";
 
@@ -42,13 +41,12 @@ type IGetSubscriptionHandler = (
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetSubscriptionHandler(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, subscriptionId) =>
     pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      getApiClient(azureApimConfig.subscriptionId),
       TE.chain(apiClient =>
         TE.tryCatch(
           () =>
@@ -90,13 +88,9 @@ export function GetSubscriptionHandler(
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetSubscription(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {
-  const handler = GetSubscriptionHandler(
-    servicePrincipalCreds,
-    azureApimConfig
-  );
+  const handler = GetSubscriptionHandler(azureApimConfig);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings

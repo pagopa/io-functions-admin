@@ -19,12 +19,6 @@ import { RestError } from "@azure/ms-rest-js";
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
 
-const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
-  clientId: "client-id",
-  secret: "secret",
-  tenantId: "tenant-id"
-};
-
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
   apimResourceGroup: "resource group",
@@ -81,10 +75,7 @@ describe("GetSubscription", () => {
       TE.left(Error("Error from ApiManagementClient constructor"))
     );
 
-    const getSubscriptionHandler = GetSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const getSubscriptionHandler = GetSubscriptionHandler(fakeApimConfig);
 
     const response = await getSubscriptionHandler(
       mockedContext as any,
@@ -100,10 +91,7 @@ describe("GetSubscription", () => {
       Promise.reject(new RestError("not found", "Not Found", 404))
     );
 
-    const getSubscriptionHandler = GetSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const getSubscriptionHandler = GetSubscriptionHandler(fakeApimConfig);
 
     const response = await getSubscriptionHandler(
       mockedContext as any,
@@ -120,10 +108,7 @@ describe("GetSubscription", () => {
       return Promise.resolve(apimResponse);
     });
 
-    const getSubscriptionHandler = GetSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const getSubscriptionHandler = GetSubscriptionHandler(fakeApimConfig);
 
     const response = await getSubscriptionHandler(
       mockedContext as any,

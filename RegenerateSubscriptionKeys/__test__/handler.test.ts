@@ -12,7 +12,7 @@ import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { SubscriptionKeyTypeEnum } from "../../generated/definitions/SubscriptionKeyType";
-import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { IAzureApimConfig } from "../../utils/apim";
 import { RegenerateSubscriptionKeysHandler } from "../handler";
 
 const mockLoginWithServicePrincipalSecret = jest.spyOn(
@@ -83,12 +83,6 @@ mockGetToken.mockImplementation(() => Promise.resolve(undefined));
 
 const mockedContext = { log: { error: mockLog } };
 
-const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
-  clientId: "client-id",
-  secret: "secret",
-  tenantId: "tenant-id"
-};
-
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
   apimResourceGroup: "resource group",
@@ -104,7 +98,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
 
   it("should return a not found error response if the subscription is not found", async () => {
     const regenerateSubscriptionKeysHandler = RegenerateSubscriptionKeysHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig
     );
     const response = await regenerateSubscriptionKeysHandler(
@@ -120,7 +113,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
 
   it("should return a not found error response if the API management client returns an error", async () => {
     const regenerateSubscriptionKeysHandler = RegenerateSubscriptionKeysHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig
     );
     const response = await regenerateSubscriptionKeysHandler(
@@ -136,7 +128,6 @@ describe("RegenerateSubscriptionKeysHandler", () => {
 
   it("should regenerate the requested api keys for an existing subscription", async () => {
     const regenerateSubscriptionKeysHandler = RegenerateSubscriptionKeysHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig
     );
     // Primary key regeneration

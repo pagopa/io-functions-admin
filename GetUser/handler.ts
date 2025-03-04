@@ -52,7 +52,6 @@ type IGetSubscriptionKeysHandler = (
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   adb2cTokenAttributeName: NonEmptyString
 ): IGetSubscriptionKeysHandler {
@@ -78,7 +77,7 @@ export function GetUserHandler(
         errorMessage
       );
     return pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      getApiClient(azureApimConfig.subscriptionId),
       TE.mapLeft(error =>
         internalErrorHandler("Could not get the APIM client.", error)
       ),
@@ -223,13 +222,11 @@ export function GetUserHandler(
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetUser(
   adb2cCredentials: IServicePrincipalCreds,
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   adb2cTokenAttributeName: NonEmptyString
 ): express.RequestHandler {
   const handler = GetUserHandler(
     adb2cCredentials,
-    servicePrincipalCreds,
     azureApimConfig,
     adb2cTokenAttributeName
   );

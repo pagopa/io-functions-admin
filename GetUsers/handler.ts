@@ -22,11 +22,7 @@ import { asyncIteratorToPageArray } from "@pagopa/io-functions-commons/dist/src/
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import { pipe } from "fp-ts/lib/function";
 import { UserCollection } from "../generated/definitions/UserCollection";
-import {
-  IAzureApimConfig,
-  IServicePrincipalCreds,
-  getApiClient
-} from "../utils/apim";
+import { IAzureApimConfig, getApiClient } from "../utils/apim";
 import { userContractToApiUser } from "../utils/conversions";
 import { CursorMiddleware } from "../utils/middlewares/cursorMiddleware";
 
@@ -38,7 +34,6 @@ type IGetSubscriptionKeysHandler = (
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetUsersHandler(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   azureApimHost: string,
   pageSize: NonNegativeInteger
@@ -46,7 +41,7 @@ export function GetUsersHandler(
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, cursor = 0) =>
     pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      getApiClient(azureApimConfig.subscriptionId),
       TE.chain(apiClient =>
         TE.tryCatch(
           () =>
@@ -98,17 +93,11 @@ export function GetUsersHandler(
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetUsers(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   functionsUrl: string,
   pageSize: NonNegativeInteger
 ): express.RequestHandler {
-  const handler = GetUsersHandler(
-    servicePrincipalCreds,
-    azureApimConfig,
-    functionsUrl,
-    pageSize
-  );
+  const handler = GetUsersHandler(azureApimConfig, functionsUrl, pageSize);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings

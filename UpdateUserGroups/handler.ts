@@ -37,12 +37,7 @@ import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/util
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { GroupCollection } from "../generated/definitions/GroupCollection";
 import { UserGroupsPayload } from "../generated/definitions/UserGroupsPayload";
-import {
-  getApiClient,
-  getUserGroups,
-  IAzureApimConfig,
-  IServicePrincipalCreds
-} from "../utils/apim";
+import { getApiClient, getUserGroups, IAzureApimConfig } from "../utils/apim";
 import { groupContractToApiGroup } from "../utils/conversions";
 import {
   genericInternalErrorHandler,
@@ -133,7 +128,6 @@ function clusterizeGroups(
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions, max-lines-per-function
 export function UpdateUserGroupHandler(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -148,7 +142,7 @@ export function UpdateUserGroupHandler(
       );
 
     return await pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      getApiClient(azureApimConfig.subscriptionId),
       TE.mapLeft(error =>
         internalErrorHandler("Could not get the APIM client.", error)
       ),
@@ -380,13 +374,9 @@ export function UpdateUserGroupHandler(
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateUserGroup(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {
-  const handler = UpdateUserGroupHandler(
-    servicePrincipalCreds,
-    azureApimConfig
-  );
+  const handler = UpdateUserGroupHandler(azureApimConfig);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings

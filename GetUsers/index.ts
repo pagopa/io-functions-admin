@@ -14,11 +14,6 @@ import { GetUsers } from "./handler";
 
 const config = getConfigOrThrow();
 
-const servicePrincipalCreds = {
-  clientId: config.SERVICE_PRINCIPAL_CLIENT_ID,
-  secret: config.SERVICE_PRINCIPAL_SECRET,
-  tenantId: config.SERVICE_PRINCIPAL_TENANT_ID
-};
 const azureApimConfig = {
   apim: config.AZURE_APIM,
   apimResourceGroup: config.AZURE_APIM_RESOURCE_GROUP,
@@ -41,12 +36,7 @@ secureExpressApp(app);
 // Add express route
 app.get(
   "/adm/users",
-  GetUsers(
-    servicePrincipalCreds,
-    azureApimConfig,
-    azureApimHost,
-    config.GET_USERS_PAGE_SIZE
-  )
+  GetUsers(azureApimConfig, azureApimHost, config.GET_USERS_PAGE_SIZE)
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);

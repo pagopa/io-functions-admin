@@ -80,7 +80,6 @@ describe("CreateUser", () => {
 
     const createUserHandler = CreateUserHandler(
       fakeServicePrincipalCredentials,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -101,7 +100,6 @@ describe("CreateUser", () => {
     );
 
     const createUserHandler = CreateUserHandler(
-      fakeServicePrincipalCredentials,
       fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
@@ -129,7 +127,6 @@ describe("CreateUser", () => {
 
     const createUserHandler = CreateUserHandler(
       fakeServicePrincipalCredentials,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -153,7 +150,6 @@ describe("CreateUser", () => {
     );
 
     const createUserHandler = CreateUserHandler(
-      fakeServicePrincipalCredentials,
       fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
@@ -200,7 +196,6 @@ describe("CreateUser", () => {
     );
 
     const createUserHandler = CreateUserHandler(
-      fakeServicePrincipalCredentials,
       fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId

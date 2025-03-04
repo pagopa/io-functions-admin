@@ -32,8 +32,7 @@ import { Subscription } from "../generated/definitions/Subscription";
 import {
   getApiClient,
   IAzureApimConfig,
-  isErrorStatusCode,
-  IServicePrincipalCreds
+  isErrorStatusCode
 } from "../utils/apim";
 import { subscriptionContractToApiSubscription } from "../utils/conversions";
 import {
@@ -57,7 +56,6 @@ type ICreateSubscriptionHandler = (
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateSubscriptionHandler(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): ICreateSubscriptionHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -83,7 +81,7 @@ export function CreateSubscriptionHandler(
         errorMessage
       );
     return pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      getApiClient(azureApimConfig.subscriptionId),
       TE.mapLeft(error =>
         internalErrorHandler("Could not get the APIM client.", error)
       ),
@@ -253,13 +251,9 @@ export function CreateSubscriptionHandler(
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateSubscription(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {
-  const handler = CreateSubscriptionHandler(
-    servicePrincipalCreds,
-    azureApimConfig
-  );
+  const handler = CreateSubscriptionHandler(azureApimConfig);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings

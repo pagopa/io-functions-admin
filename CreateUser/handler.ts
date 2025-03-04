@@ -41,7 +41,6 @@ type ICreateUserHandler = (
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateUserHandler(
   adb2cCredentials: IServicePrincipalCreds,
-  apimCredentials: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   adb2cTokenAttributeName: NonEmptyString
 ): ICreateUserHandler {
@@ -100,7 +99,7 @@ export function CreateUserHandler(
       ),
       TE.chain(userCreateResponse =>
         pipe(
-          getApiClient(apimCredentials, azureApimConfig.subscriptionId),
+          getApiClient(azureApimConfig.subscriptionId),
           TE.mapLeft(error =>
             internalErrorHandler(
               "Could not get the API management client",
@@ -165,13 +164,11 @@ export function CreateUserHandler(
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function CreateUser(
   adb2cCreds: IServicePrincipalCreds,
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   adb2cTokenAttributeName: NonEmptyString
 ): express.RequestHandler {
   const handler = CreateUserHandler(
     adb2cCreds,
-    servicePrincipalCreds,
     azureApimConfig,
     adb2cTokenAttributeName
   );

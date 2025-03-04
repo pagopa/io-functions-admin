@@ -20,12 +20,6 @@ import { CreateSubscriptionHandler } from "../handler";
 
 jest.mock("@azure/arm-apimanagement");
 
-const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
-  clientId: "client-id",
-  secret: "secret",
-  tenantId: "tenant-id"
-};
-
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
   apimResourceGroup: "resource group",
@@ -101,10 +95,7 @@ describe("CreateSubscription", () => {
       TE.left(Error("Error from ApiManagementClient constructor"))
     );
 
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
@@ -125,10 +116,7 @@ describe("CreateSubscription", () => {
         }
       };
     });
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
@@ -142,10 +130,7 @@ describe("CreateSubscription", () => {
 
   it("should return a not found error response if the API management client returns no user", async () => {
     mockUserListByService.mockImplementation(() => ArrayToAsyncIterable([]));
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
@@ -161,10 +146,7 @@ describe("CreateSubscription", () => {
     mockUserListByService.mockImplementation(() =>
       ArrayToAsyncIterable([{ id: "" }])
     );
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
@@ -190,10 +172,7 @@ describe("CreateSubscription", () => {
       };
     });
 
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
@@ -211,10 +190,7 @@ describe("CreateSubscription", () => {
     );
     mockProductList.mockImplementation(() => ArrayToAsyncIterable([]));
 
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
@@ -233,10 +209,7 @@ describe("CreateSubscription", () => {
     mockProductList.mockImplementation(() =>
       ArrayToAsyncIterable([{ displayName: fakePayload.product_name }])
     );
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
@@ -258,10 +231,7 @@ describe("CreateSubscription", () => {
     mockSubscriptionCreateOrUpdate.mockImplementation(() =>
       Promise.reject(Error("Error on subscription create or update"))
     );
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
@@ -283,10 +253,7 @@ describe("CreateSubscription", () => {
     mockSubscriptionCreateOrUpdate.mockImplementation(() =>
       Promise.resolve([{ groupContractType: "invalid" }])
     );
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
@@ -309,10 +276,7 @@ describe("CreateSubscription", () => {
       Promise.resolve(aFakeApimSubscriptionContract)
     );
 
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
@@ -342,10 +306,7 @@ describe("CreateSubscription", () => {
       Promise.reject(new RestError("", "", 412))
     );
 
-    const createSubscriptionHandler = CreateSubscriptionHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
       mockedContext as any,
