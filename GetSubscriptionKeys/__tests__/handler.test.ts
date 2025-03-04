@@ -55,12 +55,6 @@ mockGetToken.mockImplementation(() => {
 
 const mockedContext = { log: { error: mockLog } };
 
-const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
-  clientId: "client-id",
-  secret: "secret",
-  tenantId: "tenant-id"
-};
-
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
   apimResourceGroup: "resource group",
@@ -74,7 +68,6 @@ describe("GetSubscriptionKeysHandler", () => {
 
   it("should return a not found error response if the subscription is not found", async () => {
     const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig
     );
     const response = await getSubscriptionKeysHandler(
@@ -87,7 +80,6 @@ describe("GetSubscriptionKeysHandler", () => {
 
   it("should return a not found error response if the API management client returns an error", async () => {
     const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig
     );
     const response = await getSubscriptionKeysHandler(
@@ -100,7 +92,6 @@ describe("GetSubscriptionKeysHandler", () => {
 
   it("should return the api keys for an existing subscription", async () => {
     const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig
     );
     const response = await getSubscriptionKeysHandler(
