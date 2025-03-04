@@ -20,12 +20,6 @@ const adb2cCreds = {
   tenantId: getRequiredStringEnv("ADB2C_TENANT_ID")
 };
 
-const servicePrincipalCreds = {
-  clientId: config.SERVICE_PRINCIPAL_CLIENT_ID,
-  secret: config.SERVICE_PRINCIPAL_SECRET,
-  tenantId: config.SERVICE_PRINCIPAL_TENANT_ID
-};
-
 const azureApimConfig = {
   apim: config.AZURE_APIM,
   apimResourceGroup: config.AZURE_APIM_RESOURCE_GROUP,
@@ -50,12 +44,7 @@ secureExpressApp(app);
 // Add express route
 app.post(
   "/adm/users",
-  CreateUser(
-    adb2cCreds,
-    servicePrincipalCreds,
-    azureApimConfig,
-    adb2cTokenAttributeName
-  )
+  CreateUser(adb2cCreds, azureApimConfig, adb2cTokenAttributeName)
 );
 
 const azureFunctionHandler = createAzureFunctionHandler(app);

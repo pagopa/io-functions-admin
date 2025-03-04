@@ -10,12 +10,6 @@ import { GetImpersonateServiceHandler } from "../handler";
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
 
-const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
-  clientId: "client-id",
-  secret: "secret",
-  tenantId: "tenant-id"
-};
-
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
   apimResourceGroup: "resource group",
@@ -98,7 +92,6 @@ describe("GetImpersonateServiceHandler", () => {
     );
 
     const getImpersonateServiceHandler = GetImpersonateServiceHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig
     );
 
@@ -112,10 +105,7 @@ describe("GetImpersonateServiceHandler", () => {
   });
 
   it("GIVEN a not working APIM server WHEN call the handler THEN an Internal Error is returned", async () => {
-    const handler = GetImpersonateServiceHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const handler = GetImpersonateServiceHandler(fakeApimConfig);
     mockUserSubscriptionGet.mockImplementationOnce(() =>
       Promise.reject(new RestError("generic error", "", 500))
     );
@@ -129,10 +119,7 @@ describe("GetImpersonateServiceHandler", () => {
   });
 
   it("GIVEN a subscription without owner WHEN call the handler THEN a Not Found Error error is returned", async () => {
-    const handler = GetImpersonateServiceHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const handler = GetImpersonateServiceHandler(fakeApimConfig);
 
     mockUserSubscriptionGet.mockImplementationOnce(() =>
       Promise.resolve(mockedSubscriptionWithoutOwner)
@@ -148,10 +135,7 @@ describe("GetImpersonateServiceHandler", () => {
   });
 
   it("GIVEN a subscription with not existing owner WHEN call the handler THEN a Not Found Error error is returned", async () => {
-    const handler = GetImpersonateServiceHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const handler = GetImpersonateServiceHandler(fakeApimConfig);
 
     mockUserSubscriptionGet.mockImplementationOnce(() =>
       Promise.resolve(mockedSubscription)
@@ -173,10 +157,7 @@ describe("GetImpersonateServiceHandler", () => {
   });
 
   it("GIVEN a user without email WHEN call the handler THEN a Not Found error is returned", async () => {
-    const handler = GetImpersonateServiceHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const handler = GetImpersonateServiceHandler(fakeApimConfig);
     mockUserSubscriptionGet.mockImplementationOnce(() =>
       Promise.resolve(mockedUserWithoutEmail)
     );
@@ -191,10 +172,7 @@ describe("GetImpersonateServiceHandler", () => {
   });
 
   it("GIVEN an error while retrieving user WHEN call the handler THEN an Internal Error is returned", async () => {
-    const handler = GetImpersonateServiceHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const handler = GetImpersonateServiceHandler(fakeApimConfig);
     mockUserSubscriptionGet.mockImplementationOnce(() =>
       Promise.reject(new RestError("Internal Error", "Internal Error", 500))
     );
@@ -208,10 +186,7 @@ describe("GetImpersonateServiceHandler", () => {
     expect(response.kind).toEqual("IResponseErrorInternal");
   });
   it("GIVEN a not existing subscription id WHEN call the handler THEN a Not Found error is returned", async () => {
-    const handler = GetImpersonateServiceHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const handler = GetImpersonateServiceHandler(fakeApimConfig);
     mockUserSubscriptionGet.mockImplementationOnce(() =>
       Promise.reject(new RestError("not found", "Not Found", 404))
     );
@@ -226,10 +201,7 @@ describe("GetImpersonateServiceHandler", () => {
   });
 
   it("GIVEN an existing subscription id WHEN call the handler THEN a proper Impersonated Service is returned", async () => {
-    const handler = GetImpersonateServiceHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const handler = GetImpersonateServiceHandler(fakeApimConfig);
 
     const response = await handler(
       mockedContext as any,

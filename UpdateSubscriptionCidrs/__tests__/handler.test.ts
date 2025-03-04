@@ -6,7 +6,7 @@ import {
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as ApimUtils from "../../utils/apim";
-import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { IAzureApimConfig } from "../../utils/apim";
 import { UpdateSubscriptionCidrsHandler } from "../handler";
 import { CIDR } from "@pagopa/ts-commons/lib/strings";
 import { none } from "fp-ts/lib/Option";
@@ -19,12 +19,6 @@ import { SubscriptionCIDRs } from "../../generated/definitions/SubscriptionCIDRs
 
 jest.mock("@azure/arm-apimanagement");
 jest.mock("@azure/graph");
-
-const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
-  clientId: "client-id",
-  secret: "secret",
-  tenantId: "tenant-id"
-};
 
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
@@ -93,7 +87,6 @@ describe("UpdateSubscriptionCidrs", () => {
     };
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
     );
@@ -125,7 +118,6 @@ describe("UpdateSubscriptionCidrs", () => {
     };
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
     );
@@ -159,7 +151,6 @@ describe("UpdateSubscriptionCidrs", () => {
     };
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
     );
@@ -196,7 +187,6 @@ describe("UpdateSubscriptionCidrs", () => {
     };
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
     );

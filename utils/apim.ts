@@ -22,7 +22,7 @@ import { parse } from "fp-ts/lib/Json";
 import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
-import { ClientSecretCredential } from "@azure/identity";
+import { DefaultAzureCredential } from "@azure/identity";
 export interface IServicePrincipalCreds {
   readonly clientId: string;
   readonly secret: string;
@@ -73,15 +73,10 @@ export const chainApimMappedError = <T>(
   );
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getApiClient(
-  servicePrincipalCreds: IServicePrincipalCreds,
   subscriptionId: string
 ): TE.TaskEither<Error, ApiManagementClient> {
   return pipe(
-    new ClientSecretCredential(
-      servicePrincipalCreds.tenantId,
-      servicePrincipalCreds.clientId,
-      servicePrincipalCreds.secret
-    ),
+    new DefaultAzureCredential(),
     TE.right,
     TE.map(credentials => new ApiManagementClient(credentials, subscriptionId))
   );

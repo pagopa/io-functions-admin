@@ -18,12 +18,6 @@ const fakeFunctionsHost = "localhost";
 
 const pageSize = 2 as NonNegativeInteger;
 
-const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
-  clientId: "client-id",
-  secret: "secret",
-  tenantId: "tenant-id"
-};
-
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
   apimResourceGroup: "resource group",
@@ -141,7 +135,6 @@ describe("GetUsers", () => {
       }
     }));
     const getUsersHandler = GetUsersHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeFunctionsHost,
       pageSize
@@ -169,7 +162,6 @@ describe("GetUsers", () => {
       }
     }));
     const getUsersHandler = GetUsersHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeFunctionsHost,
       pageSize
@@ -245,7 +237,6 @@ describe("GetUsers", () => {
       }));
 
     const getUsersHandler = GetUsersHandler(
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeFunctionsHost,
       pageSize

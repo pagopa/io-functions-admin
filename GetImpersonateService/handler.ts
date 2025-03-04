@@ -24,12 +24,7 @@ import {
 import { ServiceId } from "../generated/definitions/ServiceId";
 import { ImpersonatedService } from "../generated/definitions/ImpersonatedService";
 import { getSubscription, getUser, mapApimRestError } from "../utils/apim";
-import {
-  getApiClient,
-  getUserGroups,
-  IAzureApimConfig,
-  IServicePrincipalCreds
-} from "../utils/apim";
+import { getApiClient, getUserGroups, IAzureApimConfig } from "../utils/apim";
 
 type IGetImpersonateService = (
   context: Context,
@@ -52,12 +47,11 @@ const chainNullableWithNotFound = (
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetImpersonateServiceHandler(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetImpersonateService {
   return async (_context, _, serviceId): ReturnType<IGetImpersonateService> =>
     pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      getApiClient(azureApimConfig.subscriptionId),
       TE.mapLeft(e =>
         ResponseErrorInternal(`Error while connecting to APIM ${e.message}`)
       ),
@@ -119,13 +113,9 @@ export function GetImpersonateServiceHandler(
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function GetImpersonateService(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {
-  const handler = GetImpersonateServiceHandler(
-    servicePrincipalCreds,
-    azureApimConfig
-  );
+  const handler = GetImpersonateServiceHandler(azureApimConfig);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings

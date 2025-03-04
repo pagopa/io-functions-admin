@@ -6,7 +6,7 @@ import { right } from "fp-ts/lib/Either";
 import { fromEither, left } from "fp-ts/lib/TaskEither";
 import { EmailAddress } from "../../generated/definitions/EmailAddress";
 import * as ApimUtils from "../../utils/apim";
-import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { IAzureApimConfig } from "../../utils/apim";
 import {
   ArrayToAsyncIterable,
   ReadonlyArrayToAsyncIterable
@@ -45,12 +45,6 @@ const fakeExistingGroups: ReadonlyArray<GroupContract> = [
     name: UserGroup.ApiDevelopmentProfileWrite.toLowerCase()
   }
 ];
-
-const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
-  clientId: "client-id",
-  secret: "secret",
-  tenantId: "tenant-id"
-};
 
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
@@ -103,10 +97,7 @@ describe("UpdateUserGroups", () => {
       left(Error("Error from ApiManagementClient constructor"))
     );
 
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -128,10 +119,7 @@ describe("UpdateUserGroups", () => {
       };
     });
 
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -145,10 +133,7 @@ describe("UpdateUserGroups", () => {
 
   it("should return a not found error response if the API management client returns no user", async () => {
     mockUserListByService.mockImplementation(() => ArrayToAsyncIterable([]));
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -164,10 +149,7 @@ describe("UpdateUserGroups", () => {
     mockUserListByService.mockImplementation(() =>
       ArrayToAsyncIterable([{ name: "" }])
     );
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -191,10 +173,7 @@ describe("UpdateUserGroups", () => {
         }
       };
     });
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -222,10 +201,7 @@ describe("UpdateUserGroups", () => {
       };
     });
 
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -248,10 +224,7 @@ describe("UpdateUserGroups", () => {
     mockGroupListByService.mockImplementation(() =>
       ReadonlyArrayToAsyncIterable(fakeExistingGroups)
     );
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -279,10 +252,7 @@ describe("UpdateUserGroups", () => {
       Promise.reject("Error on group user create")
     );
     mockGroupUserDeleteMethod.mockImplementation(() => Promise.resolve());
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -308,10 +278,7 @@ describe("UpdateUserGroups", () => {
     mockGroupUserDeleteMethod.mockImplementation(() =>
       Promise.reject("Error on group user delete method")
     );
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -345,10 +312,7 @@ describe("UpdateUserGroups", () => {
     );
     mockGroupUserCreate.mockImplementation(() => Promise.resolve());
     mockGroupUserDeleteMethod.mockImplementation(() => Promise.resolve());
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -379,10 +343,7 @@ describe("UpdateUserGroups", () => {
     );
     mockGroupUserCreate.mockImplementation(() => Promise.resolve());
     mockGroupUserDeleteMethod.mockImplementation(() => Promise.resolve());
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,
@@ -413,10 +374,7 @@ describe("UpdateUserGroups", () => {
     mockGroupUserCreate.mockImplementation(() => Promise.resolve());
     mockGroupUserDeleteMethod.mockImplementation(() => Promise.resolve());
 
-    const updateUserGroupHandler = UpdateUserGroupHandler(
-      fakeServicePrincipalCredentials,
-      fakeApimConfig
-    );
+    const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
       mockedContext as any,

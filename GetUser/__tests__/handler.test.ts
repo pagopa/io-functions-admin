@@ -23,12 +23,6 @@ const fakeAdb2cCreds = {
   tenantId: "tenant-id"
 };
 
-const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
-  clientId: "client-id",
-  secret: "secret",
-  tenantId: "tenant-id"
-};
-
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
   apimResourceGroup: "resource group",
@@ -85,7 +79,6 @@ describe("GetUser", () => {
 
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -110,7 +103,6 @@ describe("GetUser", () => {
     });
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -129,7 +121,6 @@ describe("GetUser", () => {
     mockGraphRbacUserList.mockImplementation(() => Promise.resolve([]));
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -152,7 +143,6 @@ describe("GetUser", () => {
     );
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -184,7 +174,6 @@ describe("GetUser", () => {
 
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -211,7 +200,6 @@ describe("GetUser", () => {
 
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -279,7 +267,6 @@ describe("GetUser", () => {
 
     const getUserHandler = GetUserHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );

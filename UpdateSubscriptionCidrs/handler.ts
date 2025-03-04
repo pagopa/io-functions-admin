@@ -29,11 +29,7 @@ import {
 import { toAuthorizedCIDRs } from "@pagopa/io-functions-commons/dist/src/models/service";
 import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
 import { pipe } from "fp-ts/lib/function";
-import {
-  getApiClient,
-  IAzureApimConfig,
-  IServicePrincipalCreds
-} from "../utils/apim";
+import { getApiClient, IAzureApimConfig } from "../utils/apim";
 import { CIDRsPayload } from "../generated/definitions/CIDRsPayload";
 import { SubscriptionCIDRs } from "../generated/definitions/SubscriptionCIDRs";
 
@@ -50,12 +46,11 @@ type IUpdateSubscriptionCidrsHandler = (
 >;
 
 const subscriptionExists = (
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   subscriptionId: NonEmptyString
 ): TE.TaskEither<IResponseErrorInternal | IResponseErrorNotFound, true> =>
   pipe(
-    getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+    getApiClient(azureApimConfig.subscriptionId),
     TE.mapLeft(_ =>
       ResponseErrorInternal("Error trying to get Api Management Client")
     ),
@@ -83,14 +78,12 @@ const subscriptionExists = (
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateSubscriptionCidrsHandler(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   subscriptionCIDRsModel: SubscriptionCIDRsModel
 ): IUpdateSubscriptionCidrsHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, subscriptionId, cidrs) => {
     const maybeSubscriptionExists = await subscriptionExists(
-      servicePrincipalCreds,
       azureApimConfig,
       subscriptionId
     )();
@@ -128,12 +121,10 @@ export function UpdateSubscriptionCidrsHandler(
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateSubscriptionCidrs(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig,
   subscriptionCIDRsModel: SubscriptionCIDRsModel
 ): express.RequestHandler {
   const handler = UpdateSubscriptionCidrsHandler(
-    servicePrincipalCreds,
     azureApimConfig,
     subscriptionCIDRsModel
   );

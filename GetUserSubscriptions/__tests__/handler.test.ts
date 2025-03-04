@@ -29,12 +29,6 @@ const fakeAdb2cCreds = {
   tenantId: "tenant-id"
 };
 
-const fakeServicePrincipalCredentials: IServicePrincipalCreds = {
-  clientId: "client-id",
-  secret: "secret",
-  tenantId: "tenant-id"
-};
-
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
   apimResourceGroup: "resource group",
@@ -95,7 +89,6 @@ describe("GetUser", () => {
 
     const getUserSubscriptionsHandler = GetUserSubscriptionsHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -120,7 +113,6 @@ describe("GetUser", () => {
     });
     const getUserSubscriptionsHandler = GetUserSubscriptionsHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -138,7 +130,6 @@ describe("GetUser", () => {
     mockUserListByService.mockImplementation(() => ArrayToAsyncIterable([]));
     const getUserSubscriptionsHandler = GetUserSubscriptionsHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -158,7 +149,6 @@ describe("GetUser", () => {
     );
     const getUserSubscriptionsHandler = GetUserSubscriptionsHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -188,7 +178,6 @@ describe("GetUser", () => {
     mockUserSubscriptionList.mockImplementation(() => ArrayToAsyncIterable([]));
     const getUserSubscriptionsHandler = GetUserSubscriptionsHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -218,7 +207,6 @@ describe("GetUser", () => {
     });
     const getUserSubscriptionsHandler = GetUserSubscriptionsHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -242,7 +230,6 @@ describe("GetUser", () => {
     mockUserSubscriptionList.mockImplementation(() => ArrayToAsyncIterable([]));
     const getUserSubscriptionsHandler = GetUserSubscriptionsHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -266,7 +253,6 @@ describe("GetUser", () => {
     );
     const getUserSubscriptionsHandler = GetUserSubscriptionsHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );
@@ -356,7 +342,6 @@ describe("GetUser", () => {
 
     const getUserSubscriptionsHandler = GetUserSubscriptionsHandler(
       fakeAdb2cCreds,
-      fakeServicePrincipalCredentials,
       fakeApimConfig,
       fakeAdb2cExtensionAppClientId
     );

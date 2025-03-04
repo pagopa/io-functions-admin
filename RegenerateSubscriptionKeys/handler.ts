@@ -29,11 +29,7 @@ import { ServiceId } from "../generated/definitions/ServiceId";
 import { SubscriptionKeys } from "../generated/definitions/SubscriptionKeys";
 import { SubscriptionKeyTypeEnum } from "../generated/definitions/SubscriptionKeyType";
 import { SubscriptionKeyTypePayload } from "../generated/definitions/SubscriptionKeyTypePayload";
-import {
-  getApiClient,
-  IAzureApimConfig,
-  IServicePrincipalCreds
-} from "../utils/apim";
+import { getApiClient, IAzureApimConfig } from "../utils/apim";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 import { SubscriptionKeyTypeMiddleware } from "../utils/middlewares/subscriptionKeyType";
 
@@ -58,13 +54,12 @@ type IGetSubscriptionKeysHandler = (
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function RegenerateSubscriptionKeysHandler(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, serviceId, keyTypePayload) =>
     await pipe(
-      getApiClient(servicePrincipalCreds, azureApimConfig.subscriptionId),
+      getApiClient(azureApimConfig.subscriptionId),
       TE.chain(apiClient =>
         pipe(
           TE.tryCatch(() => {
@@ -125,13 +120,9 @@ export function RegenerateSubscriptionKeysHandler(
  */
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function RegenerateSubscriptionKeys(
-  servicePrincipalCreds: IServicePrincipalCreds,
   azureApimConfig: IAzureApimConfig
 ): express.RequestHandler {
-  const handler = RegenerateSubscriptionKeysHandler(
-    servicePrincipalCreds,
-    azureApimConfig
-  );
+  const handler = RegenerateSubscriptionKeysHandler(azureApimConfig);
 
   const middlewaresWrap = withRequestMiddlewares(
     // Extract Azure Functions bindings
