@@ -82,7 +82,8 @@ export const IConfig = t.intersection([
       ("100" as unknown) as NonNegativeInteger
     ),
 
-    INSTANT_DELETE_ENABLED_USERS: CommaSeparatedListOf(FiscalCode)
+    INSTANT_DELETE_ENABLED_USERS: CommaSeparatedListOf(FiscalCode),
+    LOG_RSA_PK: NonEmptyString
     /* eslint-enable sort-keys */
   }),
   MailerConfig
