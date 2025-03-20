@@ -1,0 +1,12 @@
+{
+  "bindings": [
+    {
+      "name": "InputBlob",
+      "type": "blobTrigger",
+      "direction": "in",
+      "path": "spidassertions/{name}",
+      "connection": "IOPSTLOGS_STORAGE_CONNECTION_STRING"
+    }
+  ],
+  "scriptFile": "../dist/CheckXmlCryptoCVESamlResponse/index.js"
+}
