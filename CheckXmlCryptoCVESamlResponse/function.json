@@ -4,7 +4,7 @@
       "name": "InputBlob",
       "type": "blobTrigger",
       "direction": "in",
-      "path": "spidassertions/{name}",
+      "path": "spidassertions/{CF}-2025-03{name}",
       "connection": "IOPSTLOGS_STORAGE_CONNECTION_STRING"
     }
   ],
