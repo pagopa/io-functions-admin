@@ -6,16 +6,47 @@ import { toPlainText } from "@pagopa/ts-commons/lib/encrypt";
 import { DOMParser } from "@xmldom/xmldom";
 import * as E from "fp-ts/lib/Either";
 
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { trackEvent } from "../utils/appinsights";
 import { getConfigOrThrow } from "../utils/config";
 import {
   hasCommentsOnAnyDigestValue,
   hasMoreSignedInfoNodes,
   isBlobAboveThreshold,
+  PlainTextSpidBlobItem,
   SpidBlobItem
 } from "./utils";
 
 const config = getConfigOrThrow();
+
+const getResponsePayloadOrThrow = (
+  spidBlobItemVal: SpidBlobItem,
+  pk: NonEmptyString,
+  context: Context
+) => {
+  // eslint-disable-next-line functional/no-let
+  let responsePayload: string;
+
+  if (PlainTextSpidBlobItem.is(spidBlobItemVal)) {
+    responsePayload = spidBlobItemVal.SAMLResponse;
+  } else {
+    const decryptedResponsePayloadRes = toPlainText(
+      config.LOG_RSA_PK,
+      spidBlobItemVal.encryptedResponsePayload
+    );
+
+    if (E.isLeft(decryptedResponsePayloadRes)) {
+      context.log.error(
+        "Error decrypting SPID response payload",
+        decryptedResponsePayloadRes.left
+      );
+      throw new Error("Error decrypting SPID response payload");
+    }
+
+    responsePayload = decryptedResponsePayloadRes.right;
+  }
+  return responsePayload;
+};
 
 const CheckXmlCryptoCVESamlResponse = async (context: Context) => {
   const blobName = context.bindingData.blobTrigger;
@@ -40,23 +71,14 @@ const CheckXmlCryptoCVESamlResponse = async (context: Context) => {
 
   const spidBlobItemVal = spidBlobItemRes.right;
 
-  const decryptedResponsePayloadRes = toPlainText(
+  const responsePayload: string = getResponsePayloadOrThrow(
+    spidBlobItemVal,
     config.LOG_RSA_PK,
-    spidBlobItemVal.encryptedResponsePayload
+    context
   );
 
-  if (E.isLeft(decryptedResponsePayloadRes)) {
-    context.log.error(
-      "Error decrypting SPID response payload",
-      decryptedResponsePayloadRes.left
-    );
-    throw new Error("Error decrypting SPID response payload");
-  }
-
-  const decryptedResponsePayloadVal = decryptedResponsePayloadRes.right;
-
   const decryptedResponsePayloadParsedXML = new DOMParser().parseFromString(
-    decryptedResponsePayloadVal,
+    responsePayload,
     "text/xml"
   );
 
