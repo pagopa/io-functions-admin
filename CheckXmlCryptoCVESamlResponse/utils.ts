@@ -1,7 +1,7 @@
 /* eslint-disable sort-keys */
 import { UTCISODateFromString } from "@pagopa/ts-commons/lib/dates";
 import { EncryptedPayload } from "@pagopa/ts-commons/lib/encrypt";
-import { IPString } from "@pagopa/ts-commons/lib/strings";
+import { IPString, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as t from "io-ts";
 import * as xPath from "xpath";
 
@@ -11,25 +11,65 @@ const SIGNATURE_INFO_TAG = "ds:Signature";
 const DATE_THRESHOLD = "2025-03-19";
 const STRICT_DATE_REGEX = /-(\d{4}-\d{2}-\d{2})-/;
 
-export const SpidBlobItem = t.interface({
+// --------------
+// Types
+// --------------
+
+/**
+ * Base payload of the stored blob item
+ * (one for each SPID request or response).
+ */
+export const SpidBlobItemBase = t.interface({
   // Timestamp of Request/Response creation
   createdAt: UTCISODateFromString,
 
   // IP of the client that made a SPID login action
   ip: IPString,
 
-  // XML payload of the SPID Request
-  // eslint-disable-next-line sort-keys
-  encryptedRequestPayload: EncryptedPayload,
-
-  // XML payload of the SPID Response
-  encryptedResponsePayload: EncryptedPayload,
-
   // SPID request ID
   spidRequestId: t.string
 });
 
+/**
+ * Payload of the stored blob item
+ * (one for each SPID request or response).
+ */
+export const EncryptedSpidBlobItem = t.intersection([
+  SpidBlobItemBase,
+  t.interface({
+    // XML payload of the SPID Request
+    encryptedRequestPayload: EncryptedPayload,
+
+    // XML payload of the SPID Response
+    encryptedResponsePayload: EncryptedPayload
+  })
+]);
+
+/**
+ * Payload of the stored blob item
+ * (one for each SPID request or response).
+ */
+export const PlainTextSpidBlobItem = t.intersection([
+  SpidBlobItemBase,
+  t.interface({
+    // XML payload of the SPID Request
+    SAMLRequest: NonEmptyString,
+
+    // XML payload of the SPID Response
+    SAMLResponse: NonEmptyString
+  })
+]);
+
+export const SpidBlobItem = t.union([
+  EncryptedSpidBlobItem,
+  PlainTextSpidBlobItem
+]);
+
 export type SpidBlobItem = t.TypeOf<typeof SpidBlobItem>;
+
+// --------------
+// Utils
+// --------------
 
 export const isBlobAboveThreshold = (blobName: string): boolean => {
   const regex = new RegExp(STRICT_DATE_REGEX);
