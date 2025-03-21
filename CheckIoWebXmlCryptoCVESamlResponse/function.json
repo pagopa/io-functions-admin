@@ -1,0 +1,12 @@
+{
+  "bindings": [
+    {
+      "name": "InputBlob",
+      "type": "blobTrigger",
+      "direction": "in",
+      "path": "spidlogs/{name}",
+      "connection": "IOWEBLOGS_STORAGE_CONNECTION_STRING"
+    }
+  ],
+  "scriptFile": "../dist/CheckIoWebXmlCryptoCVESamlResponse/index.js"
+}
