@@ -3,7 +3,6 @@ import {
   SubscriptionContract,
   UserContract
 } from "@azure/arm-apimanagement";
-import * as E from "fp-ts/lib/Either";
 import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
 import { ServiceMetadata as ApiServiceMetadata } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceMetadata";
 import {
@@ -14,21 +13,21 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/service";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { toApiServiceMetadata as toServiceMetadata } from "@pagopa/io-functions-commons/dist/src/utils/service_metadata";
-import { Errors } from "io-ts";
 import { errorsToReadableMessages } from "@pagopa/ts-commons/lib/reporters";
 import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
-import { SpecialServiceMetadata } from "../generated/definitions/SpecialServiceMetadata";
+import { Errors } from "io-ts";
 import { CIDR } from "../generated/definitions/CIDR";
-import { Group, Group as ApiGroup } from "../generated/definitions/Group";
-import {
-  Subscription,
-  Subscription as ApiSubscription
-} from "../generated/definitions/Subscription";
-import { User, User as ApiUser } from "../generated/definitions/User";
-import { UserCreated as ApiUserCreated } from "../generated/definitions/UserCreated";
-import { UserStateEnum } from "../generated/definitions/UserState";
+import { Group as ApiGroup, Group } from "../generated/definitions/Group";
+import { SpecialServiceMetadata } from "../generated/definitions/SpecialServiceMetadata";
 import { StandardServiceCategoryEnum } from "../generated/definitions/StandardServiceCategory";
+import {
+  Subscription as ApiSubscription,
+  Subscription
+} from "../generated/definitions/Subscription";
+import { User as ApiUser, User } from "../generated/definitions/User";
+import { UserStateEnum } from "../generated/definitions/UserState";
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function errorsToError(errors: Errors): Error {
@@ -168,22 +167,6 @@ export function userContractToApiUser(
       type: user.type
     },
     User.decode,
-    E.mapLeft(errorsToError)
-  );
-}
-
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function userContractToApiUserCreated(
-  user: UserContract
-): E.Either<Error, ApiUserCreated> {
-  return pipe(
-    {
-      email: user.email,
-      first_name: user.firstName,
-      id: user.name,
-      last_name: user.lastName
-    },
-    ApiUserCreated.decode,
     E.mapLeft(errorsToError)
   );
 }

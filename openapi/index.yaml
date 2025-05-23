@@ -343,81 +343,6 @@ paths:
           description: List of users
           schema:
             $ref: "#/definitions/UserCollection"
-    post:
-      summary: Create user
-      description: Create a new user with a random password in the Active Directory Azure B2C, then create a corresponding user on the API management resource.
-      operationId: createUser
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: "#/definitions/UserPayload"
-      responses:
-        "200":
-          description: The new User
-          schema:
-            $ref: "#/definitions/UserCreated"
-        "400":
-          description: Bad request
-        "403":
-          description: Forbidden
-        "500":
-          description: Internal server error
-  /users/{email}:
-    get:
-      summary: Get user
-      description: Gets the user information, that is the complete list of subscription and the complete list of groups for the User identified by the provided email
-      operationId: getUser
-      parameters:
-        - name: email
-          in: path
-          type: string
-          format: email
-          required: true
-          description: The email of the User
-      responses:
-        "200":
-          description: User subscriptions and groups
-          schema:
-            $ref: "#/definitions/UserInfo"
-        "400":
-          description: Bad request
-        "401":
-          description: Unauthorized
-        "403":
-          description: Forbidden
-        "404":
-          description: User not found
-        "500":
-          description: Internal server error
-    put:
-      summary: Update user
-      description: Update an existing ADB2C User.
-      operationId: updateUser
-      parameters:
-        - name: email
-          in: path
-          type: string
-          format: email
-          required: true
-          description: The email of the User
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: "#/definitions/UserUpdatePayload"
-      responses:
-        "200":
-          description: The updated User
-          schema:
-            $ref: "#/definitions/UserUpdated"
-        "400":
-          description: Bad request
-        "403":
-          description: Forbidden
-        "500":
-          description: Internal server error
   /users/{email}/groups:
     put:
       summary: Update user groups
@@ -448,33 +373,6 @@ paths:
           description: Forbidden
         "404":
           description: Resource (User or Product) not found
-        "500":
-          description: Internal server error
-  /users/{email}/subscriptions:
-    get:
-      summary: Get user subscriptions
-      description: Gets the user information, that is the complete list of subscription and the complete list of groups for the User identified by the provided email
-      operationId: getUserSubscriptions
-      parameters:
-        - name: email
-          in: path
-          type: string
-          format: email
-          required: true
-          description: The email of the User
-      responses:
-        "200":
-          description: User subscriptions and groups
-          schema:
-            $ref: "#/definitions/UserInfoAndSubscriptions"
-        "400":
-          description: Bad request
-        "401":
-          description: Unauthorized
-        "403":
-          description: Forbidden
-        "404":
-          description: User not found
         "500":
           description: Internal server error
   /users/{email}/subscriptions/{subscription_id}:
@@ -694,57 +592,6 @@ definitions:
         - ApiInfoRead
         - ApiLimitedMessageWrite
         - ApiMessageRead
-  UserPayload:
-    type: object
-    properties:
-      email:
-        $ref: "#/definitions/EmailAddress"
-      first_name:
-        type: string
-        minLength: 1
-      last_name:
-        type: string
-        minLength: 1
-      token_name:
-        type: string
-        minLength: 1
-    required:
-      - email
-      - first_name
-      - last_name
-  UserUpdatePayload:
-    type: object
-    properties:
-      first_name:
-        type: string
-        minLength: 1
-      last_name:
-        type: string
-        minLength: 1
-      token_name:
-        type: string
-        minLength: 1
-  UserCreated:
-    allOf:
-      - $ref: "#/definitions/UserPayload"
-      - type: object
-        properties:
-          id:
-            type: string
-        required:
-          - id
-  UserUpdated:
-    allOf:
-      - $ref: "#/definitions/UserUpdatePayload"
-      - type: object
-        properties:
-          email:
-            $ref: "#/definitions/EmailAddress"
-          id:
-            type: string
-        required:
-          - id
-          - email
   GroupCollection:
     type: object
     properties:
@@ -893,30 +740,6 @@ definitions:
       - rejected
       - submitted
       - suspended
-  UserInfo:
-    type: object
-    properties:
-      groups:
-        type: array
-        items:
-          $ref: "#/definitions/Group"
-      token_name:
-        type: string
-        minLength: 1
-  UserInfoAndSubscriptions:
-    type: object
-    properties:
-      groups:
-        type: array
-        items:
-          $ref: "#/definitions/Group"
-      subscriptions:
-        type: array
-        items:
-          $ref: "#/definitions/Subscription"
-      token_name:
-        type: string
-        minLength: 1
   UserIdentityContract:
     type: object
     properties:
