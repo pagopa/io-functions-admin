@@ -3,12 +3,11 @@ import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as ApimUtils from "../../utils/apim";
-import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { IAzureApimConfig } from "../../utils/apim";
 import { ArrayToAsyncIterable } from "../../utils/testSupport";
 import { GetImpersonateServiceHandler } from "../handler";
 
 jest.mock("@azure/arm-apimanagement");
-jest.mock("@azure/graph");
 
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",

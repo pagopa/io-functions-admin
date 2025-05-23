@@ -13,7 +13,7 @@ import * as TE from "fp-ts/lib/TaskEither";
 import { ProductNamePayload } from "../../generated/definitions/ProductNamePayload";
 import { UserInfo } from "../../generated/definitions/UserInfo";
 import * as ApimUtils from "../../utils/apim";
-import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { IAzureApimConfig } from "../../utils/apim";
 import { subscriptionContractToApiSubscription } from "../../utils/conversions";
 import { ArrayToAsyncIterable } from "../../utils/testSupport";
 import { CreateSubscriptionHandler } from "../handler";
