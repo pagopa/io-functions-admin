@@ -5,8 +5,8 @@ import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { context } from "../../__mocks__/durable-functions";
 import { aFiscalCode } from "../../__mocks__/mocks";
-import { SuccessResponse } from "@pagopa/io-backend-session-sdk/SuccessResponse";
-import { Client } from "../../utils/sessionApiClient";
+import { SuccessResponse } from "../../utils/sm-internal/SuccessResponse";
+import { Client } from "../../utils/sm-internal/client";
 import {
   ActivityInput,
   ApiCallFailure,
@@ -42,10 +42,10 @@ const mockUnlockUserSession = jest.fn().mockImplementation(async () =>
   })
 );
 
-const mockClient = {
+const mockClient = ({
   lockUserSession: mockLockUserSession,
   unlockUserSession: mockUnlockUserSession
-} as Client<"token">;
+} as unknown) as Client<"ApiKeyAuth">;
 
 describe("createSetUserSessionLockActivityHandler", () => {
   beforeEach(() => {

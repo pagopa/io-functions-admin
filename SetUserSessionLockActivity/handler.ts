@@ -9,8 +9,8 @@ import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { flow, pipe } from "fp-ts/lib/function";
-import { SuccessResponse } from "@pagopa/io-backend-session-sdk/SuccessResponse";
-import { Client } from "../utils/sessionApiClient";
+import { SuccessResponse } from "../utils/sm-internal/SuccessResponse";
+import { Client } from "../utils/sm-internal/client";
 
 // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 const assertNever = (_: never): never => {
@@ -80,7 +80,7 @@ const logPrefix = `SetUserSessionLockActivity`;
  */
 const callSessionApi = (
   context: Context,
-  sessionApiClient: Client<"token">,
+  sessionApiClient: Client<"ApiKeyAuth">,
   action: ActivityInput["action"],
   fiscalcode: FiscalCode
 ): TE.TaskEither<ApiCallFailure | BadApiRequestFailure, SuccessResponse> =>
@@ -89,9 +89,11 @@ const callSessionApi = (
       () => {
         switch (action) {
           case "LOCK":
-            return sessionApiClient.lockUserSession({ fiscalcode });
+            return sessionApiClient.lockUserSession({ fiscalCode: fiscalcode });
           case "UNLOCK":
-            return sessionApiClient.unlockUserSession({ fiscalcode });
+            return sessionApiClient.unlockUserSession({
+              fiscalCode: fiscalcode
+            });
           default:
             return assertNever(action);
         }
@@ -163,7 +165,7 @@ const callSessionApi = (
   );
 
 export const createSetUserSessionLockActivityHandler = (
-  sessionApiClient: Client<"token">
+  sessionApiClient: Client<"ApiKeyAuth">
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => (context: Context, input: unknown) =>
   pipe(
