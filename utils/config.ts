@@ -57,8 +57,6 @@ export const IConfig = t.intersection([
 
     PUBLIC_DOWNLOAD_BASE_URL: NonEmptyString,
 
-    SESSION_API_KEY: NonEmptyString,
-    SESSION_API_URL: NonEmptyString,
     SESSION_MANAGER_INTERNAL_API_KEY: NonEmptyString,
     SESSION_MANAGER_INTERNAL_API_URL: NonEmptyString,
 
