@@ -3,15 +3,15 @@
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { aFiscalCode } from "../../__mocks__/mocks";
 import { createMockFetch } from "../../__mocks__/node-fetch";
-import { ProblemJson } from "@pagopa/io-backend-session-sdk/ProblemJson";
-import { SuccessResponse } from "@pagopa/io-backend-session-sdk/SuccessResponse";
-import { createClient, WithDefaultsT } from "../sessionApiClient";
+import { ProblemJson } from "../sm-internal/ProblemJson";
+import { SuccessResponse } from "../sm-internal/SuccessResponse";
+import { createClient } from "../sm-internal/client";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 
 const baseUrl = "";
 
-const anApyKey = "QWERTTYUIP12334";
+const anApiKey = "QWERTTYUIP12334";
 
 const aSuccessResponse = pipe(
   { message: "ok" },
@@ -31,10 +31,6 @@ const aProblemJson500 = pipe(
   })
 );
 
-const withDefaultApiKey: WithDefaultsT<"token"> = apiOperation => ({
-  fiscalcode
-}) => apiOperation({ fiscalcode, token: anApyKey });
-
 describe("sessionApiClient#lockUserSession", () => {
   it.each`
     name                | status | payload
@@ -51,8 +47,9 @@ describe("sessionApiClient#lockUserSession", () => {
     const client = createClient({ baseUrl, fetchApi });
 
     const result = await client.lockUserSession({
-      fiscalcode: aFiscalCode,
-      token: anApyKey
+      fiscalCode: aFiscalCode,
+      token: anApiKey,
+      ApiKeyAuth: anApiKey
     });
 
     expect(E.isRight(result)).toBe(true);
@@ -71,14 +68,19 @@ describe("sessionApiClient#lockUserSession", () => {
       status: 200
     });
 
-    const client = createClient({
+    const client = createClient<"ApiKeyAuth">({
       baseUrl,
       fetchApi,
-      withDefaults: withDefaultApiKey
+      withDefaults: op => params =>
+        op({
+          ...params,
+          ApiKeyAuth: anApiKey,
+          token: anApiKey
+        })
     });
 
     await client.lockUserSession({
-      fiscalcode: aFiscalCode
+      fiscalCode: aFiscalCode
     });
 
     // fetchApi is actually a jest.Mock, can be spied
@@ -90,7 +92,7 @@ describe("sessionApiClient#lockUserSession", () => {
       expect.any(Object)
     );
     expect(spiedFetch).toHaveBeenCalledWith(
-      expect.stringContaining(anApyKey),
+      expect.stringContaining(anApiKey),
       expect.any(Object)
     );
   });
@@ -108,11 +110,17 @@ describe("sessionApiClient#unlockUserSession", () => {
       jsonImpl: async () => payload,
       status
     });
-    const client = createClient({ baseUrl, fetchApi });
+    const client = createClient<"ApiKeyAuth">({
+      baseUrl, fetchApi, withDefaults: op => params =>
+        op({
+          ...params,
+          ApiKeyAuth: anApiKey,
+          token: anApiKey
+        })
+    });
 
     const result = await client.unlockUserSession({
-      fiscalcode: aFiscalCode,
-      token: anApyKey
+      fiscalCode: aFiscalCode
     });
 
     expect(E.isRight(result)).toBe(true);
@@ -131,14 +139,19 @@ describe("sessionApiClient#unlockUserSession", () => {
       status: 200
     });
 
-    const client = createClient({
+    const client = createClient<"ApiKeyAuth">({
       baseUrl,
       fetchApi,
-      withDefaults: withDefaultApiKey
+      withDefaults: op => params =>
+        op({
+          ...params,
+          ApiKeyAuth: anApiKey,
+          token: anApiKey
+        })
     });
 
     await client.unlockUserSession({
-      fiscalcode: aFiscalCode
+      fiscalCode: aFiscalCode
     });
 
     // fetchApi is actually a jest.Mock, can be spied
@@ -150,7 +163,7 @@ describe("sessionApiClient#unlockUserSession", () => {
       expect.any(Object)
     );
     expect(spiedFetch).toHaveBeenCalledWith(
-      expect.stringContaining(anApyKey),
+      expect.stringContaining(anApiKey),
       expect.any(Object)
     );
   });

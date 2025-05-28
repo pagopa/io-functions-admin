@@ -1591,15 +1591,6 @@
     parse-multipart "^1.0.4"
     tsup "^6.6.3"
 
-"@pagopa/io-backend-session-sdk@x":
-  version "13.2.0"
-  resolved "https://registry.yarnpkg.com/@pagopa/io-backend-session-sdk/-/io-backend-session-sdk-13.2.0.tgz#3eadd57e6958d6a4a34233adbe829d54afd18bb5"
-  integrity sha512-yu7QfZMWarFeS8ZqPrKPCQZ5rUDLmTPZgzO22c9iGiul3Dc+bHyXG4SKpPultwV5gcs+pRso+cxJgfGKazeAxA==
-  dependencies:
-    "@pagopa/ts-commons" "^10.0.0"
-    fp-ts "^2.10.5"
-    io-ts "^2.2.16"
-
 "@pagopa/io-functions-commons@^28.15.0":
   version "28.15.0"
   resolved "https://registry.yarnpkg.com/@pagopa/io-functions-commons/-/io-functions-commons-28.15.0.tgz#2676f3b816c27b185b6dfdb7896608d760c57372"
@@ -1649,7 +1640,7 @@
     write-yaml-file "^4.1.3"
     yargs "^15.0.1"
 
-"@pagopa/ts-commons@^10.0.0", "@pagopa/ts-commons@^10.3.0":
+"@pagopa/ts-commons@^10.3.0":
   version "10.15.0"
   resolved "https://registry.yarnpkg.com/@pagopa/ts-commons/-/ts-commons-10.15.0.tgz#8e3030a2ebc16c3edb5ef99962c6e8d534826957"
   integrity sha512-MTmD0geIN9L9vnEYjPTE7v6Bu+IRTFMre+3K4LWYjy1AaRmYcpSrc9HTZgyCRW8uLCvw1BmDKcKtSiETM817kw==
