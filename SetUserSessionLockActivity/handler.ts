@@ -82,17 +82,17 @@ const callSessionApi = (
   context: Context,
   sessionApiClient: Client<"ApiKeyAuth">,
   action: ActivityInput["action"],
-  fiscalcode: FiscalCode
+  fiscalCode: FiscalCode
 ): TE.TaskEither<ApiCallFailure | BadApiRequestFailure, SuccessResponse> =>
   pipe(
     TE.tryCatch(
       () => {
         switch (action) {
           case "LOCK":
-            return sessionApiClient.lockUserSession({ fiscalCode: fiscalcode });
+            return sessionApiClient.lockUserSession({ fiscalCode });
           case "UNLOCK":
             return sessionApiClient.unlockUserSession({
-              fiscalCode: fiscalcode
+              fiscalCode
             });
           default:
             return assertNever(action);
