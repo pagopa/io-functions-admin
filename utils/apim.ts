@@ -4,8 +4,6 @@ import {
   SubscriptionGetResponse,
   UserGetResponse
 } from "@azure/arm-apimanagement";
-import { GraphRbacManagementClient } from "@azure/graph";
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { toError } from "fp-ts/lib/Either";
 import { flow, identity, pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
@@ -23,11 +21,6 @@ import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { DefaultAzureCredential } from "@azure/identity";
-export interface IServicePrincipalCreds {
-  readonly clientId: string;
-  readonly secret: string;
-  readonly tenantId: string;
-}
 
 export interface IAzureApimConfig {
   readonly subscriptionId: string;
@@ -79,30 +72,6 @@ export function getApiClient(
     new DefaultAzureCredential(),
     TE.right,
     TE.map(credentials => new ApiManagementClient(credentials, subscriptionId))
-  );
-}
-
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function getGraphRbacManagementClient(
-  adb2cCreds: IServicePrincipalCreds
-): TE.TaskEither<Error, GraphRbacManagementClient> {
-  return pipe(
-    TE.tryCatch(
-      () =>
-        msRestNodeAuth.loginWithServicePrincipalSecret(
-          adb2cCreds.clientId,
-          adb2cCreds.secret,
-          adb2cCreds.tenantId,
-          { tokenAudience: "graph" }
-        ),
-      toError
-    ),
-    TE.map(
-      credentials =>
-        new GraphRbacManagementClient(credentials, adb2cCreds.tenantId, {
-          baseUri: "https://graph.windows.net"
-        })
-    )
   );
 }
 

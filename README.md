@@ -20,9 +20,6 @@ they may be customized as needed.
 | SERVICE_PRINCIPAL_CLIENT_ID      | The service principal name used to get the token credentials to connect to the APIM              | string |
 | SERVICE_PRINCIPAL_SECRET         | The service principal secret used to get the token credentials to connect to the APIM            | string |
 | SERVICE_PRINCIPAL_TENANT_ID      | The service principal tenant id used to get the token credentials to connect to the APIM         | string |
-| ADB2C_CLIENT_ID                  | The application client id used to get the token credentials to connect to the ADB2C              | string |
-| ADB2C_CLIENT_KEY                 | The application secret used to get the token credentials to connect to the ADB2C                 | string |
-| ADB2C_TENANT_ID                  | The ADB2C tenant id                                                                              | string |
 | AZURE_APIM                       | The name of the API Management service used to get the subscriptions                             | string |
 | AZURE_APIM_HOST                  | The host name of the API Management service                                                      | string |
 | AZURE_APIM_RESOURCE_GROUP        | The name of the resource group used to get the subscriptions                                     | string |

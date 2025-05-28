@@ -36,10 +36,6 @@ export const IConfig = t.intersection([
     AZURE_APIM_RESOURCE_GROUP: NonEmptyString,
     AZURE_SUBSCRIPTION_ID: NonEmptyString,
 
-    ADB2C_CLIENT_ID: NonEmptyString,
-    ADB2C_CLIENT_KEY: NonEmptyString,
-    ADB2C_TENANT_ID: NonEmptyString,
-
     UserDataBackupStorageConnection: NonEmptyString,
 
     MESSAGE_CONTAINER_NAME: NonEmptyString,

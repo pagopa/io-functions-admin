@@ -1,24 +1,12 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-jest.mock("@azure/ms-rest-nodeauth", () => ({
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  __esModule: true,
-  ...jest.requireActual("@azure/ms-rest-nodeauth")
-}));
-
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { SubscriptionKeyTypeEnum } from "../../generated/definitions/SubscriptionKeyType";
 import { IAzureApimConfig } from "../../utils/apim";
 import { RegenerateSubscriptionKeysHandler } from "../handler";
-
-const mockLoginWithServicePrincipalSecret = jest.spyOn(
-  msRestNodeAuth,
-  "loginWithServicePrincipalSecret"
-);
 
 const aValidSubscriptionId = "valid-subscription-id" as NonEmptyString;
 const aNotExistingSubscriptionId = "not-existing-subscription-id" as NonEmptyString;
@@ -76,9 +64,6 @@ mockApiManagementClient.mockImplementation(() => ({
     regenerateSecondaryKey: mockRegenerateSecondaryKey
   }
 }));
-mockLoginWithServicePrincipalSecret.mockImplementation(() =>
-  Promise.resolve({ getToken: mockGetToken })
-);
 mockGetToken.mockImplementation(() => Promise.resolve(undefined));
 
 const mockedContext = { log: { error: mockLog } };
@@ -91,7 +76,6 @@ const fakeApimConfig: IAzureApimConfig = {
 
 describe("RegenerateSubscriptionKeysHandler", () => {
   afterEach(() => {
-    mockLoginWithServicePrincipalSecret.mockClear();
     mockRegeneratePrimaryKey.mockClear();
     mockRegenerateSecondaryKey.mockClear();
   });

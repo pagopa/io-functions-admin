@@ -6,18 +6,13 @@ import {
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as ApimUtils from "../../utils/apim";
-import {
-  IAzureApimConfig,
-  IServicePrincipalCreds,
-  parseOwnerIdFullPath
-} from "../../utils/apim";
+import { IAzureApimConfig, parseOwnerIdFullPath } from "../../utils/apim";
 import { GetSubscriptionHandler } from "../handler";
 import { SubscriptionWithoutKeys } from "../../generated/definitions/SubscriptionWithoutKeys";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { RestError } from "@azure/ms-rest-js";
 
 jest.mock("@azure/arm-apimanagement");
-jest.mock("@azure/graph");
 
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
