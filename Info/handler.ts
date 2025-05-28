@@ -63,7 +63,7 @@ export function Info(): express.RequestHandler {
       (config: IConfig): HealthCheck<"Url", true> =>
         checkUrlHealth(config.PUBLIC_API_URL),
       (config: IConfig): HealthCheck<"Url", true> =>
-        checkUrlHealth(config.SESSION_API_URL),
+        checkUrlHealth(config.SESSION_MANAGER_INTERNAL_API_URL),
       (config: IConfig): HealthCheck<"Url", true> =>
         checkUrlHealth(config.LOGOS_URL)
     ]),
