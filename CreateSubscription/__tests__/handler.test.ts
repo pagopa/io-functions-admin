@@ -11,9 +11,9 @@ import { RestError } from "@azure/ms-rest-js";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import { ProductNamePayload } from "../../generated/definitions/ProductNamePayload";
-import { UserInfo } from "../../generated/definitions/UserInfo";
+import { Subscription } from "../../generated/definitions/Subscription";
 import * as ApimUtils from "../../utils/apim";
-import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { IAzureApimConfig } from "../../utils/apim";
 import { subscriptionContractToApiSubscription } from "../../utils/conversions";
 import { ArrayToAsyncIterable } from "../../utils/testSupport";
 import { CreateSubscriptionHandler } from "../handler";
@@ -292,7 +292,9 @@ describe("CreateSubscription", () => {
         subscriptionContractToApiSubscription(aFakeApimSubscriptionContract)
       )
     });
-    expect(E.isRight(UserInfo.decode((response as any).value))).toBeTruthy();
+    expect(
+      E.isRight(Subscription.decode((response as any).value))
+    ).toBeTruthy();
   });
 
   it("should return too many requests if APIM respinds with 412", async () => {

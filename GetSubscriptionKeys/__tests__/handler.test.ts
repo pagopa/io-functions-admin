@@ -1,22 +1,12 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-jest.mock("@azure/ms-rest-nodeauth", () => ({
-  __esModule: true,
-  ...jest.requireActual("@azure/ms-rest-nodeauth")
-}));
-
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { IAzureApimConfig } from "../../utils/apim";
 import { GetSubscriptionKeysHandler } from "../handler";
 
-const mockLoginWithServicePrincipalSecret = jest.spyOn(
-  msRestNodeAuth,
-  "loginWithServicePrincipalSecret"
-);
 const aValidSubscriptionId = "valid-subscription-id" as NonEmptyString;
 const aNotExistingSubscriptionId = "not-existing-subscription-id" as NonEmptyString;
 const aBreakingApimSubscriptionId = "broken-subscription-id" as NonEmptyString;
@@ -46,9 +36,6 @@ mockApiManagementClient.mockImplementation(() => ({
     }
   }
 }));
-mockLoginWithServicePrincipalSecret.mockImplementation(() => {
-  return Promise.resolve({ getToken: mockGetToken });
-});
 mockGetToken.mockImplementation(() => {
   return Promise.resolve(undefined);
 });
@@ -62,10 +49,6 @@ const fakeApimConfig: IAzureApimConfig = {
 };
 
 describe("GetSubscriptionKeysHandler", () => {
-  afterEach(() => {
-    mockLoginWithServicePrincipalSecret.mockClear();
-  });
-
   it("should return a not found error response if the subscription is not found", async () => {
     const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(
       fakeApimConfig

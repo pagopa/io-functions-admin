@@ -3,22 +3,21 @@ import {
   ApiManagementClient,
   SubscriptionContract
 } from "@azure/arm-apimanagement";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
-import * as ApimUtils from "../../utils/apim";
-import { IAzureApimConfig } from "../../utils/apim";
-import { UpdateSubscriptionCidrsHandler } from "../handler";
-import { CIDR } from "@pagopa/ts-commons/lib/strings";
-import { none } from "fp-ts/lib/Option";
 import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
 import {
   CosmosErrors,
   toCosmosErrorResponse
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { CIDR } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
+import { none } from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
 import { SubscriptionCIDRs } from "../../generated/definitions/SubscriptionCIDRs";
+import * as ApimUtils from "../../utils/apim";
+import { IAzureApimConfig } from "../../utils/apim";
+import { UpdateSubscriptionCidrsHandler } from "../handler";
 
 jest.mock("@azure/arm-apimanagement");
-jest.mock("@azure/graph");
 
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",

@@ -1,13 +1,8 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-jest.mock("@azure/ms-rest-nodeauth", () => ({
-  __esModule: true,
-  ...jest.requireActual("@azure/ms-rest-nodeauth")
-}));
-
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
-import { IAzureApimConfig, IServicePrincipalCreds } from "../../utils/apim";
+import { IAzureApimConfig } from "../../utils/apim";
 import {
   ArrayToAsyncIterable,
   ReadonlyArrayToAsyncIterable
