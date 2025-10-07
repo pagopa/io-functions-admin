@@ -9,8 +9,8 @@ jobs:
     name: Deploy on PROD ITN
     secrets: inherit
     with:
-      environment: 'prod' # is this correct?
-      resource_group_name: 'io-p-itn-funcadm-rg-01'
+      environment: 'prod'
+      resource_group_name: 'io-p-itn-platform-admin-rg-01'
       app_name: 'io-p-itn-admin-func-01'
       use_staging_slot: true
       use_private_agent: true
