@@ -84,7 +84,7 @@
     "html-to-text": "^5.1.1",
     "io-ts": "^2.2.16",
     "node-fetch": "^2.6.1",
-    "nodemailer": "^6.6.1",
+    "nodemailer": "^7.0.0",
     "nodemailer-sendgrid": "^1.0.3",
     "randomstring": "^1.2.1",
     "redis": "^3.1.2",
