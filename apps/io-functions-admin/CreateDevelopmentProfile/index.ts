@@ -1,11 +1,11 @@
 import { Context } from "@azure/functions";
 
-import * as express from "express";
-import * as winston from "winston";
+import express from "express";
+import winston from "winston";
 
 import {
   PROFILE_COLLECTION_NAME,
-  ProfileModel
+  ProfileModel,
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
 
 import { secureExpressApp } from "@pagopa/io-functions-commons/dist/src/utils/express";
@@ -40,7 +40,7 @@ const azureFunctionHandler = createAzureFunctionHandler(app);
 // eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
-  level: "debug"
+  level: "debug",
 });
 winston.add(contextTransport);
 

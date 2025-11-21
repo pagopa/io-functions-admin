@@ -12,7 +12,6 @@ local.setting.json
 *.Cache
 project.lock.json
 
-/packages
 /TestResults
 
 /tools/NuGet.exe
@@ -97,3 +96,13 @@ __azurite_*
 .bastianhost.ini
 **/modules/**/.terraform.lock.hcl
 **/_modules/**/.terraform.lock.hcl
+
+.turbo
+.pnp*
+**/.pnp.*
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/releases
+!**/.yarn/sdks
+!**/.yarn/versions
