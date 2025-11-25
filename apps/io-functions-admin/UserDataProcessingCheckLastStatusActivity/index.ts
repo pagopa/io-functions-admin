@@ -1,9 +1,10 @@
 import {
-  UserDataProcessingModel,
-  USER_DATA_PROCESSING_COLLECTION_NAME
+  USER_DATA_PROCESSING_COLLECTION_NAME,
+  UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { cosmosdbClient } from "../utils/cosmosdb";
+
 import { getConfigOrThrow } from "../utils/config";
+import { cosmosdbClient } from "../utils/cosmosdb";
 import { createUserDataProcessingCheckLastStatusActivityHandler } from "./handler";
 
 const config = getConfigOrThrow();

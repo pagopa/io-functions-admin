@@ -4,10 +4,11 @@ import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
-import * as O from "fp-ts/lib/Option";
 import * as E from "fp-ts/lib/Either";
-import * as t from "io-ts";
 import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as t from "io-ts";
+
 import { toHash } from "../utils/crypto";
 import {
   SubscriptionFeedEntitySelector,
@@ -57,13 +58,12 @@ export const Input = t.union([ProfileInput, ServiceInput]);
 
 export type Input = t.TypeOf<typeof Input>;
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const updateSubscriptionFeed = async (
   context: Context,
   rawInput: unknown,
   tableService: TableService,
   subscriptionFeedTableName: NonEmptyString,
-  logPrefix: string = "UpdateServiceSubscriptionFeedActivity"
+  logPrefix = "UpdateServiceSubscriptionFeedActivity"
 ) => {
   const decodedInputOrError = Input.decode(rawInput);
   if (E.isLeft(decodedInputOrError)) {
@@ -112,7 +112,7 @@ export const updateSubscriptionFeed = async (
   const sKey = `${sPartitionKey}-${fiscalCodeHash}`;
   const uKey = `${uPartitionKey}-${fiscalCodeHash}`;
 
-  const otherEntitiesToDelete: ReadonlyArray<SubscriptionFeedEntitySelector> = pipe(
+  const otherEntitiesToDelete: readonly SubscriptionFeedEntitySelector[] = pipe(
     decodedInput,
     O.fromPredicate(ProfileInput.is),
     O.chainNullableK(_ => _.previousPreferences),
@@ -133,7 +133,7 @@ export const updateSubscriptionFeed = async (
             rowKey: `${uPreferencePartitionKey}-${fiscalCodeHash}`
           }
         ];
-      }, [] as ReadonlyArray<SubscriptionFeedEntitySelector>)
+      }, [] as readonly SubscriptionFeedEntitySelector[])
     ),
     O.getOrElseW(() => [])
   );

@@ -12,17 +12,17 @@
  */
 
 export const withRetry = ({
-  whileCondition = (_: unknown): true => true,
+  delayMS = 100,
   maxAttempts = 3,
-  delayMS = 100
+  whileCondition = (_: unknown): true => true
 }: {
-  readonly whileCondition?: (failure: unknown) => boolean;
-  readonly maxAttempts?: number;
   readonly delayMS?: number;
+  readonly maxAttempts?: number;
+  readonly whileCondition?: (failure: unknown) => boolean;
 } = {}) => <T>(operation: () => Promise<T>) => async (): Promise<T> => {
   // eslint-disable-next-line functional/no-let
   let remainingAttempts = maxAttempts;
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     try {
       return await operation();

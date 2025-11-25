@@ -1,12 +1,14 @@
+import * as E from "fp-ts/lib/Either";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { aServicePreference } from "../../__mocks__/mocks";
 import { AllUserData } from "../userData";
-import * as E from "fp-ts/lib/Either";
 
 const mockedUserData: AllUserData = {
   messageContents: [],
+  messages: [],
   messageStatuses: [],
   messagesView: [],
-  messages: [],
   notifications: [],
   notificationStatuses: [],
   profiles: [],
@@ -15,7 +17,7 @@ const mockedUserData: AllUserData = {
 
 const mockedUserDataWithAdditionalProperty = {
   ...mockedUserData,
-  servicesPreferences: [{ ...aServicePreference, foo: 1, bar: "hello" }]
+  servicesPreferences: [{ ...aServicePreference, bar: "hello", foo: 1 }]
 };
 
 describe("servicePreference decoding", () => {

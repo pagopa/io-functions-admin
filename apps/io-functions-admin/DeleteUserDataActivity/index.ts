@@ -1,4 +1,3 @@
-import { createBlobService } from "azure-storage";
 import { TableClient } from "@azure/data-tables";
 import { MESSAGE_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/message";
 import { MESSAGE_STATUS_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/message_status";
@@ -8,17 +7,19 @@ import { NOTIFICATION_STATUS_COLLECTION_NAME } from "@pagopa/io-functions-common
 import { PROFILE_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import { SERVICE_PREFERENCES_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { DataTableProfileEmailsRepository } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement/storage";
-import { cosmosdbClient } from "../utils/cosmosdb";
+import { createBlobService } from "azure-storage";
+
 import { getConfigOrThrow } from "../utils/config";
+import { cosmosdbClient } from "../utils/cosmosdb";
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
+import { MessageViewDeletableModel } from "../utils/extensions/models/message_view";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
-import { MessageViewDeletableModel } from "../utils/extensions/models/message_view";
-import { createDeleteUserDataActivityHandler } from "./handler";
 import AuthenticationLockService from "./authenticationLockService";
+import { createDeleteUserDataActivityHandler } from "./handler";
 
 const config = getConfigOrThrow();
 

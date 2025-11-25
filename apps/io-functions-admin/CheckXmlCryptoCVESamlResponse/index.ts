@@ -1,12 +1,9 @@
-/* eslint-disable sort-keys */
-/* eslint-disable no-console */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { Context } from "@azure/functions";
 import { toPlainText } from "@pagopa/ts-commons/lib/encrypt";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { DOMParser } from "@xmldom/xmldom";
 import * as E from "fp-ts/lib/Either";
 
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { trackEvent } from "../utils/appinsights";
 import { getConfigOrThrow } from "../utils/config";
 import {
@@ -95,9 +92,9 @@ const CheckXmlCryptoCVESamlResponse = async (context: Context) => {
       // eslint-disable-next-line sonarjs/no-duplicate-string
       name: `spid.error.validation`,
       properties: {
+        blobName,
         hasCommentsOnAnyDigestValue: hasCommentsOnAnyDigestValueRes,
-        hasMoreSingnedNodes: hasMoreSingnedNodesRes,
-        blobName
+        hasMoreSingnedNodes: hasMoreSingnedNodesRes
       },
       tagOverrides: { samplingEnabled: "false" }
     });

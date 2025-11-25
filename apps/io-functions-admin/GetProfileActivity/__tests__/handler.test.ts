@@ -1,8 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, sonarjs/no-identical-functions */
 
+import { ProfileModel } from "@pagopa/io-functions-commons/dist/src/models/profile";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import * as E from "fp-ts/lib/Either";
+import { none, some } from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { context as contextMock } from "../../__mocks__/durable-functions";
 import { aFiscalCode, aRetrievedProfile } from "../../__mocks__/mocks";
-
 import {
   ActivityInput,
   ActivityResultInvalidInputFailure,
@@ -12,16 +18,10 @@ import {
   createGetProfileActivityHandler
 } from "../handler";
 
-import { none, some } from "fp-ts/lib/Option";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
-import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { ProfileModel } from "@pagopa/io-functions-commons/dist/src/models/profile";
-
 describe("GetProfileActivityHandler", () => {
   it("should handle a result", async () => {
     const mockModel = ({
-      findLastVersionByModelId: jest.fn(() =>
+      findLastVersionByModelId: vi.fn(() =>
         TE.fromEither(E.right(some(aRetrievedProfile)))
       )
     } as any) as ProfileModel;
@@ -37,7 +37,7 @@ describe("GetProfileActivityHandler", () => {
 
   it("should handle a record not found failure", async () => {
     const mockModel = ({
-      findLastVersionByModelId: jest.fn(() => TE.fromEither(E.right(none)))
+      findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(none)))
     } as any) as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
@@ -51,7 +51,7 @@ describe("GetProfileActivityHandler", () => {
 
   it("should handle a query error", async () => {
     const mockModel = ({
-      findLastVersionByModelId: jest.fn(() =>
+      findLastVersionByModelId: vi.fn(() =>
         TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
     } as any) as ProfileModel;
@@ -67,7 +67,7 @@ describe("GetProfileActivityHandler", () => {
 
   it("should handle a rejection", async () => {
     const mockModel = ({
-      findLastVersionByModelId: jest.fn(() => TE.fromEither(E.right(none)))
+      findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(none)))
     } as any) as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);

@@ -1,21 +1,21 @@
-/* tslint:disable: no-any */
-
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { TableService } from "azure-storage";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
 } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { TableService } from "azure-storage";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { GetFailedUserDataProcessingListHandler } from "../handler";
 
 const queryEntitiesFailedUserDataProcessingMock = (
-  entries: ReadonlyArray<{
+  entries: readonly {
     PartitionKey: UserDataProcessingChoice;
     RowKey: FiscalCode;
-  }>
+  }[]
 ) =>
-  jest.fn((_, tableQuery, ___, cb) => {
-    return cb(
+  vi.fn((_, tableQuery, ___, cb) =>
+    cb(
       null,
       {
         entries:
@@ -32,8 +32,8 @@ const queryEntitiesFailedUserDataProcessingMock = (
             : []
       },
       { isSuccessful: true }
-    );
-  });
+    )
+  );
 
 const storageTableMock = "FailedUserDataProcessing" as NonEmptyString;
 
@@ -67,7 +67,7 @@ const twoFailedDifferentRequests = [
 ];
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("GetFailedUserDataProcessingListHandler", () => {

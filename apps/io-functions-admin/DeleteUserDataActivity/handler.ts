@@ -2,23 +2,22 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
-import * as TE from "fp-ts/lib/TaskEither";
-
 import { Context } from "@azure/functions";
-
-import { BlobService } from "azure-storage";
+import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-
+import { BlobService } from "azure-storage";
 import { pipe } from "fp-ts/lib/function";
-import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
+import * as TE from "fp-ts/lib/TaskEither";
+
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
+import { MessageViewDeletableModel } from "../utils/extensions/models/message_view";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
-import { MessageViewDeletableModel } from "../utils/extensions/models/message_view";
+import AuthenticationLockService from "./authenticationLockService";
 import { backupAndDeleteAllUserData } from "./backupAndDelete";
 import {
   ActivityInput,
@@ -27,12 +26,12 @@ import {
   InvalidInputFailure
 } from "./types";
 import { logFailure } from "./utils";
-import AuthenticationLockService from "./authenticationLockService";
 
 const logPrefix = `DeleteUserDataActivity`;
 
 export interface IActivityHandlerInput {
   readonly authenticationLockService: AuthenticationLockService;
+  readonly messageContentBlobService: BlobService;
   readonly messageModel: MessageDeletableModel;
   readonly messageStatusModel: MessageStatusDeletableModel;
   readonly messageViewModel: MessageViewDeletableModel;
@@ -41,7 +40,6 @@ export interface IActivityHandlerInput {
   readonly profileEmailsRepository: IProfileEmailWriter;
   readonly profileModel: ProfileDeletableModel;
   readonly servicePreferencesModel: ServicePreferencesDeletableModel;
-  readonly messageContentBlobService: BlobService;
   readonly userDataBackupBlobService: BlobService;
   readonly userDataBackupContainerName: NonEmptyString;
 }
@@ -49,7 +47,7 @@ export interface IActivityHandlerInput {
 /**
  * Factory methods that builds an activity function
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
 export function createDeleteUserDataActivityHandler({
   authenticationLockService,
   messageContentBlobService,
@@ -67,7 +65,6 @@ export function createDeleteUserDataActivityHandler({
   context: Context,
   input: unknown
 ) => Promise<ActivityResult> {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return (context: Context, input: unknown) =>
     pipe(
       input,
@@ -82,7 +79,7 @@ export function createDeleteUserDataActivityHandler({
       ),
 
       // then perform backup&delete on all user data
-      TE.chainW(({ fiscalCode, backupFolder }) =>
+      TE.chainW(({ backupFolder, fiscalCode }) =>
         pipe(
           backupAndDeleteAllUserData({
             authenticationLockService,

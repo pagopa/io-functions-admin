@@ -1,3 +1,6 @@
+import { initAppInsights } from "@pagopa/ts-commons/lib/appinsights";
+import { IntegerFromString } from "@pagopa/ts-commons/lib/numbers";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as ai from "applicationinsights";
 import {
   Data,
@@ -5,11 +8,8 @@ import {
   ExceptionTelemetry
 } from "applicationinsights/out/Declarations/Contracts";
 import * as E from "fp-ts/lib/Either";
-import * as O from "fp-ts/lib/Option";
-import { initAppInsights } from "@pagopa/ts-commons/lib/appinsights";
-import { IntegerFromString } from "@pagopa/ts-commons/lib/numbers";
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
 
 // the internal function runtime has MaxTelemetryItem per second set to 20 by default
 // @see https://github.com/Azure/azure-functions-host/blob/master/src/WebJobs.Script/Config/ApplicationInsightsLoggerOptionsSetup.cs#L29
@@ -18,9 +18,7 @@ const DEFAULT_SAMPLING_PERCENTAGE = 20;
 export const USER_DATA_PROCESSING_ID_KEY = "userDataProcessingId";
 const maskUserProcessingIdPreprocessor = (
   envelope: ai.Contracts.Envelope,
-  _context?: {
-    readonly [name: string]: unknown;
-  }
+  _context?: Readonly<Record<string, unknown>>
 ): boolean => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,7 +51,7 @@ const maskUserProcessingIdPreprocessor = (
 };
 
 // Avoid to initialize Application Insights more than once
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
 export const initTelemetryClient = (
   env = process.env
 ): ai.TelemetryClient | undefined =>
@@ -81,7 +79,6 @@ export const initTelemetryClient = (
         )
       );
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackEvent = (event: EventTelemetry) => {
   pipe(
     initTelemetryClient(),
@@ -90,7 +87,6 @@ export const trackEvent = (event: EventTelemetry) => {
   );
 };
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackException = (event: ExceptionTelemetry) => {
   pipe(
     initTelemetryClient(),

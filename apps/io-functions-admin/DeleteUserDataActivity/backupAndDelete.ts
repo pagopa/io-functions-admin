@@ -1,36 +1,38 @@
-import * as crypto from "crypto";
-
-import { BlobService } from "azure-storage";
-import { sequenceT } from "fp-ts/lib/Apply";
-import * as ROA from "fp-ts/lib/ReadonlyArray";
-import * as E from "fp-ts/lib/Either";
-import * as O from "fp-ts/lib/Option";
-import * as TE from "fp-ts/lib/TaskEither";
-
 import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
 import {
   RetrievedMessage,
   RetrievedMessageWithoutContent
 } from "@pagopa/io-functions-commons/dist/src/models/message";
 import { RetrievedMessageStatus } from "@pagopa/io-functions-commons/dist/src/models/message_status";
+import { RetrievedMessageView } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import { RetrievedNotification } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import { RetrievedNotificationStatus } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import { RetrievedProfile } from "@pagopa/io-functions-commons/dist/src/models/profile";
-import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { RetrievedServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { Errors } from "io-ts";
-import { RetrievedServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
-import { flow, pipe } from "fp-ts/lib/function";
-import { RetrievedMessageView } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
+import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { BlobService } from "azure-storage";
+import * as crypto from "crypto";
+import { sequenceT } from "fp-ts/lib/Apply";
+import * as E from "fp-ts/lib/Either";
+import { flow, pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as ROA from "fp-ts/lib/ReadonlyArray";
+import * as TE from "fp-ts/lib/TaskEither";
+import { Errors } from "io-ts";
+
 import { MessageDeletableModel } from "../utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "../utils/extensions/models/message_status";
+import { MessageViewDeletableModel } from "../utils/extensions/models/message_view";
 import { NotificationDeletableModel } from "../utils/extensions/models/notification";
 import { NotificationStatusDeletableModel } from "../utils/extensions/models/notification_status";
 import { ProfileDeletableModel } from "../utils/extensions/models/profile";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
-import { MessageViewDeletableModel } from "../utils/extensions/models/message_view";
+import AuthenticationLockService, {
+  AuthenticationLockData
+} from "./authenticationLockService";
 import {
   BlobCreationFailure,
   DataFailure,
@@ -44,9 +46,6 @@ import {
   toDocumentDeleteFailure,
   toQueryFailure
 } from "./utils";
-import AuthenticationLockService, {
-  AuthenticationLockData
-} from "./authenticationLockService";
 
 /**
  * Recursively consumes an iterator and executes operations on every item
@@ -60,19 +59,19 @@ const executeRecursiveBackupAndDelete = <T>(
   deleteSingle: (item: T) => TE.TaskEither<CosmosErrors, string>,
   userDataBackup: IBlobServiceInfo,
   makeBackupBlobName: (item: T) => string,
-  iterator: AsyncIterator<ReadonlyArray<E.Either<Errors, T>>>
-): TE.TaskEither<DataFailure, ReadonlyArray<T>> =>
+  iterator: AsyncIterator<readonly E.Either<Errors, T>[]>
+): TE.TaskEither<DataFailure, readonly T[]> =>
   pipe(
     TE.tryCatch(() => iterator.next(), E.toError),
     TE.mapLeft(toQueryFailure),
     TE.chainW(e =>
       e.done
-        ? TE.of<DataFailure, ReadonlyArray<T>>([])
+        ? TE.of<DataFailure, readonly T[]>([])
         : e.value.some(E.isLeft)
-        ? TE.left<DataFailure, ReadonlyArray<T>>(
+        ? TE.left<DataFailure, readonly T[]>(
             toQueryFailure(new Error("Some elements are not typed correctly"))
           )
-        : TE.of<DataFailure, ReadonlyArray<T>>(ROA.rights(e.value))
+        : TE.of<DataFailure, readonly T[]>(ROA.rights(e.value))
     ),
     // executes backup&delete for this set of items
     TE.chainW(items =>
@@ -87,7 +86,7 @@ const executeRecursiveBackupAndDelete = <T>(
                 TE.TaskEither<DataFailure, T>,
                 TE.TaskEither<DataFailure, string>,
                 // eslint-disable-next-line functional/prefer-readonly-type
-                TE.TaskEither<DataFailure, ReadonlyArray<T>>
+                TE.TaskEither<DataFailure, readonly T[]>
               ]
             >(
               saveDataToBlob<T>(userDataBackup, makeBackupBlobName(item), item),
@@ -114,7 +113,7 @@ const backupAndDeleteAuthenticationLockData = (
   authenticationLockService: AuthenticationLockService,
   userDataBackup: IBlobServiceInfo,
   fiscalCode: FiscalCode,
-  data: ReadonlyArray<AuthenticationLockData>
+  data: readonly AuthenticationLockData[]
 ): TE.TaskEither<DataFailure, true> =>
   pipe(
     saveDataToBlob(
@@ -147,11 +146,11 @@ const backupAndDeleteAuthenticationLockData = (
   );
 
 const getLastEmailIfValidated = ({
-  profileModel,
-  fiscalCode
+  fiscalCode,
+  profileModel
 }: {
-  readonly profileModel: ProfileDeletableModel;
   readonly fiscalCode: FiscalCode;
+  readonly profileModel: ProfileDeletableModel;
 }): TE.TaskEither<QueryFailure, O.Option<EmailString>> =>
   pipe(
     profileModel.findLastVersionByModelId([fiscalCode]),
@@ -170,13 +169,13 @@ const getLastEmailIfValidated = ({
   );
 
 const deleteProfileEmail = ({
-  profileEmailsRepository,
   email,
-  fiscalCode
+  fiscalCode,
+  profileEmailsRepository
 }: {
-  readonly profileEmailsRepository: IProfileEmailWriter;
   readonly email: EmailString;
   readonly fiscalCode: FiscalCode;
+  readonly profileEmailsRepository: IProfileEmailWriter;
 }): TE.TaskEither<DocumentDeleteFailure, true> =>
   pipe(
     TE.tryCatch(
@@ -197,21 +196,21 @@ const deleteProfileEmail = ({
  * @param param0.userDataBackup information about the blob storage account to place backup into
  * @param param0.fiscalCode the identifier of the user
  */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
 const backupAndDeleteProfile = ({
   authenticationLockService,
   fiscalCode,
+  profileEmailsRepository,
   profileModel,
   servicePreferencesModel,
-  userDataBackup,
-  profileEmailsRepository
+  userDataBackup
 }: {
   readonly authenticationLockService: AuthenticationLockService;
-  readonly profileModel: ProfileDeletableModel;
-  readonly userDataBackup: IBlobServiceInfo;
-  readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly fiscalCode: FiscalCode;
   readonly profileEmailsRepository: IProfileEmailWriter;
+  readonly profileModel: ProfileDeletableModel;
+  readonly servicePreferencesModel: ServicePreferencesDeletableModel;
+  readonly userDataBackup: IBlobServiceInfo;
 }): TE.TaskEither<DataFailure, true> =>
   pipe(
     getLastEmailIfValidated({ fiscalCode, profileModel }),
@@ -285,13 +284,13 @@ const backupAndDeleteProfile = ({
  * @param param0.notification the notification
  */
 const backupAndDeleteNotification = ({
+  notification,
   notificationModel,
-  userDataBackup,
-  notification
+  userDataBackup
 }: {
+  readonly notification: RetrievedNotification;
   readonly notificationModel: NotificationDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
-  readonly notification: RetrievedNotification;
 }): TE.TaskEither<DataFailure, RetrievedNotification> =>
   pipe(
     sequenceT(TE.ApplicativeSeq)<
@@ -328,14 +327,14 @@ const backupAndDeleteNotification = ({
  *
  */
 const backupAndDeleteNotificationStatus = ({
+  notification,
   notificationStatusModel,
-  userDataBackup,
-  notification
+  userDataBackup
 }: {
+  readonly notification: RetrievedNotification;
   readonly notificationStatusModel: NotificationStatusDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
-  readonly notification: RetrievedNotification;
-}): TE.TaskEither<DataFailure, ReadonlyArray<RetrievedNotificationStatus>> =>
+}): TE.TaskEither<DataFailure, readonly RetrievedNotificationStatus[]> =>
   executeRecursiveBackupAndDelete<RetrievedNotificationStatus>(
     item =>
       notificationStatusModel.deleteNotificationStatusVersion(
@@ -355,13 +354,13 @@ const backupAndDeleteNotificationStatus = ({
  * @param param0.message the message
  */
 const backupAndDeleteMessageView = ({
+  message,
   messageViewModel,
-  userDataBackup,
-  message
+  userDataBackup
 }: {
+  readonly message: RetrievedMessage;
   readonly messageViewModel: MessageViewDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
-  readonly message: RetrievedMessage;
 }): TE.TaskEither<DataFailure, O.Option<RetrievedMessageView>> =>
   pipe(
     messageViewModel.find([message.id, message.fiscalCode]),
@@ -399,13 +398,13 @@ const backupAndDeleteMessageView = ({
  * @param param0.message the message
  */
 const backupAndDeleteMessage = ({
+  message,
   messageModel,
-  userDataBackup,
-  message
+  userDataBackup
 }: {
+  readonly message: RetrievedMessageWithoutContent;
   readonly messageModel: MessageDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
-  readonly message: RetrievedMessageWithoutContent;
 }): TE.TaskEither<DataFailure, RetrievedMessageWithoutContent> =>
   pipe(
     sequenceT(TE.ApplicativeSeq)<
@@ -431,15 +430,15 @@ const backupAndDeleteMessage = ({
   );
 
 const backupAndDeleteMessageContent = ({
+  message,
   messageContentBlobService,
   messageModel,
-  userDataBackup,
-  message
+  userDataBackup
 }: {
+  readonly message: RetrievedMessageWithoutContent;
   readonly messageContentBlobService: BlobService;
   readonly messageModel: MessageDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
-  readonly message: RetrievedMessageWithoutContent;
 }): TE.TaskEither<DataFailure, O.Option<MessageContent>> =>
   pipe(
     messageModel.getContentFromBlob(messageContentBlobService, message.id),
@@ -478,14 +477,14 @@ const backupAndDeleteMessageContent = ({
  *
  */
 const backupAndDeleteMessageStatus = ({
+  message,
   messageStatusModel,
-  userDataBackup,
-  message
+  userDataBackup
 }: {
+  readonly message: RetrievedMessageWithoutContent;
   readonly messageStatusModel: MessageStatusDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
-  readonly message: RetrievedMessageWithoutContent;
-}): TE.TaskEither<DataFailure, ReadonlyArray<RetrievedMessageStatus>> =>
+}): TE.TaskEither<DataFailure, readonly RetrievedMessageStatus[]> =>
   executeRecursiveBackupAndDelete<RetrievedMessageStatus>(
     item =>
       messageStatusModel.deleteMessageStatusVersion(item.messageId, item.id),
@@ -566,15 +565,16 @@ const backupAndDeleteAllNotificationsData = ({
  * @param param0.fiscalCode identifier of the user
  */
 const backupAndDeleteAllMessagesData = ({
+  fiscalCode,
   messageContentBlobService,
   messageModel,
   messageStatusModel,
   messageViewModel,
   notificationModel,
   notificationStatusModel,
-  userDataBackup,
-  fiscalCode
+  userDataBackup
 }: {
+  readonly fiscalCode: FiscalCode;
   readonly messageContentBlobService: BlobService;
   readonly messageModel: MessageDeletableModel;
   readonly messageStatusModel: MessageStatusDeletableModel;
@@ -582,7 +582,6 @@ const backupAndDeleteAllMessagesData = ({
   readonly notificationModel: NotificationDeletableModel;
   readonly notificationStatusModel: NotificationStatusDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
-  readonly fiscalCode: FiscalCode;
 }): TE.TaskEither<DataFailure, unknown> =>
   pipe(
     messageModel.findMessages(fiscalCode),
@@ -663,22 +662,23 @@ const backupAndDeleteAllMessagesData = ({
  * @param param0.userDataBackup information about the blob storage account to place backup into
  * @param param0.fiscalCode identifier of the user
  */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
 export const backupAndDeleteAllUserData = ({
+  authenticationLockService,
+  fiscalCode,
   messageContentBlobService,
   messageModel,
   messageStatusModel,
   messageViewModel,
   notificationModel,
   notificationStatusModel,
-  profileModel,
   profileEmailsRepository,
+  profileModel,
   servicePreferencesModel,
-  userDataBackup,
-  authenticationLockService,
-  fiscalCode
+  userDataBackup
 }: {
   readonly authenticationLockService: AuthenticationLockService;
+  readonly fiscalCode: FiscalCode;
   readonly messageContentBlobService: BlobService;
   readonly messageModel: MessageDeletableModel;
   readonly messageStatusModel: MessageStatusDeletableModel;
@@ -689,7 +689,6 @@ export const backupAndDeleteAllUserData = ({
   readonly profileModel: ProfileDeletableModel;
   readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
-  readonly fiscalCode: FiscalCode;
 }) =>
   pipe(
     backupAndDeleteAllMessagesData({

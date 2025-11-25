@@ -2,12 +2,14 @@ import { GroupContract } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as TE from "fp-ts/lib/TaskEither";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig } from "../../utils/apim";
 import { ArrayToAsyncIterable } from "../../utils/testSupport";
 import { GetImpersonateServiceHandler } from "../handler";
 
-jest.mock("@azure/arm-apimanagement");
+vi.mock("@azure/arm-apimanagement");
 
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
@@ -39,7 +41,7 @@ const anApimGroupContract: GroupContract = {
   displayName: "groupName"
 };
 
-const someValidGroups: Array<GroupContract> = [
+const someValidGroups: GroupContract[] = [
   { ...anApimGroupContract, id: "group #1" },
   { ...anApimGroupContract, id: "group #2" },
   { ...anApimGroupContract, id: "group #3" },
@@ -51,39 +53,39 @@ const mockedUserWithoutEmail = {
   surname: "test"
 };
 
-const mockUserGroupList = jest
+const mockUserGroupList = vi
   .fn()
   .mockImplementation(() => ArrayToAsyncIterable(someValidGroups));
 
-const mockUserSubscriptionGet = jest
+const mockUserSubscriptionGet = vi
   .fn()
   .mockImplementation(() => Promise.resolve(mockedSubscription));
-const mockUserGet = jest
+const mockUserGet = vi
   .fn()
   .mockImplementation(() => Promise.resolve({ email: "user_email@mail.it" }));
 
 const mockApiManagementClient = {
-  userGroup: {
-    list: mockUserGroupList
-  },
   subscription: {
     get: mockUserSubscriptionGet
   },
   user: {
     get: mockUserGet
+  },
+  userGroup: {
+    list: mockUserGroupList
   }
 } as any;
 
-const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
+const spyOnGetApiClient = vi.spyOn(ApimUtils, "getApiClient");
 spyOnGetApiClient.mockImplementation(() => TE.of(mockApiManagementClient));
 
-const mockLog = jest.fn();
+const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
 // eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("GetImpersonateServiceHandler", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
   it("GIVEN a not working APIM client WHEN call the handler THEN an Internel Error is returned", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
@@ -213,8 +215,8 @@ describe("GetImpersonateServiceHandler", () => {
         kind: "IResponseSuccessJson",
         value: {
           service_id: "valid-subscription-id",
-          user_groups: "groupName,groupName,groupName,groupName",
-          user_email: "user_email@mail.it"
+          user_email: "user_email@mail.it",
+          user_groups: "groupName,groupName,groupName,groupName"
         }
       })
     );

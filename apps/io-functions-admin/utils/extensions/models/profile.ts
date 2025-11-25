@@ -1,5 +1,3 @@
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
 import {
   PROFILE_MODEL_PK_FIELD,
   ProfileModel as ProfileModelBase,
@@ -9,9 +7,12 @@ import {
   CosmosErrors,
   toCosmosErrorResponse
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { Errors } from "io-ts";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import { Errors } from "io-ts";
+
 import * as DocumentDbUtils from "../documentdb";
 
 /**
@@ -38,7 +39,7 @@ export class ProfileDeletableModel extends ProfileModelBase {
    */
   public findAllVersionsByModelId(
     fiscalCode: FiscalCode
-  ): AsyncIterator<ReadonlyArray<E.Either<Errors, RetrievedProfile>>> {
+  ): AsyncIterator<readonly E.Either<Errors, RetrievedProfile>[]> {
     return DocumentDbUtils.findAllVersionsByModelId(
       this.container,
       this.retrievedItemT,

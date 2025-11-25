@@ -1,7 +1,4 @@
 import { Context } from "@azure/functions";
-
-import * as express from "express";
-
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -12,10 +9,6 @@ import {
   withRequestMiddlewares,
   wrapRequestHandler
 } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
-
-import { pipe } from "fp-ts/lib/function";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -25,6 +18,11 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import express from "express";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+
 import { ServiceId } from "../generated/definitions/ServiceId";
 import { getApiClient, IAzureApimConfig } from "../utils/apim";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
@@ -34,19 +32,38 @@ type IGetSubscriptionKeysHandler = (
   auth: IAzureApiAuthorization,
   serviceId: ServiceId
 ) => Promise<
+  | IResponseErrorInternal
+  | IResponseErrorNotFound
   | IResponseSuccessJson<{
       readonly primary_key: string;
       readonly secondary_key: string;
     }>
-  | IResponseErrorNotFound
-  | IResponseErrorInternal
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function GetSubscriptionKeys(
+  azureApimConfig: IAzureApimConfig
+): express.RequestHandler {
+  const handler = GetSubscriptionKeysHandler(azureApimConfig);
+
+  const middlewaresWrap = withRequestMiddlewares(
+    // Extract Azure Functions bindings
+    ContextMiddleware(),
+    // Allow only users in the ApiServiceKeyRead group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
+    // Extracts the ServiceId from the URL path parameter
+    ServiceIdMiddleware
+  );
+
+  return wrapRequestHandler(middlewaresWrap(handler));
+}
+
+/**
+ * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
+ */
+
 export function GetSubscriptionKeysHandler(
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, serviceId) =>
     pipe(
       getApiClient(azureApimConfig.subscriptionId),
@@ -81,25 +98,4 @@ export function GetSubscriptionKeysHandler(
       }),
       TE.toUnion
     )();
-}
-
-/**
- * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function GetSubscriptionKeys(
-  azureApimConfig: IAzureApimConfig
-): express.RequestHandler {
-  const handler = GetSubscriptionKeysHandler(azureApimConfig);
-
-  const middlewaresWrap = withRequestMiddlewares(
-    // Extract Azure Functions bindings
-    ContextMiddleware(),
-    // Allow only users in the ApiServiceKeyRead group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // Extracts the ServiceId from the URL path parameter
-    ServiceIdMiddleware
-  );
-
-  return wrapRequestHandler(middlewaresWrap(handler));
 }

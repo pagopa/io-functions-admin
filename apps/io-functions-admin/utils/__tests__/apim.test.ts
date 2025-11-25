@@ -1,4 +1,6 @@
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { isErrorStatusCode, parseOwnerIdFullPath } from "../apim";
 
 class ErrorWithCode extends Error {
@@ -27,7 +29,7 @@ describe("isErrorStatusCode", () => {
     ${"any error with same status code"}       | ${new ErrorWithCode(123)}                | ${123}     | ${true}
     ${"any object with different status code"} | ${{ foo: "any field", statusCode: 456 }} | ${123}     | ${false}
     ${"any object with same status code"}      | ${{ foo: "any field", statusCode: 123 }} | ${123}     | ${true}
-  `("$scenario", ({ error, statusCode, expected }) => {
+  `("$scenario", ({ error, expected, statusCode }) => {
     const result = isErrorStatusCode(error, statusCode);
     expect(result).toBe(expected);
   });

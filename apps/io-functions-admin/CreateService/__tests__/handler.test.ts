@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable sonar/sonar-max-lines-per-function */
-import * as TE from "fp-ts/lib/TaskEither";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import * as TE from "fp-ts/lib/TaskEither";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   aNewService,
   aRetrievedService,
@@ -13,11 +15,9 @@ import { CreateServiceHandler } from "../handler";
 describe("CreateServiceHandler", () => {
   it("should return a query error if the service fails to be created", async () => {
     const mockServiceModel = {
-      create: jest.fn(_ => {
-        return TE.left(
-          toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" })
-        );
-      })
+      create: vi.fn(_ =>
+        TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
+      )
     };
 
     const createServiceHandler = CreateServiceHandler(mockServiceModel as any);
@@ -34,9 +34,7 @@ describe("CreateServiceHandler", () => {
 
   it("should create a new service using the payload and return the created service", async () => {
     const mockServiceModel = {
-      create: jest.fn(_ => {
-        return TE.right(aRetrievedService);
-      })
+      create: vi.fn(_ => TE.right(aRetrievedService))
     };
 
     const createServiceHandler = CreateServiceHandler(mockServiceModel as any);

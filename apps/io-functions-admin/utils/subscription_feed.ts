@@ -2,11 +2,12 @@ import { Context } from "@azure/functions";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService, TableUtilities } from "azure-storage";
 import * as A from "fp-ts/lib/Array";
-import * as O from "fp-ts/lib/Option";
 import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
-import { pipe } from "fp-ts/lib/function";
+
 import { deleteTableEntity, insertTableEntity } from "./storage";
 
 const eg = TableUtilities.entityGenerator;
@@ -48,10 +49,9 @@ export const updateSubscriptionStatus = (
   logPrefix: string,
   version: number,
   deleteEntity: SubscriptionFeedEntitySelector,
-  deleteOtherEntities: ReadonlyArray<SubscriptionFeedEntitySelector>,
+  deleteOtherEntities: readonly SubscriptionFeedEntitySelector[],
   insertEntity: SubscriptionFeedEntitySelector,
   allowInsertIfDeleted: boolean
-  // eslint-disable-next-line max-params
 ): Promise<true> => {
   const insertEntityHandler = insertTableEntity(tableService, tableName);
   const deleteEntityHandler = deleteTableEntity(tableService, tableName);

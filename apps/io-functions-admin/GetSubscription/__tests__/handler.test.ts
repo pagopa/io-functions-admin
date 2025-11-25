@@ -3,16 +3,18 @@ import {
   ApiManagementClient,
   SubscriptionContract
 } from "@azure/arm-apimanagement";
+import { RestError } from "@azure/ms-rest-js";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
+import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+
+import { SubscriptionWithoutKeys } from "../../generated/definitions/SubscriptionWithoutKeys";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig, parseOwnerIdFullPath } from "../../utils/apim";
 import { GetSubscriptionHandler } from "../handler";
-import { SubscriptionWithoutKeys } from "../../generated/definitions/SubscriptionWithoutKeys";
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { RestError } from "@azure/ms-rest-js";
 
-jest.mock("@azure/arm-apimanagement");
+vi.mock("@azure/arm-apimanagement");
 
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
@@ -46,21 +48,21 @@ const aValidSubscription: SubscriptionContract = {
   type: undefined
 };
 
-const mockSubscription = jest.fn();
+const mockSubscription = vi.fn();
 
-const mockApiManagementClient = ApiManagementClient as jest.Mock;
+const mockApiManagementClient = ApiManagementClient as Mock;
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
     get: mockSubscription
   }
 }));
 
-const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
+const spyOnGetApiClient = vi.spyOn(ApimUtils, "getApiClient");
 spyOnGetApiClient.mockImplementation(() =>
   TE.of(new mockApiManagementClient())
 );
 
-const mockLog = jest.fn();
+const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
 // eslint-disable-next-line sonar/sonar-max-lines-per-function

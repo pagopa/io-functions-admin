@@ -1,5 +1,5 @@
-import * as express from "express";
 import { Context } from "@azure/functions";
+import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
 import {
@@ -7,40 +7,40 @@ import {
   wrapRequestHandler
 } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
-  IResponseSuccessJson,
-  ResponseSuccessJson,
   IResponseErrorInternal,
+  IResponseErrorNotFound,
+  IResponseSuccessJson,
   ResponseErrorInternal,
-  IResponseErrorNotFound
+  ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
-import { ServiceResponse, TableService } from "azure-storage";
-import { NonEmptyString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
-import * as O from "fp-ts/lib/Option";
 import { ResponseErrorNotFound } from "@pagopa/ts-commons/lib/responses";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { ServiceResponse, TableService } from "azure-storage";
+import express from "express";
+import * as E from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
-
-type TableEntry = Readonly<{
-  readonly RowKey: Readonly<{
-    readonly _: FiscalCode;
-  }>;
-}>;
-
-type ResultSet = Readonly<{
-  readonly failedDataProcessingUser: FiscalCode;
-}>;
+import * as O from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
 
 type IHttpHandler = (
   context: Context,
   param1: UserDataProcessingChoice,
   param2: FiscalCode
 ) => Promise<
-  | IResponseSuccessJson<ResultSet>
   | IResponseErrorInternal
   | IResponseErrorNotFound
+  | IResponseSuccessJson<ResultSet>
 >;
+
+type ResultSet = Readonly<{
+  readonly failedDataProcessingUser: FiscalCode;
+}>;
+
+type TableEntry = Readonly<{
+  readonly RowKey: Readonly<{
+    readonly _: FiscalCode;
+  }>;
+}>;
 
 export const GetFailedUserDataProcessingHandler = (
   tableService: TableService,
@@ -50,9 +50,9 @@ export const GetFailedUserDataProcessingHandler = (
   choice,
   fiscalCode
 ): Promise<
-  | IResponseSuccessJson<ResultSet>
   | IResponseErrorInternal
   | IResponseErrorNotFound
+  | IResponseSuccessJson<ResultSet>
 > =>
   pipe(
     TE.tryCatch(

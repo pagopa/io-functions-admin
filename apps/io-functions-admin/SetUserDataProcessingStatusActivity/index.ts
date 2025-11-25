@@ -3,9 +3,8 @@ import {
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 
-import { cosmosdbClient } from "../utils/cosmosdb";
-
 import { getConfigOrThrow } from "../utils/config";
+import { cosmosdbClient } from "../utils/cosmosdb";
 import { createSetUserDataProcessingStatusActivityHandler } from "./handler";
 
 const config = getConfigOrThrow();

@@ -1,39 +1,39 @@
-import * as express from "express";
 import { Context } from "@azure/functions";
-import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
+import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   makeUserDataProcessingId,
   UserDataProcessing,
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import * as TE from "fp-ts/lib/TaskEither";
-import * as E from "fp-ts/lib/Either";
-import * as O from "fp-ts/lib/Option";
-import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
+import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
+import {
+  withRequestMiddlewares,
+  wrapRequestHandler
+} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
   IResponseSuccessAccepted,
-  ResponseSuccessAccepted,
   ResponseErrorInternal,
-  ResponseErrorNotFound
+  ResponseErrorNotFound,
+  ResponseSuccessAccepted
 } from "@pagopa/ts-commons/lib/responses";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import express from "express";
+import * as E from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
-import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import * as O from "fp-ts/lib/Option";
 import { Option } from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts/lib/index";
 
-export type Response = ResponseSuccess | ResponseError;
-
-type ResponseSuccess = IResponseSuccessAccepted;
+export type Response = ResponseError | ResponseSuccess;
 
 type ResponseError = IResponseErrorInternal | IResponseErrorNotFound;
+
+type ResponseSuccess = IResponseSuccessAccepted;
 
 const AllowedUserDataProcessingStatus = t.union([
   t.literal(UserDataProcessingStatusEnum.CLOSED),

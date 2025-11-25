@@ -1,16 +1,14 @@
 import { RestError } from "@azure/data-tables";
-
-import * as E from "fp-ts/Either";
+import * as E from "fp-ts/lib/Either";
 import * as NEA from "fp-ts/NonEmptyArray";
 import * as ROA from "fp-ts/ReadonlyArray";
-
-import AuthenticationLockService from "../authenticationLockService";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   aFiscalCode,
+  anothernUnlockCode,
   aNotReleasedData,
   anUnlockCode,
-  anothernUnlockCode,
   brokeEntityProfileLockedRecordIterator,
   errorProfileLockedRecordIterator,
   getProfileLockedRecordIterator,
@@ -19,6 +17,7 @@ import {
   submitTransactionMock
 } from "../../__mocks__/lockedProfileTableClient";
 import { UnlockCode } from "../../generated/definitions/UnlockCode";
+import AuthenticationLockService from "../authenticationLockService";
 
 // -------------------------------------------
 // Variables
@@ -43,7 +42,7 @@ describe("AuthenticationLockService#getAllUserAuthenticationLockData", () => {
   it.each`
     title             | records
     ${"one record"}   | ${[aNotReleasedData]}
-    ${"more records"} | ${[aNotReleasedData, { ...aNotReleasedData, rowKey: anothernUnlockCode, Released: true }]}
+    ${"more records"} | ${[aNotReleasedData, { ...aNotReleasedData, Released: true, rowKey: anothernUnlockCode }]}
   `(
     "should return all the records, if $title are found in table storage",
     async ({ records }) => {
@@ -92,7 +91,7 @@ describe("AuthenticationLockService#getAllUserAuthenticationLockData", () => {
 
 describe("AuthenticationLockService#deleteUserAuthenticationLockData", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const generateUnlockCodes = (number: number) =>

@@ -1,4 +1,3 @@
-/* eslint-disable sort-keys */
 import { UTCISODateFromString } from "@pagopa/ts-commons/lib/dates";
 import { EncryptedPayload } from "@pagopa/ts-commons/lib/encrypt";
 import { IPString, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
@@ -95,9 +94,9 @@ export const hasCommentsOnAnyDigestValue = (dom: Document): boolean => {
 
 export const hasMoreSignedInfoNodes = (dom: Document): boolean => {
   const customSelect = xPath.useNamespaces({
-    samlp: "urn:oasis:names:tc:SAML:2.0:protocol",
+    ds: "http://www.w3.org/2000/09/xmldsig#",
     saml: "urn:oasis:names:tc:SAML:2.0:assertion",
-    ds: "http://www.w3.org/2000/09/xmldsig#"
+    samlp: "urn:oasis:names:tc:SAML:2.0:protocol"
   });
   const signedInfoPath = "//*[local-name(.)='SignedInfo']";
   const SAMLResponseSignedInfoNodes = customSelect(

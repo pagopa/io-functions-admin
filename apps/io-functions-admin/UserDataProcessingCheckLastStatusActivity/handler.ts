@@ -7,11 +7,12 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
-import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
+
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input

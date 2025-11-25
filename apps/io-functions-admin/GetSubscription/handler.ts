@@ -1,7 +1,4 @@
 import { Context } from "@azure/functions";
-import * as express from "express";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -20,7 +17,10 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import express from "express";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
 
 import { SubscriptionWithoutKeys } from "../generated/definitions/SubscriptionWithoutKeys";
 import {
@@ -34,16 +34,35 @@ type IGetSubscriptionHandler = (
   auth: IAzureApiAuthorization,
   subscriptionid: NonEmptyString
 ) => Promise<
-  | IResponseSuccessJson<SubscriptionWithoutKeys>
   | IResponseErrorInternal
   | IResponseErrorNotFound
+  | IResponseSuccessJson<SubscriptionWithoutKeys>
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function GetSubscription(
+  azureApimConfig: IAzureApimConfig
+): express.RequestHandler {
+  const handler = GetSubscriptionHandler(azureApimConfig);
+
+  const middlewaresWrap = withRequestMiddlewares(
+    // Extract Azure Functions bindings
+    ContextMiddleware(),
+    // Allow only users in the ApiUserAdmin group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
+    // Extract the subscription id value from the request
+    RequiredParamMiddleware("subscriptionid", NonEmptyString)
+  );
+
+  return wrapRequestHandler(middlewaresWrap(handler));
+}
+
+/**
+ * Wraps a GetSubscription handler inside an Express request handler.
+ */
+
 export function GetSubscriptionHandler(
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, subscriptionId) =>
     pipe(
       getApiClient(azureApimConfig.subscriptionId),
@@ -81,25 +100,4 @@ export function GetSubscriptionHandler(
       }),
       TE.toUnion
     )();
-}
-
-/**
- * Wraps a GetSubscription handler inside an Express request handler.
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function GetSubscription(
-  azureApimConfig: IAzureApimConfig
-): express.RequestHandler {
-  const handler = GetSubscriptionHandler(azureApimConfig);
-
-  const middlewaresWrap = withRequestMiddlewares(
-    // Extract Azure Functions bindings
-    ContextMiddleware(),
-    // Allow only users in the ApiUserAdmin group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // Extract the subscription id value from the request
-    RequiredParamMiddleware("subscriptionid", NonEmptyString)
-  );
-
-  return wrapRequestHandler(middlewaresWrap(handler));
 }

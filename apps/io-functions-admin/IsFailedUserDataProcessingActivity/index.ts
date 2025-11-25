@@ -1,4 +1,5 @@
 import { createTableService } from "azure-storage";
+
 import { getConfigOrThrow } from "../utils/config";
 import { IsFailedUserDataProcessing } from "./handler";
 

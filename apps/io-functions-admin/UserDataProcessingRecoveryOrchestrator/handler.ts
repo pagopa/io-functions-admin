@@ -8,8 +8,12 @@ import {
 } from "durable-functions/lib/src/classes";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
-
 import * as t from "io-ts";
+
+import {
+  ActivityInput as SetUserDataProcessingStatusActivityInput,
+  ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess
+} from "../SetUserDataProcessingStatusActivity/handler";
 import {
   ActivityInput as CheckLastStatusActivityInput,
   ActivityResultSuccess as CheckLastStatusActivityResultSuccess
@@ -18,10 +22,6 @@ import {
   ActivityInput as FindFailureReasonActivityInput,
   ActivityResultSuccess as FindFailureReasonActivityResultSuccess
 } from "../UserDataProcessingFindFailureReasonActivity/handler";
-import {
-  ActivityInput as SetUserDataProcessingStatusActivityInput,
-  ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess
-} from "../SetUserDataProcessingStatusActivity/handler";
 import { FailedUserDataProcessing } from "../UserDataProcessingTrigger/handler";
 
 const logPrefix = "UserDataProcessingRecoveryOrchestrator";
@@ -130,6 +130,41 @@ function* getLastStatus(
   );
 }
 
+function* saveNewFailedRecordWithReason(
+  context: IOrchestrationFunctionContext,
+  currentRecord: FailedUserDataProcessing,
+  failureReason: NonEmptyString
+): Generator<Task, SetUserDataProcessingStatusActivityResultSuccess> {
+  // we call the activity tha saves a new record with failed status and a failure reason
+  context.log.info(
+    `${logPrefix}|INFO|Saving reason ${failureReason} for ${currentRecord.choice}-${currentRecord.fiscalCode}`
+  );
+  const result = yield context.df.callActivityWithRetry(
+    "SetUserDataProcessingStatusActivity",
+    retryOptions,
+    SetUserDataProcessingStatusActivityInput.encode({
+      currentRecord,
+      failureReason,
+      nextStatus: UserDataProcessingStatusEnum.FAILED
+    })
+  );
+  return pipe(
+    result,
+    SetUserDataProcessingStatusActivityResultSuccess.decode,
+    E.getOrElseW(e => {
+      context.log.error(
+        `${logPrefix}|ERROR|SetUserDataProcessingStatusActivity fail|${readableReport(
+          e
+        )}|result=${JSON.stringify(result)}`
+      );
+      throw toActivityFailure(
+        { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
+        "SetUserDataProcessingStatusActivity"
+      );
+    })
+  );
+}
+
 function* searchForFailureReason(
   context: IOrchestrationFunctionContext,
   failedUserDataProcessing: FailedUserDataProcessing
@@ -168,41 +203,6 @@ function* searchForFailureReason(
       throw toActivityFailure(
         { kind: "USER_DATA_PROCESSING_FIND_FAILURE_REASON_ACTIVITY_RESULT" },
         "UserDataProcessingFindFailureReasonActivity"
-      );
-    })
-  );
-}
-
-function* saveNewFailedRecordWithReason(
-  context: IOrchestrationFunctionContext,
-  currentRecord: FailedUserDataProcessing,
-  failureReason: NonEmptyString
-): Generator<Task, SetUserDataProcessingStatusActivityResultSuccess> {
-  // we call the activity tha saves a new record with failed status and a failure reason
-  context.log.info(
-    `${logPrefix}|INFO|Saving reason ${failureReason} for ${currentRecord.choice}-${currentRecord.fiscalCode}`
-  );
-  const result = yield context.df.callActivityWithRetry(
-    "SetUserDataProcessingStatusActivity",
-    retryOptions,
-    SetUserDataProcessingStatusActivityInput.encode({
-      currentRecord,
-      failureReason,
-      nextStatus: UserDataProcessingStatusEnum.FAILED
-    })
-  );
-  return pipe(
-    result,
-    SetUserDataProcessingStatusActivityResultSuccess.decode,
-    E.getOrElseW(e => {
-      context.log.error(
-        `${logPrefix}|ERROR|SetUserDataProcessingStatusActivity fail|${readableReport(
-          e
-        )}|result=${JSON.stringify(result)}`
-      );
-      throw toActivityFailure(
-        { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
-        "SetUserDataProcessingStatusActivity"
       );
     })
   );

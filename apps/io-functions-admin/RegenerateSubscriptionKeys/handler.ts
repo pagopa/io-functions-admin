@@ -1,7 +1,4 @@
 import { Context } from "@azure/functions";
-
-import * as express from "express";
-
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -12,9 +9,6 @@ import {
   withRequestMiddlewares,
   wrapRequestHandler
 } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
-
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -23,8 +17,12 @@ import {
   ResponseErrorNotFound,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
-import { pipe } from "fp-ts/lib/function";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import express from "express";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+
 import { ServiceId } from "../generated/definitions/ServiceId";
 import { SubscriptionKeys } from "../generated/definitions/SubscriptionKeys";
 import { SubscriptionKeyTypeEnum } from "../generated/definitions/SubscriptionKeyType";
@@ -36,10 +34,6 @@ import { SubscriptionKeyTypeMiddleware } from "../utils/middlewares/subscription
 /**
  * To be used for exhaustive checks
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function assertNever(_: never): never {
-  throw new Error("should not have executed this");
-}
 
 type IGetSubscriptionKeysHandler = (
   context: Context,
@@ -47,16 +41,40 @@ type IGetSubscriptionKeysHandler = (
   serviceId: ServiceId,
   keyTypePayload: SubscriptionKeyTypePayload
 ) => Promise<
-  | IResponseSuccessJson<SubscriptionKeys>
-  | IResponseErrorNotFound
   | IResponseErrorInternal
+  | IResponseErrorNotFound
+  | IResponseSuccessJson<SubscriptionKeys>
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function assertNever(_: never): never {
+  throw new Error("should not have executed this");
+}
+
+export function RegenerateSubscriptionKeys(
+  azureApimConfig: IAzureApimConfig
+): express.RequestHandler {
+  const handler = RegenerateSubscriptionKeysHandler(azureApimConfig);
+
+  const middlewaresWrap = withRequestMiddlewares(
+    // Extract Azure Functions bindings
+    ContextMiddleware(),
+    // Allow only users in the ApiServiceKeyWrite group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
+    // Extracts the ServiceId from the URL path parameter
+    ServiceIdMiddleware,
+    SubscriptionKeyTypeMiddleware
+  );
+
+  return wrapRequestHandler(middlewaresWrap(handler));
+}
+
+/**
+ * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
+ */
+
 export function RegenerateSubscriptionKeysHandler(
   azureApimConfig: IAzureApimConfig
 ): IGetSubscriptionKeysHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, serviceId, keyTypePayload) =>
     await pipe(
       getApiClient(azureApimConfig.subscriptionId),
@@ -113,26 +131,4 @@ export function RegenerateSubscriptionKeysHandler(
       }),
       TE.toUnion
     )();
-}
-
-/**
- * Wraps a GetSubscriptionsKeys handler inside an Express request handler.
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function RegenerateSubscriptionKeys(
-  azureApimConfig: IAzureApimConfig
-): express.RequestHandler {
-  const handler = RegenerateSubscriptionKeysHandler(azureApimConfig);
-
-  const middlewaresWrap = withRequestMiddlewares(
-    // Extract Azure Functions bindings
-    ContextMiddleware(),
-    // Allow only users in the ApiServiceKeyWrite group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // Extracts the ServiceId from the URL path parameter
-    ServiceIdMiddleware,
-    SubscriptionKeyTypeMiddleware
-  );
-
-  return wrapRequestHandler(middlewaresWrap(handler));
 }

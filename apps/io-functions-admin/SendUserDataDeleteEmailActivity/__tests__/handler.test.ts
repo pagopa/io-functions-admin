@@ -3,31 +3,27 @@
 /* eslint-disable sonar/sonar-max-lines-per-function */
 /* eslint-disable sonarjs/no-identical-functions */
 
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-
-import { ActivityInput, getActivityFunction } from "../handler";
-
-import * as TE from "fp-ts/lib/TaskEither";
-
-import * as HtmlToText from "html-to-text";
-
 import { EmailAddress } from "@pagopa/io-functions-commons/dist/generated/definitions/EmailAddress";
-
 // imported all /mailer/transports instead of /mailer to allow spyOn() to work
 // https://stackoverflow.com/questions/53162001/typeerror-during-jests-spyon-cannot-set-property-getrequest-of-object-which
 import * as mail from "@pagopa/io-functions-commons/dist/src/mailer/transports";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as HtmlToText from "html-to-text";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
 
-beforeEach(() => jest.clearAllMocks());
+import { ActivityInput, getActivityFunction } from "../handler";
+
+beforeEach(() => vi.clearAllMocks());
 
 const mockContext = {
   log: {
-    // eslint-disable-next-line no-console
     error: console.error,
-    // eslint-disable-next-line no-console
+
     info: console.log,
-    // eslint-disable-next-line no-console
+
     verbose: console.log,
-    // eslint-disable-next-line no-console
+
     warn: console.warn
   }
 } as any;
@@ -52,7 +48,7 @@ const lMailerTransporterMock = ({} as unknown) as mail.MailerTransporter;
 
 describe("SendUserDataDeleteEmailActivity", () => {
   it("should respond with 'SUCCESS' if the mail is sent", async () => {
-    jest.spyOn(mail, "sendMail").mockReturnValueOnce(TE.of("SUCCESS"));
+    vi.spyOn(mail, "sendMail").mockReturnValueOnce(TE.of("SUCCESS"));
 
     const SendUserDataDeleteEmailActivityHandler = getActivityFunction(
       lMailerTransporterMock,
@@ -68,11 +64,11 @@ describe("SendUserDataDeleteEmailActivity", () => {
   });
 
   it("should respond with 'ERROR' if the mail is not sent", async () => {
-    const errorMessage: string = "Test Error";
+    const errorMessage = "Test Error";
 
-    jest
-      .spyOn(mail, "sendMail")
-      .mockReturnValueOnce(TE.left(new Error(errorMessage)));
+    vi.spyOn(mail, "sendMail").mockReturnValueOnce(
+      TE.left(new Error(errorMessage))
+    );
 
     const SendUserDataDeleteEmailActivityHandler = getActivityFunction(
       lMailerTransporterMock,

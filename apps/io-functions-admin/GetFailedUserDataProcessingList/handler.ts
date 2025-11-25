@@ -1,7 +1,3 @@
-import * as express from "express";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
-import { pipe } from "fp-ts/lib/function";
 import { Context } from "@azure/functions";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
@@ -13,12 +9,25 @@ import {
   IResponseSuccessJson,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
-import { ServiceResponse, TableQuery, TableService } from "azure-storage";
 import {
   IResponseErrorInternal,
   ResponseErrorInternal
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { ServiceResponse, TableQuery, TableService } from "azure-storage";
+import express from "express";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+
+type IHttpHandler = (
+  context: Context,
+  param: NonEmptyString
+) => Promise<IResponseErrorInternal | IResponseSuccessJson<ResultSet>>;
+
+type ResultSet = Readonly<{
+  readonly failedDataProcessingUsers: readonly NonEmptyString[];
+}>;
 
 type TableEntry = Readonly<{
   readonly RowKey: Readonly<{
@@ -26,22 +35,13 @@ type TableEntry = Readonly<{
   }>;
 }>;
 
-type ResultSet = Readonly<{
-  readonly failedDataProcessingUsers: ReadonlyArray<NonEmptyString>;
-}>;
-
-type IHttpHandler = (
-  context: Context,
-  param: NonEmptyString
-) => Promise<IResponseSuccessJson<ResultSet> | IResponseErrorInternal>;
-
 export const GetFailedUserDataProcessingListHandler = (
   tableService: TableService,
   failedUserDataProcessingTable: NonEmptyString
 ): IHttpHandler => async (
   ctx,
   choice
-): Promise<IResponseSuccessJson<ResultSet> | IResponseErrorInternal> => {
+): Promise<IResponseErrorInternal | IResponseSuccessJson<ResultSet>> => {
   const tableQuery = new TableQuery()
     .select("RowKey")
     .where("PartitionKey == ?", choice);

@@ -1,8 +1,4 @@
 import { Context } from "@azure/functions";
-import * as express from "express";
-import { pipe } from "fp-ts/lib/function";
-import * as TE from "fp-ts/TaskEither";
-import * as O from "fp-ts/Option";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -20,9 +16,13 @@ import {
   ResponseErrorNotFound,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
+import express from "express";
+import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
 
-import { ServiceId } from "../generated/definitions/ServiceId";
 import { ImpersonatedService } from "../generated/definitions/ImpersonatedService";
+import { ServiceId } from "../generated/definitions/ServiceId";
 import { getSubscription, getUser, mapApimRestError } from "../utils/apim";
 import { getApiClient, getUserGroups, IAzureApimConfig } from "../utils/apim";
 
@@ -31,9 +31,9 @@ type IGetImpersonateService = (
   auth: IAzureApiAuthorization,
   serviceId: ServiceId
 ) => Promise<
-  | IResponseSuccessJson<ImpersonatedService>
-  | IResponseErrorNotFound
   | IResponseErrorInternal
+  | IResponseErrorNotFound
+  | IResponseSuccessJson<ImpersonatedService>
 >;
 
 const chainNullableWithNotFound = (
@@ -45,7 +45,27 @@ const chainNullableWithNotFound = (
     TE.fromOption(() => ResponseErrorNotFound("Not found", "Not Found"))
   );
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function GetImpersonateService(
+  azureApimConfig: IAzureApimConfig
+): express.RequestHandler {
+  const handler = GetImpersonateServiceHandler(azureApimConfig);
+
+  const middlewaresWrap = withRequestMiddlewares(
+    // Extract Azure Functions bindings
+    ContextMiddleware(),
+    // Allow only users in the ApiUserAdmin group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
+    // Extract the serviceId value from the request
+    RequiredParamMiddleware("serviceId", ServiceId)
+  );
+
+  return wrapRequestHandler(middlewaresWrap(handler));
+}
+
+/**
+ * Wraps a GetServices handler inside an Express request handler.
+ */
+
 export function GetImpersonateServiceHandler(
   azureApimConfig: IAzureApimConfig
 ): IGetImpersonateService {
@@ -106,25 +126,4 @@ export function GetImpersonateServiceHandler(
       TE.map(ResponseSuccessJson),
       TE.toUnion
     )();
-}
-
-/**
- * Wraps a GetServices handler inside an Express request handler.
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function GetImpersonateService(
-  azureApimConfig: IAzureApimConfig
-): express.RequestHandler {
-  const handler = GetImpersonateServiceHandler(azureApimConfig);
-
-  const middlewaresWrap = withRequestMiddlewares(
-    // Extract Azure Functions bindings
-    ContextMiddleware(),
-    // Allow only users in the ApiUserAdmin group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // Extract the serviceId value from the request
-    RequiredParamMiddleware("serviceId", ServiceId)
-  );
-
-  return wrapRequestHandler(middlewaresWrap(handler));
 }

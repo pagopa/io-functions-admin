@@ -1,16 +1,17 @@
 import { Context } from "@azure/functions";
-import * as df from "durable-functions";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
 } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import * as t from "io-ts";
-import * as TE from "fp-ts/lib/TaskEither";
-import { pipe } from "fp-ts/lib/function";
+import * as df from "durable-functions";
 import * as E from "fp-ts/lib/Either";
-import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
+
 import { makeOrchestratorId as makeDeleteOrchestratorId } from "../UserDataDeleteOrchestratorV2/utils";
+import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
 
 // Activity input
 export const ActivityInput = t.interface({

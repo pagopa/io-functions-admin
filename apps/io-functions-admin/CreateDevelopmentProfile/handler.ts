@@ -1,21 +1,6 @@
-import * as express from "express";
-
 import { Context } from "@azure/functions";
-
-import * as E from "fp-ts/lib/Either";
-
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import {
-  IResponseErrorConflict,
-  IResponseErrorValidation,
-  IResponseSuccessJson,
-  ResponseErrorConflict,
-  ResponseErrorFromValidationErrors,
-  ResponseSuccessJson
-} from "@pagopa/ts-commons/lib/responses";
-import { FiscalCode, SandboxFiscalCode } from "@pagopa/ts-commons/lib/strings";
-
 import { ExtendedProfile } from "@pagopa/io-functions-commons/dist/generated/definitions/ExtendedProfile";
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
 import {
   NewProfile,
   ProfileModel,
@@ -37,13 +22,23 @@ import {
   IResponseErrorQuery,
   ResponseErrorQuery
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
-
-import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import {
+  IResponseErrorConflict,
+  IResponseErrorValidation,
+  IResponseSuccessJson,
+  ResponseErrorConflict,
+  ResponseErrorFromValidationErrors,
+  ResponseSuccessJson
+} from "@pagopa/ts-commons/lib/responses";
+import { FiscalCode, SandboxFiscalCode } from "@pagopa/ts-commons/lib/strings";
+import express from "express";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+
 import { DevelopmentProfile } from "../generated/definitions/DevelopmentProfile";
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function toExtendedProfile(profile: RetrievedProfile): ExtendedProfile {
   return {
     accepted_tos_version: profile.acceptedTosVersion,
@@ -86,17 +81,33 @@ type ICreateDevelopmentProfileHandler = (
   sandboxFiscalCode: SandboxFiscalCode,
   developmentProfile: DevelopmentProfile
 ) => Promise<
-  | IResponseSuccessJson<ExtendedProfile>
-  | IResponseErrorValidation
-  | IResponseErrorQuery
   | IResponseErrorConflict
+  | IResponseErrorQuery
+  | IResponseErrorValidation
+  | IResponseSuccessJson<ExtendedProfile>
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function CreateDevelopmentProfile(
+  profileModel: ProfileModel
+): express.RequestHandler {
+  const handler = CreateDevelopmentProfileHandler(profileModel);
+
+  const middlewaresWrap = withRequestMiddlewares(
+    ContextMiddleware(),
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiDevelopmentProfileWrite])),
+    SandboxFiscalCodeMiddleware,
+    DeveloperProfilePayloadMiddleware
+  );
+  return wrapRequestHandler(middlewaresWrap(handler));
+}
+
+/**
+ * Wraps an CreateDevelopmentProfile handler inside an Express request handler.
+ */
+
 export function CreateDevelopmentProfileHandler(
   profileModel: ProfileModel
 ): ICreateDevelopmentProfileHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, sandboxFiscalCode, developmentProfilePayload) => {
     const logPrefix = `CreateDevelopmentProfileHandler|ENTITY_ID=${sandboxFiscalCode})`;
 
@@ -149,22 +160,4 @@ export function CreateDevelopmentProfileHandler(
 
     return ResponseSuccessJson(toExtendedProfile(createdProfile));
   };
-}
-
-/**
- * Wraps an CreateDevelopmentProfile handler inside an Express request handler.
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function CreateDevelopmentProfile(
-  profileModel: ProfileModel
-): express.RequestHandler {
-  const handler = CreateDevelopmentProfileHandler(profileModel);
-
-  const middlewaresWrap = withRequestMiddlewares(
-    ContextMiddleware(),
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiDevelopmentProfileWrite])),
-    SandboxFiscalCodeMiddleware,
-    DeveloperProfilePayloadMiddleware
-  );
-  return wrapRequestHandler(middlewaresWrap(handler));
 }

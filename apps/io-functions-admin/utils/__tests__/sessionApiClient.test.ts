@@ -1,13 +1,15 @@
 // eslint-disable sonarjs/no-duplicate-string
 
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import { aFiscalCode } from "../../__mocks__/mocks";
-import { createMockFetch } from "../../__mocks__/node-fetch";
-import { ProblemJson } from "../sm-internal/ProblemJson";
-import { SuccessResponse } from "../sm-internal/SuccessResponse";
-import { createClient } from "../sm-internal/client";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+
+import { aFiscalCode } from "../../__mocks__/mocks";
+import { createMockFetch } from "../../__mocks__/node-fetch";
+import { createClient } from "../sm-internal/client";
+import { ProblemJson } from "../sm-internal/ProblemJson";
+import { SuccessResponse } from "../sm-internal/SuccessResponse";
 
 const baseUrl = "";
 
@@ -39,7 +41,7 @@ describe("sessionApiClient#lockUserSession", () => {
     ${"Server Error"}   | ${500} | ${aProblemJson500}
     ${"Bad Request"}    | ${400} | ${undefined}
     ${"Not Authorized"} | ${401} | ${undefined}
-  `("should handle $name response", async ({ status, payload }) => {
+  `("should handle $name response", async ({ payload, status }) => {
     const fetchApi = createMockFetch({
       jsonImpl: async () => payload,
       status
@@ -47,9 +49,9 @@ describe("sessionApiClient#lockUserSession", () => {
     const client = createClient({ baseUrl, fetchApi });
 
     const result = await client.lockUserSession({
+      ApiKeyAuth: anApiKey,
       fiscalCode: aFiscalCode,
-      token: anApiKey,
-      ApiKeyAuth: anApiKey
+      token: anApiKey
     });
 
     expect(E.isRight(result)).toBe(true);
@@ -84,7 +86,7 @@ describe("sessionApiClient#lockUserSession", () => {
     });
 
     // fetchApi is actually a jest.Mock, can be spied
-    const spiedFetch = fetchApi as jest.Mock;
+    const spiedFetch = fetchApi as Mock;
 
     // check that arguments are correctly passed to fetch
     expect(spiedFetch).toHaveBeenCalledWith(
@@ -105,13 +107,15 @@ describe("sessionApiClient#unlockUserSession", () => {
     ${"Server Error"}   | ${500} | ${aProblemJson500}
     ${"Bad Request"}    | ${400} | ${undefined}
     ${"Not Authorized"} | ${401} | ${undefined}
-  `("should handle $name response", async ({ status, payload }) => {
+  `("should handle $name response", async ({ payload, status }) => {
     const fetchApi = createMockFetch({
       jsonImpl: async () => payload,
       status
     });
     const client = createClient<"ApiKeyAuth">({
-      baseUrl, fetchApi, withDefaults: op => params =>
+      baseUrl,
+      fetchApi,
+      withDefaults: op => params =>
         op({
           ...params,
           ApiKeyAuth: anApiKey,
@@ -154,8 +158,8 @@ describe("sessionApiClient#unlockUserSession", () => {
       fiscalCode: aFiscalCode
     });
 
-    // fetchApi is actually a jest.Mock, can be spied
-    const spiedFetch = fetchApi as jest.Mock;
+    // fetchApi is actually a Mock, can be spied
+    const spiedFetch = fetchApi as Mock;
 
     // check that arguments are correctly passed to fetch
     expect(spiedFetch).toHaveBeenCalledWith(

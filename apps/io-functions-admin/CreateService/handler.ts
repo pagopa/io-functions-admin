@@ -1,15 +1,4 @@
 import { Context } from "@azure/functions";
-
-import * as express from "express";
-
-import { isLeft } from "fp-ts/lib/Either";
-
-import {
-  IResponseErrorValidation,
-  IResponseSuccessJson,
-  ResponseSuccessJson
-} from "@pagopa/ts-commons/lib/responses";
-
 import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
 import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
 import {
@@ -26,6 +15,13 @@ import {
   IResponseErrorQuery,
   ResponseErrorQuery
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
+import {
+  IResponseErrorValidation,
+  IResponseSuccessJson,
+  ResponseSuccessJson
+} from "@pagopa/ts-commons/lib/responses";
+import express from "express";
+import { isLeft } from "fp-ts/lib/Either";
 
 import {
   apiServiceToService,
@@ -38,16 +34,35 @@ type ICreateServiceHandler = (
   auth: IAzureApiAuthorization,
   servicePayload: ApiService
 ) => Promise<
-  | IResponseSuccessJson<ApiService>
   | IResponseErrorQuery
   | IResponseErrorValidation
+  | IResponseSuccessJson<ApiService>
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function CreateService(
+  serviceModel: ServiceModel
+): express.RequestHandler {
+  const handler = CreateServiceHandler(serviceModel);
+
+  const middlewaresWrap = withRequestMiddlewares(
+    // Extract Azure Functions bindings
+    ContextMiddleware(),
+    // Allow only users in the ApiServiceWrite group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceWrite])),
+    // Extracts the Service payload from the request body
+    ServicePayloadMiddleware
+  );
+
+  return wrapRequestHandler(middlewaresWrap(handler));
+}
+
+/**
+ * Wraps a CreateService handler inside an Express request handler.
+ */
+
 export function CreateServiceHandler(
   serviceModel: ServiceModel
 ): ICreateServiceHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, servicePayload) => {
     const newService = {
       ...apiServiceToService(servicePayload),
@@ -66,25 +81,4 @@ export function CreateServiceHandler(
       retrievedServiceToApiService(errorOrCreatedService.right)
     );
   };
-}
-
-/**
- * Wraps a CreateService handler inside an Express request handler.
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function CreateService(
-  serviceModel: ServiceModel
-): express.RequestHandler {
-  const handler = CreateServiceHandler(serviceModel);
-
-  const middlewaresWrap = withRequestMiddlewares(
-    // Extract Azure Functions bindings
-    ContextMiddleware(),
-    // Allow only users in the ApiServiceWrite group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceWrite])),
-    // Extracts the Service payload from the request body
-    ServicePayloadMiddleware
-  );
-
-  return wrapRequestHandler(middlewaresWrap(handler));
 }

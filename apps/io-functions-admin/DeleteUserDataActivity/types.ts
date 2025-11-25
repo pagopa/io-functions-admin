@@ -1,6 +1,6 @@
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { BlobService } from "azure-storage";
 import * as t from "io-ts";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -69,9 +69,9 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 // type alias for fetch, delete and backup of data
 export type DataFailure =
-  | QueryFailure
   | BlobCreationFailure
-  | DocumentDeleteFailure;
+  | DocumentDeleteFailure
+  | QueryFailure;
 
 // define a value object with the info related to the blob storage for backup files
 export interface IBlobServiceInfo {

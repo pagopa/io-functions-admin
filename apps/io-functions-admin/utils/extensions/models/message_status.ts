@@ -1,4 +1,3 @@
-import * as TE from "fp-ts/lib/TaskEither";
 import {
   MESSAGE_STATUS_MODEL_ID_FIELD,
   MESSAGE_STATUS_MODEL_PK_FIELD,
@@ -9,9 +8,11 @@ import {
   CosmosErrors,
   toCosmosErrorResponse
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import * as t from "io-ts";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
+
 import * as DocumentDbUtils from "../documentdb";
 
 /**
@@ -38,7 +39,7 @@ export class MessageStatusDeletableModel extends MessageStatusModelBase {
    */
   public findAllVersionsByModelId(
     modelId: NonEmptyString
-  ): AsyncIterator<ReadonlyArray<t.Validation<RetrievedMessageStatus>>> {
+  ): AsyncIterator<readonly t.Validation<RetrievedMessageStatus>[]> {
     return DocumentDbUtils.findAllVersionsByModelId(
       this.container,
       this.retrievedItemT,

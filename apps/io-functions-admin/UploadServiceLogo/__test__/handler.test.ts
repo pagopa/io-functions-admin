@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { none, some } from "fp-ts/lib/Option";
-
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-
-import { BlobService } from "azure-storage";
-
-import * as TE from "fp-ts/lib/TaskEither";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { BlobService } from "azure-storage";
+import { none, some } from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { Logo } from "../../generated/definitions/Logo";
 import { UpdateServiceLogoHandler } from "../handler";
 
@@ -15,7 +14,7 @@ describe("UpdateServiceLogoHandler", () => {
   it("should return a not found error when the service is not found in the db", async () => {
     const aServiceId = "1" as NonEmptyString;
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => TE.right(none))
+      findOneByServiceId: vi.fn(() => TE.right(none))
     };
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
@@ -39,7 +38,7 @@ describe("UpdateServiceLogoHandler", () => {
   it("should return a query error when a database error occurs", async () => {
     const aServiceId = "1" as NonEmptyString;
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() =>
+      findOneByServiceId: vi.fn(() =>
         TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
     };
@@ -73,12 +72,12 @@ describe("UpdateServiceLogoHandler", () => {
     };
 
     const blobServiceMock = ({
-      createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb(null, "any"))
+      createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
     } as any) as BlobService;
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => TE.right(some({})))
+      findOneByServiceId: vi.fn(() => TE.right(some({})))
     };
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
@@ -109,10 +108,10 @@ describe("UpdateServiceLogoHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => TE.right(some({})))
+      findOneByServiceId: vi.fn(() => TE.right(some({})))
     };
     const blobServiceMock = ({
-      createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb(null, "any"))
+      createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
     } as any) as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
@@ -142,10 +141,10 @@ describe("UpdateServiceLogoHandler", () => {
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
-      findOneByServiceId: jest.fn(() => TE.right(some({})))
+      findOneByServiceId: vi.fn(() => TE.right(some({})))
     };
     const blobServiceMock = ({
-      createBlockBlobFromText: jest.fn((_, __, ___, cb) => cb("any", null))
+      createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb("any", null))
     } as any) as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,

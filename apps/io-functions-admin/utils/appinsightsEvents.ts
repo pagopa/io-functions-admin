@@ -2,13 +2,13 @@
 
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/iorchestrationfunctioncontext";
+
 import {
   trackEvent,
   trackException,
   USER_DATA_PROCESSING_ID_KEY
 } from "./appinsights";
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDeleteEvent = (
   eventName: string,
   userDataProcessing: UserDataProcessing
@@ -25,13 +25,12 @@ export const trackUserDataDeleteEvent = (
     }
   });
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDeleteException = (
   eventName: string,
   exception: Error,
   userDataProcessing: UserDataProcessing,
   context: IOrchestrationFunctionContext,
-  isSampled: boolean = true
+  isSampled = true
 ) =>
   // avoiding duplicate exceptions
   context.df.isReplaying
@@ -39,9 +38,8 @@ export const trackUserDataDeleteException = (
     : trackException({
         exception,
         properties: {
-          [USER_DATA_PROCESSING_ID_KEY]:
-            userDataProcessing.userDataProcessingId,
-          name: `user.data.delete.${eventName}`
+          name: `user.data.delete.${eventName}`,
+          [USER_DATA_PROCESSING_ID_KEY]: userDataProcessing.userDataProcessingId
         },
         tagOverrides: {
           "ai.operation.id": userDataProcessing.userDataProcessingId,
@@ -50,7 +48,6 @@ export const trackUserDataDeleteException = (
         }
       });
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDownloadEvent = (
   eventName: string,
   userDataProcessing: UserDataProcessing
@@ -67,13 +64,12 @@ export const trackUserDataDownloadEvent = (
     }
   });
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const trackUserDataDownloadException = (
   eventName: string,
   exception: Error,
   userDataProcessing: UserDataProcessing,
   context: IOrchestrationFunctionContext,
-  isSampled: boolean = true
+  isSampled = true
 ) =>
   // avoiding duplicate exceptions
   context.df.isReplaying
@@ -81,9 +77,8 @@ export const trackUserDataDownloadException = (
     : trackException({
         exception,
         properties: {
-          [USER_DATA_PROCESSING_ID_KEY]:
-            userDataProcessing.userDataProcessingId,
-          name: `user.data.download.${eventName}`
+          name: `user.data.download.${eventName}`,
+          [USER_DATA_PROCESSING_ID_KEY]: userDataProcessing.userDataProcessingId
         },
         tagOverrides: {
           "ai.operation.id": userDataProcessing.userDataProcessingId,

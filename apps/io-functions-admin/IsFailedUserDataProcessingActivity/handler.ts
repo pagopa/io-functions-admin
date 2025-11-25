@@ -1,12 +1,12 @@
 import { Context } from "@azure/functions";
-import { ServiceResponse, TableService } from "azure-storage";
-import { NonEmptyString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import * as TE from "fp-ts/lib/TaskEither";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { ServiceResponse, TableService } from "azure-storage";
 import * as E from "fp-ts/lib/Either";
-import * as O from "fp-ts/lib/Option";
-import * as t from "io-ts";
 import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
 
 // Activity input
 export const ActivityInput = t.interface({

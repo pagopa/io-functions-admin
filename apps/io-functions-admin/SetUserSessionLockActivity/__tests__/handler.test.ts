@@ -1,12 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, sonarjs/no-identical-functions */
+/* eslint-disable sonarjs/no-identical-functions */
 
-import { right } from "fp-ts/lib/Either";
-import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { right } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as t from "io-ts";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { context } from "../../__mocks__/durable-functions";
 import { aFiscalCode } from "../../__mocks__/mocks";
-import { SuccessResponse } from "../../utils/sm-internal/SuccessResponse";
 import { Client } from "../../utils/sm-internal/client";
+import { SuccessResponse } from "../../utils/sm-internal/SuccessResponse";
 import {
   ActivityInput,
   ApiCallFailure,
@@ -15,8 +19,6 @@ import {
   InvalidInputFailure,
   TransientFailure
 } from "../handler";
-import { pipe } from "fp-ts/lib/function";
-import * as E from "fp-ts/lib/Either";
 
 // dummy but effective
 const aDecodingFailure = t.number.decode("abc");
@@ -29,13 +31,13 @@ const aSuccessResponse = pipe(
   })
 );
 
-const mockLockUserSession = jest.fn().mockImplementation(async () =>
+const mockLockUserSession = vi.fn().mockImplementation(async () =>
   right({
     status: 200,
     value: aSuccessResponse
   })
 );
-const mockUnlockUserSession = jest.fn().mockImplementation(async () =>
+const mockUnlockUserSession = vi.fn().mockImplementation(async () =>
   right({
     status: 200,
     value: aSuccessResponse
@@ -49,7 +51,7 @@ const mockClient = ({
 
 describe("createSetUserSessionLockActivityHandler", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should fail on invalid input", async () => {

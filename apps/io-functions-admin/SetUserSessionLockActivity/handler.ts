@@ -3,16 +3,16 @@
  */
 
 import { Context } from "@azure/functions";
-import { toError } from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
-import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { toError } from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
-import { SuccessResponse } from "../utils/sm-internal/SuccessResponse";
-import { Client } from "../utils/sm-internal/client";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+import { Client } from "../utils/sm-internal/client";
+import { SuccessResponse } from "../utils/sm-internal/SuccessResponse";
+
 const assertNever = (_: never): never => {
   throw new Error("should not have executed this");
 };
@@ -166,7 +166,6 @@ const callSessionApi = (
 
 export const createSetUserSessionLockActivityHandler = (
   sessionApiClient: Client<"ApiKeyAuth">
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => (context: Context, input: unknown) =>
   pipe(
     input,

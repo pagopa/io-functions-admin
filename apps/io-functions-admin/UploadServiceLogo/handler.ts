@@ -1,18 +1,4 @@
 import { Context } from "@azure/functions";
-
-import * as express from "express";
-
-import {
-  IResponseErrorInternal,
-  IResponseErrorNotFound,
-  IResponseErrorValidation,
-  IResponseSuccessRedirectToResource,
-  ResponseErrorInternal,
-  ResponseErrorNotFound,
-  ResponseErrorValidation,
-  ResponseSuccessRedirectToResource
-} from "@pagopa/ts-commons/lib/responses";
-
 import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
 import {
   AzureApiAuthMiddleware,
@@ -28,13 +14,24 @@ import {
   IResponseErrorQuery,
   ResponseErrorQuery
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
-
+import {
+  IResponseErrorInternal,
+  IResponseErrorNotFound,
+  IResponseErrorValidation,
+  IResponseSuccessRedirectToResource,
+  ResponseErrorInternal,
+  ResponseErrorNotFound,
+  ResponseErrorValidation,
+  ResponseSuccessRedirectToResource
+} from "@pagopa/ts-commons/lib/responses";
 import { BlobService } from "azure-storage";
+import express from "express";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
-import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as UPNG from "upng-js";
+
 import { Logo as ApiLogo } from "../generated/definitions/Logo";
 import { ServiceId } from "../generated/definitions/ServiceId";
 import { LogoPayloadMiddleware } from "../utils/middlewares/service";
@@ -47,14 +44,13 @@ type IUpdateServiceHandler = (
   logoPayload: ApiLogo
 ) => Promise<
   // eslint-disable-next-line @typescript-eslint/ban-types
-  | IResponseSuccessRedirectToResource<{}, {}>
-  | IResponseErrorValidation
-  | IResponseErrorQuery
-  | IResponseErrorNotFound
   | IResponseErrorInternal
+  | IResponseErrorNotFound
+  | IResponseErrorQuery
+  | IResponseErrorValidation
+  | IResponseSuccessRedirectToResource<{}, {}>
 >;
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const imageValidationErrorResponse = () =>
   ResponseErrorValidation(
     "Image not valid",
@@ -74,13 +70,11 @@ const upsertBlobFromImageBuffer = (
     TE.map(O.fromNullable)
   );
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function UpdateServiceLogoHandler(
   serviceModel: ServiceModel,
   blobService: BlobService,
   logosUrl: string
 ): IUpdateServiceHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (_, __, serviceId, logoPayload) => {
     const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
       serviceId
@@ -160,7 +154,7 @@ export function UpdateServiceLogoHandler(
 /**
  * Wraps a UpdateService handler inside an Express request handler.
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
 export function UploadServiceLogo(
   serviceModel: ServiceModel,
   blobService: BlobService,

@@ -1,7 +1,7 @@
-import { pipe } from "fp-ts/lib/function";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { readableReportSimplified } from "@pagopa/ts-commons/lib/reporters";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { pipe } from "fp-ts/lib/function";
 
 export const cosmosErrorsToString = (errs: CosmosErrors): NonEmptyString =>
   pipe(

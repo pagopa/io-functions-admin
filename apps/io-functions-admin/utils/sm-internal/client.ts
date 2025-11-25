@@ -175,27 +175,27 @@ export type Client<
  */
 export function createClient<K extends ParamKeys>(params: {
   baseUrl: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   fetchApi: typeof fetch;
   withDefaults: WithDefaultsT<K>;
   basePath?: string;
 }): Client<K>;
 export function createClient(params: {
   baseUrl: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   fetchApi: typeof fetch;
   withDefaults?: undefined;
   basePath?: string;
 }): Client;
 export function createClient<K extends ParamKeys>({
   baseUrl,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   fetchApi,
   withDefaults,
   basePath = "/api/v1"
 }: {
   baseUrl: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   fetchApi: typeof fetch;
   withDefaults?: WithDefaultsT<K>;
   basePath?: string;

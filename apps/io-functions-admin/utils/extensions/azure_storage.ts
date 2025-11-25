@@ -11,7 +11,7 @@ export * from "@pagopa/io-functions-commons/dist/src/utils/azure_storage";
  * @param containerName   the name of the Azure blob storage container
  * @param blobName        blob storage container name
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
 export function deleteBlob(
   blobService: azureStorage.BlobService,
   containerName: string,

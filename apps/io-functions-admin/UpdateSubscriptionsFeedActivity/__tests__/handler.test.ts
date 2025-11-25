@@ -2,22 +2,22 @@ import { Context } from "@azure/functions";
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { context as contextMock } from "../../__mocks__/durable-functions";
 import {
   aFiscalCode,
   aRetrievedServicePreferences
 } from "../../__mocks__/mocks";
-
 import { Input, updateSubscriptionFeed } from "../handler";
 
 const aServiceId = "aServiceId" as ServiceId;
 
-const insertEntityMock = jest.fn((_, __, f) => {
+const insertEntityMock = vi.fn((_, __, f) => {
   f(undefined, undefined, { isSuccessful: true });
 });
 
-const deleteEntityMock = jest.fn((_, __, f) => {
+const deleteEntityMock = vi.fn((_, __, f) => {
   f(undefined, { isSuccessful: true });
 });
 
@@ -30,7 +30,7 @@ const today = new Date();
 
 describe("UpdateSubscriptionsFeedActivity - Service", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("Given a subscribed service input, When service has already been unsubscribed today, Then the unsubscribe feed must be deleted", async () => {
@@ -38,9 +38,9 @@ describe("UpdateSubscriptionsFeedActivity - Service", () => {
       fiscalCode: aFiscalCode,
       operation: "SUBSCRIBED",
       serviceId: aServiceId,
+      subscriptionKind: "SERVICE",
       updatedAt: today.getTime(),
-      version: 1,
-      subscriptionKind: "SERVICE"
+      version: 1
     };
 
     const result = await updateSubscriptionFeed(
@@ -70,9 +70,9 @@ describe("UpdateSubscriptionsFeedActivity - Service", () => {
       fiscalCode: aFiscalCode,
       operation: "SUBSCRIBED",
       serviceId: aServiceId,
+      subscriptionKind: "SERVICE",
       updatedAt: today.getTime(),
-      version: 1,
-      subscriptionKind: "SERVICE"
+      version: 1
     };
 
     deleteEntityMock.mockImplementationOnce((_, __, f) => {
@@ -111,17 +111,17 @@ describe("UpdateSubscriptionsFeedActivity - Service", () => {
 
 describe("UpdateSubscriptionsFeedActivity - Profile", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("Given a subscribed profile input, When profile has already been unsubscribed today, Then the unsubscribe feed must be deleted and the subscribe feed must be added", async () => {
     const input: Input = {
       fiscalCode: aFiscalCode,
       operation: "SUBSCRIBED",
-      updatedAt: today.getTime(),
-      version: 1,
+      previousPreferences: [],
       subscriptionKind: "PROFILE",
-      previousPreferences: []
+      updatedAt: today.getTime(),
+      version: 1
     };
 
     const result = await updateSubscriptionFeed(
@@ -158,10 +158,10 @@ describe("UpdateSubscriptionsFeedActivity - Profile", () => {
     const input: Input = {
       fiscalCode: aFiscalCode,
       operation: "SUBSCRIBED",
-      updatedAt: today.getTime(),
-      version: 1,
+      previousPreferences: [],
       subscriptionKind: "PROFILE",
-      previousPreferences: []
+      updatedAt: today.getTime(),
+      version: 1
     };
     deleteEntityMock.mockImplementationOnce((_, __, f) => {
       f(Error("an Error"), { isSuccessful: false, statusCode: 404 });
@@ -200,7 +200,7 @@ describe("UpdateSubscriptionsFeedActivity - Profile", () => {
 
 describe("UpdateSubscriptionsFeedActivity - Profile with preferences", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
   it("Given a subscribed profile with previous preferences, When profile has already been unsubscribed today, Then all service preferences subscribed feed for today must be deleted", async () => {
     const input: Input = {

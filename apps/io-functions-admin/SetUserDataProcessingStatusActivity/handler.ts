@@ -2,13 +2,7 @@
  * Updates the status of a UserDataProcessing record
  */
 
-import * as t from "io-ts";
-
-import * as TE from "fp-ts/lib/TaskEither";
-import { pipe } from "fp-ts/lib/function";
-
 import { Context } from "@azure/functions";
-
 import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
@@ -16,6 +10,10 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
+
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input
@@ -72,7 +70,6 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 const logPrefix = `SetUserDataProcessingStatusActivity`;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function assertNever(_: never): void {
   throw new Error("should not have executed this");
 }
@@ -104,7 +101,6 @@ const logFailure = (context: Context) => (
 
 export const createSetUserDataProcessingStatusActivityHandler = (
   userDataProcessingModel: UserDataProcessingModel
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => (context: Context, input: unknown) => {
   /**
    * Updates a UserDataProcessing record by creating a new version of it with a chenged status
@@ -116,8 +112,8 @@ export const createSetUserDataProcessingStatusActivityHandler = (
    */
   const saveNewStatusOnDb = ({
     currentRecord: { status: _, ...currentRecord },
-    nextStatus,
-    failureReason
+    failureReason,
+    nextStatus
   }: ActivityInput): TE.TaskEither<
     ActivityResultQueryFailure,
     UserDataProcessing

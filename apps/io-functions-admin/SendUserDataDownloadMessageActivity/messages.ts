@@ -1,10 +1,10 @@
 import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import { pipe } from "fp-ts/lib/function";
 import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 
 // TODO: switch text based on user's preferred_language
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
 export const userDataDownloadMessage = (
   blobName: string,
   password: string,

@@ -1,6 +1,10 @@
+import { UserDataProcessingModel } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
+import * as E from "fp-ts/lib/Either";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { context as contextMock } from "../../__mocks__/functions";
 import { aFiscalCode, aUserDataProcessing } from "../../__mocks__/mocks";
-
 import {
   ActivityInput,
   ActivityResultInvalidInputFailure,
@@ -9,34 +13,30 @@ import {
   getFindFailureReasonActivityHandler
 } from "../handler";
 
-import * as E from "fp-ts/lib/Either";
-import { UserDataProcessingModel } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
-
 const aChoice = aUserDataProcessing.choice;
 const failedOrchestratorOutput =
   "This is the output of the failed orchestrator that should give a failure reason";
 
-const getOrchestratorStatusMock = jest.fn(
+const getOrchestratorStatusMock = vi.fn(
   async (orchestratorId: string) =>
     ({
-      name: orchestratorId,
-      instanceId: orchestratorId,
       createdTime: new Date(),
-      lastUpdatedTime: new Date(),
       input: null,
+      instanceId: orchestratorId,
+      lastUpdatedTime: new Date(),
+      name: orchestratorId,
       output: failedOrchestratorOutput,
       runtimeStatus: "Completed"
     } as DurableOrchestrationStatus)
 );
 
-jest.mock("durable-functions", () => ({
-  OrchestrationRuntimeStatus: {
-    Running: "Running"
-  },
+vi.mock("durable-functions", () => ({
   getClient: (context: any) => ({
     getStatus: getOrchestratorStatusMock
-  })
+  }),
+  OrchestrationRuntimeStatus: {
+    Running: "Running"
+  }
 }));
 
 describe("UserDataProcessingFindFailureReasonActivity", () => {

@@ -1,27 +1,30 @@
-import { setUserDataProcessingStatusHandler } from "../handler";
+/* eslint-disable vitest/prefer-called-with */
+import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
   UserDataProcessingId,
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import * as TE from "fp-ts/lib/TaskEither";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import { none, Option, some } from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { context } from "../../__mocks__/functions";
 import {
-  aUserDataProcessing,
   aFiscalCode,
+  aUserDataProcessing,
   aUserDataProcessingChoice
 } from "../../__mocks__/mocks";
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { none, Option, some } from "fp-ts/lib/Option";
-import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { pipe } from "fp-ts/lib/function";
-import { context } from "../../__mocks__/functions";
+import { setUserDataProcessingStatusHandler } from "../handler";
 
-let throwError = jest.fn(() => false);
+const throwError = vi.fn(() => false);
 
-const makeUserDataProcessingId = jest.fn(
+const makeUserDataProcessingId = vi.fn(
   (
     choice: UserDataProcessingChoice,
     fiscalCode: FiscalCode
@@ -29,32 +32,32 @@ const makeUserDataProcessingId = jest.fn(
     pipe(
       `${fiscalCode}-${choice}`,
       UserDataProcessingId.decode,
-      E.getOrElseW(errors => {
+      E.getOrElseW((errors) => {
         throw new Error("");
       })
     )
 );
 
 const mockUserDataProcessingModel = ({
-  findLastVersionByModelId: jest.fn(([modelId, partitionKey]) => {
-    return TE.of<CosmosErrors, Option<UserDataProcessing>>(
-      aUserDataProcessing.fiscalCode == partitionKey
-        ? some(aUserDataProcessing)
-        : none
-    );
-  }),
-  createOrUpdateByNewOne: jest.fn((u: UserDataProcessing) => {
-    return throwError()
+  createOrUpdateByNewOne: vi.fn((u: UserDataProcessing) =>
+    throwError()
       ? TE.left<CosmosErrors, UserDataProcessing>({
           kind: "COSMOS_ERROR_RESPONSE"
         } as CosmosErrors)
-      : TE.of<CosmosErrors, UserDataProcessing>(aUserDataProcessing);
-  })
+      : TE.of<CosmosErrors, UserDataProcessing>(aUserDataProcessing)
+  ),
+  findLastVersionByModelId: vi.fn(([modelId, partitionKey]) =>
+    TE.of<CosmosErrors, Option<UserDataProcessing>>(
+      aUserDataProcessing.fiscalCode == partitionKey
+        ? some(aUserDataProcessing)
+        : none
+    )
+  )
 } as any) as UserDataProcessingModel;
 
 describe("setUserDataProcessingStatusHandler", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should return IResponseErrorNotFound if no record has been found", async () => {

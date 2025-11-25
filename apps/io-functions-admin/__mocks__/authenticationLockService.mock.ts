@@ -1,4 +1,5 @@
-import * as TE from "fp-ts/TaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
+import { vi } from "vitest";
 
 import AuthenticationLockService, {
   AuthenticationLockData
@@ -14,17 +15,17 @@ export { aNotReleasedData, anUnlockCode } from "./lockedProfileTableClient";
 // AuthenticationLockService Mock
 // --------------------------------
 
-export const getAllUserAuthenticationLockDataMock = jest.fn(() =>
-  TE.of<Error, ReadonlyArray<AuthenticationLockData>>([])
+export const getAllUserAuthenticationLockDataMock = vi.fn(() =>
+  TE.of<Error, readonly AuthenticationLockData[]>([])
 );
 
-export const deleteUserAuthenticationMock = jest.fn(() =>
+export const deleteUserAuthenticationMock = vi.fn(() =>
   TE.of<Error, true>(true as const)
 );
 
 export const AuthenticationLockServiceMock: AuthenticationLockService = ({
-  getAllUserAuthenticationLockData: getAllUserAuthenticationLockDataMock,
-  deleteUserAuthenticationLockData: deleteUserAuthenticationMock
+  deleteUserAuthenticationLockData: deleteUserAuthenticationMock,
+  getAllUserAuthenticationLockData: getAllUserAuthenticationLockDataMock
 } as any) as AuthenticationLockService;
 
 // --------------------------------

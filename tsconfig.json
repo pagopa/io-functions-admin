@@ -1,0 +1,3 @@
+{
+  "extends": "@pagopa/typescript-config-node/node20.json"
+}

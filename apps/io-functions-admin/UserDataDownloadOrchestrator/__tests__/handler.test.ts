@@ -1,7 +1,10 @@
+/* eslint-disable vitest/prefer-called-with */
 // eslint-disable @typescript-eslint/no-explicit-any
-import * as E from "fp-ts/lib/Either";
-import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
+import * as E from "fp-ts/lib/Either";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
@@ -11,6 +14,7 @@ import {
 import { aArchiveInfo, aUserDataProcessing } from "../../__mocks__/mocks";
 import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from "../../ExtractUserDataActivity/handler";
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../../SendUserDataDownloadMessageActivity/handler";
+import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import {
   ActivityFailure,
   handler,
@@ -18,22 +22,20 @@ import {
   OrchestratorSuccess
 } from "../handler";
 
-import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
-
 const aNonSuccess = "any non-success value";
 
-const setUserDataProcessingStatusActivity = jest.fn().mockImplementation(() =>
+const setUserDataProcessingStatusActivity = vi.fn().mockImplementation(() =>
   SetUserDataProcessingStatusActivityResultSuccess.encode({
     kind: "SUCCESS"
   })
 );
-const extractUserDataActivity = jest.fn().mockImplementation(() =>
+const extractUserDataActivity = vi.fn().mockImplementation(() =>
   ExtractUserDataActivityResultSuccess.encode({
     kind: "SUCCESS",
     value: aArchiveInfo
   })
 );
-const sendUserDataDownloadMessageActivity = jest
+const sendUserDataDownloadMessageActivity = vi
   .fn()
   .mockImplementation(() =>
     SendUserDataDownloadMessageActivityResultSuccess.encode({ kind: "SUCCESS" })
@@ -47,7 +49,7 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
     ? extractUserDataActivity
     : name === "SendUserDataDownloadMessageActivity"
     ? sendUserDataDownloadMessageActivity
-    : jest.fn())(name, ...args);
+    : vi.fn())(name, ...args);
 
 // I assign switchMockImplementation to both because
 // I don't want tests to depend on implementation details
@@ -80,10 +82,10 @@ const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionCo
 
 const expectedRetryOptions = expect.any(Object);
 
-// eslint-disable-next-line sonar/sonar-max-lines-per-function
+// eslint-disable-next-line sonar/sonar-max-lines-per-function, max-lines-per-function
 describe("UserDataDownloadOrchestrator", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should fail on invalid input", () => {
@@ -170,8 +172,8 @@ describe("UserDataDownloadOrchestrator", () => {
       expectedRetryOptions,
       {
         currentRecord: expect.any(Object),
-        nextStatus: UserDataProcessingStatusEnum.FAILED,
-        failureReason: expect.any(String)
+        failureReason: expect.any(String),
+        nextStatus: UserDataProcessingStatusEnum.FAILED
       }
     );
     expect(extractUserDataActivity).toHaveBeenCalled();
@@ -200,8 +202,8 @@ describe("UserDataDownloadOrchestrator", () => {
       expectedRetryOptions,
       {
         currentRecord: expect.any(Object),
-        nextStatus: UserDataProcessingStatusEnum.FAILED,
-        failureReason: expect.any(String)
+        failureReason: expect.any(String),
+        nextStatus: UserDataProcessingStatusEnum.FAILED
       }
     );
     expect(extractUserDataActivity).toHaveBeenCalled();
@@ -236,8 +238,8 @@ describe("UserDataDownloadOrchestrator", () => {
       expectedRetryOptions,
       {
         currentRecord: expect.any(Object),
-        nextStatus: UserDataProcessingStatusEnum.FAILED,
-        failureReason: expect.any(String)
+        failureReason: expect.any(String),
+        nextStatus: UserDataProcessingStatusEnum.FAILED
       }
     );
     expect(extractUserDataActivity).not.toHaveBeenCalled();
@@ -278,8 +280,8 @@ describe("UserDataDownloadOrchestrator", () => {
       expectedRetryOptions,
       {
         currentRecord: expect.any(Object),
-        nextStatus: UserDataProcessingStatusEnum.FAILED,
-        failureReason: expect.any(String)
+        failureReason: expect.any(String),
+        nextStatus: UserDataProcessingStatusEnum.FAILED
       }
     );
     expect(extractUserDataActivity).toHaveBeenCalled();

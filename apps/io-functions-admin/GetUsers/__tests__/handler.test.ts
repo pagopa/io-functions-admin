@@ -2,6 +2,8 @@
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
+import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+
 import { IAzureApimConfig } from "../../utils/apim";
 import {
   ArrayToAsyncIterable,
@@ -106,14 +108,12 @@ const mockedInvalidUserContract = {
   type: "type"
 };
 
-jest.mock("@azure/arm-apimanagement");
-const mockApiManagementClient = ApiManagementClient as jest.Mock;
-const mockLog = jest.fn();
-const mockGetToken = jest.fn();
+vi.mock("@azure/arm-apimanagement");
+const mockApiManagementClient = ApiManagementClient as Mock;
+const mockLog = vi.fn();
+const mockGetToken = vi.fn();
 
-mockGetToken.mockImplementation(() => {
-  return Promise.resolve(undefined);
-});
+mockGetToken.mockImplementation(() => Promise.resolve(undefined));
 
 const mockedContext = { log: { error: mockLog } };
 
@@ -172,13 +172,13 @@ describe("GetUsers", () => {
   });
 
   it("should return the user collection with the registered users and the proper next value", async () => {
-    const mockedApimUsersList: ReadonlyArray<any> = [
+    const mockedApimUsersList: readonly any[] = [
       mockedUserContract1,
       mockedUserContract2,
       mockedUserContract3
     ];
 
-    const expectedItems: ReadonlyArray<any> = [
+    const expectedItems: readonly any[] = [
       {
         email: mockedUserContract1.email,
         first_name: mockedUserContract1.firstName,

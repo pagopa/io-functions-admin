@@ -1,4 +1,3 @@
-import * as TE from "fp-ts/lib/TaskEither";
 import { MessageViewModel as MessageViewModelBase } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import {
   CosmosErrors,
@@ -6,6 +5,7 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
 
 /**
  * Extends MessageViewModel with deleting operations

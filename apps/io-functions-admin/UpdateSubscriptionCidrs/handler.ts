@@ -1,15 +1,19 @@
 import { Context } from "@azure/functions";
-import * as express from "express";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
+import { toAuthorizedCIDRs } from "@pagopa/io-functions-commons/dist/src/models/service";
+import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
   UserGroup
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
+import { RequiredBodyPayloadMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_body_payload";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
 import { withRequestMiddlewares } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
+import {
+  IResponseErrorQuery,
+  ResponseErrorQuery
+} from "@pagopa/io-functions-commons/dist/src/utils/response";
 import { wrapRequestHandler } from "@pagopa/ts-commons/lib/request_middleware";
 import {
   IResponseErrorInternal,
@@ -20,18 +24,14 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-
-import { RequiredBodyPayloadMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_body_payload";
-import {
-  IResponseErrorQuery,
-  ResponseErrorQuery
-} from "@pagopa/io-functions-commons/dist/src/utils/response";
-import { toAuthorizedCIDRs } from "@pagopa/io-functions-commons/dist/src/models/service";
-import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
+import express from "express";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
-import { getApiClient, IAzureApimConfig } from "../utils/apim";
+import * as TE from "fp-ts/lib/TaskEither";
+
 import { CIDRsPayload } from "../generated/definitions/CIDRsPayload";
 import { SubscriptionCIDRs } from "../generated/definitions/SubscriptionCIDRs";
+import { getApiClient, IAzureApimConfig } from "../utils/apim";
 
 type IUpdateSubscriptionCidrsHandler = (
   context: Context,
@@ -39,10 +39,10 @@ type IUpdateSubscriptionCidrsHandler = (
   subscriptionid: NonEmptyString,
   cidrsPayload: CIDRsPayload
 ) => Promise<
-  | IResponseSuccessJson<SubscriptionCIDRs>
   | IResponseErrorInternal
   | IResponseErrorNotFound
   | IResponseErrorQuery
+  | IResponseSuccessJson<SubscriptionCIDRs>
 >;
 
 const subscriptionExists = (
@@ -76,12 +76,39 @@ const subscriptionExists = (
     )
   );
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function UpdateSubscriptionCidrs(
+  azureApimConfig: IAzureApimConfig,
+  subscriptionCIDRsModel: SubscriptionCIDRsModel
+): express.RequestHandler {
+  const handler = UpdateSubscriptionCidrsHandler(
+    azureApimConfig,
+    subscriptionCIDRsModel
+  );
+
+  const middlewaresWrap = withRequestMiddlewares(
+    // Extract Azure Functions bindings
+    ContextMiddleware(),
+    // Allow only users in the ApiUserAdmin group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
+    // Extract the subscription id value from the request
+    RequiredParamMiddleware("subscriptionid", NonEmptyString),
+    // Extract the body payload from the request
+    RequiredBodyPayloadMiddleware(CIDRsPayload)
+  );
+
+  return wrapRequestHandler(middlewaresWrap(handler));
+}
+
+/**
+ * Wraps an UpdateSubscriptionCidrs handler inside an Express request handler.
+ *
+ * **IMPORTANT:** This handler should be used only for *MANAGE Flow*
+ */
+
 export function UpdateSubscriptionCidrsHandler(
   azureApimConfig: IAzureApimConfig,
   subscriptionCIDRsModel: SubscriptionCIDRsModel
 ): IUpdateSubscriptionCidrsHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, subscriptionId, cidrs) => {
     const maybeSubscriptionExists = await subscriptionExists(
       azureApimConfig,
@@ -112,33 +139,4 @@ export function UpdateSubscriptionCidrsHandler(
       id: updatedSubscriptionCIDRs.subscriptionId
     });
   };
-}
-
-/**
- * Wraps an UpdateSubscriptionCidrs handler inside an Express request handler.
- *
- * **IMPORTANT:** This handler should be used only for *MANAGE Flow*
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function UpdateSubscriptionCidrs(
-  azureApimConfig: IAzureApimConfig,
-  subscriptionCIDRsModel: SubscriptionCIDRsModel
-): express.RequestHandler {
-  const handler = UpdateSubscriptionCidrsHandler(
-    azureApimConfig,
-    subscriptionCIDRsModel
-  );
-
-  const middlewaresWrap = withRequestMiddlewares(
-    // Extract Azure Functions bindings
-    ContextMiddleware(),
-    // Allow only users in the ApiUserAdmin group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // Extract the subscription id value from the request
-    RequiredParamMiddleware("subscriptionid", NonEmptyString),
-    // Extract the body payload from the request
-    RequiredBodyPayloadMiddleware(CIDRsPayload)
-  );
-
-  return wrapRequestHandler(middlewaresWrap(handler));
 }

@@ -2,13 +2,7 @@
  * Updates the status of a UserDataProcessing record
  */
 
-import * as t from "io-ts";
-
-import * as TE from "fp-ts/lib/TaskEither";
-import * as E from "fp-ts/lib/Either";
-
 import { Context } from "@azure/functions";
-
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import {
   makeUserDataProcessingId,
@@ -17,7 +11,11 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
+
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input
@@ -79,7 +77,6 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 const logPrefix = `GetUserDataProcessingActivity`;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function assertNever(_: never): void {
   throw new Error("should not have executed this");
 }
@@ -99,14 +96,14 @@ const logFailure = (context: Context) => (
         `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
       );
       break;
+    case "NOT_FOUND_FAILURE":
+      // it might not be a failure
+      context.log.warn(`${logPrefix}|Error UserDataProcessing not found`);
+      break;
     case "QUERY_FAILURE":
       context.log.error(
         `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
       );
-      break;
-    case "NOT_FOUND_FAILURE":
-      // it might not be a failure
-      context.log.warn(`${logPrefix}|Error UserDataProcessing not found`);
       break;
     default:
       assertNever(failure);
@@ -115,7 +112,6 @@ const logFailure = (context: Context) => (
 
 export const createSetUserDataProcessingStatusActivityHandler = (
   userDataProcessingModel: UserDataProcessingModel
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => (context: Context, input: unknown) =>
   // the actual handler
   pipe(
@@ -128,7 +124,7 @@ export const createSetUserDataProcessingStatusActivityHandler = (
       })
     ),
     TE.fromEither,
-    TE.chainW(({ fiscalCode, choice }) =>
+    TE.chainW(({ choice, fiscalCode }) =>
       pipe(
         userDataProcessingModel.findLastVersionByModelId([
           makeUserDataProcessingId(choice, fiscalCode),

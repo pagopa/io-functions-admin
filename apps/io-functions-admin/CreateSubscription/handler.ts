@@ -1,6 +1,5 @@
 import { Context } from "@azure/functions";
-import * as express from "express";
-import * as TE from "fp-ts/lib/TaskEither";
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -12,8 +11,6 @@ import {
   withRequestMiddlewares,
   wrapRequestHandler
 } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
-import { Errors } from "io-ts";
-
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -24,8 +21,11 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import express from "express";
 import { flow, identity, pipe } from "fp-ts/lib/function";
-import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import * as TE from "fp-ts/lib/TaskEither";
+import { Errors } from "io-ts";
+
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 import { ProductNamePayload } from "../generated/definitions/ProductNamePayload";
 import { Subscription } from "../generated/definitions/Subscription";
@@ -48,20 +48,44 @@ type ICreateSubscriptionHandler = (
   requestParams: readonly [EmailAddress, NonEmptyString],
   productNamePayload: ProductNamePayload
 ) => Promise<
-  | IResponseSuccessJson<Subscription>
   | IResponseErrorInternal
   | IResponseErrorNotFound
   | IResponseErrorTooManyRequests
+  | IResponseSuccessJson<Subscription>
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function CreateSubscription(
+  azureApimConfig: IAzureApimConfig
+): express.RequestHandler {
+  const handler = CreateSubscriptionHandler(azureApimConfig);
+
+  const middlewaresWrap = withRequestMiddlewares(
+    // Extract Azure Functions bindings
+    ContextMiddleware(),
+    // Allow only users in the ApiUserAdmin group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
+    // TODO:
+    //  the following middleware must be replaced with RequiredParamMiddleware after the `withRequestMiddlewares` method will accept more than 6 params
+    //  @see: https://www.pivotaltracker.com/story/show/171598976
+    // Extract the params from the request
+    CreateSubscriptionParamsMiddleware,
+    // Extract the productName from the request body
+    RequiredBodyPayloadMiddleware(ProductNamePayload)
+  );
+
+  return wrapRequestHandler(middlewaresWrap(handler));
+}
+
+/**
+ * Wraps a CreateSubscription handler inside an Express request handler.
+ */
+
 export function CreateSubscriptionHandler(
   azureApimConfig: IAzureApimConfig
 ): ICreateSubscriptionHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, requestParams, productNamePayload) => {
     const [userEmail, subscriptionId] = requestParams;
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
     const internalErrorHandler = (errorMessage: string, error: Error) =>
       genericInternalErrorHandler(
         context,
@@ -69,7 +93,7 @@ export function CreateSubscriptionHandler(
         error,
         errorMessage
       );
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
     const internalValidationErrorHandler = (
       errorMessage: string,
       errors: Errors
@@ -244,30 +268,4 @@ export function CreateSubscriptionHandler(
       TE.toUnion
     )();
   };
-}
-
-/**
- * Wraps a CreateSubscription handler inside an Express request handler.
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function CreateSubscription(
-  azureApimConfig: IAzureApimConfig
-): express.RequestHandler {
-  const handler = CreateSubscriptionHandler(azureApimConfig);
-
-  const middlewaresWrap = withRequestMiddlewares(
-    // Extract Azure Functions bindings
-    ContextMiddleware(),
-    // Allow only users in the ApiUserAdmin group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // TODO:
-    //  the following middleware must be replaced with RequiredParamMiddleware after the `withRequestMiddlewares` method will accept more than 6 params
-    //  @see: https://www.pivotaltracker.com/story/show/171598976
-    // Extract the params from the request
-    CreateSubscriptionParamsMiddleware,
-    // Extract the productName from the request body
-    RequiredBodyPayloadMiddleware(ProductNamePayload)
-  );
-
-  return wrapRequestHandler(middlewaresWrap(handler));
 }

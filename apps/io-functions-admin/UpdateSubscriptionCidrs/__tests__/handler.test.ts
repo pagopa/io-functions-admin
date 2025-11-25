@@ -12,12 +12,14 @@ import { CIDR } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import { none } from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
+import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+
 import { SubscriptionCIDRs } from "../../generated/definitions/SubscriptionCIDRs";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig } from "../../utils/apim";
 import { UpdateSubscriptionCidrsHandler } from "../handler";
 
-jest.mock("@azure/arm-apimanagement");
+vi.mock("@azure/arm-apimanagement");
 
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
@@ -56,21 +58,21 @@ const aSubscriptionCidrs = {
   id: "aSubscriptionId"
 };
 
-const mockSubscription = jest.fn();
+const mockSubscription = vi.fn();
 
-const mockApiManagementClient = ApiManagementClient as jest.Mock;
+const mockApiManagementClient = ApiManagementClient as Mock;
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
     get: mockSubscription
   }
 }));
 
-const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
+const spyOnGetApiClient = vi.spyOn(ApimUtils, "getApiClient");
 spyOnGetApiClient.mockImplementation(() =>
   TE.of(new mockApiManagementClient())
 );
 
-const mockLog = jest.fn();
+const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
 // eslint-disable-next-line sonar/sonar-max-lines-per-function
@@ -80,9 +82,7 @@ describe("UpdateSubscriptionCidrs", () => {
       TE.left(Error("Error on APIM client creation"))
     );
     const mockSubscriptionCIDRsModel = {
-      upsert: jest.fn(() => {
-        return TE.right(none);
-      })
+      upsert: vi.fn(() => TE.right(none))
     };
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
@@ -104,16 +104,12 @@ describe("UpdateSubscriptionCidrs", () => {
   it("should return a not found error response if the apiclient get subscription returns an error", async () => {
     mockApiManagementClient.mockImplementation(() => ({
       subscription: {
-        get: jest.fn(() => {
-          return Promise.reject(new Error("error"));
-        })
+        get: vi.fn(() => Promise.reject(new Error("error")))
       }
     }));
 
     const mockSubscriptionCIDRsModel = {
-      upsert: jest.fn(() => {
-        return TE.right(none);
-      })
+      upsert: vi.fn(() => TE.right(none))
     };
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
@@ -135,7 +131,7 @@ describe("UpdateSubscriptionCidrs", () => {
   it("should return an error query response if cosmos returns an error", async () => {
     mockApiManagementClient.mockImplementation(() => ({
       subscription: {
-        get: jest.fn(() =>
+        get: vi.fn(() =>
           Promise.resolve({
             ...((aValidSubscription as any) as SubscriptionContract)
           })
@@ -144,9 +140,9 @@ describe("UpdateSubscriptionCidrs", () => {
     }));
 
     const mockSubscriptionCIDRsModel = {
-      upsert: jest.fn(() => {
-        return TE.left(toCosmosErrorResponse("db error") as CosmosErrors);
-      })
+      upsert: vi.fn(() =>
+        TE.left(toCosmosErrorResponse("db error") as CosmosErrors)
+      )
     };
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
@@ -168,7 +164,7 @@ describe("UpdateSubscriptionCidrs", () => {
   it("should return an updated CIDRsPayload", async () => {
     mockApiManagementClient.mockImplementation(() => ({
       subscription: {
-        get: jest.fn(() =>
+        get: vi.fn(() =>
           Promise.resolve({
             ...((aValidSubscription as any) as SubscriptionContract)
           })
@@ -177,12 +173,12 @@ describe("UpdateSubscriptionCidrs", () => {
     }));
 
     const mockSubscriptionCIDRsModel = {
-      upsert: jest.fn(() => {
-        return TE.right({
+      upsert: vi.fn(() =>
+        TE.right({
           cidrs: (["1.2.3.4/5"] as unknown) as CIDR[],
           subscriptionId: "aSubscriptionId"
-        });
-      })
+        })
+      )
     };
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(

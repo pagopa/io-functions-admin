@@ -3,22 +3,19 @@
   // We extend it from here, asap!
   "extends": "@pagopa/typescript-config-node/tsconfig.json",
   "compilerOptions": {
-    "module": "Node16",
-    "target": "es2022",
     "outDir": "dist",
     "sourceMap": true,
     "inlineSources": true,
     "strict": true,
-    "resolveJsonModule": false,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "declaration": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
   },
   "exclude": [
     "node_modules",
     "dist",
     "**/__tests__/**",
-    "**/__mocks__/**",
-    "jest.config.js"
+    "__/mocks__/**"
   ],
 }

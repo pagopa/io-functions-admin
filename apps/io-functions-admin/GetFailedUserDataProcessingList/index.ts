@@ -1,11 +1,12 @@
-import * as express from "express";
-import * as winston from "winston";
 import { Context } from "@azure/functions";
+import createAzureFunctionHandler from "@pagopa/express-azure-functions/dist/src/createAzureFunctionsHandler";
 import { secureExpressApp } from "@pagopa/io-functions-commons/dist/src/utils/express";
 import { AzureContextTransport } from "@pagopa/io-functions-commons/dist/src/utils/logging";
 import { setAppContext } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import createAzureFunctionHandler from "@pagopa/express-azure-functions/dist/src/createAzureFunctionsHandler";
 import { createTableService } from "azure-storage";
+import express from "express";
+import * as winston from "winston";
+
 import { getConfigOrThrow } from "../utils/config";
 import { GetFailedUserDataProcessingList } from "./handler";
 
@@ -20,9 +21,9 @@ const tableService = createTableService(storageConnectionString);
 
 // eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
-const contextTransport = new AzureContextTransport(() => logger, {
+const contextTransport = (new AzureContextTransport(() => logger, {
   level: "debug"
-});
+}) as unknown) as winston.transport;
 winston.add(contextTransport);
 
 // Setup Express

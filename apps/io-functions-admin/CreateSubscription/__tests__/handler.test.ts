@@ -6,10 +6,11 @@ import {
   SubscriptionContract,
   UserContract
 } from "@azure/arm-apimanagement";
-
 import { RestError } from "@azure/ms-rest-js";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
+import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
+
 import { ProductNamePayload } from "../../generated/definitions/ProductNamePayload";
 import { Subscription } from "../../generated/definitions/Subscription";
 import * as ApimUtils from "../../utils/apim";
@@ -18,7 +19,7 @@ import { subscriptionContractToApiSubscription } from "../../utils/conversions";
 import { ArrayToAsyncIterable } from "../../utils/testSupport";
 import { CreateSubscriptionHandler } from "../handler";
 
-jest.mock("@azure/arm-apimanagement");
+vi.mock("@azure/arm-apimanagement");
 
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",
@@ -63,11 +64,11 @@ const aFakeApimSubscriptionContract: SubscriptionContract = {
   type: undefined
 };
 
-const mockUserListByService = jest.fn();
-const mockProductList = jest.fn();
-const mockSubscriptionCreateOrUpdate = jest.fn();
+const mockUserListByService = vi.fn();
+const mockProductList = vi.fn();
+const mockSubscriptionCreateOrUpdate = vi.fn();
 
-const mockApiManagementClient = ApiManagementClient as jest.Mock;
+const mockApiManagementClient = ApiManagementClient as Mock;
 mockApiManagementClient.mockImplementation(() => ({
   product: {
     listByService: mockProductList
@@ -80,12 +81,12 @@ mockApiManagementClient.mockImplementation(() => ({
   }
 }));
 
-const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
+const spyOnGetApiClient = vi.spyOn(ApimUtils, "getApiClient");
 spyOnGetApiClient.mockImplementation(() =>
   TE.of(new mockApiManagementClient())
 );
 
-const mockLog = jest.fn();
+const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
 // eslint-disable-next-line sonar/sonar-max-lines-per-function
@@ -108,14 +109,12 @@ describe("CreateSubscription", () => {
   });
 
   it("should return an internal error response if the API management client can not list the users", async () => {
-    mockUserListByService.mockImplementation(() => {
-      return {
-        next: () => Promise.reject(new Error("Error on users list")),
-        [Symbol.asyncIterator]() {
-          return this;
-        }
-      };
-    });
+    mockUserListByService.mockImplementation(() => ({
+      next: () => Promise.reject(new Error("Error on users list")),
+      [Symbol.asyncIterator]() {
+        return this;
+      }
+    }));
     const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 
     const response = await createSubscriptionHandler(
@@ -163,14 +162,12 @@ describe("CreateSubscription", () => {
       ArrayToAsyncIterable([{ id: fakeUserId }])
     );
 
-    mockProductList.mockImplementation(() => {
-      return {
-        next: () => Promise.reject(new Error("Error on product list")),
-        [Symbol.asyncIterator]() {
-          return this;
-        }
-      };
-    });
+    mockProductList.mockImplementation(() => ({
+      next: () => Promise.reject(new Error("Error on product list")),
+      [Symbol.asyncIterator]() {
+        return this;
+      }
+    }));
 
     const createSubscriptionHandler = CreateSubscriptionHandler(fakeApimConfig);
 

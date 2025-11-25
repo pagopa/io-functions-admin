@@ -1,6 +1,16 @@
+import { FeatureLevelTypeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/FeatureLevelType";
 import { HttpsUrl } from "@pagopa/io-functions-commons/dist/generated/definitions/HttpsUrl";
 import { MaxAllowedPaymentAmount } from "@pagopa/io-functions-commons/dist/generated/definitions/MaxAllowedPaymentAmount";
+import { MessageBodyMarkdown } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageBodyMarkdown";
+import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
+import { MessageSubject } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageSubject";
+import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
+import { NotificationChannelStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannelStatusValue";
+import { NotRejectedMessageStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotRejectedMessageStatusValue";
 import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
+import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
+import { TimeToLiveSeconds } from "@pagopa/io-functions-commons/dist/generated/definitions/TimeToLiveSeconds";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
@@ -10,10 +20,30 @@ import {
   UserDataProcessingStatusEnum
 } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
+  MessageWithContent,
+  MessageWithoutContent,
+  RetrievedMessageWithContent,
+  RetrievedMessageWithoutContent
+} from "@pagopa/io-functions-commons/dist/src/models/message";
+import {
+  MessageStatus,
+  RetrievedMessageStatus
+} from "@pagopa/io-functions-commons/dist/src/models/message_status";
+import {
+  Components,
+  MessageView,
+  RetrievedMessageView,
+  Status
+} from "@pagopa/io-functions-commons/dist/src/models/message_view";
+import {
   NewNotification,
   NotificationAddressSourceEnum,
   RetrievedNotification
 } from "@pagopa/io-functions-commons/dist/src/models/notification";
+import {
+  NotificationStatus,
+  NotificationStatusId
+} from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import {
   Profile,
   RetrievedProfile
@@ -26,6 +56,12 @@ import {
   toAuthorizedRecipients
 } from "@pagopa/io-functions-commons/dist/src/models/service";
 import {
+  AccessReadMessageStatusEnum,
+  makeServicesPreferencesDocumentId,
+  RetrievedServicePreference,
+  ServicePreference
+} from "@pagopa/io-functions-commons/dist/src/models/service_preference";
+import {
   makeUserDataProcessingId,
   UserDataProcessing,
   UserDataProcessingId
@@ -34,54 +70,18 @@ import {
   NonNegativeInteger,
   NonNegativeNumber
 } from "@pagopa/ts-commons/lib/numbers";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import {
   EmailString,
   FiscalCode,
   NonEmptyString,
   OrganizationFiscalCode
 } from "@pagopa/ts-commons/lib/strings";
-
-import { MessageBodyMarkdown } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageBodyMarkdown";
-import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
-import { NotRejectedMessageStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotRejectedMessageStatusValue";
-import { MessageSubject } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageSubject";
-import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
-import { NotificationChannelStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannelStatusValue";
-import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
-import { TimeToLiveSeconds } from "@pagopa/io-functions-commons/dist/generated/definitions/TimeToLiveSeconds";
-import {
-  MessageWithContent,
-  MessageWithoutContent,
-  RetrievedMessageWithContent,
-  RetrievedMessageWithoutContent
-} from "@pagopa/io-functions-commons/dist/src/models/message";
-import {
-  MessageStatus,
-  RetrievedMessageStatus
-} from "@pagopa/io-functions-commons/dist/src/models/message_status";
-import {
-  NotificationStatus,
-  NotificationStatusId
-} from "@pagopa/io-functions-commons/dist/src/models/notification_status";
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import { ArchiveInfo } from "../ExtractUserDataActivity/handler";
-import { EmailAddress } from "../generated/definitions/EmailAddress";
-import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
-import {
-  AccessReadMessageStatusEnum,
-  makeServicesPreferencesDocumentId,
-  RetrievedServicePreference,
-  ServicePreference
-} from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
-import {
-  Components,
-  MessageView,
-  RetrievedMessageView,
-  Status
-} from "@pagopa/io-functions-commons/dist/src/models/message_view";
-import { FeatureLevelTypeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/FeatureLevelType";
+
+import { ArchiveInfo } from "../ExtractUserDataActivity/handler";
+import { EmailAddress } from "../generated/definitions/EmailAddress";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
 
@@ -385,13 +385,13 @@ export const aArchiveInfo = pipe(
 export const aServicePreferenceVersion = 0 as NonNegativeInteger;
 
 export const aServicePreference: ServicePreference = {
+  accessReadMessageStatus: AccessReadMessageStatusEnum.ALLOW,
   fiscalCode: aFiscalCode,
-  serviceId: aServiceId,
-  settingsVersion: aServicePreferenceVersion,
-  isWebhookEnabled: true,
   isEmailEnabled: true,
   isInboxEnabled: true,
-  accessReadMessageStatus: AccessReadMessageStatusEnum.ALLOW
+  isWebhookEnabled: true,
+  serviceId: aServiceId,
+  settingsVersion: aServicePreferenceVersion
 };
 
 export const aRetrievedServicePreferences: RetrievedServicePreference = {
@@ -402,10 +402,10 @@ export const aRetrievedServicePreferences: RetrievedServicePreference = {
     _ts: 1
   },
   ...aServicePreference,
-  kind: "IRetrievedServicePreference",
   id: makeServicesPreferencesDocumentId(
     aFiscalCode,
     aServiceId,
     aServicePreferenceVersion
-  )
+  ),
+  kind: "IRetrievedServicePreference"
 };

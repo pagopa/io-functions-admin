@@ -1,6 +1,7 @@
-import * as E from "fp-ts/lib/Either";
 import { MailerConfig } from "@pagopa/io-functions-commons/dist/src/mailer";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
 
 const aMailFrom = "example@test.com";
 
@@ -9,7 +10,10 @@ const expectRight = <L, R>(e: E.Either<L, R>, t: (r: R) => void = noop) =>
   pipe(
     e,
     E.fold(
-      _ => fail(`Expecting right, received left. Value: ${JSON.stringify(_)}`),
+      _ =>
+        assert.fail(
+          `Expecting right, received left. Value: ${JSON.stringify(_)}`
+        ),
       t
     )
   );
@@ -18,7 +22,7 @@ const expectLeft = <L, R>(e: E.Either<L, R>, t: (l: L) => void = noop) =>
   pipe(
     e,
     E.fold(t, _ =>
-      fail(`Expecting left, received right. Value: ${JSON.stringify(_)}`)
+      assert.fail(`Expecting left, received right. Value: ${JSON.stringify(_)}`)
     )
   );
 
@@ -40,10 +44,10 @@ describe("MailerConfig", () => {
   it("should decode configuration for sendgrid even if mailup conf is passed", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
-      NODE_ENV: "production",
-      SENDGRID_API_KEY: "a-sg-key",
+      MAILUP_SECRET: "a-mu-secret",
       MAILUP_USERNAME: "a-mu-username",
-      MAILUP_SECRET: "a-mu-secret"
+      NODE_ENV: "production",
+      SENDGRID_API_KEY: "a-sg-key"
     };
     const result = MailerConfig.decode(rawConf);
 
@@ -55,9 +59,9 @@ describe("MailerConfig", () => {
   it("should decode configuration for mailup", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
-      NODE_ENV: "production",
+      MAILUP_SECRET: "a-mu-secret",
       MAILUP_USERNAME: "a-mu-username",
-      MAILUP_SECRET: "a-mu-secret"
+      NODE_ENV: "production"
     };
     const result = MailerConfig.decode(rawConf);
 
@@ -81,8 +85,8 @@ describe("MailerConfig", () => {
 
     const rawConf = {
       MAIL_FROM: aMailFrom,
-      NODE_ENV: "production",
-      MAIL_TRANSPORTS: [aRawTrasport, aRawTrasport].join(";")
+      MAIL_TRANSPORTS: [aRawTrasport, aRawTrasport].join(";"),
+      NODE_ENV: "production"
     };
     const result = MailerConfig.decode(rawConf);
 
@@ -94,8 +98,8 @@ describe("MailerConfig", () => {
   it("should decode configuration for mailhog", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
-      NODE_ENV: "dev",
-      MAILHOG_HOSTNAME: "a-mh-host"
+      MAILHOG_HOSTNAME: "a-mh-host",
+      NODE_ENV: "dev"
     };
     const result = MailerConfig.decode(rawConf);
 
@@ -127,8 +131,8 @@ describe("MailerConfig", () => {
   it("should not allow mailhog if in prod", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
-      NODE_ENV: "production",
-      MAILHOG_HOSTNAME: "a-mh-host"
+      MAILHOG_HOSTNAME: "a-mh-host",
+      NODE_ENV: "production"
     };
     const result = MailerConfig.decode(rawConf);
 
@@ -138,8 +142,8 @@ describe("MailerConfig", () => {
   it("should not decode configuration with empty transport", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
-      NODE_ENV: "production",
-      MAIL_TRANSPORTS: ""
+      MAIL_TRANSPORTS: "",
+      NODE_ENV: "production"
     };
     const result = MailerConfig.decode(rawConf);
 
@@ -157,8 +161,8 @@ describe("MailerConfig", () => {
 
   it("should not decode ambiguos configuration", () => {
     const withMailUp = {
-      MAILUP_USERNAME: "a-mu-username",
-      MAILUP_SECRET: "a-mu-secret"
+      MAILUP_SECRET: "a-mu-secret",
+      MAILUP_USERNAME: "a-mu-username"
     };
     const withSendGrid = {
       SENDGRID_API_KEY: "a-sg-key"

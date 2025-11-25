@@ -1,16 +1,16 @@
 import { Context } from "@azure/functions";
 import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-
-import * as HtmlToText from "html-to-text";
-import { markdownToHtml } from "@pagopa/io-functions-commons/dist/src/utils/markdown";
-import * as t from "io-ts";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import * as NodeMailer from "nodemailer";
 import { sendMail } from "@pagopa/io-functions-commons/dist/src/mailer";
+import { markdownToHtml } from "@pagopa/io-functions-commons/dist/src/utils/markdown";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as HtmlToText from "html-to-text";
+import * as t from "io-ts";
+import * as NodeMailer from "nodemailer";
+
 import { EmailAddress } from "../generated/definitions/EmailAddress";
 
 // TODO: switch text based on user's preferred_language
@@ -63,7 +63,6 @@ export const getActivityFunction = (
   lMailerTransporter: NodeMailer.Transporter,
   notificationDefaultParams: INotificationDefaults
 ) => (context: Context, input: unknown): Promise<ActivityResult> => {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const failure = (reason: string) => {
     context.log.error(reason);
     return ActivityResultFailure.encode({
@@ -72,7 +71,6 @@ export const getActivityFunction = (
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const success = () =>
     ActivityResultSuccess.encode({
       kind: "SUCCESS"
@@ -89,7 +87,7 @@ export const getActivityFunction = (
       )
     ),
     TE.fromEither,
-    TE.chainW(({ toAddress, fiscalCode }) => {
+    TE.chainW(({ fiscalCode, toAddress }) => {
       const logPrefix = `SendUserDataDeleteEmailActivity|PROFILE=${fiscalCode}`;
       context.log.verbose(`${logPrefix}|Sending user data delete email`);
 

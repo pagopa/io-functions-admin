@@ -1,32 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import * as E from "fp-ts/lib/Either";
-import { some } from "fp-ts/lib/Option";
-
-import * as stream from "stream";
-import * as yaml from "yaml";
-import * as zipstream from "../../utils/zip";
-
-import { context as contextMock } from "../../__mocks__/durable-functions";
-import {
-  aFiscalCode,
-  aMessageView,
-  aProfile,
-  aRetrievedMessageStatus,
-  aRetrievedNotificationStatus,
-  aRetrievedServicePreferences
-} from "../../__mocks__/mocks";
-
-import {
-  ActivityInput,
-  ActivityResultSuccess,
-  createExtractUserDataActivityHandler
-} from "../handler";
-
-import archiver = require("archiver");
-import { BlobService } from "azure-storage";
-import * as TE from "fp-ts/lib/TaskEither";
 import { MessageModel } from "@pagopa/io-functions-commons/dist/src/models/message";
 import { MessageStatusModel } from "@pagopa/io-functions-commons/dist/src/models/message_status";
+import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import {
   NotificationModel,
   RetrievedNotification
@@ -37,16 +12,39 @@ import * as asyncI from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import archiver = require("archiver");
+import { BlobService } from "azure-storage";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import { some } from "fp-ts/lib/Option";
+import { none } from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as stream from "stream";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import * as yaml from "yaml";
+
+import { context as contextMock } from "../../__mocks__/durable-functions";
+import {
+  aFiscalCode,
+  aMessageView,
+  aProfile,
+  aRetrievedMessageStatus,
+  aRetrievedNotificationStatus,
+  aRetrievedServicePreferences
+} from "../../__mocks__/mocks";
 import {
   aMessageContent,
   aRetrievedMessageWithoutContent,
   aRetrievedNotification
 } from "../../__mocks__/mocks";
-import { AllUserData } from "../../utils/userData";
-import { none } from "fp-ts/lib/Option";
-import { pipe } from "fp-ts/lib/function";
-import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import { ServicePreferencesDeletableModel } from "../../utils/extensions/models/service_preferences";
+import { AllUserData } from "../../utils/userData";
+import * as zipstream from "../../utils/zip";
+import {
+  ActivityInput,
+  ActivityResultSuccess,
+  createExtractUserDataActivityHandler
+} from "../handler";
 
 const anotherRetrievedNotification: RetrievedNotification = {
   ...aRetrievedNotification,
@@ -54,23 +52,21 @@ const anotherRetrievedNotification: RetrievedNotification = {
 };
 
 const messageIteratorMock = {
-  next: jest.fn(() =>
+  next: vi.fn(() =>
     Promise.resolve({
-      value: jest.fn(() => [E.right(aRetrievedMessageWithoutContent)])
+      value: vi.fn(() => [E.right(aRetrievedMessageWithoutContent)])
     })
   )
 };
 
-jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
-  return {
-    [Symbol.asyncIterator]: () => messageIteratorMock
-  };
-});
+vi.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => ({
+  [Symbol.asyncIterator]: () => messageIteratorMock
+}));
 
 const notificationIteratorMock = {
-  next: jest.fn(() =>
+  next: vi.fn(() =>
     Promise.resolve({
-      value: jest.fn(() => [
+      value: vi.fn(() => [
         E.right(aRetrievedNotification),
         E.right(anotherRetrievedNotification)
       ])
@@ -78,37 +74,29 @@ const notificationIteratorMock = {
   )
 };
 
-jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
-  return {
-    [Symbol.asyncIterator]: () => notificationIteratorMock
-  };
-});
+vi.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => ({
+  [Symbol.asyncIterator]: () => notificationIteratorMock
+}));
 
-jest
-  .spyOn(asyncI, "asyncIterableToArray")
-  .mockImplementationOnce(() =>
-    Promise.resolve([
-      [E.right(aRetrievedNotification)],
-      [E.right(anotherRetrievedNotification)]
-    ])
-  );
+vi.spyOn(asyncI, "asyncIterableToArray").mockImplementationOnce(() =>
+  Promise.resolve([
+    [E.right(aRetrievedNotification)],
+    [E.right(anotherRetrievedNotification)]
+  ])
+);
 
 // eslint-disable-next-line sonarjs/no-identical-functions
-jest.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => {
-  return {
-    [Symbol.asyncIterator]: () => messageIteratorMock
-  };
-});
+vi.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => ({
+  [Symbol.asyncIterator]: () => messageIteratorMock
+}));
 
-jest
-  .spyOn(asyncI, "asyncIteratorToArray")
-  .mockImplementation(() =>
-    Promise.resolve([[E.right(aRetrievedMessageWithoutContent)]])
-  );
+vi.spyOn(asyncI, "asyncIteratorToArray").mockImplementation(() =>
+  Promise.resolve([[E.right(aRetrievedMessageWithoutContent)]])
+);
 
-const mockGetContentFromBlob = jest.fn(() => TE.of(some(aMessageContent)));
+const mockGetContentFromBlob = vi.fn(() => TE.of(some(aMessageContent)));
 const messageModelMock = ({
-  findMessages: jest.fn(() => TE.fromEither(E.right(messageIteratorMock))),
+  findMessages: vi.fn(() => TE.fromEither(E.right(messageIteratorMock))),
   getContentFromBlob: mockGetContentFromBlob
 } as any) as MessageModel;
 
@@ -119,18 +107,10 @@ export async function* asyncIteratorOf<T>(items: T[]) {
   }
 }
 
-const mockDeleteServicePreferences = jest.fn<
-  ReturnType<InstanceType<typeof ServicePreferencesDeletableModel>["delete"]>,
-  Parameters<InstanceType<typeof ServicePreferencesDeletableModel>["delete"]>
->(() => TE.of("anything"));
-const mockFindAllServPreferencesByFiscalCode = jest.fn<
-  ReturnType<
-    InstanceType<typeof ServicePreferencesDeletableModel>["findAllByFiscalCode"]
-  >,
-  Parameters<
-    InstanceType<typeof ServicePreferencesDeletableModel>["findAllByFiscalCode"]
-  >
->(() => asyncIteratorOf([E.right(aRetrievedServicePreferences)]));
+const mockDeleteServicePreferences = vi.fn(() => TE.of("anything"));
+const mockFindAllServPreferencesByFiscalCode = vi.fn(() =>
+  asyncIteratorOf([E.right(aRetrievedServicePreferences)])
+);
 
 const servicePreferencesModelMock = ({
   delete: mockDeleteServicePreferences,
@@ -138,35 +118,33 @@ const servicePreferencesModelMock = ({
 } as unknown) as ServicePreferencesDeletableModel;
 
 const iteratorGenMock = async function*(arr: any[]) {
-  for (let a of arr) yield a;
+  for (const a of arr) yield a;
 };
 
 const messageViewModelMock = ({
-  getQueryIterator: jest.fn(() => iteratorGenMock([E.right(aMessageView)]))
+  getQueryIterator: vi.fn(() => iteratorGenMock([E.right(aMessageView)]))
 } as any) as MessageViewModel;
 
 const messageStatusModelMock = ({
-  findLastVersionByModelId: jest.fn(() =>
+  findLastVersionByModelId: vi.fn(() =>
     TE.fromEither(E.right(some(aRetrievedMessageStatus)))
   )
 } as any) as MessageStatusModel;
 
 const profileModelMock = ({
-  findLastVersionByModelId: jest.fn(() =>
-    TE.fromEither(E.right(some(aProfile)))
-  )
+  findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(some(aProfile))))
 } as any) as ProfileModel;
 
-const mockFindNotificationForMessage = jest.fn(() =>
+const mockFindNotificationForMessage = vi.fn(() =>
   TE.of(some(aRetrievedNotification))
 );
 const notificationModelMock = ({
   findNotificationForMessage: mockFindNotificationForMessage,
-  getQueryIterator: jest.fn(() => notificationIteratorMock)
+  getQueryIterator: vi.fn(() => notificationIteratorMock)
 } as any) as NotificationModel;
 
 const notificationStatusModelMock = ({
-  findOneNotificationStatusByNotificationChannel: jest.fn(() =>
+  findOneNotificationStatusByNotificationChannel: vi.fn(() =>
     TE.fromEither(E.right(some(aRetrievedNotificationStatus)))
   )
 } as any) as NotificationStatusModel;
@@ -178,7 +156,7 @@ const setupStreamMocks = () => {
   const { e1: errorOrResult, e2: resolve } = DeferredPromise<void>();
   const aBlobStream = new stream.PassThrough();
   const blobServiceMock = ({
-    createWriteStreamToBlockBlob: jest.fn((_, __, ___, cb) => {
+    createWriteStreamToBlockBlob: vi.fn((_, __, ___, cb) => {
       // the following callback must be executed after zipStream.finalize
       errorOrResult.then(cb).catch();
       return aBlobStream;
@@ -187,20 +165,18 @@ const setupStreamMocks = () => {
   const aZipStream = archiver.create("zip");
   const origFinalize = aZipStream.finalize.bind(aZipStream);
   // eslint-disable-next-line functional/immutable-data
-  aZipStream.finalize = jest.fn().mockImplementationOnce(() => {
-    return origFinalize().then(resolve);
-  });
-  jest
-    .spyOn(zipstream, "getEncryptedZipStream")
-    .mockReturnValueOnce(aZipStream);
-  return { blobServiceMock, aZipStream };
+  vi.spyOn(aZipStream, "finalize")
+    .mockImplementation()
+    .mockImplementationOnce(() => origFinalize().then(resolve));
+  vi.spyOn(zipstream, "getEncryptedZipStream").mockReturnValueOnce(aZipStream);
+  return { aZipStream, blobServiceMock };
 };
 
 const aUserDataContainerName = "aUserDataContainerName" as NonEmptyString;
 
 describe("createExtractUserDataActivityHandler", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should handle export for existing user", async () => {
@@ -213,9 +189,9 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationModel: notificationModelMock,
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
+      servicePreferencesModel: servicePreferencesModelMock,
       userDataBlobService: blobServiceMock,
-      userDataContainerName: aUserDataContainerName,
-      servicePreferencesModel: servicePreferencesModelMock
+      userDataContainerName: aUserDataContainerName
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -227,21 +203,23 @@ describe("createExtractUserDataActivityHandler", () => {
       ActivityResultSuccess.decode,
       E.fold(
         err =>
-          fail(`Failing decoding result, response: ${readableReport(err)}`),
+          assert.fail(
+            `Failing decoding result, response: ${readableReport(err)}`
+          ),
         e => expect(e.kind).toBe("SUCCESS")
       )
     );
   });
 
   it("should not export webhook notification data", async () => {
-    const { blobServiceMock, aZipStream } = setupStreamMocks();
-    const appendSpy = jest.spyOn(aZipStream, "append");
+    const { aZipStream, blobServiceMock } = setupStreamMocks();
+    const appendSpy = vi.spyOn(aZipStream, "append");
 
     const notificationWebhookModelMock = ({
-      findNotificationForMessage: jest.fn(() =>
+      findNotificationForMessage: vi.fn(() =>
         TE.fromEither(E.right(some(aRetrievedNotification)))
       ),
-      getQueryIterator: jest.fn(() => notificationIteratorMock)
+      getQueryIterator: vi.fn(() => notificationIteratorMock)
     } as any) as NotificationModel;
 
     const handler = createExtractUserDataActivityHandler({
@@ -252,9 +230,9 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationModel: notificationWebhookModelMock,
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
+      servicePreferencesModel: servicePreferencesModelMock,
       userDataBlobService: blobServiceMock,
-      userDataContainerName: aUserDataContainerName,
-      servicePreferencesModel: servicePreferencesModelMock
+      userDataContainerName: aUserDataContainerName
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -272,8 +250,8 @@ describe("createExtractUserDataActivityHandler", () => {
   });
 
   it("should query using correct data", async () => {
-    const { blobServiceMock, aZipStream } = setupStreamMocks();
-    const appendSpy = jest.spyOn(aZipStream, "append");
+    const { aZipStream, blobServiceMock } = setupStreamMocks();
+    const appendSpy = vi.spyOn(aZipStream, "append");
 
     const handler = createExtractUserDataActivityHandler({
       messageContentBlobService: blobServiceMock,
@@ -283,9 +261,9 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationModel: notificationModelMock,
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
+      servicePreferencesModel: servicePreferencesModelMock,
       userDataBlobService: blobServiceMock,
-      userDataContainerName: aUserDataContainerName,
-      servicePreferencesModel: servicePreferencesModelMock
+      userDataContainerName: aUserDataContainerName
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -328,9 +306,9 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationModel: notificationModelMock,
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
+      servicePreferencesModel: servicePreferencesModelMock,
       userDataBlobService: blobServiceMock,
-      userDataContainerName: aUserDataContainerName,
-      servicePreferencesModel: servicePreferencesModelMock
+      userDataContainerName: aUserDataContainerName
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode
@@ -352,9 +330,9 @@ describe("createExtractUserDataActivityHandler", () => {
       notificationModel: notificationModelMock,
       notificationStatusModel: notificationStatusModelMock,
       profileModel: profileModelMock,
+      servicePreferencesModel: servicePreferencesModelMock,
       userDataBlobService: blobServiceMock,
-      userDataContainerName: aUserDataContainerName,
-      servicePreferencesModel: servicePreferencesModelMock
+      userDataContainerName: aUserDataContainerName
     });
     const input: ActivityInput = {
       fiscalCode: aFiscalCode

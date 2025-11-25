@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, sonarjs/no-identical-functions */
 
-import * as TE from "fp-ts/lib/TaskEither";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import {
+  UserDataProcessing,
+  UserDataProcessingModel
+} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { context as contextMock } from "../../__mocks__/durable-functions";
 import { aUserDataProcessing } from "../../__mocks__/mocks";
-
 import {
   ActivityInput,
   ActivityResultFailure,
@@ -13,18 +20,10 @@ import {
   createSetUserDataProcessingStatusActivityHandler
 } from "../handler";
 
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import {
-  UserDataProcessing,
-  UserDataProcessingModel
-} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { pipe } from "fp-ts/lib/function";
-
 describe("SetUserDataProcessingStatusActivityHandler", () => {
   it("should handle a correct status change", async () => {
     const mockModel = ({
-      createOrUpdateByNewOne: jest.fn(() =>
+      createOrUpdateByNewOne: vi.fn(() =>
         TE.fromEither(
           E.right({
             ...aUserDataProcessing,
@@ -49,7 +48,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
   it("should handle a query error", async () => {
     const mockModel = ({
-      createOrUpdateByNewOne: jest.fn(() =>
+      createOrUpdateByNewOne: vi.fn(() =>
         TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
     } as any) as UserDataProcessingModel;
@@ -69,7 +68,9 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       ActivityResultFailure.decode,
       E.fold(
         err =>
-          fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
+          assert.fail(
+            `Failing decoding result, response: ${JSON.stringify(err)}`
+          ),
         failure => {
           expect(failure.kind).toEqual(expect.any(String));
         }
@@ -92,7 +93,9 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       ActivityResultFailure.decode,
       E.fold(
         err =>
-          fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
+          assert.fail(
+            `Failing decoding result, response: ${JSON.stringify(err)}`
+          ),
         failure => {
           expect(failure.kind).toEqual(expect.any(String));
         }
@@ -104,12 +107,12 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
     const reason = "any reason";
     const aFailedUserDataProcessing = {
       ...aUserDataProcessing,
-      status: UserDataProcessingStatusEnum.FAILED,
-      reason
+      reason,
+      status: UserDataProcessingStatusEnum.FAILED
     } as UserDataProcessing;
     const nextStatus = UserDataProcessingStatusEnum.PENDING;
     const mockModel = ({
-      createOrUpdateByNewOne: jest.fn(() =>
+      createOrUpdateByNewOne: vi.fn(() =>
         TE.fromEither(
           E.right({
             ...aUserDataProcessing,
@@ -132,7 +135,9 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       ActivityResultSuccess.decode,
       E.fold(
         err =>
-          fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
+          assert.fail(
+            `Failing decoding result, response: ${JSON.stringify(err)}`
+          ),
         res => {
           expect(res.kind).toBe("SUCCESS");
         }
@@ -147,7 +152,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
     } as UserDataProcessing;
     const nextStatus = UserDataProcessingStatusEnum.FAILED;
     const mockModel = ({
-      createOrUpdateByNewOne: jest.fn(() =>
+      createOrUpdateByNewOne: vi.fn(() =>
         TE.fromEither(
           E.right({
             ...aUserDataProcessing,
@@ -170,7 +175,9 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       ActivityResultSuccess.decode,
       E.fold(
         err =>
-          fail(`Failing decoding result, response: ${JSON.stringify(err)}`),
+          assert.fail(
+            `Failing decoding result, response: ${JSON.stringify(err)}`
+          ),
         res => {
           expect(res.kind).toBe("SUCCESS");
         }

@@ -111,7 +111,7 @@ const startOrchestrator = async (
 ): Promise<string> =>
   pipe(
     isOrchestratorRunning(dfClient, orchestratorId),
-    TE.chain(_ =>
+    TE.chain((_) =>
       !_.isRunning
         ? TE.tryCatch(
             () =>
@@ -127,7 +127,7 @@ const startOrchestrator = async (
     ),
 
     // if something wrong, just raise the error
-    TE.mapLeft(error => {
+    TE.mapLeft((error) => {
       throw error;
     }),
     TE.toUnion
@@ -236,7 +236,6 @@ const getAction = (
   context: Context,
   insertFailure: InsertTableEntity,
   removeFailure: DeleteTableEntity
-  // eslint-disable-next-line sonarjs/cognitive-complexity
 ) => (processable: Processable): Lazy<Promise<string | void>> =>
   flags.ENABLE_USER_DATA_DOWNLOAD && ProcessableUserDataDownload.is(processable)
     ? (): Promise<string> =>
@@ -252,27 +251,25 @@ const getAction = (
     : ClosedUserDataProcessing.is(processable)
     ? (): Promise<void> =>
         processClosedUserDataProcessing(context, processable, removeFailure)
-    : // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-      async () => void 0;
+    : async () => void 0;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, sonarjs/cognitive-complexity
 export const triggerHandler = (
   insertFailure: InsertTableEntity,
   removeFailure: DeleteTableEntity
 ) => (
   context: Context,
-  input: unknown // eslint-disable-next-line sonarjs/cognitive-complexity
+  input: unknown
 ): Promise<ReadonlyArray<string | void>> => {
   const operations = pipe(
     input,
     CosmosDbDocumentCollection.decode,
     E.fold(
-      err => {
+      (err) => {
         throw Error(
           `${logPrefix}: cannot decode input [${readableReport(err)}]`
         );
       },
-      docs =>
+      (docs) =>
         docs.reduce(
           (lazyOperations, processableOrNot) =>
             pipe(
@@ -280,7 +277,7 @@ export const triggerHandler = (
               Processable.decode,
               E.map(getAction(context, insertFailure, removeFailure)),
               E.fold(
-                _ => {
+                (_) => {
                   context.log.warn(
                     `${logPrefix}: skipping document [${JSON.stringify(
                       processableOrNot
@@ -288,7 +285,7 @@ export const triggerHandler = (
                   );
                   return lazyOperations;
                 },
-                lazyOp => [...lazyOperations, lazyOp]
+                (lazyOp) => [...lazyOperations, lazyOp]
               )
             ),
           [] as ReadonlyArray<Lazy<Promise<string | void>>>
@@ -302,5 +299,5 @@ export const triggerHandler = (
     }`
   );
 
-  return Promise.all(operations.map(op => op()));
+  return Promise.all(operations.map((op) => op()));
 };

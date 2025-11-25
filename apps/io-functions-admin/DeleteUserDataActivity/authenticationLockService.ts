@@ -1,22 +1,17 @@
-/* eslint-disable no-invalid-this */
-
 /**
  * This service retrieves and updates the user profile from the API system using
  * an API client.
  */
 
-import { TableClient, TransactionAction, odata } from "@azure/data-tables";
-
-import * as t from "io-ts";
-
-import { flow, identity, pipe } from "fp-ts/lib/function";
-import * as TE from "fp-ts/TaskEither";
-import * as E from "fp-ts/lib/Either";
-import * as ROA from "fp-ts/ReadonlyArray";
-
-import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { DateFromString } from "@pagopa/ts-commons/lib/dates";
+import { odata, TableClient, TransactionAction } from "@azure/data-tables";
 import * as AI from "@pagopa/io-functions-commons/dist/src/utils/async_iterable_task";
+import { DateFromString } from "@pagopa/ts-commons/lib/dates";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
+import { flow, identity, pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as ROA from "fp-ts/ReadonlyArray";
+import * as t from "io-ts";
 
 import { UnlockCode } from "../generated/definitions/UnlockCode";
 import { errorsToError } from "../utils/errorHandler";
@@ -34,12 +29,11 @@ export type NotReleasedAuthenticationLockData = t.TypeOf<
 >;
 const NotReleasedAuthenticationLockData = t.exact(
   t.type({
+    CreatedAt: DateFromString,
     partitionKey: FiscalCode,
     rowKey: UnlockCode,
-    timestamp: DateFromString,
 
-    // eslint-disable-next-line sort-keys
-    CreatedAt: DateFromString
+    timestamp: DateFromString
   })
 );
 
@@ -75,17 +69,6 @@ export default class AuthenticationLockService {
   constructor(private readonly tableClient: TableClient) {}
 
   /**
-   * Retrieve all the user authentication lock data records, both released or not
-   *
-   * @param fiscalCode the user fiscal code
-   * @returns a list of all the user authentication lock data, if exists
-   */
-  public readonly getAllUserAuthenticationLockData = (
-    fiscalCode: FiscalCode
-  ): TE.TaskEither<Error, ReadonlyArray<AuthenticationLockData>> =>
-    this.getAllUserAuthenticationLocks(fiscalCode);
-
-  /**
    * Delete the user authentication lock data
    *
    * @param fiscalCode the CF of the user
@@ -94,7 +77,7 @@ export default class AuthenticationLockService {
    */
   public readonly deleteUserAuthenticationLockData = (
     fiscalCode: FiscalCode,
-    unlockCodes: ReadonlyArray<UnlockCode>
+    unlockCodes: readonly UnlockCode[]
   ): TE.TaskEither<Error, true> =>
     pipe(
       unlockCodes,
@@ -129,13 +112,24 @@ export default class AuthenticationLockService {
       TE.map(() => true as const)
     );
 
+  /**
+   * Retrieve all the user authentication lock data records, both released or not
+   *
+   * @param fiscalCode the user fiscal code
+   * @returns a list of all the user authentication lock data, if exists
+   */
+  public readonly getAllUserAuthenticationLockData = (
+    fiscalCode: FiscalCode
+  ): TE.TaskEither<Error, readonly AuthenticationLockData[]> =>
+    this.getAllUserAuthenticationLocks(fiscalCode);
+
   // -----------------------------------
   // Private Methods
   // -----------------------------------
 
   private readonly getAllUserAuthenticationLocks = (
     fiscalCode: FiscalCode
-  ): TE.TaskEither<Error, ReadonlyArray<AuthenticationLockData>> =>
+  ): TE.TaskEither<Error, readonly AuthenticationLockData[]> =>
     pipe(
       this.tableClient.listEntities({
         queryOptions: {

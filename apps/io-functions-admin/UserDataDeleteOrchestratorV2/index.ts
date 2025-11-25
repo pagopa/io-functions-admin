@@ -1,5 +1,6 @@
-import * as df from "durable-functions";
 import { Day } from "@pagopa/ts-commons/lib/units";
+import * as df from "durable-functions";
+
 import {
   getConfigOrThrow,
   isUserEligibleForInstantDelete

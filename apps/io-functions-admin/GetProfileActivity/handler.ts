@@ -2,20 +2,18 @@
  * Get a Profile record
  */
 
-import * as t from "io-ts";
-
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
-import { pipe } from "fp-ts/lib/function";
-
 import { Context } from "@azure/functions";
-
 import {
   ProfileModel,
   RetrievedProfile
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
+
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 
 // Activity input
@@ -76,7 +74,6 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 const logPrefix = `GetProfileActivity`;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 function assertNever(_: never): void {
   throw new Error("should not have executed this");
 }
@@ -96,21 +93,20 @@ const logFailure = (context: Context) => (
         `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
       );
       break;
+    case "NOT_FOUND_FAILURE":
+      // it might not be a failure
+      context.log.warn(`${logPrefix}|Error Profile not found`);
+      break;
     case "QUERY_FAILURE":
       context.log.error(
         `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
       );
-      break;
-    case "NOT_FOUND_FAILURE":
-      // it might not be a failure
-      context.log.warn(`${logPrefix}|Error Profile not found`);
       break;
     default:
       assertNever(failure);
   }
 };
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const createGetProfileActivityHandler = (profileModel: ProfileModel) => (
   context: Context,
   input: unknown

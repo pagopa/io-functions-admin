@@ -1,13 +1,20 @@
+/* eslint-disable vitest/prefer-called-with */
+import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { IOrchestrationFunctionContext } from "durable-functions/lib/src/iorchestrationfunctioncontext";
 import * as E from "fp-ts/lib/Either";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
   mockOrchestratorContext,
   mockOrchestratorGetInput
 } from "../../__mocks__/durable-functions";
+import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import { ActivityResultSuccess as CheckLastStatusActivityResultSuccess } from "../../UserDataProcessingCheckLastStatusActivity/handler";
 import { ActivityResultSuccess as FindFailureReasonActivityResultSuccess } from "../../UserDataProcessingFindFailureReasonActivity/handler";
-import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import {
   handler,
   InvalidInputFailure,
@@ -15,25 +22,21 @@ import {
   OrchestratorSuccess,
   SkippedDocument
 } from "../handler";
-import { IOrchestrationFunctionContext } from "durable-functions/lib/src/iorchestrationfunctioncontext";
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 
-const checkLastStatusActivity = jest.fn().mockImplementation(() =>
+const checkLastStatusActivity = vi.fn().mockImplementation(() =>
   CheckLastStatusActivityResultSuccess.encode({
     kind: "SUCCESS",
     value: UserDataProcessingStatusEnum.FAILED
   })
 );
 
-const findFailureReasonActivity = jest.fn().mockImplementation(() =>
+const findFailureReasonActivity = vi.fn().mockImplementation(() =>
   FindFailureReasonActivityResultSuccess.encode({
     kind: "SUCCESS",
     value: "Any found reason" as NonEmptyString
   })
 );
-const setUserDataProcessingStatusActivity = jest.fn().mockImplementation(() =>
+const setUserDataProcessingStatusActivity = vi.fn().mockImplementation(() =>
   SetUserDataProcessingStatusActivityResultSuccess.encode({
     kind: "SUCCESS"
   })
@@ -47,7 +50,7 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
     ? findFailureReasonActivity
     : name === "SetUserDataProcessingStatusActivity"
     ? setUserDataProcessingStatusActivity
-    : jest.fn())(name, ...args);
+    : vi.fn())(name, ...args);
 
 // I assign switchMockImplementation to both because
 // I don't want tests to depend on implementation details
@@ -80,9 +83,10 @@ const choice = "DELETE" as UserDataProcessingChoice;
 const fiscalCode = "DQFCOC07A82Y456X" as FiscalCode;
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
+// eslint-disable-next-line max-lines-per-function
 describe("UserDataProcessingRecoveryOrchestrator", () => {
   it("should fail on invalid input", () => {
     const document = "invalid";

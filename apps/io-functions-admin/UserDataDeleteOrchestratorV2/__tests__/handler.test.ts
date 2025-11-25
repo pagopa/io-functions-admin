@@ -1,4 +1,14 @@
+/* eslint-disable vitest/prefer-called-with */
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { Day, Hour } from "@pagopa/ts-commons/lib/units";
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
@@ -8,22 +18,17 @@ import {
   mockOrchestratorTaskAny
 } from "../../__mocks__/durable-functions";
 import {
-  createUserDataDeleteOrchestratorHandler,
-  InvalidInputFailure,
-  OrchestratorSuccess
-} from "../handler";
-
-import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import { Day, Hour } from "@pagopa/ts-commons/lib/units";
-import {
-  aUserDataProcessing,
   aProfile,
   aRetrievedProfile,
-  aRetrievedServicePreferences
+  aRetrievedServicePreferences,
+  aUserDataProcessing
 } from "../../__mocks__/mocks";
 import { ActivityResultSuccess as DeleteUserDataActivityResultSuccess } from "../../DeleteUserDataActivity/types";
+import {
+  ActivityResultNotFoundFailure as GetProfileActivityResultNotFoundFailure,
+  ActivityResultSuccess as GetProfileActivityResultSuccess
+} from "../../GetProfileActivity/handler";
+import { ActivityResultSuccess as GetServicesPreferencesActivityResultSuccess } from "../../GetServicesPreferencesActivity/handler";
 import {
   ActivityResultNotFoundFailure as GetUserDataProcessingActivityResultNotFoundFailure,
   ActivityResultSuccess as GetUserDataProcessingActivityResultSuccess
@@ -32,20 +37,17 @@ import {
   ActivityResultFailure as IsFailedUserDataProcessingActivityResultFailure,
   ActivityResultSuccess as IsFailedUserDataProcessingActivityResultSuccess
 } from "../../IsFailedUserDataProcessingActivity/handler";
+import { ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess } from "../../SendUserDataDeleteEmailActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
 import { ActivityResultSuccess as SetUserSessionLockActivityResultSuccess } from "../../SetUserSessionLockActivity/handler";
 import { OrchestratorFailure } from "../../UserDataDownloadOrchestrator/handler";
-import {
-  ActivityResultSuccess as GetProfileActivityResultSuccess,
-  ActivityResultNotFoundFailure as GetProfileActivityResultNotFoundFailure
-} from "../../GetProfileActivity/handler";
-import { ActivityResultSuccess as GetServicesPreferencesActivityResultSuccess } from "../../GetServicesPreferencesActivity/handler";
 import { ProcessableUserDataDelete } from "../../UserDataProcessingTrigger/handler";
-import { ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess } from "../../SendUserDataDeleteEmailActivity/handler";
+import {
+  createUserDataDeleteOrchestratorHandler,
+  InvalidInputFailure,
+  OrchestratorSuccess
+} from "../handler";
 import { addDays, addHours } from "../utils";
-import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
-import * as E from "fp-ts/lib/Either";
-import { pipe } from "fp-ts/lib/function";
 
 const aProcessableUserDataDelete = pipe(
   {
@@ -55,7 +57,9 @@ const aProcessableUserDataDelete = pipe(
   },
   ProcessableUserDataDelete.decode,
   E.mapLeft(readableReport),
-  E.getOrElseW(e => fail(`Failed creating a mock input document: ${e}`))
+  E.getOrElseW((e) =>
+    assert.fail(`Failed creating a mock input document: ${e}`)
+  )
 );
 
 const aUserDataDownloadPending = {
@@ -78,58 +82,58 @@ const aUserDataDownloadClosed = {
 
 // this mock will default to a not failed request to be transparent for old tests
 // we will override this just to test new logic for failed requests
-const isFailedUserDataProcessingActivity = jest.fn().mockImplementation(() =>
+const isFailedUserDataProcessingActivity = vi.fn().mockImplementation(() =>
   IsFailedUserDataProcessingActivityResultSuccess.encode({
     kind: "SUCCESS",
     value: false
   })
 );
 
-const setUserDataProcessingStatusActivity = jest.fn().mockImplementation(() =>
+const setUserDataProcessingStatusActivity = vi.fn().mockImplementation(() =>
   SetUserDataProcessingStatusActivityResultSuccess.encode({
     kind: "SUCCESS"
   })
 );
 
-const getUserDataProcessingActivity = jest.fn().mockImplementation(() =>
+const getUserDataProcessingActivity = vi.fn().mockImplementation(() =>
   GetUserDataProcessingActivityResultNotFoundFailure.encode({
     kind: "NOT_FOUND_FAILURE"
   })
 );
 
-const setUserSessionLockActivity = jest.fn().mockImplementation(() =>
+const setUserSessionLockActivity = vi.fn().mockImplementation(() =>
   SetUserSessionLockActivityResultSuccess.encode({
     kind: "SUCCESS"
   })
 );
 
-const deleteUserDataActivity = jest.fn().mockImplementation(() =>
+const deleteUserDataActivity = vi.fn().mockImplementation(() =>
   DeleteUserDataActivityResultSuccess.encode({
     kind: "SUCCESS"
   })
 );
 
-const sendUserDataDeleteEmailActivity = jest.fn().mockImplementation(() =>
+const sendUserDataDeleteEmailActivity = vi.fn().mockImplementation(() =>
   SendUserDataDeleteEmailActivityResultSuccess.encode({
     kind: "SUCCESS"
   })
 );
 
-const getProfileActivity = jest.fn().mockImplementation(() =>
+const getProfileActivity = vi.fn().mockImplementation(() =>
   GetProfileActivityResultSuccess.encode({
     kind: "SUCCESS",
     value: aRetrievedProfile
   })
 );
 
-const getServicePreferencesActivity = jest.fn().mockImplementation(() =>
+const getServicePreferencesActivity = vi.fn().mockImplementation(() =>
   GetServicesPreferencesActivityResultSuccess.encode({
     kind: "SUCCESS",
     preferences: [aRetrievedServicePreferences]
   })
 );
 
-const updateSubscriptionFeed = jest.fn().mockImplementation(() => "SUCCESS");
+const updateSubscriptionFeed = vi.fn().mockImplementation(() => "SUCCESS");
 
 // A mock implementation proxy for df.callActivity/df.df.callActivityWithRetry that routes each call to the correct mock implentation
 const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
@@ -151,7 +155,7 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
     ? updateSubscriptionFeed
     : name === "IsFailedUserDataProcessingActivity"
     ? isFailedUserDataProcessingActivity
-    : jest.fn())(name, ...args);
+    : vi.fn())(name, ...args);
 
 // I assign switchMockImplementation to both because
 // I don't want tests to depend on implementation details
@@ -178,9 +182,9 @@ const consumeOrchestrator = (orch: any) => {
   }
 };
 
-const mockIsUserEligibleForInstantDelete = jest
+const mockIsUserEligibleForInstantDelete = vi
   .fn()
-  .mockImplementation(_ => false);
+  .mockImplementation((_) => false);
 
 // just a convenient cast, good for every test case
 const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
@@ -194,7 +198,7 @@ const expectedRetryOptions = expect.any(Object);
 
 describe("createUserDataDeleteOrchestratorHandler", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("all requests: should fail on invalid input", () => {
@@ -1021,8 +1025,8 @@ describe("createUserDataDeleteOrchestratorHandler", () => {
     expect(sendUserDataDeleteEmailActivity).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
-        toAddress: aProfile.email,
-        fiscalCode: aProcessableUserDataDelete.fiscalCode
+        fiscalCode: aProcessableUserDataDelete.fiscalCode,
+        toAddress: aProfile.email
       })
     );
 

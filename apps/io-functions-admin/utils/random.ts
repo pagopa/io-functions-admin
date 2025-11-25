@@ -2,12 +2,12 @@
  * Utilities for handling random data generation
  */
 
-import * as t from "io-ts";
-import * as E from "fp-ts/lib/Either";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { WithinRangeString } from "@pagopa/ts-commons/lib/strings";
-import * as randomstring from "randomstring";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import * as t from "io-ts";
+import * as randomstring from "randomstring";
 
 /* printable 7 bit ASCII, some special char removed */
 const RANDOM_CHARSET =

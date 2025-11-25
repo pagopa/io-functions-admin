@@ -1,13 +1,10 @@
 import { Context } from "@azure/functions";
-
-import * as express from "express";
-import * as winston from "winston";
-
+import createAzureFunctionHandler from "@pagopa/express-azure-functions/dist/src/createAzureFunctionsHandler";
 import { secureExpressApp } from "@pagopa/io-functions-commons/dist/src/utils/express";
 import { AzureContextTransport } from "@pagopa/io-functions-commons/dist/src/utils/logging";
 import { setAppContext } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
-
-import createAzureFunctionHandler from "@pagopa/express-azure-functions/dist/src/createAzureFunctionsHandler";
+import express from "express";
+import * as winston from "winston";
 
 import { getConfigOrThrow } from "../utils/config";
 import { RegenerateSubscriptionKeys } from "./handler";
@@ -21,9 +18,9 @@ const azureApimConfig = {
 };
 // eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
-const contextTransport = new AzureContextTransport(() => logger, {
+const contextTransport = (new AzureContextTransport(() => logger, {
   level: "debug"
-});
+}) as unknown) as winston.transport;
 winston.add(contextTransport);
 
 // Setup Express
@@ -39,7 +36,7 @@ app.put(
 const azureFunctionHandler = createAzureFunctionHandler(app);
 
 // Binds the express app to an Azure Function handler
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
 function httpStart(context: Context): void {
   logger = context.log;
   setAppContext(app, context);

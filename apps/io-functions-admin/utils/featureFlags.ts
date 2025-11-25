@@ -5,7 +5,6 @@
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const getFlagFromEnv = (name: string, defaultValue: boolean) =>
   pipe(
     O.fromNullable(process.env[name]),

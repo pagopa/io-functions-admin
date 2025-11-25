@@ -1,22 +1,16 @@
-import { TelemetryClient } from "applicationinsights";
-
-import * as t from "io-ts";
-
-import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { hashFiscalCode } from "@pagopa/ts-commons/lib/hash";
-
-import * as RTE from "fp-ts/lib/ReaderTaskEither";
-import * as TE from "fp-ts/lib/TaskEither";
-import * as O from "fp-ts/lib/Option";
-
-import { pipe, flow } from "fp-ts/lib/function";
-
 import {
   ProfileModel,
   RetrievedProfile
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
-
 import * as L from "@pagopa/logger";
+import { hashFiscalCode } from "@pagopa/ts-commons/lib/hash";
+import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { TelemetryClient } from "applicationinsights";
+import { flow, pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as RTE from "fp-ts/lib/ReaderTaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
 
 import { cosmosErrorsToString } from "../utils/errors";
 
@@ -65,7 +59,6 @@ const updateProfile = (profile: RetrievedProfile) => (
     r.profileModel.update({
       ...profile,
       isEmailEnabled:
-        // eslint-disable-next-line no-underscore-dangle
         profile._ts < OPT_OUT_EMAIL_SWITCH_DATE
           ? false
           : profile.isEmailEnabled,

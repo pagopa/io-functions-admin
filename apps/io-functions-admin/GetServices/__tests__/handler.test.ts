@@ -1,48 +1,47 @@
+/* eslint-disable vitest/prefer-called-with */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { left, right } from "fp-ts/lib/Either";
 import * as asyncI from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { left, right } from "fp-ts/lib/Either";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { aRetrievedService, aSeralizedService } from "../../__mocks__/mocks";
 import { GetServicesHandler } from "../handler";
 
-const mockNext = jest.fn();
+const mockNext = vi.fn();
 const serviceAsyncIterator = {
   next: mockNext
 };
 
 const serviceIteratorErrorMock = {
-  next: jest.fn(() =>
+  next: vi.fn(() =>
     Promise.resolve({
       done: true,
-      value: jest.fn(() => [
+      value: vi.fn(() => [
         left(toCosmosErrorResponse(new Error("Query Error")))
       ])
     })
   )
 };
 
-const symbolAsyncIterator = jest.fn(() => {
-  return {
-    [Symbol.asyncIterator]: () => serviceAsyncIterator
-  };
-});
+const symbolAsyncIterator = vi.fn(() => ({
+  [Symbol.asyncIterator]: () => serviceAsyncIterator
+}));
 
-const symbolAsyncErrorIterator = jest.fn(() => {
-  return {
-    [Symbol.asyncIterator]: () => serviceIteratorErrorMock
-  };
-});
+const symbolAsyncErrorIterator = vi.fn(() => ({
+  [Symbol.asyncIterator]: () => serviceIteratorErrorMock
+}));
 
 describe("GetServices", () => {
   it("Should return a query error when a database error occurs", async () => {
-    jest
-      .spyOn(asyncI, "mapAsyncIterable")
-      .mockImplementationOnce(symbolAsyncErrorIterator);
+    vi.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(
+      symbolAsyncErrorIterator
+    );
 
-    jest
-      .spyOn(asyncI, "asyncIteratorToArray")
-      .mockImplementationOnce(() => Promise.reject(new Error("Query Error")));
+    vi.spyOn(asyncI, "asyncIteratorToArray").mockImplementationOnce(() =>
+      Promise.reject(new Error("Query Error"))
+    );
     const mockServiceModel = {
       getCollectionIterator: symbolAsyncErrorIterator
     };
@@ -54,14 +53,14 @@ describe("GetServices", () => {
       undefined as any // Not used
     );
 
-    expect(mockServiceModel.getCollectionIterator).toHaveBeenCalledWith();
+    expect(mockServiceModel.getCollectionIterator).toHaveBeenCalled();
     expect(response.kind).toBe("IResponseErrorQuery");
   });
 
   it("Should return the collection of services from the database", async () => {
-    jest
-      .spyOn(asyncI, "mapAsyncIterable")
-      .mockImplementationOnce(symbolAsyncIterator);
+    vi.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(
+      symbolAsyncIterator
+    );
 
     mockNext.mockImplementationOnce(async () => ({
       done: false,
@@ -92,7 +91,7 @@ describe("GetServices", () => {
       undefined as any // Not used
     );
 
-    expect(mockServiceModel.getCollectionIterator).toHaveBeenCalledWith();
+    expect(mockServiceModel.getCollectionIterator).toHaveBeenCalled();
     expect(response.kind).toBe("IResponseSuccessJson");
     if (response.kind === "IResponseSuccessJson") {
       expect(response.value).toEqual({

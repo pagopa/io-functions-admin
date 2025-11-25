@@ -2,17 +2,7 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
-import * as stream from "stream";
-import * as t from "io-ts";
-
-import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
-
-import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
-import * as ROA from "fp-ts/lib/ReadonlyArray";
-
 import { Context } from "@azure/functions";
-
-import { BlobService } from "azure-storage";
 import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
   MessageModel,
@@ -22,6 +12,7 @@ import {
   MessageStatus,
   MessageStatusModel
 } from "@pagopa/io-functions-commons/dist/src/models/message_status";
+import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import { RetrievedNotification } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import { NotificationModel } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import {
@@ -32,25 +23,30 @@ import {
   Profile,
   ProfileModel
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-
-import * as E from "fp-ts/lib/Either";
-import * as O from "fp-ts/lib/Option";
-import * as TE from "fp-ts/lib/TaskEither";
 import {
   asyncIteratorToArray,
   flattenAsyncIterator
 } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { BlobService } from "azure-storage";
+import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
+import * as E from "fp-ts/lib/Either";
+import { flow, pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as ROA from "fp-ts/lib/ReadonlyArray";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
+import * as stream from "stream";
 import * as yaml from "yaml";
-import { pipe, flow } from "fp-ts/lib/function";
-import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
-import { getEncryptedZipStream } from "../utils/zip";
-import { AllUserData, MessageContentWithId } from "../utils/userData";
-import { generateStrongPassword, StrongPassword } from "../utils/random";
+
 import { getMessageFromCosmosErrors } from "../utils/conversions";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
+import { generateStrongPassword, StrongPassword } from "../utils/random";
+import { AllUserData, MessageContentWithId } from "../utils/userData";
+import { getEncryptedZipStream } from "../utils/zip";
 
 export const ArchiveInfo = t.interface({
   blobName: NonEmptyString,
@@ -130,7 +126,7 @@ const logPrefix = `ExtractUserDataActivity`;
  */
 const fromPromiseEither = <L, R>(
   promise: Promise<E.Either<L, R>>
-): TE.TaskEither<L | Error, R> =>
+): TE.TaskEither<Error | L, R> =>
   pipe(
     TE.tryCatch(() => promise, E.toError),
     TE.chainW(TE.fromEither)
@@ -139,7 +135,7 @@ const fromPromiseEither = <L, R>(
 /**
  * To be used for exhaustive checks
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
 function assertNever(_: never): void {
   throw new Error("should not have executed this");
 }
@@ -154,6 +150,11 @@ const logFailure = (context: Context) => (
   failure: ActivityResultFailure
 ): void => {
   switch (failure.kind) {
+    case "ARCHIVE_GENERATION_FAILURE":
+      context.log.error(
+        `${logPrefix}|Error saving zip bundle|ERROR=${failure.reason}`
+      );
+      break;
     case "INVALID_INPUT_FAILURE":
       context.log.error(
         `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
@@ -162,11 +163,6 @@ const logFailure = (context: Context) => (
     case "QUERY_FAILURE":
       context.log.error(
         `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
-      );
-      break;
-    case "ARCHIVE_GENERATION_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error saving zip bundle|ERROR=${failure.reason}`
       );
       break;
     case "USER_NOT_FOUND_FAILURE":
@@ -187,7 +183,7 @@ export const getProfile = (
   profileModel: ProfileModel,
   fiscalCode: FiscalCode
 ): TE.TaskEither<
-  ActivityResultUserNotFound | ActivityResultQueryFailure,
+  ActivityResultQueryFailure | ActivityResultUserNotFound,
   Profile
 > =>
   pipe(
@@ -212,11 +208,8 @@ export const getProfile = (
 export const getAllMessageContents = (
   messageContentBlobService: BlobService,
   messageModel: MessageModel,
-  messages: ReadonlyArray<RetrievedMessageWithoutContent>
-): TE.TaskEither<
-  ActivityResultQueryFailure,
-  ReadonlyArray<MessageContentWithId>
-> =>
+  messages: readonly RetrievedMessageWithoutContent[]
+): TE.TaskEither<ActivityResultQueryFailure, readonly MessageContentWithId[]> =>
   pipe(
     messages,
     ROA.map(_ => _.id),
@@ -247,8 +240,8 @@ export const getAllMessageContents = (
  */
 export const getAllMessagesStatuses = (
   messageStatusModel: MessageStatusModel,
-  messages: ReadonlyArray<RetrievedMessageWithoutContent>
-): TE.TaskEither<ActivityResultQueryFailure, ReadonlyArray<MessageStatus>> =>
+  messages: readonly RetrievedMessageWithoutContent[]
+): TE.TaskEither<ActivityResultQueryFailure, readonly MessageStatus[]> =>
   pipe(
     messages,
     ROA.map(_ => _.id),
@@ -281,10 +274,10 @@ export const getAllMessagesStatuses = (
  */
 export const findNotificationsForAllMessages = (
   notificationModel: NotificationModel,
-  messages: ReadonlyArray<RetrievedMessageWithoutContent>
+  messages: readonly RetrievedMessageWithoutContent[]
 ): TE.TaskEither<
   ActivityResultQueryFailure,
-  ReadonlyArray<RetrievedNotification>
+  readonly RetrievedNotification[]
 > =>
   pipe(
     messages,
@@ -310,17 +303,14 @@ export const findNotificationsForAllMessages = (
 
 export const findAllNotificationStatuses = (
   notificationStatusModel: NotificationStatusModel,
-  notifications: ReadonlyArray<RetrievedNotification>
-): TE.TaskEither<
-  ActivityResultQueryFailure,
-  ReadonlyArray<NotificationStatus>
-> =>
+  notifications: readonly RetrievedNotification[]
+): TE.TaskEither<ActivityResultQueryFailure, readonly NotificationStatus[]> =>
   pipe(
     notifications,
 
     // compose a query for every supported channel type
     ROA.reduce(
-      [] as ReadonlyArray<readonly [NonEmptyString, NotificationChannelEnum]>,
+      [] as readonly (readonly [NonEmptyString, NotificationChannelEnum])[],
       (queries, { id: notificationId }) => [
         ...queries,
         ...Object.values(NotificationChannelEnum).map(
@@ -372,9 +362,8 @@ export const queryAllUserData = (
   fiscalCode: FiscalCode,
   servicePreferencesModel: ServicePreferencesDeletableModel
 ): TE.TaskEither<
-  ActivityResultUserNotFound | ActivityResultQueryFailure,
+  ActivityResultQueryFailure | ActivityResultUserNotFound,
   AllUserData
-  // eslint-disable-next-line max-params
 > =>
   pipe(
     // step 0: look for the profile
@@ -409,9 +398,9 @@ export const queryAllUserData = (
                   })
                 )
               : TE.of(
-                  ROA.rights(results) as ReadonlyArray<
-                    RetrievedMessageWithoutContent
-                  >
+                  ROA.rights(
+                    results
+                  ) as readonly RetrievedMessageWithoutContent[]
                 )
           )
         ),
@@ -473,15 +462,15 @@ export const queryAllUserData = (
       })
     ),
     // step 2: queries notifications and message contents, which need message data to be queried first
-    TE.chainW(({ profile, messages, messagesView, servicesPreferences }) =>
+    TE.chainW(({ messages, messagesView, profile, servicesPreferences }) =>
       sequenceS(TE.ApplicativePar)({
         messageContents: getAllMessageContents(
           messageContentBlobService,
           messageModel,
           messages
         ),
-        messageStatuses: getAllMessagesStatuses(messageStatusModel, messages),
         messages: TE.of(messages),
+        messageStatuses: getAllMessagesStatuses(messageStatusModel, messages),
         messagesView: TE.of(messagesView),
         notifications: findNotificationsForAllMessages(
           notificationModel,
@@ -497,28 +486,27 @@ export const queryAllUserData = (
     ),
     TE.map(
       ({
-        profile,
-        notifications,
-        messages,
-        messagesView,
         messageContents,
+        messages,
         messageStatuses,
+        messagesView,
+        notifications,
         notificationStatuses,
+        profile,
         servicesPreferences
       }) => ({
         messageContents,
-        messageStatuses,
         messages,
+        messageStatuses,
         messagesView,
-        notificationStatuses,
         notifications,
+        notificationStatuses,
         profiles: [profile],
         servicesPreferences
       })
     )
   );
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
   container: string,
   blob: string
@@ -532,8 +520,8 @@ const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
     { contentSettings: { contentType: "application/zip" } },
     (err, result) => (err ? resolve(E.left(err)) : resolve(E.right(result)))
   );
-  // eslint-disable-next-line sort-keys
-  return { errorOrResult, blobStream };
+
+  return { blobStream, errorOrResult };
 };
 
 const onStreamFinished = TE.taskify(stream.finished);
@@ -558,14 +546,12 @@ export const saveDataToBlob = (
 
   const zipStream = getEncryptedZipStream(password);
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const failure = (err: Error) =>
     ActivityResultArchiveGenerationFailure.encode({
       kind: "ARCHIVE_GENERATION_FAILURE",
       reason: err.message
     });
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const success = () =>
     ArchiveInfo.encode({
       blobName,
@@ -611,45 +597,44 @@ export const saveDataToBlob = (
 };
 
 export interface IActivityHandlerInput {
+  readonly messageContentBlobService: BlobService;
   readonly messageModel: MessageModel;
   readonly messageStatusModel: MessageStatusModel;
   readonly messageViewModel: MessageViewModel;
   readonly notificationModel: NotificationModel;
   readonly notificationStatusModel: NotificationStatusModel;
   readonly profileModel: ProfileModel;
-  readonly messageContentBlobService: BlobService;
+  readonly servicePreferencesModel: ServicePreferencesDeletableModel;
   readonly userDataBlobService: BlobService;
   readonly userDataContainerName: NonEmptyString;
-  readonly servicePreferencesModel: ServicePreferencesDeletableModel;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const cleanData = (v: any) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { _self, _etag, _attachments, _rid, _ts, ...clean } = v;
+  const { _attachments, _etag, _rid, _self, _ts, ...clean } = v;
   return clean;
 };
 
 /**
  * Factory methods that builds an activity function
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
 export function createExtractUserDataActivityHandler({
+  messageContentBlobService,
   messageModel,
   messageStatusModel,
   messageViewModel,
   notificationModel,
   notificationStatusModel,
   profileModel,
-  messageContentBlobService,
+  servicePreferencesModel,
   userDataBlobService,
-  userDataContainerName,
-  servicePreferencesModel
+  userDataContainerName
 }: IActivityHandlerInput): (
   context: Context,
   input: unknown
 ) => Promise<ActivityResult> {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return (context: Context, input: unknown) =>
     pipe(
       input,
@@ -684,11 +669,11 @@ export function createExtractUserDataActivityHandler({
         );
         return {
           messageContents: allUserData.messageContents,
-          messageStatuses: allUserData.messageStatuses.map(cleanData),
           messages: allUserData.messages.map(cleanData),
+          messageStatuses: allUserData.messageStatuses.map(cleanData),
           messagesView: allUserData.messagesView.map(cleanData),
-          notificationStatuses: allUserData.messageStatuses.map(cleanData),
           notifications,
+          notificationStatuses: allUserData.messageStatuses.map(cleanData),
           profiles: allUserData.profiles.map(cleanData),
           servicesPreferences: allUserData.servicesPreferences.map(cleanData)
         };

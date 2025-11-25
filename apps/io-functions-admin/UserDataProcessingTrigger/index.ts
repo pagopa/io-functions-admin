@@ -1,7 +1,8 @@
 import { Context } from "@azure/functions";
 import { createTableService } from "azure-storage";
+
 import { getConfigOrThrow } from "../utils/config";
-import { insertTableEntity, deleteTableEntity } from "../utils/storage";
+import { deleteTableEntity, insertTableEntity } from "../utils/storage";
 import { triggerHandler } from "./handler";
 
 // prepare table storage utils
@@ -13,7 +14,7 @@ const tableService = createTableService(connectionString);
 export const index = async (
   context: Context,
   input: unknown
-): Promise<ReadonlyArray<string | void>> => {
+): Promise<readonly (string | void)[]> => {
   const handler = triggerHandler(
     insertTableEntity(tableService, failedUserDataProcessingTable),
     deleteTableEntity(tableService, failedUserDataProcessingTable)

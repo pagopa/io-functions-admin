@@ -1,6 +1,5 @@
 import { Context } from "@azure/functions";
-import * as express from "express";
-import * as TE from "fp-ts/lib/TaskEither";
+import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -19,10 +18,11 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import express from "express";
 import { pipe } from "fp-ts/lib/function";
-
-import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
 import { isSome } from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
+
 import { SubscriptionCIDRs } from "../generated/definitions/SubscriptionCIDRs";
 
 type IGetSubscriptionCidrsHandler = (
@@ -30,16 +30,35 @@ type IGetSubscriptionCidrsHandler = (
   auth: IAzureApiAuthorization,
   subscriptionid: NonEmptyString
 ) => Promise<
-  | IResponseSuccessJson<SubscriptionCIDRs>
   | IResponseErrorInternal
   | IResponseErrorNotFound
+  | IResponseSuccessJson<SubscriptionCIDRs>
 >;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+export function GetSubscriptionCidrs(
+  subscriptionCIDRsModel: SubscriptionCIDRsModel
+): express.RequestHandler {
+  const handler = GetSubscriptionCidrsHandler(subscriptionCIDRsModel);
+
+  const middlewaresWrap = withRequestMiddlewares(
+    // Extract Azure Functions bindings
+    ContextMiddleware(),
+    // Allow only users in the ApiUserAdmin group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
+    // Extract the subscription id value from the request
+    RequiredParamMiddleware("subscriptionid", NonEmptyString)
+  );
+
+  return wrapRequestHandler(middlewaresWrap(handler));
+}
+
+/**
+ * Wraps a GetSubscriptionCidrs handler inside an Express request handler.
+ */
+
 export function GetSubscriptionCidrsHandler(
   subscriptionCIDRsModel: SubscriptionCIDRsModel
 ): IGetSubscriptionCidrsHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (context, _, subscriptionId) =>
     pipe(
       subscriptionCIDRsModel.findLastVersionByModelId([subscriptionId]),
@@ -60,25 +79,4 @@ export function GetSubscriptionCidrsHandler(
       }),
       TE.toUnion
     )();
-}
-
-/**
- * Wraps a GetSubscriptionCidrs handler inside an Express request handler.
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function GetSubscriptionCidrs(
-  subscriptionCIDRsModel: SubscriptionCIDRsModel
-): express.RequestHandler {
-  const handler = GetSubscriptionCidrsHandler(subscriptionCIDRsModel);
-
-  const middlewaresWrap = withRequestMiddlewares(
-    // Extract Azure Functions bindings
-    ContextMiddleware(),
-    // Allow only users in the ApiUserAdmin group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
-    // Extract the subscription id value from the request
-    RequiredParamMiddleware("subscriptionid", NonEmptyString)
-  );
-
-  return wrapRequestHandler(middlewaresWrap(handler));
 }

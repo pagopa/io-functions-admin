@@ -1,8 +1,6 @@
 import { Context } from "@azure/functions";
-
-import * as t from "io-ts";
-
 import { VisibleService } from "@pagopa/io-functions-commons/dist/src/models/visible_service";
+import * as t from "io-ts";
 
 const AddVisibleServiceInput = t.interface({
   action: t.literal("UPSERT"),

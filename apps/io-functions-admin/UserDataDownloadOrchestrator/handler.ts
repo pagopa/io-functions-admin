@@ -1,12 +1,13 @@
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import {
   IOrchestrationFunctionContext,
   RetryOptions
 } from "durable-functions/lib/src/classes";
 import * as E from "fp-ts/lib/Either";
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import * as t from "io-ts";
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { pipe } from "fp-ts/lib/function";
+import * as t from "io-ts";
+
 import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from "../ExtractUserDataActivity/handler";
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../SendUserDataDownloadMessageActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
@@ -68,7 +69,6 @@ const retryOptions = new RetryOptions(5000, 10);
 // eslint-disable-next-line functional/immutable-data
 retryOptions.backoffCoefficient = 1.5;
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const toActivityFailure = (
   err: t.Errors,
   activityName: string,

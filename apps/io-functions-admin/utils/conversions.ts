@@ -18,6 +18,7 @@ import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import { Errors } from "io-ts";
+
 import { CIDR } from "../generated/definitions/CIDR";
 import { Group as ApiGroup, Group } from "../generated/definitions/Group";
 import { SpecialServiceMetadata } from "../generated/definitions/SpecialServiceMetadata";
@@ -29,30 +30,6 @@ import {
 import { User as ApiUser, User } from "../generated/definitions/User";
 import { UserStateEnum } from "../generated/definitions/UserState";
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-function errorsToError(errors: Errors): Error {
-  return new Error(errorsToReadableMessages(errors).join(" / "));
-}
-
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-function removeNullProperties<T>(obj: T): unknown {
-  if (typeof obj !== "object" || obj === null) {
-    return obj;
-  }
-  return Object.keys(obj).reduce<unknown>(
-    (filteredObj, key) =>
-      obj[key as keyof typeof obj] === null
-        ? filteredObj
-        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          { ...(filteredObj as any), [key]: obj[key as keyof typeof obj] },
-    {}
-  );
-}
-
-/**
- * Converts an API Service to an internal Service model
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function apiServiceToService(service: ApiService): Service {
   return pipe(
     {
@@ -111,20 +88,38 @@ export function apiServiceToService(service: ApiService): Service {
   );
 }
 
-// Returns an API Service Metadata from an internal Service model
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function toApiServiceMetadata(
-  service: RetrievedService
-): ApiServiceMetadata | undefined {
-  return service.serviceMetadata
-    ? toServiceMetadata(service.serviceMetadata)
-    : undefined;
+export function getMessageFromCosmosErrors(err: CosmosErrors): string {
+  switch (err.kind) {
+    case "COSMOS_DECODING_ERROR":
+      return errorsToReadableMessages(err.error).join(" / ");
+    case "COSMOS_ERROR_RESPONSE":
+      return err.error.message;
+    default:
+      return String(err);
+  }
 }
 
 /**
- * Converts a RetrievedService to a API Service
+ * Converts an API Service to an internal Service model
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
+export function groupContractToApiGroup(
+  group: GroupContract
+): E.Either<Error, ApiGroup> {
+  return pipe(
+    {
+      display_name: group.displayName,
+      id: group.id,
+      name: group.name
+    },
+    removeNullProperties,
+    Group.decode,
+    E.mapLeft(errorsToError)
+  );
+}
+
+// Returns an API Service Metadata from an internal Service model
+
 export function retrievedServiceToApiService(
   retrievedService: RetrievedService
 ): ApiService {
@@ -149,7 +144,36 @@ export function retrievedServiceToApiService(
   } as ApiService;
 }
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+/**
+ * Converts a RetrievedService to a API Service
+ */
+
+export function subscriptionContractToApiSubscription(
+  subscription: SubscriptionContract
+): E.Either<Error, ApiSubscription> {
+  return pipe(
+    {
+      id: subscription.id
+        ? subscription.id.substr(subscription.id.lastIndexOf("/") + 1)
+        : subscription.id,
+      primary_key: subscription.primaryKey,
+      scope: subscription.scope,
+      secondary_key: subscription.secondaryKey
+    },
+    removeNullProperties,
+    Subscription.decode,
+    E.mapLeft(errorsToError)
+  );
+}
+
+export function toApiServiceMetadata(
+  service: RetrievedService
+): ApiServiceMetadata | undefined {
+  return service.serviceMetadata
+    ? toServiceMetadata(service.serviceMetadata)
+    : undefined;
+}
+
 export function userContractToApiUser(
   user: UserContract
 ): E.Either<Error, ApiUser> {
@@ -171,49 +195,20 @@ export function userContractToApiUser(
   );
 }
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function groupContractToApiGroup(
-  group: GroupContract
-): E.Either<Error, ApiGroup> {
-  return pipe(
-    {
-      display_name: group.displayName,
-      id: group.id,
-      name: group.name
-    },
-    removeNullProperties,
-    Group.decode,
-    E.mapLeft(errorsToError)
-  );
+function errorsToError(errors: Errors): Error {
+  return new Error(errorsToReadableMessages(errors).join(" / "));
 }
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function subscriptionContractToApiSubscription(
-  subscription: SubscriptionContract
-): E.Either<Error, ApiSubscription> {
-  return pipe(
-    {
-      id: subscription.id
-        ? subscription.id.substr(subscription.id.lastIndexOf("/") + 1)
-        : subscription.id,
-      primary_key: subscription.primaryKey,
-      scope: subscription.scope,
-      secondary_key: subscription.secondaryKey
-    },
-    removeNullProperties,
-    Subscription.decode,
-    E.mapLeft(errorsToError)
-  );
-}
-
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function getMessageFromCosmosErrors(err: CosmosErrors): string {
-  switch (err.kind) {
-    case "COSMOS_ERROR_RESPONSE":
-      return err.error.message;
-    case "COSMOS_DECODING_ERROR":
-      return errorsToReadableMessages(err.error).join(" / ");
-    default:
-      return String(err);
+function removeNullProperties<T>(obj: T): unknown {
+  if (typeof obj !== "object" || obj === null) {
+    return obj;
   }
+  return Object.keys(obj).reduce<unknown>(
+    (filteredObj, key) =>
+      obj[key as keyof typeof obj] === null
+        ? filteredObj
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { ...(filteredObj as any), [key]: obj[key as keyof typeof obj] },
+    {}
+  );
 }

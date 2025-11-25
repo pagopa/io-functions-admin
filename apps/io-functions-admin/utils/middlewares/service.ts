@@ -1,9 +1,8 @@
-import * as E from "fp-ts/lib/Either";
-import { pipe } from "fp-ts/lib/function";
-
 import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
 import { IRequestMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import { ResponseErrorFromValidationErrors } from "@pagopa/ts-commons/lib/responses";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 
 import { Logo as ApiLogo } from "../../generated/definitions/Logo";
 

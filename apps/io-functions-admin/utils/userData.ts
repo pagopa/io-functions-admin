@@ -5,19 +5,19 @@ import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/defi
 import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
 import { MessageWithoutContent } from "@pagopa/io-functions-commons/dist/src/models/message";
 import { MessageStatus } from "@pagopa/io-functions-commons/dist/src/models/message_status";
+import { MessageView } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import {
   NotificationBase,
   NotificationChannelEmail
 } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import { NotificationStatus } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import { Profile } from "@pagopa/io-functions-commons/dist/src/models/profile";
-import * as t from "io-ts";
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { MessageView } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import {
   DisabledInboxServicePreferences,
   EnabledInboxServicePreferences
 } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import * as t from "io-ts";
 
 // like Notification, but it's export-safe (the decoder removes webhook's sensitive data)
 export const SafeNotification = t.intersection([
@@ -45,14 +45,14 @@ export const AllUserData = t.interface({
     t.exact(MessageContentWithId),
     "MessageContentList"
   ),
-  messageStatuses: t.readonlyArray(MessageStatus, "MessageStatusList"),
   messages: t.readonlyArray(t.exact(MessageWithoutContent), "MessageList"),
+  messageStatuses: t.readonlyArray(MessageStatus, "MessageStatusList"),
   messagesView: t.readonlyArray(t.exact(MessageView), "MessageViewList"),
+  notifications: t.readonlyArray(t.exact(SafeNotification), "NotificationList"),
   notificationStatuses: t.readonlyArray(
     t.exact(NotificationStatus),
     "NotificationStatusList"
   ),
-  notifications: t.readonlyArray(t.exact(SafeNotification), "NotificationList"),
   profiles: t.readonlyArray(t.exact(Profile)),
   servicesPreferences: t.readonlyArray(
     t.union([

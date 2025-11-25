@@ -2,8 +2,9 @@
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";
-
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+
 import { IAzureApimConfig } from "../../utils/apim";
 import { GetSubscriptionKeysHandler } from "../handler";
 
@@ -11,10 +12,10 @@ const aValidSubscriptionId = "valid-subscription-id" as NonEmptyString;
 const aNotExistingSubscriptionId = "not-existing-subscription-id" as NonEmptyString;
 const aBreakingApimSubscriptionId = "broken-subscription-id" as NonEmptyString;
 
-jest.mock("@azure/arm-apimanagement");
-const mockApiManagementClient = ApiManagementClient as jest.Mock;
-const mockLog = jest.fn();
-const mockGetToken = jest.fn();
+vi.mock("@azure/arm-apimanagement");
+const mockApiManagementClient = ApiManagementClient as Mock;
+const mockLog = vi.fn();
+const mockGetToken = vi.fn();
 
 const mockedSubscription = {
   primaryKey: "primary-key",
@@ -32,13 +33,11 @@ mockApiManagementClient.mockImplementation(() => ({
       if (subscriptionId === aNotExistingSubscriptionId) {
         return Promise.reject(new RestError("not found", "", 404));
       }
-      return fail(Error("The provided subscription id value is not handled"));
+      return assert.fail("The provided subscription id value is not handled");
     }
   }
 }));
-mockGetToken.mockImplementation(() => {
-  return Promise.resolve(undefined);
-});
+mockGetToken.mockImplementation(() => Promise.resolve(undefined));
 
 const mockedContext = { log: { error: mockLog } };
 

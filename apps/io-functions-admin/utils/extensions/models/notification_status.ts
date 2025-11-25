@@ -1,5 +1,3 @@
-import { Either } from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
 import {
   NOTIFICATION_STATUS_MODEL_PK_FIELD,
   NotificationStatusModel as NotificationStatusModelBase,
@@ -9,9 +7,12 @@ import {
   CosmosErrors,
   toCosmosErrorResponse
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { Errors } from "io-ts";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { Either } from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import { Errors } from "io-ts";
+
 import * as DocumentDbUtils from "../documentdb";
 
 /**
@@ -38,7 +39,7 @@ export class NotificationStatusDeletableModel extends NotificationStatusModelBas
    */
   public findAllVersionsByNotificationId(
     notificationId: NonEmptyString
-  ): AsyncIterator<ReadonlyArray<Either<Errors, RetrievedNotificationStatus>>> {
+  ): AsyncIterator<readonly Either<Errors, RetrievedNotificationStatus>[]> {
     return DocumentDbUtils.findAllVersionsByModelId(
       this.container,
       this.retrievedItemT,

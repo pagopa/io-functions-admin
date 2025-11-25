@@ -4,31 +4,30 @@ import {
   SubscriptionGetResponse,
   UserGetResponse
 } from "@azure/arm-apimanagement";
-import { toError } from "fp-ts/lib/Either";
-import { flow, identity, pipe } from "fp-ts/lib/function";
-import * as t from "io-ts";
-import * as TE from "fp-ts/lib/TaskEither";
-import * as E from "fp-ts/Either";
-
+import { DefaultAzureCredential } from "@azure/identity";
+import { RestError } from "@azure/ms-rest-js";
+import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
   ResponseErrorInternal,
   ResponseErrorNotFound
 } from "@pagopa/ts-commons/lib/responses";
-import { parse } from "fp-ts/lib/Json";
-import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
-import { DefaultAzureCredential } from "@azure/identity";
-
-export interface IAzureApimConfig {
-  readonly subscriptionId: string;
-  readonly apimResourceGroup: string;
-  readonly apim: string;
-}
+import { toError } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
+import { flow, identity, pipe } from "fp-ts/lib/function";
+import { parse } from "fp-ts/lib/Json";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
 
 export type ApimMappedErrors = IResponseErrorInternal | IResponseErrorNotFound;
+
+export interface IAzureApimConfig {
+  readonly apim: string;
+  readonly apimResourceGroup: string;
+  readonly subscriptionId: string;
+}
 
 export const ApimRestError = t.interface({
   statusCode: t.number
@@ -64,7 +63,7 @@ export const chainApimMappedError = <T>(
       )
     )
   );
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
 export function getApiClient(
   subscriptionId: string
 ): TE.TaskEither<Error, ApiManagementClient> {
@@ -75,25 +74,6 @@ export function getApiClient(
   );
 }
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function getUserGroups(
-  apimClient: ApiManagementClient,
-  apimResourceGroup: string,
-  apim: string,
-  userName: string
-): TE.TaskEither<Error, ReadonlyArray<GroupContract>> {
-  return pipe(
-    TE.tryCatch(
-      () =>
-        asyncIteratorToArray(
-          apimClient.userGroup.list(apimResourceGroup, apim, userName)
-        ),
-      toError
-    )
-  );
-}
-
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function getUser(
   apimClient: ApiManagementClient,
   apimResourceGroup: string,
@@ -106,6 +86,23 @@ export function getUser(
       identity
     ),
     chainApimMappedError
+  );
+}
+
+export function getUserGroups(
+  apimClient: ApiManagementClient,
+  apimResourceGroup: string,
+  apim: string,
+  userName: string
+): TE.TaskEither<Error, readonly GroupContract[]> {
+  return pipe(
+    TE.tryCatch(
+      () =>
+        asyncIteratorToArray(
+          apimClient.userGroup.list(apimResourceGroup, apim, userName)
+        ),
+      toError
+    )
   );
 }
 

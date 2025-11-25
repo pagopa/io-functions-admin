@@ -1,11 +1,13 @@
+import { vi } from "vitest";
+
 const mockJsonBody = { foo: "bar" };
 const mockTextBody = "foobar";
 
-export const mockResponseJson = jest
+export const mockResponseJson = vi
   .fn()
   .mockImplementation(async () => mockJsonBody);
 
-export const mockResponseText = jest
+export const mockResponseText = vi
   .fn()
   .mockImplementation(async () => mockTextBody);
 
@@ -21,10 +23,10 @@ const getMockResponse = ({
   textImpl = async () => mockTextBody
 }: IMockResponseValues = {}): Response =>
   (({
-    clone: jest.fn(() => getMockResponse({ jsonImpl, status, textImpl })),
-    json: jest.fn(jsonImpl),
+    clone: vi.fn(() => getMockResponse({ jsonImpl, status, textImpl })),
+    json: vi.fn(jsonImpl),
     status,
-    text: jest.fn(textImpl)
+    text: vi.fn(textImpl)
   } as unknown) as Response);
 
 export const mockResponse: Response = getMockResponse();
@@ -35,13 +37,13 @@ export const createMockFetch = ({
   status = 100,
   textImpl = async () => mockTextBody
 }: IMockResponseValues = {}): typeof fetch =>
-  jest
+  vi
     .fn()
     .mockImplementation(async (_: RequestInfo, __?: RequestInit) =>
       getMockResponse({ jsonImpl, status, textImpl })
     );
 
-const mockFetch = jest
+const mockFetch = vi
   .fn()
   .mockImplementation(async (_: RequestInfo, __?: RequestInit) => mockResponse);
 

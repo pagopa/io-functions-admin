@@ -2,9 +2,9 @@ import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
-import { cosmosdbClient } from "../utils/cosmosdb";
 
 import { getConfigOrThrow } from "../utils/config";
+import { cosmosdbClient } from "../utils/cosmosdb";
 import { createGetProfileActivityHandler } from "./handler";
 
 const config = getConfigOrThrow();

@@ -1,4 +1,3 @@
-import { createBlobService } from "azure-storage";
 import {
   MESSAGE_COLLECTION_NAME,
   MessageModel
@@ -7,6 +6,10 @@ import {
   MESSAGE_STATUS_COLLECTION_NAME,
   MessageStatusModel
 } from "@pagopa/io-functions-commons/dist/src/models/message_status";
+import {
+  MESSAGE_VIEW_COLLECTION_NAME,
+  MessageViewModel
+} from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import {
   NOTIFICATION_COLLECTION_NAME,
   NotificationModel
@@ -19,13 +22,11 @@ import {
   PROFILE_COLLECTION_NAME,
   ProfileModel
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
-import {
-  MessageViewModel,
-  MESSAGE_VIEW_COLLECTION_NAME
-} from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import { SERVICE_PREFERENCES_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
-import { cosmosdbClient } from "../utils/cosmosdb";
+import { createBlobService } from "azure-storage";
+
 import { getConfigOrThrow } from "../utils/config";
+import { cosmosdbClient } from "../utils/cosmosdb";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
 import { createExtractUserDataActivityHandler } from "./handler";
 

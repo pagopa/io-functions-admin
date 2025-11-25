@@ -1,40 +1,44 @@
+import { FeedOptions, SqlQuerySpec } from "@azure/cosmos";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { processFailedUserDataProcessingHandler } from "../handler";
-import { SqlQuerySpec, FeedOptions } from "@azure/cosmos";
+import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
 import * as E from "fp-ts/lib/Either";
 import { Branded } from "io-ts";
-import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import * as t from "io-ts";
-import { context } from "../../__mocks__/functions";
-import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-jest.mock("durable-functions", () => ({
-  OrchestrationRuntimeStatus: {
-    Running: "Running"
-  },
-  getClient: (context: any) => ({
+// eslint-disable-next-line vitest/no-mocks-import
+import { context } from "../../__mocks__/functions";
+import { processFailedUserDataProcessingHandler } from "../handler";
+
+vi.mock("durable-functions", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getClient: (_context: unknown) => ({
+    getStatus: async (orchestratorId: string) =>
+      ({
+        createdTime: new Date(),
+        input: null,
+        instanceId: orchestratorId,
+        lastUpdatedTime: new Date(),
+        name: orchestratorId,
+        output: null,
+        runtimeStatus: "Completed"
+      } as DurableOrchestrationStatus),
     startNew: async (
       orchestratorName: string,
       orchestratorId: string,
       orchestratorInput: string
-    ) => orchestratorId,
-    getStatus: async (orchestratorId: string) =>
-      ({
-        name: orchestratorId,
-        instanceId: orchestratorId,
-        createdTime: new Date(),
-        lastUpdatedTime: new Date(),
-        input: null,
-        output: null,
-        runtimeStatus: "Completed"
-      } as DurableOrchestrationStatus)
-  })
+    ) => orchestratorId
+  }),
+  OrchestrationRuntimeStatus: {
+    Running: "Running"
+  }
 }));
 
 const userDataProcessingRecords = [
@@ -117,19 +121,19 @@ const recordMock = (
   version: NonNegativeInteger
 ): UserDataProcessing => ({
   choice: choice,
+  createdAt: new Date(),
   fiscalCode: fiscalCode,
   status: status,
   userDataProcessingId: `${fiscalCode}-${choice}` as Branded<
     string,
     { readonly IUserDataProcessingIdTag: symbol }
-  >,
-  createdAt: new Date()
+  >
 });
 
-const recordsIterator = (query: string | SqlQuerySpec) => ({
+const recordsIterator = (query: SqlQuerySpec | string) => ({
   async *[Symbol.asyncIterator]() {
     // I don't care for string queries, but I manage it to keep signatures coherent
-    const queriedRecords = userDataProcessingRecords.filter(r =>
+    const queriedRecords = userDataProcessingRecords.filter((r) =>
       typeof query === "string" || query.parameters === undefined
         ? false
         : r.status === query.parameters[0].value
@@ -137,7 +141,7 @@ const recordsIterator = (query: string | SqlQuerySpec) => ({
     for (const record of queriedRecords) {
       // wait for 100ms to not pass the 5000ms limit of jest
       // and keep the asynchrounous behaviour
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       yield [
         E.tryCatch(
           () =>
@@ -147,7 +151,7 @@ const recordsIterator = (query: string | SqlQuerySpec) => ({
               record.status,
               1 as NonNegativeInteger
             ),
-          _ => [
+          (_) => [
             {
               message: "error"
             } as t.ValidationError
@@ -158,11 +162,11 @@ const recordsIterator = (query: string | SqlQuerySpec) => ({
   }
 });
 
-const getQueryIteratorMock = jest.fn(
+const getQueryIteratorMock = vi.fn(
   (
-    query: string | SqlQuerySpec,
+    query: SqlQuerySpec | string,
     options?: FeedOptions
-  ): AsyncIterable<ReadonlyArray<t.Validation<UserDataProcessing>>> =>
+  ): AsyncIterable<readonly t.Validation<UserDataProcessing>[]> =>
     recordsIterator(query)
 );
 
@@ -173,7 +177,7 @@ const userDataProcessingModelMock = ({
 } as unknown) as UserDataProcessingModel;
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("FindFailedRecords", () => {
@@ -182,6 +186,7 @@ describe("FindFailedRecords", () => {
       userDataProcessingModelMock
     )(context);
 
+    // eslint-disable-next-line vitest/prefer-called-with
     expect(getQueryIteratorMock).toHaveBeenCalled();
 
     // expect result to contain only orchestrator ids for failed records

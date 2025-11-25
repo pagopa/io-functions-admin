@@ -1,13 +1,3 @@
-import * as express from "express";
-import { wrapRequestHandler } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
-import {
-  IResponseErrorInternal,
-  IResponseSuccessJson,
-  ResponseErrorInternal,
-  ResponseSuccessJson
-} from "@pagopa/ts-commons/lib/responses";
-import * as TE from "fp-ts/lib/TaskEither";
-import { pipe } from "fp-ts/lib/function";
 import {
   checkApplicationHealth,
   checkAzureCosmosDbHealth,
@@ -15,8 +5,21 @@ import {
   checkUrlHealth,
   HealthCheck
 } from "@pagopa/io-functions-commons/dist/src/utils/healthcheck";
+import { wrapRequestHandler } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
+import {
+  IResponseErrorInternal,
+  IResponseSuccessJson,
+  ResponseErrorInternal,
+  ResponseSuccessJson
+} from "@pagopa/ts-commons/lib/responses";
+import express from "express";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+
 import * as packageJson from "../package.json";
 import { envConfig, IConfig } from "../utils/config";
+
+type HealthChecker = (config: unknown) => HealthCheck<ProblemSource, true>;
 
 interface IInfo {
   readonly name: string;
@@ -24,31 +27,10 @@ interface IInfo {
 }
 
 type InfoHandler = () => Promise<
-  IResponseSuccessJson<IInfo> | IResponseErrorInternal
+  IResponseErrorInternal | IResponseSuccessJson<IInfo>
 >;
-
 type ProblemSource = "AzureCosmosDB" | "AzureStorage" | "Config" | "Url";
-type HealthChecker = (config: unknown) => HealthCheck<ProblemSource, true>;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function InfoHandler(healthCheck: HealthChecker): InfoHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  return () =>
-    pipe(
-      envConfig,
-      healthCheck,
-      TE.mapLeft(problems => ResponseErrorInternal(problems.join("\n\n"))),
-      TE.map(_ =>
-        ResponseSuccessJson({
-          name: packageJson.name,
-          version: packageJson.version
-        })
-      ),
-      TE.toUnion
-    )();
-}
-
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function Info(): express.RequestHandler {
   return pipe(
     checkApplicationHealth(IConfig, [
@@ -70,4 +52,20 @@ export function Info(): express.RequestHandler {
     InfoHandler,
     wrapRequestHandler
   );
+}
+
+export function InfoHandler(healthCheck: HealthChecker): InfoHandler {
+  return () =>
+    pipe(
+      envConfig,
+      healthCheck,
+      TE.mapLeft(problems => ResponseErrorInternal(problems.join("\n\n"))),
+      TE.map(_ =>
+        ResponseSuccessJson({
+          name: packageJson.name,
+          version: packageJson.version
+        })
+      ),
+      TE.toUnion
+    )();
 }

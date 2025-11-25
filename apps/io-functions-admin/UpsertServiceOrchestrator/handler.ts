@@ -1,24 +1,18 @@
-import * as df from "durable-functions";
-
-import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
-
-import * as E from "fp-ts/lib/Either";
-import { isSome, none, Option, some } from "fp-ts/lib/Option";
-
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-
-import * as t from "io-ts";
-
-import { UTCISODateFromString } from "@pagopa/ts-commons/lib/dates";
-
 import { RetrievedService } from "@pagopa/io-functions-commons/dist/src/models/service";
 import { VisibleService } from "@pagopa/io-functions-commons/dist/src/models/visible_service";
+import { UTCISODateFromString } from "@pagopa/ts-commons/lib/dates";
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import * as df from "durable-functions";
+import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
+import * as E from "fp-ts/lib/Either";
+import { isSome, none, Option, some } from "fp-ts/lib/Option";
+import * as t from "io-ts";
+
 import {
   Input as UpdateVisibleServicesActivityInput,
   Result as UpdateVisibleServicesActivityResult
 } from "../UpdateVisibleServicesActivity/handler";
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
 export function retrievedServiceToVisibleService(
   retrievedService: RetrievedService
 ): VisibleService {
@@ -67,7 +61,7 @@ export type UpsertServiceEvent = t.TypeOf<typeof UpsertServiceEvent>;
 /**
  * Using the data of new and old service calculate the action to perform to the visible services
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
 function computeMaybeAction(
   newService: RetrievedService,
   oldService?: RetrievedService

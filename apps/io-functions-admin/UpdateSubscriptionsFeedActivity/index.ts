@@ -1,5 +1,6 @@
 ﻿import { AzureFunction, Context } from "@azure/functions";
 import { createTableService } from "azure-storage";
+
 import { getConfigOrThrow } from "../utils/config";
 import { updateSubscriptionFeed } from "./handler";
 

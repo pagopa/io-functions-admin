@@ -1,4 +1,5 @@
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { isCosmosErrors } from "../utils";
 

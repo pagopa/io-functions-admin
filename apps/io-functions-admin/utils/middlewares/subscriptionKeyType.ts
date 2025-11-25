@@ -1,8 +1,8 @@
+import { IRequestMiddleware } from "@pagopa/ts-commons/lib/request_middleware";
+import { ResponseErrorFromValidationErrors } from "@pagopa/ts-commons/lib/responses";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 
-import { IRequestMiddleware } from "@pagopa/ts-commons/lib/request_middleware";
-import { ResponseErrorFromValidationErrors } from "@pagopa/ts-commons/lib/responses";
 import { SubscriptionKeyTypePayload } from "../../generated/definitions/SubscriptionKeyTypePayload";
 
 /**

@@ -49,7 +49,7 @@ const userDataProcessingModel = new UserDataProcessingModel(
   database.container(USER_DATA_PROCESSING_COLLECTION_NAME)
 );
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions, @typescript-eslint/no-explicit-any
+, @typescript-eslint/no-explicit-any
 async function run(): Promise<any> {
   const fiscalCode = pipe(
     process.argv[2],

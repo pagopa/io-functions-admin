@@ -2,12 +2,13 @@
 /* eslint-disable sonar/sonar-max-lines-per-function */
 
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-
 import { Service } from "@pagopa/io-functions-commons/dist/src/models/service";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
+import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   aRetrievedService,
   aRetrievedServiceWithCmsTag,
@@ -23,22 +24,20 @@ const anUpdatedApiService = apiServiceToService({
   department_name: aDepartmentName
 });
 
-const leftErrorFn = jest.fn(() => {
-  return TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }));
-});
+const leftErrorFn = vi.fn(() =>
+  TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
+);
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("UpdateServiceHandler", () => {
   it("should return a validation error and not update the service if the serviceid in the payload is not equal to the serviceid in the path", async () => {
     const aServiceId = "DifferentSubscriptionId" as ServiceId;
     const serviceModelMock = {
-      findOneByServiceId: jest.fn(() => {
-        return TE.right(O.some(aRetrievedService));
-      }),
-      upsert: jest.fn(() =>
+      findOneByServiceId: vi.fn(() => TE.right(O.some(aRetrievedService))),
+      upsert: vi.fn(() =>
         TE.right(
           O.some({
             ...aRetrievedService,
@@ -90,9 +89,7 @@ describe("UpdateServiceHandler", () => {
 
   it("should return a not found error if the service with the requested serviceid is not found", async () => {
     const serviceModelMock = {
-      findOneByServiceId: jest.fn(() => {
-        return TE.right(O.none);
-      })
+      findOneByServiceId: vi.fn(() => TE.right(O.none))
     };
 
     const updateServiceHandler = UpdateServiceHandler(serviceModelMock as any);
@@ -115,9 +112,7 @@ describe("UpdateServiceHandler", () => {
 
   it("should return a query error if the exixting service fails to be updated", async () => {
     const serviceModelMock = {
-      findOneByServiceId: jest.fn(() => {
-        return TE.right(O.some(aRetrievedService));
-      }),
+      findOneByServiceId: vi.fn(() => TE.right(O.some(aRetrievedService))),
       update: leftErrorFn
     };
 
@@ -142,10 +137,8 @@ describe("UpdateServiceHandler", () => {
 
   it("should update an existing service using the payload and return the updated service", async () => {
     const serviceModelMock = {
-      findOneByServiceId: jest.fn(() => {
-        return TE.right(O.some(aRetrievedService));
-      }),
-      update: jest.fn(() =>
+      findOneByServiceId: vi.fn(() => TE.right(O.some(aRetrievedService))),
+      update: vi.fn(() =>
         TE.right({
           ...aRetrievedService,
           ...anUpdatedApiService
@@ -180,10 +173,10 @@ describe("UpdateServiceHandler", () => {
 
   it("should remove cmsTag when updating service", async () => {
     const serviceModelMock = {
-      findOneByServiceId: jest.fn(() => {
-        return TE.right(O.some(aRetrievedServiceWithCmsTag));
-      }),
-      update: jest.fn((s: Service) =>
+      findOneByServiceId: vi.fn(() =>
+        TE.right(O.some(aRetrievedServiceWithCmsTag))
+      ),
+      update: vi.fn((s: Service) =>
         TE.right({
           ...s
         })

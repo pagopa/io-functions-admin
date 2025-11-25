@@ -1,9 +1,9 @@
+import { PromiseType } from "@pagopa/ts-commons/lib/types";
 import * as df from "durable-functions";
 import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
 import { toError } from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
-import { PromiseType } from "@pagopa/ts-commons/lib/types";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
 
 export const isOrchestratorRunning = (
   client: DurableOrchestrationClient,

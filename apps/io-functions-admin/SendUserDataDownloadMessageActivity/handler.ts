@@ -1,19 +1,19 @@
 ﻿import { Context } from "@azure/functions";
 import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-
-import * as t from "io-ts";
-import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
+
 import { userDataDownloadMessage } from "./messages";
 
 /**
  * Send a single user data download message
  * using the IO Notification API (REST).
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
 async function sendMessage(
   fiscalCode: FiscalCode,
   apiUrl: string,
@@ -64,7 +64,6 @@ export const getActivityFunction = (
   publicDownloadBaseUrl: NonEmptyString,
   timeoutFetch: typeof fetch
 ) => (context: Context, input: unknown): Promise<ActivityResult> => {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const failure = (reason: string) => {
     context.log.error(reason);
     return ActivityResultFailure.encode({
@@ -73,7 +72,6 @@ export const getActivityFunction = (
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const success = () =>
     ActivityResultSuccess.encode({
       kind: "SUCCESS"

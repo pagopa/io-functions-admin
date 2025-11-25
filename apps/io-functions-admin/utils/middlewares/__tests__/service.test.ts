@@ -1,7 +1,8 @@
-import * as express from "express";
-
+import express from "express";
 import * as E from "fp-ts/lib/Either";
+import { describe, expect, it } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { aServicePayload } from "../../../__mocks__/mocks";
 import { ServicePayloadMiddleware } from "../service";
 

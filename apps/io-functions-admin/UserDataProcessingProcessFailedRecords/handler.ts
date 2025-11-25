@@ -1,6 +1,14 @@
-import * as express from "express";
 import { Context } from "@azure/functions";
-import * as df from "durable-functions";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import {
+  UserDataProcessing,
+  UserDataProcessingModel
+} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+import {
+  asyncIteratorToArray,
+  flattenAsyncIterator
+} from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import {
   withRequestMiddlewares,
@@ -10,37 +18,29 @@ import {
   IResponseErrorQuery,
   ResponseErrorQuery
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
-import {
-  UserDataProcessing,
-  UserDataProcessingModel
-} from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { DurableOrchestrationClient } from "durable-functions/lib/src/durableorchestrationclient";
-import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import {
-  asyncIteratorToArray,
-  flattenAsyncIterator
-} from "@pagopa/io-functions-commons/dist/src/utils/async";
-import * as TE from "fp-ts/lib/TaskEither";
-import * as E from "fp-ts/lib/Either";
-import * as A from "fp-ts/lib/Array";
 import { IResponseSuccessJson } from "@pagopa/ts-commons/lib/responses";
 import { ResponseSuccessJson } from "@pagopa/ts-commons/lib/responses";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import * as df from "durable-functions";
+import { DurableOrchestrationClient } from "durable-functions/lib/src/durableorchestrationclient";
+import express from "express";
+import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+
 import { isOrchestratorRunning } from "../utils/orchestrator";
 
 const logPrefix = "UserDataProcessingProcessFailedRecordsHandler";
-
-type IGetFailedUserDataProcessingHandlerResult =
-  | IResponseSuccessJson<ReadonlyArray<string | undefined>>
-  | IResponseErrorQuery;
 
 type IGetFailedUserDataProcessingHandler = (
   context: Context
 ) => Promise<IGetFailedUserDataProcessingHandlerResult>;
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+type IGetFailedUserDataProcessingHandlerResult =
+  | IResponseErrorQuery
+  | IResponseSuccessJson<readonly (string | undefined)[]>;
+
 const startOrchestrator = async (
   dfClient: DurableOrchestrationClient,
   orchestratorName: "UserDataProcessingRecoveryOrchestrator",
@@ -104,7 +104,6 @@ export const processFailedUserDataProcessingHandler = (
   const listOfFailedUserDataProcessing = new Set<string>();
   return pipe(
     TE.tryCatch(
-      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
       async () =>
         userDataProcessingModel
           .getQueryIterator({

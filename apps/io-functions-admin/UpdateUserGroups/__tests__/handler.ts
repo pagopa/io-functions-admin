@@ -4,6 +4,8 @@ import { ApiManagementClient, GroupContract } from "@azure/arm-apimanagement";
 import { UserGroup } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { right } from "fp-ts/lib/Either";
 import { fromEither, left } from "fp-ts/lib/TaskEither";
+import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+
 import { EmailAddress } from "../../generated/definitions/EmailAddress";
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig } from "../../utils/apim";
@@ -13,9 +15,9 @@ import {
 } from "../../utils/testSupport";
 import { UpdateUserGroupHandler } from "../handler";
 
-jest.mock("@azure/arm-apimanagement");
+vi.mock("@azure/arm-apimanagement");
 
-const fakeExistingGroups: ReadonlyArray<GroupContract> = [
+const fakeExistingGroups: readonly GroupContract[] = [
   {
     displayName: UserGroup.ApiDebugRead,
     name: UserGroup.ApiDebugRead.toLowerCase()
@@ -55,15 +57,15 @@ const fakeApimConfig: IAzureApimConfig = {
 const fakeUserName = "a-non-empty-string";
 const fakeUserEmail = "user@example.com" as EmailAddress;
 
-const mockGroupListByService = jest.fn();
-const mockGroupListByServiceNext = jest.fn();
-const mockGroupUserCreate = jest.fn();
-const mockGroupUserDeleteMethod = jest.fn();
-const mockUserListByService = jest.fn();
-const mockUserGroupList = jest.fn();
-const mockUserGroupListNext = jest.fn();
+const mockGroupListByService = vi.fn();
+const mockGroupListByServiceNext = vi.fn();
+const mockGroupUserCreate = vi.fn();
+const mockGroupUserDeleteMethod = vi.fn();
+const mockUserListByService = vi.fn();
+const mockUserGroupList = vi.fn();
+const mockUserGroupListNext = vi.fn();
 
-const mockApiManagementClient = ApiManagementClient as jest.Mock;
+const mockApiManagementClient = ApiManagementClient as Mock;
 mockApiManagementClient.mockImplementation(() => ({
   group: {
     listByService: mockGroupListByService,
@@ -82,12 +84,12 @@ mockApiManagementClient.mockImplementation(() => ({
   }
 }));
 
-const spyOnGetApiClient = jest.spyOn(ApimUtils, "getApiClient");
+const spyOnGetApiClient = vi.spyOn(ApimUtils, "getApiClient");
 spyOnGetApiClient.mockImplementation(() =>
   fromEither(right(new mockApiManagementClient()))
 );
 
-const mockLog = jest.fn();
+const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
 // eslint-disable-next-line sonar/sonar-max-lines-per-function
@@ -110,14 +112,12 @@ describe("UpdateUserGroups", () => {
   });
 
   it("should return an internal error response if the API management client can not list the users", async () => {
-    mockUserListByService.mockImplementation(() => {
-      return {
-        next: () => Promise.reject(new Error("Error on users list")),
-        [Symbol.asyncIterator]() {
-          return this;
-        }
-      };
-    });
+    mockUserListByService.mockImplementation(() => ({
+      next: () => Promise.reject(new Error("Error on users list")),
+      [Symbol.asyncIterator]() {
+        return this;
+      }
+    }));
 
     const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
@@ -165,14 +165,12 @@ describe("UpdateUserGroups", () => {
     mockUserListByService.mockImplementation(() =>
       ArrayToAsyncIterable([{ name: fakeUserName }])
     );
-    mockUserListByService.mockImplementation(() => {
-      return {
-        next: () => Promise.reject(new Error("Error on user list by service")),
-        [Symbol.asyncIterator]() {
-          return this;
-        }
-      };
-    });
+    mockUserListByService.mockImplementation(() => ({
+      next: () => Promise.reject(new Error("Error on user list by service")),
+      [Symbol.asyncIterator]() {
+        return this;
+      }
+    }));
     const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
     const response = await updateUserGroupHandler(
@@ -192,14 +190,12 @@ describe("UpdateUserGroups", () => {
     mockUserGroupList.mockImplementation(() =>
       ReadonlyArrayToAsyncIterable(fakeExistingGroups)
     );
-    mockGroupListByService.mockImplementation(() => {
-      return {
-        next: () => Promise.reject(new Error("Error on user groups list")),
-        [Symbol.asyncIterator]() {
-          return this;
-        }
-      };
-    });
+    mockGroupListByService.mockImplementation(() => ({
+      next: () => Promise.reject(new Error("Error on user groups list")),
+      [Symbol.asyncIterator]() {
+        return this;
+      }
+    }));
 
     const updateUserGroupHandler = UpdateUserGroupHandler(fakeApimConfig);
 
@@ -258,7 +254,9 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) as any }
+      {
+        groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) as any
+      }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -284,7 +282,9 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) as any }
+      {
+        groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) as any
+      }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");
@@ -298,14 +298,12 @@ describe("UpdateUserGroups", () => {
       .mockImplementationOnce(() =>
         ReadonlyArrayToAsyncIterable(fakeExistingGroups.slice(0, 3))
       )
-      .mockImplementationOnce(() => {
-        return {
-          next: () => Promise.reject(new Error("Error on user groups list")),
-          [Symbol.asyncIterator]() {
-            return this;
-          }
-        };
-      });
+      .mockImplementationOnce(() => ({
+        next: () => Promise.reject(new Error("Error on user groups list")),
+        [Symbol.asyncIterator]() {
+          return this;
+        }
+      }));
 
     mockGroupListByService.mockImplementation(() =>
       ReadonlyArrayToAsyncIterable(fakeExistingGroups)
@@ -318,7 +316,9 @@ describe("UpdateUserGroups", () => {
       mockedContext as any,
       undefined as any,
       fakeUserEmail,
-      { groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) as any }
+      {
+        groups: fakeExistingGroups.slice(1, 4).map(_ => _.displayName) as any
+      }
     );
 
     expect(response.kind).toEqual("IResponseErrorInternal");

@@ -1,9 +1,10 @@
 import { Context } from "@azure/functions";
-
-import * as express from "express";
-
 import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
-
+import {
+  asyncIteratorToArray,
+  flattenAsyncIterator
+} from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -18,42 +19,55 @@ import {
   IResponseErrorQuery,
   ResponseErrorQuery
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
-
-import { identity, pipe } from "fp-ts/lib/function";
-import * as E from "fp-ts/lib/Either";
-import * as O from "fp-ts/Option";
-import * as TE from "fp-ts/lib/TaskEither";
-import * as RMAP from "fp-ts/lib/ReadonlyMap";
-import * as ROA from "fp-ts/lib/ReadonlyArray";
-import {
-  asyncIteratorToArray,
-  flattenAsyncIterator
-} from "@pagopa/io-functions-commons/dist/src/utils/async";
-import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   IResponseSuccessJson,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
+import express from "express";
+import * as E from "fp-ts/lib/Either";
+import { identity, pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as ROA from "fp-ts/lib/ReadonlyArray";
+import * as RMAP from "fp-ts/lib/ReadonlyMap";
 import { Ord } from "fp-ts/lib/string";
-import { ServiceIdWithVersion } from "../generated/definitions/ServiceIdWithVersion";
+import * as TE from "fp-ts/lib/TaskEither";
 
-type IGetServicesHandlerResult =
-  | IResponseErrorQuery
-  | IResponseSuccessJson<{
-      readonly items: ReadonlyArray<ServiceIdWithVersion>;
-      readonly page_size: number;
-    }>;
+import { ServiceIdWithVersion } from "../generated/definitions/ServiceIdWithVersion";
 
 type IGetServicesHandler = (
   context: Context,
   auth: IAzureApiAuthorization
 ) => Promise<IGetServicesHandlerResult>;
 
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+type IGetServicesHandlerResult =
+  | IResponseErrorQuery
+  | IResponseSuccessJson<{
+      readonly items: readonly ServiceIdWithVersion[];
+      readonly page_size: number;
+    }>;
+
+export function GetServices(
+  serviceModel: ServiceModel
+): express.RequestHandler {
+  const handler = GetServicesHandler(serviceModel);
+
+  const middlewaresWrap = withRequestMiddlewares(
+    // Extract Azure Functions bindings
+    ContextMiddleware(),
+    // Allow only users in the ApiServiceList group
+    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceList]))
+  );
+
+  return wrapRequestHandler(middlewaresWrap(handler));
+}
+
+/**
+ * Wraps a GetServices handler inside an Express request handler.
+ */
+
 export function GetServicesHandler(
   serviceModel: ServiceModel
 ): IGetServicesHandler {
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   return async (_, __) => {
     const allRetrievedServicesIterator = serviceModel
       .getCollectionIterator()
@@ -109,23 +123,4 @@ export function GetServicesHandler(
       TE.toUnion
     )();
   };
-}
-
-/**
- * Wraps a GetServices handler inside an Express request handler.
- */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
-export function GetServices(
-  serviceModel: ServiceModel
-): express.RequestHandler {
-  const handler = GetServicesHandler(serviceModel);
-
-  const middlewaresWrap = withRequestMiddlewares(
-    // Extract Azure Functions bindings
-    ContextMiddleware(),
-    // Allow only users in the ApiServiceList group
-    AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceList]))
-  );
-
-  return wrapRequestHandler(middlewaresWrap(handler));
 }

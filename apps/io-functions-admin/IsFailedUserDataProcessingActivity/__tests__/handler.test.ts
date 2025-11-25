@@ -1,21 +1,23 @@
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { TableService } from "azure-storage";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
 } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { TableService } from "azure-storage";
+import * as E from "fp-ts/lib/Either";
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   ActivityResultFailure,
   ActivityResultSuccess,
   IsFailedUserDataProcessing
 } from "../handler";
-import * as E from "fp-ts/lib/Either";
 
 const findEntry = (
-  entries: ReadonlyArray<{
+  entries: readonly {
     PartitionKey: UserDataProcessingChoice;
     RowKey: FiscalCode;
-  }>
+  }[]
 ) => (choice: UserDataProcessingChoice, fiscalCode: FiscalCode) =>
   entries.length > 0
     ? entries
@@ -26,13 +28,13 @@ const findEntry = (
     : null;
 
 const retrieveEntityFailedUserDataProcessingMock = (
-  entries: ReadonlyArray<{
+  entries: readonly {
     PartitionKey: UserDataProcessingChoice;
     RowKey: FiscalCode;
-  }>
+  }[]
 ) =>
-  jest.fn((_, choice, fiscalCode, ____, cb) => {
-    return cb(
+  vi.fn((_, choice, fiscalCode, ____, cb) =>
+    cb(
       findEntry(entries)(choice, fiscalCode)
         ? null
         : new Error("Internal error"),
@@ -41,18 +43,18 @@ const retrieveEntityFailedUserDataProcessingMock = (
         isSuccessful: findEntry(entries)(choice, fiscalCode),
         statusCode: findEntry(entries)(choice, fiscalCode) ? 200 : 404
       }
-    );
-  });
+    )
+  );
 
 const internalErrorRetrieveEntityFailedUserDataProcessingMock = (
-  entries: ReadonlyArray<{
+  entries: readonly {
     PartitionKey: UserDataProcessingChoice;
     RowKey: FiscalCode;
-  }>
+  }[]
 ) =>
-  jest.fn((_, choice, fiscalCode, ____, cb) => {
-    return cb(new Error("Internal error"), null, { isSuccessful: false });
-  });
+  vi.fn((_, choice, fiscalCode, ____, cb) =>
+    cb(new Error("Internal error"), null, { isSuccessful: false })
+  );
 
 const storageTableMock = "FailedUserDataProcessing" as NonEmptyString;
 
@@ -81,7 +83,7 @@ const failedRequests = [
 ];
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("IsFailedUserDataProcessingHandler", () => {

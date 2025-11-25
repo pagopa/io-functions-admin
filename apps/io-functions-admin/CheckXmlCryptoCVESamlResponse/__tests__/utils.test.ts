@@ -1,9 +1,11 @@
+import { DOMParser } from "@xmldom/xmldom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   hasCommentsOnAnyDigestValue,
   hasMoreSignedInfoNodes,
   isBlobAboveThreshold
 } from "../utils";
-import { DOMParser } from "@xmldom/xmldom";
 
 const aMalformedSAMLResponse = `<samlp:Response Destination="https://that.spid.example.org/saml2/acs/post" ID="_5e728601-9ad4-4686-b269-81d107a8194a" InResponseTo="id-wr6bt7ZpfqiYVrqTd" IssueInstant="2021-02-04T15:41:59Z" Version="2.0" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">
     <saml:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">
@@ -391,7 +393,7 @@ const parsedOKSAMLResponse = new DOMParser().parseFromString(
 
 describe("CheckXmlCryptoCVESamlResponse", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("isBlobAboveThreshold", () => {

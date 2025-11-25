@@ -1,11 +1,11 @@
-import * as t from "io-ts";
 import { Context } from "@azure/functions";
-import { BlobService } from "azure-storage";
-import * as TE from "fp-ts/lib/TaskEither";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { pipe } from "fp-ts/lib/function";
-
 import { enumType } from "@pagopa/ts-commons/lib/types";
+import { BlobService } from "azure-storage";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
+
 import {
   ActivityResultFailure,
   BlobCreationFailure,
@@ -16,9 +16,9 @@ import {
 
 // Cosmos Errors
 export enum CosmosErrorsTypes {
-  "COSMOS_EMPTY_RESPONSE" = "COSMOS_EMPTY_RESPONSE",
   "COSMOS_CONFLICT_RESPONSE" = "COSMOS_CONFLICT_RESPONSE",
   "COSMOS_DECODING_ERROR" = "COSMOS_DECODING_ERROR",
+  "COSMOS_EMPTY_RESPONSE" = "COSMOS_EMPTY_RESPONSE",
   "COSMOS_ERROR_RESPONSE" = "COSMOS_ERROR_RESPONSE"
 }
 
@@ -32,7 +32,7 @@ export const isCosmosErrors = (error: unknown): error is CosmosErrors =>
 /**
  * To be used for exhaustive checks
  */
-// eslint-disable-next-line prefer-arrow/prefer-arrow-functions
+
 export function assertNever(_: never): never {
   throw new Error("should not have executed this");
 }
@@ -49,7 +49,7 @@ const toString = (err: unknown): string =>
  *
  * @param err
  */
-export const toQueryFailure = (err: Error | CosmosErrors): QueryFailure =>
+export const toQueryFailure = (err: CosmosErrors | Error): QueryFailure =>
   QueryFailure.encode({
     kind: "QUERY_FAILURE",
     reason: err instanceof Error ? err.message : `CosmosError: ${toString(err)}`
@@ -61,7 +61,7 @@ export const toQueryFailure = (err: Error | CosmosErrors): QueryFailure =>
  * @param err
  */
 export const toDocumentDeleteFailure = (
-  err: Error | CosmosErrors
+  err: CosmosErrors | Error
 ): DocumentDeleteFailure =>
   DocumentDeleteFailure.encode({
     kind: "DELETE_FAILURE",
@@ -78,6 +78,16 @@ export const logFailure = (context: Context, logPrefix: string) => (
   failure: ActivityResultFailure
 ): void => {
   switch (failure.kind) {
+    case "BLOB_FAILURE":
+      context.log.error(
+        `${logPrefix}|Error saving blob|ERROR=${failure.reason}`
+      );
+      break;
+    case "DELETE_FAILURE":
+      context.log.error(
+        `${logPrefix}|Error deleting data|ERROR=${failure.reason}`
+      );
+      break;
     case "INVALID_INPUT_FAILURE":
       context.log.error(
         `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
@@ -88,18 +98,8 @@ export const logFailure = (context: Context, logPrefix: string) => (
         `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
       );
       break;
-    case "BLOB_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error saving blob|ERROR=${failure.reason}`
-      );
-      break;
     case "USER_NOT_FOUND_FAILURE":
       context.log.error(`${logPrefix}|Error user not found|ERROR=`);
-      break;
-    case "DELETE_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error deleting data|ERROR=${failure.reason}`
-      );
       break;
     default:
       assertNever(failure);

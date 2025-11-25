@@ -1,21 +1,21 @@
-import {
-  IOrchestrationFunctionContext,
-  Task,
-  TaskSet,
-  RetryOptions
-} from "durable-functions/lib/src/classes";
-import * as E from "fp-ts/lib/Either";
-import { pipe } from "fp-ts/lib/function";
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { RetrievedProfile } from "@pagopa/io-functions-commons/dist/src/models/profile";
+import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { Day, Hour } from "@pagopa/ts-commons/lib/units";
-import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
-import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
+import {
+  IOrchestrationFunctionContext,
+  RetryOptions,
+  Task,
+  TaskSet
+} from "durable-functions/lib/src/classes";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as t from "io-ts";
 
 import {
   ActivityInput as DeleteUserDataActivityInput,
@@ -27,32 +27,28 @@ import {
   ActivityResultSuccess as GetProfileActivityResultSuccess
 } from "../GetProfileActivity/handler";
 import {
+  ActivityResult as GetServicesPreferencesActivityResult,
+  ActivityResultSuccess as GetServicesPreferencesActivityResultSuccess
+} from "../GetServicesPreferencesActivity/handler";
+import {
   ActivityInput as GetUserDataProcessingStatusActivityInput,
   ActivityResult as GetUserDataProcessingStatusActivityResult,
   ActivityResultNotFoundFailure as GetUserDataProcessingStatusActivityResultNotFoundFailure,
   ActivityResultSuccess as GetUserDataProcessingStatusActivityResultSuccess
 } from "../GetUserDataProcessingActivity/handler";
 import {
+  ActivityInput as IsFailedUserDataProcessingActivityInput,
+  ActivityResultSuccess as IsFailedUserDataProcessingActivityResultSuccess
+} from "../IsFailedUserDataProcessingActivity/handler";
+import {
   ActivityInput as SendUserDataDeleteEmailActivityInput,
   ActivityResultSuccess as SendUserDataDeleteEmailActivityResultSuccess
 } from "../SendUserDataDeleteEmailActivity/handler";
-
-import {
-  ActivityResult as GetServicesPreferencesActivityResult,
-  ActivityResultSuccess as GetServicesPreferencesActivityResultSuccess
-} from "../GetServicesPreferencesActivity/handler";
-
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../SetUserDataProcessingStatusActivity/handler";
 import {
   ActivityInput as SetUserSessionLockActivityInput,
   ActivityResultSuccess as SetUserSessionLockActivityResultSuccess
 } from "../SetUserSessionLockActivity/handler";
-
-import {
-  ActivityInput as IsFailedUserDataProcessingActivityInput,
-  ActivityResultSuccess as IsFailedUserDataProcessingActivityResultSuccess
-} from "../IsFailedUserDataProcessingActivity/handler";
-
 import { Input as UpdateServiceSubscriptionFeedActivityInput } from "../UpdateSubscriptionsFeedActivity/handler";
 import { ProcessableUserDataDelete } from "../UserDataProcessingTrigger/handler";
 import {
@@ -122,7 +118,6 @@ const retryOptions = new RetryOptions(5000, 10);
 // eslint-disable-next-line functional/immutable-data
 retryOptions.backoffCoefficient = 1.5;
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const toActivityFailure = (
   err: { readonly kind: string },
   activityName: string,
@@ -136,88 +131,117 @@ const toActivityFailure = (
     reason: err.kind
   });
 
-function* setUserSessionLock(
-  context: IOrchestrationFunctionContext,
-  { action, fiscalCode }: SetUserSessionLockActivityInput
-): Generator<Task> {
-  const result = yield context.df.callActivityWithRetry(
-    "SetUserSessionLockActivity",
-    retryOptions,
-    SetUserSessionLockActivityInput.encode({
-      action,
-      fiscalCode
-    })
-  );
-  return pipe(
-    result,
-    SetUserSessionLockActivityResultSuccess.decode,
-    E.getOrElseW(_ => {
-      context.log.error(
-        `${logPrefix}|ERROR|SetUserSessionLockActivity fail|${readableReport(
-          _
-        )}`
-      );
-      throw toActivityFailure(
-        { kind: "SET_USER_SESSION_LOCK" },
-        "SetUserSessionLockActivity",
-        {
-          action
-        }
-      );
-    })
-  );
-}
-
-function* isFailedUserDataProcessing(
+function* deleteUserData(
   context: IOrchestrationFunctionContext,
   currentRecord: UserDataProcessing
-): Generator<Task, boolean> {
-  const result = yield context.df.callActivityWithRetry(
-    "IsFailedUserDataProcessingActivity",
-    retryOptions,
-    IsFailedUserDataProcessingActivityInput.encode({
-      choice: currentRecord.choice,
+): Generator<Task> {
+  const backupFolder = `${
+    currentRecord.userDataProcessingId
+  }-${context.df.currentUtcDateTime.getTime()}` as NonEmptyString;
+  const result = yield context.df.callActivity(
+    "DeleteUserDataActivity",
+    DeleteUserDataActivityInput.encode({
+      backupFolder,
       fiscalCode: currentRecord.fiscalCode
     })
   );
   return pipe(
     result,
-    IsFailedUserDataProcessingActivityResultSuccess.decode,
+    DeleteUserDataActivityResultSuccess.decode,
     E.getOrElseW(_ => {
+      context.log.error(
+        `${logPrefix}|ERROR|DeleteUserDataActivity fail`,
+        result,
+        readableReport(_)
+      );
       throw toActivityFailure(
-        { kind: "IS_FAILED_USER_DATA_PROCESSING_ACTIVITY_RESULT" },
-        "IsFailedUserDataProcessingActivity"
+        { kind: "DELETE_USER_DATA" },
+        "DeleteUserDataActivity"
+      );
+    })
+  );
+}
+
+function* getProfile(
+  context: IOrchestrationFunctionContext,
+  fiscalCode: FiscalCode
+): Generator<Task, RetrievedProfile> {
+  const result = yield context.df.callActivity(
+    "GetProfileActivity",
+    GetProfileActivityInput.encode({
+      fiscalCode
+    })
+  );
+  return pipe(
+    result,
+    GetProfileActivityResultSuccess.decode,
+    E.getOrElseW(_ => {
+      context.log.error(
+        `${logPrefix}|ERROR|GetProfileActivity fail|${readableReport(
+          _
+        )}|result=${JSON.stringify(result)}`
+      );
+      throw toActivityFailure(
+        { kind: "GET_PROFILE_ACTIVITY_RESULT" },
+        "GetProfileActivity"
       );
     }),
     _ => _.value
   );
 }
 
-function* setUserDataProcessingStatus(
+/**
+ *
+ * @param context
+ * @param param1
+ * @returns
+ */
+function* getServicesPreferences(
   context: IOrchestrationFunctionContext,
-  currentRecord: UserDataProcessing,
-  nextStatus: UserDataProcessingStatusEnum
-): Generator<Task> {
-  const result = yield context.df.callActivityWithRetry(
-    "SetUserDataProcessingStatusActivity",
+  { fiscalCode, servicePreferencesSettings }: RetrievedProfile
+): Generator<Task, readonly ServicePreference[]> {
+  // This procedure makes no sense for LEGACY account
+  if (servicePreferencesSettings.mode === ServicesPreferencesModeEnum.LEGACY) {
+    context.log.verbose(
+      `${logPrefix}|VERBOSE|Executing getServicesPreferences - LEGACY MODE`
+    );
+    return [];
+  }
+
+  context.log.verbose(
+    `${logPrefix}|VERBOSE|Executing getServicesPreferences - NO LEGACY MODE`
+  );
+
+  const activityResult = yield context.df.callActivityWithRetry(
+    "GetServicesPreferencesActivity",
     retryOptions,
     {
-      currentRecord,
-      nextStatus
+      fiscalCode,
+      settingsVersion: servicePreferencesSettings.version
     }
   );
+
   return pipe(
-    result,
-    SetUserDataProcessingStatusActivityResultSuccess.decode,
-    E.getOrElseW(_ => {
-      throw toActivityFailure(
-        { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
-        "SetUserDataProcessingStatusActivity",
-        {
-          status: nextStatus
-        }
-      );
-    })
+    activityResult,
+    GetServicesPreferencesActivityResult.decode,
+    E.mapLeft(_ => new Error(readableReport(_))),
+    E.chain(
+      E.fromPredicate(
+        (_): _ is GetServicesPreferencesActivityResultSuccess =>
+          _.kind === "SUCCESS",
+        _ => new Error(_.kind)
+      )
+    ),
+    E.fold(
+      err => {
+        // Invalid Activity input. The orchestration fail
+        context.log.error(
+          `${logPrefix}|GetServicesPreferencesActivity|ERROR=${err.message}`
+        );
+        throw err;
+      },
+      _ => _.preferences
+    )
   );
 }
 
@@ -261,34 +285,28 @@ function* hasPendingDownload(
   );
 }
 
-function* deleteUserData(
+function* isFailedUserDataProcessing(
   context: IOrchestrationFunctionContext,
   currentRecord: UserDataProcessing
-): Generator<Task> {
-  const backupFolder = `${
-    currentRecord.userDataProcessingId
-  }-${context.df.currentUtcDateTime.getTime()}` as NonEmptyString;
-  const result = yield context.df.callActivity(
-    "DeleteUserDataActivity",
-    DeleteUserDataActivityInput.encode({
-      backupFolder,
+): Generator<Task, boolean> {
+  const result = yield context.df.callActivityWithRetry(
+    "IsFailedUserDataProcessingActivity",
+    retryOptions,
+    IsFailedUserDataProcessingActivityInput.encode({
+      choice: currentRecord.choice,
       fiscalCode: currentRecord.fiscalCode
     })
   );
   return pipe(
     result,
-    DeleteUserDataActivityResultSuccess.decode,
+    IsFailedUserDataProcessingActivityResultSuccess.decode,
     E.getOrElseW(_ => {
-      context.log.error(
-        `${logPrefix}|ERROR|DeleteUserDataActivity fail`,
-        result,
-        readableReport(_)
-      );
       throw toActivityFailure(
-        { kind: "DELETE_USER_DATA" },
-        "DeleteUserDataActivity"
+        { kind: "IS_FAILED_USER_DATA_PROCESSING_ACTIVITY_RESULT" },
+        "IsFailedUserDataProcessingActivity"
       );
-    })
+    }),
+    _ => _.value
   );
 }
 
@@ -321,38 +339,70 @@ function* sendUserDataDeleteEmail(
   );
 }
 
-function* getProfile(
+function* setUserDataProcessingStatus(
   context: IOrchestrationFunctionContext,
-  fiscalCode: FiscalCode
-): Generator<Task, RetrievedProfile> {
-  const result = yield context.df.callActivity(
-    "GetProfileActivity",
-    GetProfileActivityInput.encode({
+  currentRecord: UserDataProcessing,
+  nextStatus: UserDataProcessingStatusEnum
+): Generator<Task> {
+  const result = yield context.df.callActivityWithRetry(
+    "SetUserDataProcessingStatusActivity",
+    retryOptions,
+    {
+      currentRecord,
+      nextStatus
+    }
+  );
+  return pipe(
+    result,
+    SetUserDataProcessingStatusActivityResultSuccess.decode,
+    E.getOrElseW(_ => {
+      throw toActivityFailure(
+        { kind: "SET_USER_DATA_PROCESSING_STATUS_ACTIVITY_RESULT" },
+        "SetUserDataProcessingStatusActivity",
+        {
+          status: nextStatus
+        }
+      );
+    })
+  );
+}
+
+function* setUserSessionLock(
+  context: IOrchestrationFunctionContext,
+  { action, fiscalCode }: SetUserSessionLockActivityInput
+): Generator<Task> {
+  const result = yield context.df.callActivityWithRetry(
+    "SetUserSessionLockActivity",
+    retryOptions,
+    SetUserSessionLockActivityInput.encode({
+      action,
       fiscalCode
     })
   );
   return pipe(
     result,
-    GetProfileActivityResultSuccess.decode,
+    SetUserSessionLockActivityResultSuccess.decode,
     E.getOrElseW(_ => {
       context.log.error(
-        `${logPrefix}|ERROR|GetProfileActivity fail|${readableReport(
+        `${logPrefix}|ERROR|SetUserSessionLockActivity fail|${readableReport(
           _
-        )}|result=${JSON.stringify(result)}`
+        )}`
       );
       throw toActivityFailure(
-        { kind: "GET_PROFILE_ACTIVITY_RESULT" },
-        "GetProfileActivity"
+        { kind: "SET_USER_SESSION_LOCK" },
+        "SetUserSessionLockActivity",
+        {
+          action
+        }
       );
-    }),
-    _ => _.value
+    })
   );
 }
 
 function* updateSubscriptionFeed(
   context: IOrchestrationFunctionContext,
-  { fiscalCode, version, servicePreferencesSettings }: RetrievedProfile,
-  servicesPreferences: ReadonlyArray<ServicePreference>
+  { fiscalCode, servicePreferencesSettings, version }: RetrievedProfile,
+  servicesPreferences: readonly ServicePreference[]
 ): Generator<Task, "SUCCESS"> {
   const commonInput = {
     fiscalCode,
@@ -406,61 +456,6 @@ function* updateSubscriptionFeed(
   }
 
   return "SUCCESS";
-}
-
-/**
- *
- * @param context
- * @param param1
- * @returns
- */
-function* getServicesPreferences(
-  context: IOrchestrationFunctionContext,
-  { fiscalCode, servicePreferencesSettings }: RetrievedProfile
-): Generator<Task, ReadonlyArray<ServicePreference>> {
-  // This procedure makes no sense for LEGACY account
-  if (servicePreferencesSettings.mode === ServicesPreferencesModeEnum.LEGACY) {
-    context.log.verbose(
-      `${logPrefix}|VERBOSE|Executing getServicesPreferences - LEGACY MODE`
-    );
-    return [];
-  }
-
-  context.log.verbose(
-    `${logPrefix}|VERBOSE|Executing getServicesPreferences - NO LEGACY MODE`
-  );
-
-  const activityResult = yield context.df.callActivityWithRetry(
-    "GetServicesPreferencesActivity",
-    retryOptions,
-    {
-      fiscalCode,
-      settingsVersion: servicePreferencesSettings.version
-    }
-  );
-
-  return pipe(
-    activityResult,
-    GetServicesPreferencesActivityResult.decode,
-    E.mapLeft(_ => new Error(readableReport(_))),
-    E.chain(
-      E.fromPredicate(
-        (_): _ is GetServicesPreferencesActivityResultSuccess =>
-          _.kind === "SUCCESS",
-        _ => new Error(_.kind)
-      )
-    ),
-    E.fold(
-      err => {
-        // Invalid Activity input. The orchestration fail
-        context.log.error(
-          `${logPrefix}|GetServicesPreferencesActivity|ERROR=${err.message}`
-        );
-        throw err;
-      },
-      _ => _.preferences
-    )
-  );
 }
 
 /**

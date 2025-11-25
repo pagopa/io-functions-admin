@@ -3,6 +3,8 @@ const marked = require("marked");
 const aUrl = "any-url";
 const aBlobName = "any-blob-name";
 
+import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { userDataDownloadMessage } from "../messages";
 
 describe("userDataDownloadMessage", () => {

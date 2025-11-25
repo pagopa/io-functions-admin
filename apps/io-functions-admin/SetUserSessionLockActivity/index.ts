@@ -11,7 +11,7 @@ const sessionManagerInternalApiKey = config.SESSION_MANAGER_INTERNAL_API_KEY;
 const client: Client<"ApiKeyAuth"> = createClient<"ApiKeyAuth">({
   baseUrl: sessionManagerInternalApiUrl,
   fetchApi: timeoutFetch,
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
   withDefaults: op => params =>
     op({
       ...params,

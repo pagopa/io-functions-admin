@@ -2,8 +2,9 @@
 
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";
-
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+import { afterEach, assert, describe, expect, it, Mock, vi } from "vitest";
+
 import { SubscriptionKeyTypeEnum } from "../../generated/definitions/SubscriptionKeyType";
 import { IAzureApimConfig } from "../../utils/apim";
 import { RegenerateSubscriptionKeysHandler } from "../handler";
@@ -12,17 +13,16 @@ const aValidSubscriptionId = "valid-subscription-id" as NonEmptyString;
 const aNotExistingSubscriptionId = "not-existing-subscription-id" as NonEmptyString;
 const aBreakingApimSubscriptionId = "broken-subscription-id" as NonEmptyString;
 
-jest.mock("@azure/arm-apimanagement");
-const mockApiManagementClient = ApiManagementClient as jest.Mock;
-const mockLog = jest.fn();
-const mockGetToken = jest.fn();
+vi.mock("@azure/arm-apimanagement");
+const mockApiManagementClient = ApiManagementClient as Mock;
+const mockLog = vi.fn();
+const mockGetToken = vi.fn();
 
 const mockedSubscription = {
   primaryKey: "primary-key",
   secondaryKey: "secondary-key"
 };
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const regenerateKeyImplementation = (
   _: string,
   __: string,
@@ -37,17 +37,16 @@ const regenerateKeyImplementation = (
   if (subscriptionId === aNotExistingSubscriptionId) {
     return Promise.reject(new RestError("not found", "", 404));
   }
-  return fail(Error("The provided subscription id value is not handled"));
+  return assert.fail("The provided subscription id value is not handled");
 };
 
-const mockRegeneratePrimaryKey = jest.fn();
+const mockRegeneratePrimaryKey = vi.fn();
 mockRegeneratePrimaryKey.mockImplementation(regenerateKeyImplementation);
-const mockRegenerateSecondaryKey = jest.fn();
+const mockRegenerateSecondaryKey = vi.fn();
 mockRegenerateSecondaryKey.mockImplementation(regenerateKeyImplementation);
 
 mockApiManagementClient.mockImplementation(() => ({
   subscription: {
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     listSecrets: (_: string, __: string, subscriptionId: string) => {
       if (subscriptionId === aValidSubscriptionId) {
         return Promise.resolve(mockedSubscription);
@@ -58,7 +57,7 @@ mockApiManagementClient.mockImplementation(() => ({
       if (subscriptionId === aNotExistingSubscriptionId) {
         return Promise.reject(new RestError("not found", "", 404));
       }
-      return fail(Error("The provided subscription id value is not handled"));
+      return assert.fail("The provided subscription id value is not handled");
     },
     regeneratePrimaryKey: mockRegeneratePrimaryKey,
     regenerateSecondaryKey: mockRegenerateSecondaryKey
