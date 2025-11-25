@@ -36,10 +36,9 @@ export type Result = t.TypeOf<typeof Result>;
  * Temporary Activity Handler to skip all pending UpsertServiceOrchestrator
  * executions.
  */
-export const getUpdateVisibleServicesActivityHandler = () => async (
-  _: Context,
-  __: unknown
-): Promise<unknown> =>
-  Result.encode({
-    kind: "SUCCESS"
-  });
+export const getUpdateVisibleServicesActivityHandler =
+  () =>
+  async (_: Context, __: unknown): Promise<unknown> =>
+    Result.encode({
+      kind: "SUCCESS"
+    });

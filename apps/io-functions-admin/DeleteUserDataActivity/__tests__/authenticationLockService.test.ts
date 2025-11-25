@@ -27,9 +27,8 @@ const service = new AuthenticationLockService(lockedProfileTableClient);
 
 describe("AuthenticationLockService#getAllUserAuthenticationLockData", () => {
   it("should return an empty array if query returns no records from table storage", async () => {
-    const result = await service.getAllUserAuthenticationLockData(
-      aFiscalCode
-    )();
+    const result =
+      await service.getAllUserAuthenticationLockData(aFiscalCode)();
 
     expect(result).toEqual(E.right([]));
     expect(listLockedProfileEntitiesMock).toHaveBeenCalledWith({
@@ -50,9 +49,8 @@ describe("AuthenticationLockService#getAllUserAuthenticationLockData", () => {
         getProfileLockedRecordIterator(records)
       );
 
-      const result = await service.getAllUserAuthenticationLockData(
-        aFiscalCode
-      )();
+      const result =
+        await service.getAllUserAuthenticationLockData(aFiscalCode)();
 
       expect(result).toEqual(E.right(records));
     }
@@ -63,9 +61,8 @@ describe("AuthenticationLockService#getAllUserAuthenticationLockData", () => {
       errorProfileLockedRecordIterator
     );
 
-    const result = await service.getAllUserAuthenticationLockData(
-      aFiscalCode
-    )();
+    const result =
+      await service.getAllUserAuthenticationLockData(aFiscalCode)();
 
     expect(result).toEqual(E.left(Error("an Error")));
   });
@@ -75,9 +72,8 @@ describe("AuthenticationLockService#getAllUserAuthenticationLockData", () => {
       brokeEntityProfileLockedRecordIterator
     );
 
-    const result = await service.getAllUserAuthenticationLockData(
-      aFiscalCode
-    )();
+    const result =
+      await service.getAllUserAuthenticationLockData(aFiscalCode)();
 
     expect(result).toMatchObject(
       E.left({

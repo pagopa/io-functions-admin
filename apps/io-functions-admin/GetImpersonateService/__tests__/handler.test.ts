@@ -20,9 +20,11 @@ const fakeApimConfig: IAzureApimConfig = {
 const fakeUserName = "a-non-empty-string";
 
 const aValidSubscriptionId = "valid-subscription-id" as NonEmptyString;
-const aNotExistingSubscriptionId = "not-existing-subscription-id" as NonEmptyString;
+const aNotExistingSubscriptionId =
+  "not-existing-subscription-id" as NonEmptyString;
 const aBreakingApimSubscriptionId = "broken-subscription-id" as NonEmptyString;
-const aValidSubscriptionIdWithouthOwner = "no-owner-subscription-id" as NonEmptyString;
+const aValidSubscriptionIdWithouthOwner =
+  "no-owner-subscription-id" as NonEmptyString;
 
 const mockedSubscription = {
   ownerId: "/users/userId"
@@ -92,9 +94,8 @@ describe("GetImpersonateServiceHandler", () => {
       TE.left(Error("Error from ApiManagementClient constructor"))
     );
 
-    const getImpersonateServiceHandler = GetImpersonateServiceHandler(
-      fakeApimConfig
-    );
+    const getImpersonateServiceHandler =
+      GetImpersonateServiceHandler(fakeApimConfig);
 
     const response = await getImpersonateServiceHandler(
       mockedContext as any,

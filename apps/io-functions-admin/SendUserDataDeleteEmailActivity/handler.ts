@@ -59,72 +59,74 @@ export interface INotificationDefaults {
   readonly MAIL_FROM: NonEmptyString;
 }
 
-export const getActivityFunction = (
-  lMailerTransporter: NodeMailer.Transporter,
-  notificationDefaultParams: INotificationDefaults
-) => (context: Context, input: unknown): Promise<ActivityResult> => {
-  const failure = (reason: string) => {
-    context.log.error(reason);
-    return ActivityResultFailure.encode({
-      kind: "FAILURE",
-      reason
-    });
-  };
+export const getActivityFunction =
+  (
+    lMailerTransporter: NodeMailer.Transporter,
+    notificationDefaultParams: INotificationDefaults
+  ) =>
+  (context: Context, input: unknown): Promise<ActivityResult> => {
+    const failure = (reason: string) => {
+      context.log.error(reason);
+      return ActivityResultFailure.encode({
+        kind: "FAILURE",
+        reason
+      });
+    };
 
-  const success = () =>
-    ActivityResultSuccess.encode({
-      kind: "SUCCESS"
-    });
+    const success = () =>
+      ActivityResultSuccess.encode({
+        kind: "SUCCESS"
+      });
 
-  return pipe(
-    input,
-    ActivityInput.decode,
-    E.mapLeft(errs =>
-      failure(
-        `SendUserDataDeleteEmailActivity|Cannot decode input|ERROR=${readableReport(
-          errs
-        )}|INPUT=${JSON.stringify(input)}`
-      )
-    ),
-    TE.fromEither,
-    TE.chainW(({ fiscalCode, toAddress }) => {
-      const logPrefix = `SendUserDataDeleteEmailActivity|PROFILE=${fiscalCode}`;
-      context.log.verbose(`${logPrefix}|Sending user data delete email`);
+    return pipe(
+      input,
+      ActivityInput.decode,
+      E.mapLeft(errs =>
+        failure(
+          `SendUserDataDeleteEmailActivity|Cannot decode input|ERROR=${readableReport(
+            errs
+          )}|INPUT=${JSON.stringify(input)}`
+        )
+      ),
+      TE.fromEither,
+      TE.chainW(({ fiscalCode, toAddress }) => {
+        const logPrefix = `SendUserDataDeleteEmailActivity|PROFILE=${fiscalCode}`;
+        context.log.verbose(`${logPrefix}|Sending user data delete email`);
 
-      const { content } = userDataDeleteMessage;
-      return pipe(
-        TE.tryCatch(async () => {
-          const documentHtml = await markdownToHtml
-            .process(content.markdown)
-            .then(e => e.toString());
+        const { content } = userDataDeleteMessage;
+        return pipe(
+          TE.tryCatch(async () => {
+            const documentHtml = await markdownToHtml
+              .process(content.markdown)
+              .then(e => e.toString());
 
-          // converts the HTML to pure text to generate the text version of the message
-          const bodyText = HtmlToText.fromString(
-            documentHtml,
-            notificationDefaultParams.HTML_TO_TEXT_OPTIONS
-          );
+            // converts the HTML to pure text to generate the text version of the message
+            const bodyText = HtmlToText.fromString(
+              documentHtml,
+              notificationDefaultParams.HTML_TO_TEXT_OPTIONS
+            );
 
-          return { bodyText, documentHtml };
-        }, E.toError),
-        TE.chain(({ bodyText, documentHtml }) =>
-          sendMail(lMailerTransporter, {
-            from: notificationDefaultParams.MAIL_FROM,
-            html: documentHtml,
-            subject: content.subject,
-            text: bodyText,
-            to: toAddress
+            return { bodyText, documentHtml };
+          }, E.toError),
+          TE.chain(({ bodyText, documentHtml }) =>
+            sendMail(lMailerTransporter, {
+              from: notificationDefaultParams.MAIL_FROM,
+              html: documentHtml,
+              subject: content.subject,
+              text: bodyText,
+              to: toAddress
+            })
+          ),
+          TE.map(() => context.log.verbose(`${logPrefix}|RESULT=SUCCESS`)),
+          TE.mapLeft(error => {
+            context.log.error(`${logPrefix}|ERROR=${error.message}`);
+            throw new Error(`Error while sending email: ${error.message}`);
           })
-        ),
-        TE.map(() => context.log.verbose(`${logPrefix}|RESULT=SUCCESS`)),
-        TE.mapLeft(error => {
-          context.log.error(`${logPrefix}|ERROR=${error.message}`);
-          throw new Error(`Error while sending email: ${error.message}`);
-        })
-      );
-    }),
-    TE.map(() => success()),
-    TE.toUnion
-  )();
-};
+        );
+      }),
+      TE.map(() => success()),
+      TE.toUnion
+    )();
+  };
 
 export default getActivityFunction;

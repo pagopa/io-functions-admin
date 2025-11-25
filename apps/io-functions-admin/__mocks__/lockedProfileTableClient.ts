@@ -57,10 +57,10 @@ export const listLockedProfileEntitiesMock = vi.fn(
 );
 
 export const submitTransactionMock = vi.fn(
-  async () => ({ status: 202 } as TableTransactionResponse)
+  async () => ({ status: 202 }) as TableTransactionResponse
 );
 
-export const lockedProfileTableClient: TableClient = ({
+export const lockedProfileTableClient: TableClient = {
   listEntities: listLockedProfileEntitiesMock,
   submitTransaction: submitTransactionMock
-} as unknown) as TableClient;
+} as unknown as TableClient;

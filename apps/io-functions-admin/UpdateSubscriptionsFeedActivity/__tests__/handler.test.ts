@@ -21,10 +21,10 @@ const deleteEntityMock = vi.fn((_, __, f) => {
   f(undefined, { isSuccessful: true });
 });
 
-const tableServiceMock = ({
+const tableServiceMock = {
   deleteEntity: deleteEntityMock,
   insertEntity: insertEntityMock
-} as unknown) as TableService;
+} as unknown as TableService;
 
 const today = new Date();
 
@@ -44,7 +44,7 @@ describe("UpdateSubscriptionsFeedActivity - Service", () => {
     };
 
     const result = await updateSubscriptionFeed(
-      (contextMock as unknown) as Context,
+      contextMock as unknown as Context,
       input,
       tableServiceMock,
       "aTable" as NonEmptyString
@@ -80,7 +80,7 @@ describe("UpdateSubscriptionsFeedActivity - Service", () => {
     });
 
     const result = await updateSubscriptionFeed(
-      (contextMock as unknown) as Context,
+      contextMock as unknown as Context,
       input,
       tableServiceMock,
       "aTable" as NonEmptyString
@@ -125,7 +125,7 @@ describe("UpdateSubscriptionsFeedActivity - Profile", () => {
     };
 
     const result = await updateSubscriptionFeed(
-      (contextMock as unknown) as Context,
+      contextMock as unknown as Context,
       input,
       tableServiceMock,
       "aTable" as NonEmptyString
@@ -168,7 +168,7 @@ describe("UpdateSubscriptionsFeedActivity - Profile", () => {
     });
 
     const result = await updateSubscriptionFeed(
-      (contextMock as unknown) as Context,
+      contextMock as unknown as Context,
       input,
       tableServiceMock,
       "aTable" as NonEmptyString
@@ -213,7 +213,7 @@ describe("UpdateSubscriptionsFeedActivity - Profile with preferences", () => {
     };
 
     const result = await updateSubscriptionFeed(
-      (contextMock as unknown) as Context,
+      contextMock as unknown as Context,
       input,
       tableServiceMock,
       "aTable" as NonEmptyString

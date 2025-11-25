@@ -28,7 +28,7 @@ describe("GetSubscriptionCidrs", () => {
     };
 
     const getSubscriptionCidrsHandler = GetSubscriptionCidrsHandler(
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
     );
 
     const response = await getSubscriptionCidrsHandler(
@@ -49,7 +49,7 @@ describe("GetSubscriptionCidrs", () => {
     };
 
     const getSubscriptionCidrsHandler = GetSubscriptionCidrsHandler(
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
     );
 
     const response = await getSubscriptionCidrsHandler(
@@ -72,7 +72,7 @@ describe("GetSubscriptionCidrs", () => {
     };
 
     const getSubscriptionCidrsHandler = GetSubscriptionCidrsHandler(
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
     );
 
     const response = await getSubscriptionCidrsHandler(

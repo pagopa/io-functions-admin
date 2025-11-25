@@ -20,9 +20,9 @@ describe("UploadOrganizationLogoHandler", () => {
       }
     };
 
-    const blobServiceMock = ({
+    const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
-    } as any) as BlobService;
+    } as any as BlobService;
 
     const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
       blobServiceMock,
@@ -40,13 +40,12 @@ describe("UploadOrganizationLogoHandler", () => {
 
   it("should return a success response if the request payload is valid", async () => {
     const requestPayload = {
-      logo:
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+      logo: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
     } as Logo;
     const mockedContext = {};
-    const blobServiceMock = ({
+    const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
-    } as any) as BlobService;
+    } as any as BlobService;
     const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
       blobServiceMock,
       logosUrl
@@ -63,13 +62,12 @@ describe("UploadOrganizationLogoHandler", () => {
 
   it("should return an internal error response if blob write fails", async () => {
     const requestPayload = {
-      logo:
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+      logo: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
     } as Logo;
     const mockedContext = {};
-    const blobServiceMock = ({
+    const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb("any", null))
-    } as any) as BlobService;
+    } as any as BlobService;
     const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
       blobServiceMock,
       logosUrl

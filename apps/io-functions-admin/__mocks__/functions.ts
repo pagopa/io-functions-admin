@@ -1,7 +1,7 @@
 import { Context } from "@azure/functions";
 import { vi } from "vitest";
 
-export const context = ({
+export const context = {
   bindings: {},
   log: {
     error: vi.fn().mockImplementation(console.log),
@@ -12,4 +12,4 @@ export const context = ({
 
     warn: vi.fn().mockImplementation(console.log)
   }
-} as unknown) as Context;
+} as unknown as Context;

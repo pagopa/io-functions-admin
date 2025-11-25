@@ -146,32 +146,32 @@ function assertNever(_: never): void {
  * @param context the Azure functions context
  * @param failure the failure to log
  */
-const logFailure = (context: Context) => (
-  failure: ActivityResultFailure
-): void => {
-  switch (failure.kind) {
-    case "ARCHIVE_GENERATION_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error saving zip bundle|ERROR=${failure.reason}`
-      );
-      break;
-    case "INVALID_INPUT_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
-      );
-      break;
-    case "QUERY_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
-      );
-      break;
-    case "USER_NOT_FOUND_FAILURE":
-      context.log.error(`${logPrefix}|Error user not found|ERROR=`);
-      break;
-    default:
-      assertNever(failure);
-  }
-};
+const logFailure =
+  (context: Context) =>
+  (failure: ActivityResultFailure): void => {
+    switch (failure.kind) {
+      case "ARCHIVE_GENERATION_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error saving zip bundle|ERROR=${failure.reason}`
+        );
+        break;
+      case "INVALID_INPUT_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
+        );
+        break;
+      case "QUERY_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
+        );
+        break;
+      case "USER_NOT_FOUND_FAILURE":
+        context.log.error(`${logPrefix}|Error user not found|ERROR=`);
+        break;
+      default:
+        assertNever(failure);
+    }
+  };
 
 /**
  * Look for a profile from a given fiscal code
@@ -507,22 +507,19 @@ export const queryAllUserData = (
     )
   );
 
-const getCreateWriteStreamToBlockBlob = (blobService: BlobService) => (
-  container: string,
-  blob: string
-) => {
-  const { e1: errorOrResult, e2: resolve } = DeferredPromise<
-    E.Either<Error, BlobService.BlobResult>
-  >();
-  const blobStream = blobService.createWriteStreamToBlockBlob(
-    container,
-    blob,
-    { contentSettings: { contentType: "application/zip" } },
-    (err, result) => (err ? resolve(E.left(err)) : resolve(E.right(result)))
-  );
+const getCreateWriteStreamToBlockBlob =
+  (blobService: BlobService) => (container: string, blob: string) => {
+    const { e1: errorOrResult, e2: resolve } =
+      DeferredPromise<E.Either<Error, BlobService.BlobResult>>();
+    const blobStream = blobService.createWriteStreamToBlockBlob(
+      container,
+      blob,
+      { contentSettings: { contentType: "application/zip" } },
+      (err, result) => (err ? resolve(E.left(err)) : resolve(E.right(result)))
+    );
 
-  return { blobStream, errorOrResult };
-};
+    return { blobStream, errorOrResult };
+  };
 
 const onStreamFinished = TE.taskify(stream.finished);
 
@@ -661,7 +658,8 @@ export function createExtractUserDataActivityHandler({
       ),
       TE.map(allUserData => {
         // remove sensitive data
-        const notifications = allUserData.notifications.map(e =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const notifications = allUserData.notifications.map((e: any) =>
           cleanData({
             ...e,
             channels: { ...e.channels, WEBHOOK: { url: undefined } }

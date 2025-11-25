@@ -38,7 +38,7 @@ export const IConfig = t.intersection([
 
     GET_USERS_PAGE_SIZE: withDefault(
       IntegerFromString.pipe(NonNegativeInteger),
-      ("100" as unknown) as NonNegativeInteger
+      "100" as unknown as NonNegativeInteger
     ),
     INSTANT_DELETE_ENABLED_USERS: CommaSeparatedListOf(FiscalCode),
     isProduction: t.boolean,
@@ -124,6 +124,7 @@ export function getConfigOrThrow(): IConfig {
 }
 export const isUserEligibleForInstantDelete: ({
   INSTANT_DELETE_ENABLED_USERS
-}: IConfig) => IsUserEligibleForInstantDelete = ({
-  INSTANT_DELETE_ENABLED_USERS
-}) => fiscalCode => INSTANT_DELETE_ENABLED_USERS.includes(fiscalCode);
+}: IConfig) => IsUserEligibleForInstantDelete =
+  ({ INSTANT_DELETE_ENABLED_USERS }) =>
+  fiscalCode =>
+    INSTANT_DELETE_ENABLED_USERS.includes(fiscalCode);

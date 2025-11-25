@@ -117,23 +117,26 @@ export const updateSubscriptionFeed = async (
     O.fromPredicate(ProfileInput.is),
     O.chainNullableK(_ => _.previousPreferences),
     O.map(_ =>
-      _.reduce((prev, preference) => {
-        // TODO: This code could be optimized deleting only the entry based on the current
-        // profile status and the effective previous preference inbox value
-        const sPreferencePartitionKey = `S-${utcTodayPrefix}-${preference.serviceId}-S`;
-        const uPreferencePartitionKey = `S-${utcTodayPrefix}-${preference.serviceId}-U`;
-        return [
-          ...prev,
-          {
-            partitionKey: sPreferencePartitionKey,
-            rowKey: `${sPreferencePartitionKey}-${fiscalCodeHash}`
-          },
-          {
-            partitionKey: uPreferencePartitionKey,
-            rowKey: `${uPreferencePartitionKey}-${fiscalCodeHash}`
-          }
-        ];
-      }, [] as readonly SubscriptionFeedEntitySelector[])
+      _.reduce(
+        (prev, preference) => {
+          // TODO: This code could be optimized deleting only the entry based on the current
+          // profile status and the effective previous preference inbox value
+          const sPreferencePartitionKey = `S-${utcTodayPrefix}-${preference.serviceId}-S`;
+          const uPreferencePartitionKey = `S-${utcTodayPrefix}-${preference.serviceId}-U`;
+          return [
+            ...prev,
+            {
+              partitionKey: sPreferencePartitionKey,
+              rowKey: `${sPreferencePartitionKey}-${fiscalCodeHash}`
+            },
+            {
+              partitionKey: uPreferencePartitionKey,
+              rowKey: `${uPreferencePartitionKey}-${fiscalCodeHash}`
+            }
+          ];
+        },
+        [] as readonly SubscriptionFeedEntitySelector[]
+      )
     ),
     O.getOrElseW(() => [])
   );

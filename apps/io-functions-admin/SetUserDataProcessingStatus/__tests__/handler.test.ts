@@ -12,9 +12,11 @@ import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import { none, Option, some } from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { context } from "../../__mocks__/functions";
+// eslint-disable-next-line vitest/no-mocks-import
 import {
   aFiscalCode,
   aUserDataProcessing,
@@ -32,13 +34,13 @@ const makeUserDataProcessingId = vi.fn(
     pipe(
       `${fiscalCode}-${choice}`,
       UserDataProcessingId.decode,
-      E.getOrElseW((errors) => {
+      E.getOrElseW(errors => {
         throw new Error("");
       })
     )
 );
 
-const mockUserDataProcessingModel = ({
+const mockUserDataProcessingModel = {
   createOrUpdateByNewOne: vi.fn((u: UserDataProcessing) =>
     throwError()
       ? TE.left<CosmosErrors, UserDataProcessing>({
@@ -53,7 +55,7 @@ const mockUserDataProcessingModel = ({
         : none
     )
   )
-} as any) as UserDataProcessingModel;
+} as any as UserDataProcessingModel;
 
 describe("setUserDataProcessingStatusHandler", () => {
   beforeEach(() => {

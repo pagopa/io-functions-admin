@@ -19,6 +19,8 @@ import {
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as t from "io-ts";
 
+import type { INotificationStatusIdTag } from "../types/io-functions-commons";
+
 // like Notification, but it's export-safe (the decoder removes webhook's sensitive data)
 export const SafeNotification = t.intersection([
   NotificationBase,
@@ -40,7 +42,27 @@ const MessageContentWithId = t.interface({
 export type MessageContentWithId = t.TypeOf<typeof MessageContentWithId>;
 
 // the shape of the dataset to be extracted
-export const AllUserData = t.interface({
+export const AllUserData: t.InterfaceType<{
+  messageContents: t.ReadonlyArrayType<
+    t.ExactType<typeof MessageContentWithId>
+  >;
+  messages: t.ReadonlyArrayType<t.ExactType<typeof MessageWithoutContent>>;
+  messageStatuses: t.ReadonlyArrayType<typeof MessageStatus>;
+  messagesView: t.ReadonlyArrayType<t.ExactType<typeof MessageView>>;
+  notifications: t.ReadonlyArrayType<t.ExactType<typeof SafeNotification>>;
+  notificationStatuses: t.ReadonlyArrayType<
+    t.ExactType<typeof NotificationStatus>
+  >;
+  profiles: t.ReadonlyArrayType<t.ExactType<typeof Profile>>;
+  servicesPreferences: t.ReadonlyArrayType<
+    t.UnionType<
+      [
+        t.ExactType<typeof EnabledInboxServicePreferences>,
+        t.ExactType<typeof DisabledInboxServicePreferences>
+      ]
+    >
+  >;
+}> = t.interface({
   messageContents: t.readonlyArray(
     t.exact(MessageContentWithId),
     "MessageContentList"

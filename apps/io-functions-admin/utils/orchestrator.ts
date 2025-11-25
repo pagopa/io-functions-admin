@@ -10,7 +10,7 @@ export const isOrchestratorRunning = (
   orchestratorId: string
 ): TE.TaskEither<
   Error,
-  PromiseType<ReturnType<typeof client["getStatus"]>> & {
+  PromiseType<ReturnType<(typeof client)["getStatus"]>> & {
     readonly isRunning: boolean;
   }
 > =>

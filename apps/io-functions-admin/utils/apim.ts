@@ -34,14 +34,14 @@ export const ApimRestError = t.interface({
 });
 export type ApimRestError = t.TypeOf<typeof ApimRestError>;
 
-export const mapApimRestError = (resource: string) => (
-  apimRestError: ApimRestError
-): ApimMappedErrors =>
-  apimRestError.statusCode === 404
-    ? ResponseErrorNotFound("Not found", `${resource} Not found`)
-    : ResponseErrorInternal(
-        `Internal Error while retrieving ${resource} detail`
-      );
+export const mapApimRestError =
+  (resource: string) =>
+  (apimRestError: ApimRestError): ApimMappedErrors =>
+    apimRestError.statusCode === 404
+      ? ResponseErrorNotFound("Not found", `${resource} Not found`)
+      : ResponseErrorInternal(
+          `Internal Error while retrieving ${resource} detail`
+        );
 
 export const chainApimMappedError = <T>(
   te: TE.TaskEither<unknown, T>

@@ -72,14 +72,15 @@ beforeEach(() => {
 
 describe("GetFailedUserDataProcessingListHandler", () => {
   it("should return an empty json if no failed user data processing request is present", async () => {
-    const tableServiceMock = ({
+    const tableServiceMock = {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(noFailedRequests)
-    } as any) as TableService;
+    } as any as TableService;
 
-    const getFailedUserDataProcessingListHandler = GetFailedUserDataProcessingListHandler(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingListHandler =
+      GetFailedUserDataProcessingListHandler(
+        tableServiceMock,
+        storageTableMock
+      );
 
     const result = await getFailedUserDataProcessingListHandler(
       {} as any,
@@ -95,16 +96,17 @@ describe("GetFailedUserDataProcessingListHandler", () => {
   });
 
   it("should return a json with a fiscalcode if failed user data delete request has been found", async () => {
-    const tableServiceMock = ({
+    const tableServiceMock = {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         oneFailedDeleteRequest
       )
-    } as any) as TableService;
+    } as any as TableService;
 
-    const getFailedUserDataProcessingListHandler = GetFailedUserDataProcessingListHandler(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingListHandler =
+      GetFailedUserDataProcessingListHandler(
+        tableServiceMock,
+        storageTableMock
+      );
 
     const result = await getFailedUserDataProcessingListHandler(
       {} as any,
@@ -120,16 +122,17 @@ describe("GetFailedUserDataProcessingListHandler", () => {
   });
 
   it("should return an empty json with a fiscalcode because no failed user data delete request has been found", async () => {
-    const tableServiceMock = ({
+    const tableServiceMock = {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         oneFailedDownloadRequest
       )
-    } as any) as TableService;
+    } as any as TableService;
 
-    const getFailedUserDataProcessingListHandler = GetFailedUserDataProcessingListHandler(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingListHandler =
+      GetFailedUserDataProcessingListHandler(
+        tableServiceMock,
+        storageTableMock
+      );
 
     const result = await getFailedUserDataProcessingListHandler(
       {} as any,
@@ -145,16 +148,17 @@ describe("GetFailedUserDataProcessingListHandler", () => {
   });
 
   it("should return a json with a fiscalcode if failed user data download request has been found", async () => {
-    const tableServiceMock = ({
+    const tableServiceMock = {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         oneFailedDownloadRequest
       )
-    } as any) as TableService;
+    } as any as TableService;
 
-    const getFailedUserDataProcessingListHandler = GetFailedUserDataProcessingListHandler(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingListHandler =
+      GetFailedUserDataProcessingListHandler(
+        tableServiceMock,
+        storageTableMock
+      );
 
     const result = await getFailedUserDataProcessingListHandler(
       {} as any,
@@ -170,16 +174,17 @@ describe("GetFailedUserDataProcessingListHandler", () => {
   });
 
   it("should return an empty json with a fiscalcode because no failed user data download request has been found", async () => {
-    const tableServiceMock = ({
+    const tableServiceMock = {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         oneFailedDeleteRequest
       )
-    } as any) as TableService;
+    } as any as TableService;
 
-    const getFailedUserDataProcessingListHandler = GetFailedUserDataProcessingListHandler(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingListHandler =
+      GetFailedUserDataProcessingListHandler(
+        tableServiceMock,
+        storageTableMock
+      );
 
     const result = await getFailedUserDataProcessingListHandler(
       {} as any,
@@ -195,16 +200,17 @@ describe("GetFailedUserDataProcessingListHandler", () => {
   });
 
   it("should return a json with only a fiscalcode because there is only one failed user data delete request", async () => {
-    const tableServiceMock = ({
+    const tableServiceMock = {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         twoFailedDifferentRequests
       )
-    } as any) as TableService;
+    } as any as TableService;
 
-    const getFailedUserDataProcessingListHandler = GetFailedUserDataProcessingListHandler(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingListHandler =
+      GetFailedUserDataProcessingListHandler(
+        tableServiceMock,
+        storageTableMock
+      );
 
     const result = await getFailedUserDataProcessingListHandler(
       {} as any,
@@ -222,16 +228,17 @@ describe("GetFailedUserDataProcessingListHandler", () => {
   });
 
   it("should return a json with only a fiscalcode because there is only one failed user data download request", async () => {
-    const tableServiceMock = ({
+    const tableServiceMock = {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         twoFailedDifferentRequests
       )
-    } as any) as TableService;
+    } as any as TableService;
 
-    const getFailedUserDataProcessingListHandler = GetFailedUserDataProcessingListHandler(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingListHandler =
+      GetFailedUserDataProcessingListHandler(
+        tableServiceMock,
+        storageTableMock
+      );
 
     const result = await getFailedUserDataProcessingListHandler(
       {} as any,

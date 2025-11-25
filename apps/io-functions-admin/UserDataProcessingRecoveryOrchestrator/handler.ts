@@ -30,8 +30,8 @@ const printableError = (error: Error | t.Errors | unknown): string =>
   error instanceof Error
     ? error.message
     : Array.isArray(error)
-    ? readableReport(error)
-    : String(error);
+      ? readableReport(error)
+      : String(error);
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 export const InvalidInputFailure = t.interface({
@@ -208,7 +208,7 @@ function* searchForFailureReason(
   );
 }
 
-export const handler = function*(
+export const handler = function* (
   context: IOrchestrationFunctionContext
 ): Generator<unknown, OrchestratorResult> {
   const document = context.df.getInput();

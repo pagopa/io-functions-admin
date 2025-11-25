@@ -33,7 +33,8 @@ const HTML_TO_TEXT_OPTIONS: HtmlToText.HtmlToTextOptions = {
   tables: true
 };
 
-const MAIL_FROM = "IO - l’app dei servizi pubblici <no-reply@io.italia.it>" as NonEmptyString;
+const MAIL_FROM =
+  "IO - l’app dei servizi pubblici <no-reply@io.italia.it>" as NonEmptyString;
 const defaultNotificationParams = {
   HTML_TO_TEXT_OPTIONS,
   MAIL_FROM
@@ -44,7 +45,7 @@ const input: ActivityInput = {
   toAddress: "email@example.com" as EmailAddress
 };
 
-const lMailerTransporterMock = ({} as unknown) as mail.MailerTransporter;
+const lMailerTransporterMock = {} as unknown as mail.MailerTransporter;
 
 describe("SendUserDataDeleteEmailActivity", () => {
   it("should respond with 'SUCCESS' if the mail is sent", async () => {

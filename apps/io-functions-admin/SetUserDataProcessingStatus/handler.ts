@@ -50,65 +50,60 @@ type IHttpHandler = (
   param3: AllowedUserDataProcessingStatus
 ) => Promise<Response>;
 
-export const setUserDataProcessingStatusHandler = (
-  userDataProcessingModel: UserDataProcessingModel
-): IHttpHandler => async (
-  _,
-  choice,
-  fiscalCode,
-  newStatus
-): Promise<Response> =>
-  pipe(
-    newStatus,
-    AllowedUserDataProcessingStatus.decode,
-    E.mapLeft(() => ResponseErrorInternal("Status not allowed")),
-    TE.fromEither,
-    TE.chainW(status => {
-      const findLastVersionByModelIdTask: TE.TaskEither<
-        Response,
-        Option<UserDataProcessing>
-      > = pipe(
-        userDataProcessingModel.findLastVersionByModelId([
-          makeUserDataProcessingId(choice, fiscalCode),
-          fiscalCode
-        ]),
-        TE.mapLeft(e => ResponseErrorInternal(e.kind))
-      );
-
-      const updateStatusTask: (
-        a: UserDataProcessing
-      ) => TE.TaskEither<Response, UserDataProcessing> = (
-        lastVersionedUserDataProcessing: UserDataProcessing
-      ) =>
-        pipe(
-          userDataProcessingModel.createOrUpdateByNewOne({
-            ...lastVersionedUserDataProcessing,
-            status,
-            updatedAt: new Date()
-          }),
+export const setUserDataProcessingStatusHandler =
+  (userDataProcessingModel: UserDataProcessingModel): IHttpHandler =>
+  async (_, choice, fiscalCode, newStatus): Promise<Response> =>
+    pipe(
+      newStatus,
+      AllowedUserDataProcessingStatus.decode,
+      E.mapLeft(() => ResponseErrorInternal("Status not allowed")),
+      TE.fromEither,
+      TE.chainW(status => {
+        const findLastVersionByModelIdTask: TE.TaskEither<
+          Response,
+          Option<UserDataProcessing>
+        > = pipe(
+          userDataProcessingModel.findLastVersionByModelId([
+            makeUserDataProcessingId(choice, fiscalCode),
+            fiscalCode
+          ]),
           TE.mapLeft(e => ResponseErrorInternal(e.kind))
         );
 
-      return pipe(
-        findLastVersionByModelIdTask,
-        TE.chainW(
-          flow(
-            O.map(updateStatusTask),
-            O.getOrElseW(() =>
-              TE.left(
-                ResponseErrorNotFound(
-                  "Not Found",
-                  "No user data processing found"
+        const updateStatusTask: (
+          a: UserDataProcessing
+        ) => TE.TaskEither<Response, UserDataProcessing> = (
+          lastVersionedUserDataProcessing: UserDataProcessing
+        ) =>
+          pipe(
+            userDataProcessingModel.createOrUpdateByNewOne({
+              ...lastVersionedUserDataProcessing,
+              status,
+              updatedAt: new Date()
+            }),
+            TE.mapLeft(e => ResponseErrorInternal(e.kind))
+          );
+
+        return pipe(
+          findLastVersionByModelIdTask,
+          TE.chainW(
+            flow(
+              O.map(updateStatusTask),
+              O.getOrElseW(() =>
+                TE.left(
+                  ResponseErrorNotFound(
+                    "Not Found",
+                    "No user data processing found"
+                  )
                 )
               )
             )
-          )
-        ),
-        TE.map(() => ResponseSuccessAccepted<undefined>())
-      );
-    }),
-    TE.toUnion
-  )();
+          ),
+          TE.map(() => ResponseSuccessAccepted<undefined>())
+        );
+      }),
+      TE.toUnion
+    )();
 
 export const setUserDataProcessingStatus = (
   userDataProcessingModel: UserDataProcessingModel

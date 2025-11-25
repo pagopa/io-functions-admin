@@ -18,17 +18,19 @@ vi.mock("durable-functions", async () => {
   >("../../__mocks__/durable-functions");
   return {
     ...actual,
-    RetryOptions: actual.RetryOptions,
     getClient: actual.getClient,
-    OrchestrationRuntimeStatus: actual.OrchestrationRuntimeStatus
+    OrchestrationRuntimeStatus: actual.OrchestrationRuntimeStatus,
+    RetryOptions: actual.RetryOptions
   };
 });
 
+// eslint-disable-next-line vitest/no-mocks-import
 import {
   context,
   mockRaiseEvent,
   mockStartNew
 } from "../../__mocks__/durable-functions";
+// eslint-disable-next-line vitest/no-mocks-import
 import { aUserDataProcessing } from "../../__mocks__/mocks";
 import {
   ProcessableUserDataDelete,
@@ -98,7 +100,7 @@ const insertEntity = vi.fn(
   () =>
     ({
       e1: E.right("inserted")
-    } as any)
+    }) as any
 );
 
 const deleteEntity = vi.fn(
@@ -106,7 +108,7 @@ const deleteEntity = vi.fn(
     ({
       e1: some("deleted"),
       e2: { statusCode: 200 }
-    } as any)
+    }) as any
 );
 
 beforeEach(() => {
@@ -264,7 +266,7 @@ describe("FailedUserDataProcessing", () => {
 
     const input: readonly any[] = [...failedUserDataProcessing]
       .map(toUndecoded)
-      .map((v) => ({ ...v, reason: undefined }));
+      .map(v => ({ ...v, reason: undefined }));
 
     const handler = triggerHandler(insertEntity, deleteEntity);
     await handler(context, input);

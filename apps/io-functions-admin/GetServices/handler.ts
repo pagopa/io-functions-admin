@@ -91,10 +91,10 @@ export function GetServicesHandler(
           items =>
             ROA.reduce(
               new Map<
-                typeof items[0]["serviceId"],
-                typeof items[0]["version"]
+                (typeof items)[0]["serviceId"],
+                (typeof items)[0]["version"]
               >(),
-              (prev, curr: typeof items[0]) =>
+              (prev, curr: (typeof items)[0]) =>
                 // keep only the latest version
                 pipe(
                   prev.has(curr.serviceId),

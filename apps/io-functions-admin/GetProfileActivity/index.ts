@@ -15,6 +15,8 @@ const profileModel = new ProfileModel(
   database.container(PROFILE_COLLECTION_NAME)
 );
 
-const activityFunctionHandler = createGetProfileActivityHandler(profileModel);
+const activityFunctionHandler: ReturnType<
+  typeof createGetProfileActivityHandler
+> = createGetProfileActivityHandler(profileModel);
 
 export default activityFunctionHandler;

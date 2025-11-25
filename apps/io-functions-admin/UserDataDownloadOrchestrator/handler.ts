@@ -82,7 +82,7 @@ const toActivityFailure = (
     reason: readableReport(err)
   });
 
-export const handler = function*(
+export const handler = function* (
   context: IOrchestrationFunctionContext
 ): Generator<unknown> {
   const document = context.df.getInput();

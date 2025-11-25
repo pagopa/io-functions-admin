@@ -23,10 +23,10 @@ export const deleteUserAuthenticationMock = vi.fn(() =>
   TE.of<Error, true>(true as const)
 );
 
-export const AuthenticationLockServiceMock: AuthenticationLockService = ({
+export const AuthenticationLockServiceMock: AuthenticationLockService = {
   deleteUserAuthenticationLockData: deleteUserAuthenticationMock,
   getAllUserAuthenticationLockData: getAllUserAuthenticationLockDataMock
-} as any) as AuthenticationLockService;
+} as any as AuthenticationLockService;
 
 // --------------------------------
 // \ AuthenticationLockService Mock

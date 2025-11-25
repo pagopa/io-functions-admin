@@ -71,9 +71,9 @@ describe("UpdateServiceLogoHandler", () => {
       }
     };
 
-    const blobServiceMock = ({
+    const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
-    } as any) as BlobService;
+    } as any as BlobService;
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
@@ -101,8 +101,7 @@ describe("UpdateServiceLogoHandler", () => {
 
   it("should return a success response if the request payload is valid", async () => {
     const requestPayload = {
-      logo:
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+      logo: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
     } as Logo;
     const mockedContext = {};
     const aServiceId = "1" as NonEmptyString;
@@ -110,9 +109,9 @@ describe("UpdateServiceLogoHandler", () => {
     const mockServiceModel = {
       findOneByServiceId: vi.fn(() => TE.right(some({})))
     };
-    const blobServiceMock = ({
+    const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
-    } as any) as BlobService;
+    } as any as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
       blobServiceMock,
@@ -134,8 +133,7 @@ describe("UpdateServiceLogoHandler", () => {
 
   it("should return an internal error response if blob write fails", async () => {
     const requestPayload = {
-      logo:
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+      logo: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
     } as Logo;
     const mockedContext = {};
     const aServiceId = "1" as NonEmptyString;
@@ -143,9 +141,9 @@ describe("UpdateServiceLogoHandler", () => {
     const mockServiceModel = {
       findOneByServiceId: vi.fn(() => TE.right(some({})))
     };
-    const blobServiceMock = ({
+    const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb("any", null))
-    } as any) as BlobService;
+    } as any as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
       blobServiceMock,

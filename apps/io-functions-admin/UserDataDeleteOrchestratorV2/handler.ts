@@ -64,8 +64,8 @@ const printableError = (error: Error | t.Errors | unknown): string =>
   error instanceof Error
     ? error.message
     : Array.isArray(error)
-    ? readableReport(error)
-    : String(error);
+      ? readableReport(error)
+      : String(error);
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 export const InvalidInputFailure = t.interface({
@@ -435,9 +435,8 @@ function* updateSubscriptionFeed(
       `${logPrefix}|VERBOSE|Executing updateSubscriptionFeed - LEGACY MODE`
     );
 
-    const input = UpdateServiceSubscriptionFeedActivityInput.encode(
-      commonInput
-    );
+    const input =
+      UpdateServiceSubscriptionFeedActivityInput.encode(commonInput);
     result = yield context.df.callActivityWithRetry(
       "UpdateSubscriptionsFeedActivity",
       retryOptions,
@@ -471,7 +470,9 @@ export const createUserDataDeleteOrchestratorHandler = (
   waitForDownloadInterval: Hour = 12 as Hour
 ) =>
   // eslint-disable-next-line max-lines-per-function
-  function*(context: IOrchestrationFunctionContext): Generator<Task | TaskSet> {
+  function* (
+    context: IOrchestrationFunctionContext
+  ): Generator<Task | TaskSet> {
     const document = context.df.getInput();
     // This check has been done on the trigger, so it should never fail.
     // However, it's worth the effort to check it twice
@@ -518,10 +519,8 @@ export const createUserDataDeleteOrchestratorHandler = (
 
       // if profile exists, we check if this is a failed processing request because failed requests
       // are managed without waiting any abort event and without sending any email
-      const isFailedUserDataProcessingRequest = yield* isFailedUserDataProcessing(
-        context,
-        currentUserDataProcessing
-      );
+      const isFailedUserDataProcessingRequest =
+        yield* isFailedUserDataProcessing(context, currentUserDataProcessing);
 
       context.log.verbose(
         `${logPrefix}|VERBOSE|isFailedUserDataProcessingRequest=${isFailedUserDataProcessingRequest}`

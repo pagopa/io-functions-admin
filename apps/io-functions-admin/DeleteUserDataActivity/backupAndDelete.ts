@@ -68,10 +68,10 @@ const executeRecursiveBackupAndDelete = <T>(
       e.done
         ? TE.of<DataFailure, readonly T[]>([])
         : e.value.some(E.isLeft)
-        ? TE.left<DataFailure, readonly T[]>(
-            toQueryFailure(new Error("Some elements are not typed correctly"))
-          )
-        : TE.of<DataFailure, readonly T[]>(ROA.rights(e.value))
+          ? TE.left<DataFailure, readonly T[]>(
+              toQueryFailure(new Error("Some elements are not typed correctly"))
+            )
+          : TE.of<DataFailure, readonly T[]>(ROA.rights(e.value))
     ),
     // executes backup&delete for this set of items
     TE.chainW(items =>
@@ -606,8 +606,9 @@ const backupAndDeleteAllMessagesData = ({
         : ROA.sequence(TE.ApplicativeSeq)(
             ROA.rights(results).map(message => {
               // cast needed because findMessages has a wrong signature
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const retrievedMessage = (message as any) as RetrievedMessageWithoutContent;
+
+              const retrievedMessage =
+                message as any as RetrievedMessageWithoutContent;
               return pipe(
                 sequenceT(TE.ApplicativeSeq)(
                   backupAndDeleteMessageView({

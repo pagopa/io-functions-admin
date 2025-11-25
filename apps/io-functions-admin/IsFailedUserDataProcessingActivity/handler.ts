@@ -41,60 +41,63 @@ type TableEntry = Readonly<{
   }>;
 }>;
 
-export const IsFailedUserDataProcessing = (
-  tableService: TableService,
-  failedUserDataProcessingTable: NonEmptyString
-) => (context: Context, input: unknown): Promise<ActivityResult> =>
-  pipe(
-    input,
-    ActivityInput.decode,
-    E.mapLeft(_ =>
-      ActivityResultFailure.encode({
-        kind: "FAILURE",
-        reason: "Invalid input"
-      })
-    ),
-    TE.fromEither,
-    TE.chainW(i =>
-      TE.tryCatch(
-        () =>
-          new Promise<O.Option<TableEntry>>((resolve, reject) =>
-            tableService.retrieveEntity(
-              failedUserDataProcessingTable,
-              i.choice,
-              i.fiscalCode,
-              // TODO: Refactor for using the new `@azure/data-tables` library
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              null,
-              (error: Error, result: TableEntry, response: ServiceResponse) =>
-                response.isSuccessful
-                  ? resolve(O.some(result))
-                  : response.statusCode === 404
-                  ? resolve(O.none)
-                  : reject(error)
-            )
-          ),
-        _ =>
-          ActivityResultFailure.encode({
-            kind: "FAILURE",
-            reason: "ERROR|tableService.retrieveEntity|Cannot retrieve entity"
+export const IsFailedUserDataProcessing =
+  (tableService: TableService, failedUserDataProcessingTable: NonEmptyString) =>
+  (context: Context, input: unknown): Promise<ActivityResult> =>
+    pipe(
+      input,
+      ActivityInput.decode,
+      E.mapLeft(_ =>
+        ActivityResultFailure.encode({
+          kind: "FAILURE",
+          reason: "Invalid input"
+        })
+      ),
+      TE.fromEither,
+      TE.chainW(i =>
+        TE.tryCatch(
+          () =>
+            new Promise<O.Option<TableEntry>>((resolve, reject) =>
+              tableService.retrieveEntity(
+                failedUserDataProcessingTable,
+                i.choice,
+                i.fiscalCode,
+                // TODO: Refactor for using the new `@azure/data-tables` library
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                null,
+                (
+                  error: Error,
+                  result: TableEntry,
+                  response: ServiceResponse
+                ) =>
+                  response.isSuccessful
+                    ? resolve(O.some(result))
+                    : response.statusCode === 404
+                      ? resolve(O.none)
+                      : reject(error)
+              )
+            ),
+          _ =>
+            ActivityResultFailure.encode({
+              kind: "FAILURE",
+              reason: "ERROR|tableService.retrieveEntity|Cannot retrieve entity"
+            })
+        )
+      ),
+      TE.chainW(
+        TE.fromOption(() =>
+          ActivityResultSuccess.encode({
+            kind: "SUCCESS",
+            value: false
           })
-      )
-    ),
-    TE.chainW(
-      TE.fromOption(() =>
+        )
+      ),
+      TE.map(_ =>
         ActivityResultSuccess.encode({
           kind: "SUCCESS",
-          value: false
+          value: true
         })
-      )
-    ),
-    TE.map(_ =>
-      ActivityResultSuccess.encode({
-        kind: "SUCCESS",
-        value: true
-      })
-    ),
-    TE.toUnion
-  )();
+      ),
+      TE.toUnion
+    )();

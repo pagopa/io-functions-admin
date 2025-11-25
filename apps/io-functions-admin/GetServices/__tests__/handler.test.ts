@@ -4,8 +4,9 @@
 import * as asyncI from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { left, right } from "fp-ts/lib/Either";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { aRetrievedService, aSeralizedService } from "../../__mocks__/mocks";
 import { GetServicesHandler } from "../handler";
 

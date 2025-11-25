@@ -96,72 +96,74 @@ const startUserDataProcessingRecoveryOrchestrator = async (
   );
 };
 
-export const processFailedUserDataProcessingHandler = (
-  userDataProcessingModel: UserDataProcessingModel
-): IGetFailedUserDataProcessingHandler => async (
-  context: Context
-): Promise<IGetFailedUserDataProcessingHandlerResult> => {
-  const listOfFailedUserDataProcessing = new Set<string>();
-  return pipe(
-    TE.tryCatch(
-      async () =>
-        userDataProcessingModel
-          .getQueryIterator({
-            parameters: [
-              {
-                name: "@status",
-                value: "FAILED"
-              }
-            ],
-            query: `SELECT * FROM m WHERE m.status = @status`
-          })
-          [Symbol.asyncIterator](),
-      toCosmosErrorResponse
-    ),
-    TE.map(flattenAsyncIterator),
-    TE.map(asyncIteratorToArray),
-    // type lift from promise to task either
-    TE.chain(i => TE.tryCatch(() => i, toCosmosErrorResponse)),
-    TE.chain(i =>
-      A.sequence(TE.ApplicativePar)(
-        i
-          .map(v =>
-            TE.tryCatch(
-              async () => {
-                if (E.isLeft(v)) {
-                  return;
+export const processFailedUserDataProcessingHandler =
+  (
+    userDataProcessingModel: UserDataProcessingModel
+  ): IGetFailedUserDataProcessingHandler =>
+  async (
+    context: Context
+  ): Promise<IGetFailedUserDataProcessingHandlerResult> => {
+    const listOfFailedUserDataProcessing = new Set<string>();
+    return pipe(
+      TE.tryCatch(
+        async () =>
+          userDataProcessingModel
+            .getQueryIterator({
+              parameters: [
+                {
+                  name: "@status",
+                  value: "FAILED"
                 }
+              ],
+              query: `SELECT * FROM m WHERE m.status = @status`
+            })
+            [Symbol.asyncIterator](),
+        toCosmosErrorResponse
+      ),
+      TE.map(flattenAsyncIterator),
+      TE.map(asyncIteratorToArray),
+      // type lift from promise to task either
+      TE.chain(i => TE.tryCatch(() => i, toCosmosErrorResponse)),
+      TE.chain(i =>
+        A.sequence(TE.ApplicativePar)(
+          i
+            .map(v =>
+              TE.tryCatch(
+                async () => {
+                  if (E.isLeft(v)) {
+                    return;
+                  }
 
-                if (
-                  listOfFailedUserDataProcessing.has(
+                  if (
+                    listOfFailedUserDataProcessing.has(
+                      v.right.userDataProcessingId
+                    )
+                  ) {
+                    return;
+                  }
+
+                  listOfFailedUserDataProcessing.add(
                     v.right.userDataProcessingId
-                  )
-                ) {
-                  return;
+                  );
+                  return startUserDataProcessingRecoveryOrchestrator(
+                    context,
+                    v.right
+                  );
+                },
+                e => {
+                  context.log.error(`${logPrefix}|ERROR|${e}`);
+                  return toCosmosErrorResponse(e);
                 }
-
-                listOfFailedUserDataProcessing.add(
-                  v.right.userDataProcessingId
-                );
-                return startUserDataProcessingRecoveryOrchestrator(
-                  context,
-                  v.right
-                );
-              },
-              e => {
-                context.log.error(`${logPrefix}|ERROR|${e}`);
-                return toCosmosErrorResponse(e);
-              }
+              )
             )
-          )
-          .filter(Boolean)
-      )
-    ),
-    TE.mapLeft(failure => ResponseErrorQuery(failure.kind, failure)),
-    TE.map(success => ResponseSuccessJson(success)),
-    TE.toUnion
-  )();
-};
+            .filter(Boolean)
+        )
+      ),
+      TE.mapLeft(failure => ResponseErrorQuery(failure.kind, failure)),
+      TE.map(success => ResponseSuccessJson(success)),
+      TE.toUnion
+    )();
+  };
 
 export const processFailedUserDataProcessing = (
   userDataProcessingModel: UserDataProcessingModel

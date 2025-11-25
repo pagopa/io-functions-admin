@@ -22,7 +22,7 @@ import {
 
 describe("SetUserDataProcessingStatusActivityHandler", () => {
   it("should handle a correct status change", async () => {
-    const mockModel = ({
+    const mockModel = {
       createOrUpdateByNewOne: vi.fn(() =>
         TE.fromEither(
           E.right({
@@ -31,7 +31,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
           })
         )
       )
-    } as any) as UserDataProcessingModel;
+    } as any as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -47,11 +47,11 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
   });
 
   it("should handle a query error", async () => {
-    const mockModel = ({
+    const mockModel = {
       createOrUpdateByNewOne: vi.fn(() =>
         TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
-    } as any) as UserDataProcessingModel;
+    } as any as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -79,7 +79,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
   });
 
   it("should handle an invalid input", async () => {
-    const mockModel = ({} as any) as UserDataProcessingModel;
+    const mockModel = {} as any as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
 
@@ -111,7 +111,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       status: UserDataProcessingStatusEnum.FAILED
     } as UserDataProcessing;
     const nextStatus = UserDataProcessingStatusEnum.PENDING;
-    const mockModel = ({
+    const mockModel = {
       createOrUpdateByNewOne: vi.fn(() =>
         TE.fromEither(
           E.right({
@@ -120,7 +120,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
           })
         )
       )
-    } as any) as UserDataProcessingModel;
+    } as any as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
 
@@ -151,7 +151,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       status: UserDataProcessingStatusEnum.PENDING
     } as UserDataProcessing;
     const nextStatus = UserDataProcessingStatusEnum.FAILED;
-    const mockModel = ({
+    const mockModel = {
       createOrUpdateByNewOne: vi.fn(() =>
         TE.fromEither(
           E.right({
@@ -160,7 +160,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
           })
         )
       )
-    } as any) as UserDataProcessingModel;
+    } as any as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
 

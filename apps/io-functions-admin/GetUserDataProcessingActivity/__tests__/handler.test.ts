@@ -22,11 +22,11 @@ const aChoice = aUserDataProcessing.choice;
 
 describe("GetUserDataProcessingActivityHandler", () => {
   it("should handle a result", async () => {
-    const mockModel = ({
+    const mockModel = {
       findLastVersionByModelId: vi.fn(() =>
         TE.fromEither(E.right(some(aUserDataProcessing)))
       )
-    } as any) as UserDataProcessingModel;
+    } as any as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -39,9 +39,9 @@ describe("GetUserDataProcessingActivityHandler", () => {
   });
 
   it("should handle a record not found failure", async () => {
-    const mockModel = ({
+    const mockModel = {
       findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(none)))
-    } as any) as UserDataProcessingModel;
+    } as any as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -54,11 +54,11 @@ describe("GetUserDataProcessingActivityHandler", () => {
   });
 
   it("should handle a query error", async () => {
-    const mockModel = ({
+    const mockModel = {
       findLastVersionByModelId: vi.fn(() =>
         TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
-    } as any) as UserDataProcessingModel;
+    } as any as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -71,9 +71,9 @@ describe("GetUserDataProcessingActivityHandler", () => {
   });
 
   it("should handle a rejection", async () => {
-    const mockModel = ({
+    const mockModel = {
       findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(none)))
-    } as any) as UserDataProcessingModel;
+    } as any as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -86,7 +86,7 @@ describe("GetUserDataProcessingActivityHandler", () => {
   });
 
   it("should handle an invalid input", async () => {
-    const mockModel = ({} as any) as UserDataProcessingModel;
+    const mockModel = {} as any as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
 

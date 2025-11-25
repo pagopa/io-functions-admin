@@ -3,14 +3,16 @@
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
 import * as E from "fp-ts/lib/Either";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
   mockOrchestratorContext,
   mockOrchestratorGetInput
 } from "../../__mocks__/durable-functions";
+// eslint-disable-next-line vitest/no-mocks-import
 import { aArchiveInfo, aUserDataProcessing } from "../../__mocks__/mocks";
 import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from "../../ExtractUserDataActivity/handler";
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../../SendUserDataDownloadMessageActivity/handler";
@@ -46,10 +48,10 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
   (name === "SetUserDataProcessingStatusActivity"
     ? setUserDataProcessingStatusActivity
     : name === "ExtractUserDataActivity"
-    ? extractUserDataActivity
-    : name === "SendUserDataDownloadMessageActivity"
-    ? sendUserDataDownloadMessageActivity
-    : vi.fn())(name, ...args);
+      ? extractUserDataActivity
+      : name === "SendUserDataDownloadMessageActivity"
+        ? sendUserDataDownloadMessageActivity
+        : vi.fn())(name, ...args);
 
 // I assign switchMockImplementation to both because
 // I don't want tests to depend on implementation details
@@ -66,7 +68,6 @@ mockOrchestratorCallActivityWithRetry.mockImplementation(
  * @returns the last value yielded by the orchestrator
  */
 const consumeOrchestrator = (orch: any) => {
-  // eslint-disable-next-line functional/no-let
   let prevValue: unknown;
   while (true) {
     const { done, value } = orch.next(prevValue);
@@ -78,11 +79,12 @@ const consumeOrchestrator = (orch: any) => {
 };
 
 // just a convenient cast, good for every test case
-const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
+const context =
+  mockOrchestratorContext as unknown as IOrchestrationFunctionContext;
 
 const expectedRetryOptions = expect.any(Object);
 
-// eslint-disable-next-line sonar/sonar-max-lines-per-function, max-lines-per-function
+// eslint-disable-next-line max-lines-per-function
 describe("UserDataDownloadOrchestrator", () => {
   beforeEach(() => {
     vi.clearAllMocks();

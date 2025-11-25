@@ -65,27 +65,31 @@ export function infoDecoder<
     typeof d["_A"] !== "undefined";
 
   const type = {
-    ...((infoDefaultResponses as unknown) as InfoResponsesT<A0, C0, A1, C1>),
+    ...(infoDefaultResponses as unknown as InfoResponsesT<A0, C0, A1, C1>),
     ...(isDecoder(overrideTypes) ? { 200: overrideTypes } : overrideTypes)
   };
 
-  const d200 = (type[200].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
-    : r.ioResponseDecoder<
-        200,
-        typeof type[200]["_A"],
-        typeof type[200]["_O"],
-        never
-      >(200, type[200])) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
+  const d200 = (
+    type[200].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
+      : r.ioResponseDecoder<
+          200,
+          (typeof type)[200]["_A"],
+          (typeof type)[200]["_O"],
+          never
+        >(200, type[200])
+  ) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
 
-  const d500 = (type[500].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
-    : r.ioResponseDecoder<
-        500,
-        typeof type[500]["_A"],
-        typeof type[500]["_O"],
-        never
-      >(500, type[500])) as r.ResponseDecoder<r.IResponseType<500, A1, never>>;
+  const d500 = (
+    type[500].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
+      : r.ioResponseDecoder<
+          500,
+          (typeof type)[500]["_A"],
+          (typeof type)[500]["_O"],
+          never
+        >(500, type[500])
+  ) as r.ResponseDecoder<r.IResponseType<500, A1, never>>;
 
   return r.composeResponseDecoders(d200, d500);
 }
@@ -177,7 +181,7 @@ export function getSessionDecoder<
     typeof d["_A"] !== "undefined";
 
   const type = {
-    ...((getSessionDefaultResponses as unknown) as GetSessionResponsesT<
+    ...(getSessionDefaultResponses as unknown as GetSessionResponsesT<
       A0,
       C0,
       A1,
@@ -194,59 +198,71 @@ export function getSessionDecoder<
     ...(isDecoder(overrideTypes) ? { 200: overrideTypes } : overrideTypes)
   };
 
-  const d200 = (type[200].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
-    : r.ioResponseDecoder<
-        200,
-        typeof type[200]["_A"],
-        typeof type[200]["_O"],
-        never
-      >(200, type[200])) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
+  const d200 = (
+    type[200].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
+      : r.ioResponseDecoder<
+          200,
+          (typeof type)[200]["_A"],
+          (typeof type)[200]["_O"],
+          never
+        >(200, type[200])
+  ) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
 
-  const d400 = (type[400].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
-    : r.ioResponseDecoder<
-        400,
-        typeof type[400]["_A"],
-        typeof type[400]["_O"],
-        never
-      >(400, type[400])) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
+  const d400 = (
+    type[400].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
+      : r.ioResponseDecoder<
+          400,
+          (typeof type)[400]["_A"],
+          (typeof type)[400]["_O"],
+          never
+        >(400, type[400])
+  ) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
 
-  const d401 = (type[401].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
-    : r.ioResponseDecoder<
-        401,
-        typeof type[401]["_A"],
-        typeof type[401]["_O"],
-        never
-      >(401, type[401])) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
+  const d401 = (
+    type[401].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
+      : r.ioResponseDecoder<
+          401,
+          (typeof type)[401]["_A"],
+          (typeof type)[401]["_O"],
+          never
+        >(401, type[401])
+  ) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
 
-  const d404 = (type[404].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 404, never>(404, undefined)
-    : r.ioResponseDecoder<
-        404,
-        typeof type[404]["_A"],
-        typeof type[404]["_O"],
-        never
-      >(404, type[404])) as r.ResponseDecoder<r.IResponseType<404, A3, never>>;
+  const d404 = (
+    type[404].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 404, never>(404, undefined)
+      : r.ioResponseDecoder<
+          404,
+          (typeof type)[404]["_A"],
+          (typeof type)[404]["_O"],
+          never
+        >(404, type[404])
+  ) as r.ResponseDecoder<r.IResponseType<404, A3, never>>;
 
-  const d429 = (type[429].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 429, never>(429, undefined)
-    : r.ioResponseDecoder<
-        429,
-        typeof type[429]["_A"],
-        typeof type[429]["_O"],
-        never
-      >(429, type[429])) as r.ResponseDecoder<r.IResponseType<429, A4, never>>;
+  const d429 = (
+    type[429].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 429, never>(429, undefined)
+      : r.ioResponseDecoder<
+          429,
+          (typeof type)[429]["_A"],
+          (typeof type)[429]["_O"],
+          never
+        >(429, type[429])
+  ) as r.ResponseDecoder<r.IResponseType<429, A4, never>>;
 
-  const d500 = (type[500].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
-    : r.ioResponseDecoder<
-        500,
-        typeof type[500]["_A"],
-        typeof type[500]["_O"],
-        never
-      >(500, type[500])) as r.ResponseDecoder<r.IResponseType<500, A5, never>>;
+  const d500 = (
+    type[500].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
+      : r.ioResponseDecoder<
+          500,
+          (typeof type)[500]["_A"],
+          (typeof type)[500]["_O"],
+          never
+        >(500, type[500])
+  ) as r.ResponseDecoder<r.IResponseType<500, A5, never>>;
 
   return r.composeResponseDecoders(
     r.composeResponseDecoders(
@@ -338,7 +354,7 @@ export function authLockDecoder<
     typeof d["_A"] !== "undefined";
 
   const type = {
-    ...((authLockDefaultResponses as unknown) as AuthLockResponsesT<
+    ...(authLockDefaultResponses as unknown as AuthLockResponsesT<
       A0,
       C0,
       A1,
@@ -353,50 +369,60 @@ export function authLockDecoder<
     ...(isDecoder(overrideTypes) ? { 204: overrideTypes } : overrideTypes)
   };
 
-  const d204 = (type[204].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 204, never>(204, undefined)
-    : r.ioResponseDecoder<
-        204,
-        typeof type[204]["_A"],
-        typeof type[204]["_O"],
-        never
-      >(204, type[204])) as r.ResponseDecoder<r.IResponseType<204, A0, never>>;
+  const d204 = (
+    type[204].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 204, never>(204, undefined)
+      : r.ioResponseDecoder<
+          204,
+          (typeof type)[204]["_A"],
+          (typeof type)[204]["_O"],
+          never
+        >(204, type[204])
+  ) as r.ResponseDecoder<r.IResponseType<204, A0, never>>;
 
-  const d400 = (type[400].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
-    : r.ioResponseDecoder<
-        400,
-        typeof type[400]["_A"],
-        typeof type[400]["_O"],
-        never
-      >(400, type[400])) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
+  const d400 = (
+    type[400].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
+      : r.ioResponseDecoder<
+          400,
+          (typeof type)[400]["_A"],
+          (typeof type)[400]["_O"],
+          never
+        >(400, type[400])
+  ) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
 
-  const d401 = (type[401].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
-    : r.ioResponseDecoder<
-        401,
-        typeof type[401]["_A"],
-        typeof type[401]["_O"],
-        never
-      >(401, type[401])) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
+  const d401 = (
+    type[401].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
+      : r.ioResponseDecoder<
+          401,
+          (typeof type)[401]["_A"],
+          (typeof type)[401]["_O"],
+          never
+        >(401, type[401])
+  ) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
 
-  const d409 = (type[409].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 409, never>(409, undefined)
-    : r.ioResponseDecoder<
-        409,
-        typeof type[409]["_A"],
-        typeof type[409]["_O"],
-        never
-      >(409, type[409])) as r.ResponseDecoder<r.IResponseType<409, A3, never>>;
+  const d409 = (
+    type[409].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 409, never>(409, undefined)
+      : r.ioResponseDecoder<
+          409,
+          (typeof type)[409]["_A"],
+          (typeof type)[409]["_O"],
+          never
+        >(409, type[409])
+  ) as r.ResponseDecoder<r.IResponseType<409, A3, never>>;
 
-  const d500 = (type[500].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
-    : r.ioResponseDecoder<
-        500,
-        typeof type[500]["_A"],
-        typeof type[500]["_O"],
-        never
-      >(500, type[500])) as r.ResponseDecoder<r.IResponseType<500, A4, never>>;
+  const d500 = (
+    type[500].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
+      : r.ioResponseDecoder<
+          500,
+          (typeof type)[500]["_A"],
+          (typeof type)[500]["_O"],
+          never
+        >(500, type[500])
+  ) as r.ResponseDecoder<r.IResponseType<500, A4, never>>;
 
   return r.composeResponseDecoders(
     r.composeResponseDecoders(
@@ -484,7 +510,7 @@ export function lockUserSessionDecoder<
     typeof d["_A"] !== "undefined";
 
   const type = {
-    ...((lockUserSessionDefaultResponses as unknown) as LockUserSessionResponsesT<
+    ...(lockUserSessionDefaultResponses as unknown as LockUserSessionResponsesT<
       A0,
       C0,
       A1,
@@ -499,50 +525,60 @@ export function lockUserSessionDecoder<
     ...(isDecoder(overrideTypes) ? { 200: overrideTypes } : overrideTypes)
   };
 
-  const d200 = (type[200].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
-    : r.ioResponseDecoder<
-        200,
-        typeof type[200]["_A"],
-        typeof type[200]["_O"],
-        never
-      >(200, type[200])) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
+  const d200 = (
+    type[200].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
+      : r.ioResponseDecoder<
+          200,
+          (typeof type)[200]["_A"],
+          (typeof type)[200]["_O"],
+          never
+        >(200, type[200])
+  ) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
 
-  const d400 = (type[400].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
-    : r.ioResponseDecoder<
-        400,
-        typeof type[400]["_A"],
-        typeof type[400]["_O"],
-        never
-      >(400, type[400])) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
+  const d400 = (
+    type[400].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
+      : r.ioResponseDecoder<
+          400,
+          (typeof type)[400]["_A"],
+          (typeof type)[400]["_O"],
+          never
+        >(400, type[400])
+  ) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
 
-  const d401 = (type[401].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
-    : r.ioResponseDecoder<
-        401,
-        typeof type[401]["_A"],
-        typeof type[401]["_O"],
-        never
-      >(401, type[401])) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
+  const d401 = (
+    type[401].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
+      : r.ioResponseDecoder<
+          401,
+          (typeof type)[401]["_A"],
+          (typeof type)[401]["_O"],
+          never
+        >(401, type[401])
+  ) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
 
-  const d404 = (type[404].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 404, never>(404, undefined)
-    : r.ioResponseDecoder<
-        404,
-        typeof type[404]["_A"],
-        typeof type[404]["_O"],
-        never
-      >(404, type[404])) as r.ResponseDecoder<r.IResponseType<404, A3, never>>;
+  const d404 = (
+    type[404].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 404, never>(404, undefined)
+      : r.ioResponseDecoder<
+          404,
+          (typeof type)[404]["_A"],
+          (typeof type)[404]["_O"],
+          never
+        >(404, type[404])
+  ) as r.ResponseDecoder<r.IResponseType<404, A3, never>>;
 
-  const d500 = (type[500].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
-    : r.ioResponseDecoder<
-        500,
-        typeof type[500]["_A"],
-        typeof type[500]["_O"],
-        never
-      >(500, type[500])) as r.ResponseDecoder<r.IResponseType<500, A4, never>>;
+  const d500 = (
+    type[500].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
+      : r.ioResponseDecoder<
+          500,
+          (typeof type)[500]["_A"],
+          (typeof type)[500]["_O"],
+          never
+        >(500, type[500])
+  ) as r.ResponseDecoder<r.IResponseType<500, A4, never>>;
 
   return r.composeResponseDecoders(
     r.composeResponseDecoders(
@@ -622,7 +658,7 @@ export function unlockUserSessionDecoder<
     typeof d["_A"] !== "undefined";
 
   const type = {
-    ...((unlockUserSessionDefaultResponses as unknown) as UnlockUserSessionResponsesT<
+    ...(unlockUserSessionDefaultResponses as unknown as UnlockUserSessionResponsesT<
       A0,
       C0,
       A1,
@@ -635,41 +671,49 @@ export function unlockUserSessionDecoder<
     ...(isDecoder(overrideTypes) ? { 200: overrideTypes } : overrideTypes)
   };
 
-  const d200 = (type[200].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
-    : r.ioResponseDecoder<
-        200,
-        typeof type[200]["_A"],
-        typeof type[200]["_O"],
-        never
-      >(200, type[200])) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
+  const d200 = (
+    type[200].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
+      : r.ioResponseDecoder<
+          200,
+          (typeof type)[200]["_A"],
+          (typeof type)[200]["_O"],
+          never
+        >(200, type[200])
+  ) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
 
-  const d400 = (type[400].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
-    : r.ioResponseDecoder<
-        400,
-        typeof type[400]["_A"],
-        typeof type[400]["_O"],
-        never
-      >(400, type[400])) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
+  const d400 = (
+    type[400].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
+      : r.ioResponseDecoder<
+          400,
+          (typeof type)[400]["_A"],
+          (typeof type)[400]["_O"],
+          never
+        >(400, type[400])
+  ) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
 
-  const d401 = (type[401].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
-    : r.ioResponseDecoder<
-        401,
-        typeof type[401]["_A"],
-        typeof type[401]["_O"],
-        never
-      >(401, type[401])) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
+  const d401 = (
+    type[401].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
+      : r.ioResponseDecoder<
+          401,
+          (typeof type)[401]["_A"],
+          (typeof type)[401]["_O"],
+          never
+        >(401, type[401])
+  ) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
 
-  const d500 = (type[500].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
-    : r.ioResponseDecoder<
-        500,
-        typeof type[500]["_A"],
-        typeof type[500]["_O"],
-        never
-      >(500, type[500])) as r.ResponseDecoder<r.IResponseType<500, A3, never>>;
+  const d500 = (
+    type[500].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
+      : r.ioResponseDecoder<
+          500,
+          (typeof type)[500]["_A"],
+          (typeof type)[500]["_O"],
+          never
+        >(500, type[500])
+  ) as r.ResponseDecoder<r.IResponseType<500, A3, never>>;
 
   return r.composeResponseDecoders(
     r.composeResponseDecoders(r.composeResponseDecoders(d200, d400), d401),
@@ -755,7 +799,7 @@ export function releaseAuthLockDecoder<
     typeof d["_A"] !== "undefined";
 
   const type = {
-    ...((releaseAuthLockDefaultResponses as unknown) as ReleaseAuthLockResponsesT<
+    ...(releaseAuthLockDefaultResponses as unknown as ReleaseAuthLockResponsesT<
       A0,
       C0,
       A1,
@@ -770,50 +814,60 @@ export function releaseAuthLockDecoder<
     ...(isDecoder(overrideTypes) ? { 204: overrideTypes } : overrideTypes)
   };
 
-  const d204 = (type[204].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 204, never>(204, undefined)
-    : r.ioResponseDecoder<
-        204,
-        typeof type[204]["_A"],
-        typeof type[204]["_O"],
-        never
-      >(204, type[204])) as r.ResponseDecoder<r.IResponseType<204, A0, never>>;
+  const d204 = (
+    type[204].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 204, never>(204, undefined)
+      : r.ioResponseDecoder<
+          204,
+          (typeof type)[204]["_A"],
+          (typeof type)[204]["_O"],
+          never
+        >(204, type[204])
+  ) as r.ResponseDecoder<r.IResponseType<204, A0, never>>;
 
-  const d400 = (type[400].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
-    : r.ioResponseDecoder<
-        400,
-        typeof type[400]["_A"],
-        typeof type[400]["_O"],
-        never
-      >(400, type[400])) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
+  const d400 = (
+    type[400].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
+      : r.ioResponseDecoder<
+          400,
+          (typeof type)[400]["_A"],
+          (typeof type)[400]["_O"],
+          never
+        >(400, type[400])
+  ) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
 
-  const d401 = (type[401].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
-    : r.ioResponseDecoder<
-        401,
-        typeof type[401]["_A"],
-        typeof type[401]["_O"],
-        never
-      >(401, type[401])) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
+  const d401 = (
+    type[401].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
+      : r.ioResponseDecoder<
+          401,
+          (typeof type)[401]["_A"],
+          (typeof type)[401]["_O"],
+          never
+        >(401, type[401])
+  ) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
 
-  const d403 = (type[403].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 403, never>(403, undefined)
-    : r.ioResponseDecoder<
-        403,
-        typeof type[403]["_A"],
-        typeof type[403]["_O"],
-        never
-      >(403, type[403])) as r.ResponseDecoder<r.IResponseType<403, A3, never>>;
+  const d403 = (
+    type[403].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 403, never>(403, undefined)
+      : r.ioResponseDecoder<
+          403,
+          (typeof type)[403]["_A"],
+          (typeof type)[403]["_O"],
+          never
+        >(403, type[403])
+  ) as r.ResponseDecoder<r.IResponseType<403, A3, never>>;
 
-  const d500 = (type[500].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
-    : r.ioResponseDecoder<
-        500,
-        typeof type[500]["_A"],
-        typeof type[500]["_O"],
-        never
-      >(500, type[500])) as r.ResponseDecoder<r.IResponseType<500, A4, never>>;
+  const d500 = (
+    type[500].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
+      : r.ioResponseDecoder<
+          500,
+          (typeof type)[500]["_A"],
+          (typeof type)[500]["_O"],
+          never
+        >(500, type[500])
+  ) as r.ResponseDecoder<r.IResponseType<500, A4, never>>;
 
   return r.composeResponseDecoders(
     r.composeResponseDecoders(
@@ -893,7 +947,7 @@ export function deleteUserSessionDecoder<
     typeof d["_A"] !== "undefined";
 
   const type = {
-    ...((deleteUserSessionDefaultResponses as unknown) as DeleteUserSessionResponsesT<
+    ...(deleteUserSessionDefaultResponses as unknown as DeleteUserSessionResponsesT<
       A0,
       C0,
       A1,
@@ -906,41 +960,49 @@ export function deleteUserSessionDecoder<
     ...(isDecoder(overrideTypes) ? { 200: overrideTypes } : overrideTypes)
   };
 
-  const d200 = (type[200].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
-    : r.ioResponseDecoder<
-        200,
-        typeof type[200]["_A"],
-        typeof type[200]["_O"],
-        never
-      >(200, type[200])) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
+  const d200 = (
+    type[200].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
+      : r.ioResponseDecoder<
+          200,
+          (typeof type)[200]["_A"],
+          (typeof type)[200]["_O"],
+          never
+        >(200, type[200])
+  ) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
 
-  const d400 = (type[400].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
-    : r.ioResponseDecoder<
-        400,
-        typeof type[400]["_A"],
-        typeof type[400]["_O"],
-        never
-      >(400, type[400])) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
+  const d400 = (
+    type[400].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
+      : r.ioResponseDecoder<
+          400,
+          (typeof type)[400]["_A"],
+          (typeof type)[400]["_O"],
+          never
+        >(400, type[400])
+  ) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
 
-  const d401 = (type[401].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
-    : r.ioResponseDecoder<
-        401,
-        typeof type[401]["_A"],
-        typeof type[401]["_O"],
-        never
-      >(401, type[401])) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
+  const d401 = (
+    type[401].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
+      : r.ioResponseDecoder<
+          401,
+          (typeof type)[401]["_A"],
+          (typeof type)[401]["_O"],
+          never
+        >(401, type[401])
+  ) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
 
-  const d500 = (type[500].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
-    : r.ioResponseDecoder<
-        500,
-        typeof type[500]["_A"],
-        typeof type[500]["_O"],
-        never
-      >(500, type[500])) as r.ResponseDecoder<r.IResponseType<500, A3, never>>;
+  const d500 = (
+    type[500].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
+      : r.ioResponseDecoder<
+          500,
+          (typeof type)[500]["_A"],
+          (typeof type)[500]["_O"],
+          never
+        >(500, type[500])
+  ) as r.ResponseDecoder<r.IResponseType<500, A3, never>>;
 
   return r.composeResponseDecoders(
     r.composeResponseDecoders(r.composeResponseDecoders(d200, d400), d401),
@@ -1017,7 +1079,7 @@ export function getUserSessionStateDecoder<
     typeof d["_A"] !== "undefined";
 
   const type = {
-    ...((getUserSessionStateDefaultResponses as unknown) as GetUserSessionStateResponsesT<
+    ...(getUserSessionStateDefaultResponses as unknown as GetUserSessionStateResponsesT<
       A0,
       C0,
       A1,
@@ -1030,41 +1092,49 @@ export function getUserSessionStateDecoder<
     ...(isDecoder(overrideTypes) ? { 200: overrideTypes } : overrideTypes)
   };
 
-  const d200 = (type[200].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
-    : r.ioResponseDecoder<
-        200,
-        typeof type[200]["_A"],
-        typeof type[200]["_O"],
-        never
-      >(200, type[200])) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
+  const d200 = (
+    type[200].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 200, never>(200, undefined)
+      : r.ioResponseDecoder<
+          200,
+          (typeof type)[200]["_A"],
+          (typeof type)[200]["_O"],
+          never
+        >(200, type[200])
+  ) as r.ResponseDecoder<r.IResponseType<200, A0, never>>;
 
-  const d400 = (type[400].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
-    : r.ioResponseDecoder<
-        400,
-        typeof type[400]["_A"],
-        typeof type[400]["_O"],
-        never
-      >(400, type[400])) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
+  const d400 = (
+    type[400].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 400, never>(400, undefined)
+      : r.ioResponseDecoder<
+          400,
+          (typeof type)[400]["_A"],
+          (typeof type)[400]["_O"],
+          never
+        >(400, type[400])
+  ) as r.ResponseDecoder<r.IResponseType<400, A1, never>>;
 
-  const d401 = (type[401].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
-    : r.ioResponseDecoder<
-        401,
-        typeof type[401]["_A"],
-        typeof type[401]["_O"],
-        never
-      >(401, type[401])) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
+  const d401 = (
+    type[401].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 401, never>(401, undefined)
+      : r.ioResponseDecoder<
+          401,
+          (typeof type)[401]["_A"],
+          (typeof type)[401]["_O"],
+          never
+        >(401, type[401])
+  ) as r.ResponseDecoder<r.IResponseType<401, A2, never>>;
 
-  const d500 = (type[500].name === "undefined"
-    ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
-    : r.ioResponseDecoder<
-        500,
-        typeof type[500]["_A"],
-        typeof type[500]["_O"],
-        never
-      >(500, type[500])) as r.ResponseDecoder<r.IResponseType<500, A3, never>>;
+  const d500 = (
+    type[500].name === "undefined"
+      ? r.constantResponseDecoder<undefined, 500, never>(500, undefined)
+      : r.ioResponseDecoder<
+          500,
+          (typeof type)[500]["_A"],
+          (typeof type)[500]["_O"],
+          never
+        >(500, type[500])
+  ) as r.ResponseDecoder<r.IResponseType<500, A3, never>>;
 
   return r.composeResponseDecoders(
     r.composeResponseDecoders(r.composeResponseDecoders(d200, d400), d401),

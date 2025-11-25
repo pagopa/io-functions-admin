@@ -17,8 +17,9 @@ const userDataProcessingModel = new UserDataProcessingModel(
   userDataProcessingContainer
 );
 
-const activityFunctionHandler = createUserDataProcessingCheckLastStatusActivityHandler(
-  userDataProcessingModel
-);
+const activityFunctionHandler =
+  createUserDataProcessingCheckLastStatusActivityHandler(
+    userDataProcessingModel
+  );
 
 export default activityFunctionHandler;

@@ -35,13 +35,11 @@ const maskUserProcessingIdPreprocessor = (
       // eslint-disable-next-line functional/immutable-data
       data.properties[USER_DATA_PROCESSING_ID_KEY] = maskedUserDataProcessingId;
       // eslint-disable-next-line functional/immutable-data
-      envelope.tags[
-        ai.defaultClient.context.keys.operationId
-      ] = maskedUserDataProcessingId;
+      envelope.tags[ai.defaultClient.context.keys.operationId] =
+        maskedUserDataProcessingId;
       // eslint-disable-next-line functional/immutable-data
-      envelope.tags[
-        ai.defaultClient.context.keys.operationParentId
-      ] = maskedUserDataProcessingId;
+      envelope.tags[ai.defaultClient.context.keys.operationParentId] =
+        maskedUserDataProcessingId;
     }
   } catch (e) {
     // ignore errors caused by missing properties

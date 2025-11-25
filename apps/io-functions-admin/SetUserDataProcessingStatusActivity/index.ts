@@ -15,8 +15,7 @@ const userDataProcessingModel = new UserDataProcessingModel(
   database.container(USER_DATA_PROCESSING_COLLECTION_NAME)
 );
 
-const activityFunctionHandler = createSetUserDataProcessingStatusActivityHandler(
-  userDataProcessingModel
-);
+const activityFunctionHandler =
+  createSetUserDataProcessingStatusActivityHandler(userDataProcessingModel);
 
 export default activityFunctionHandler;

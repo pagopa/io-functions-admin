@@ -76,9 +76,8 @@ export function UpdateServiceLogoHandler(
   logosUrl: string
 ): IUpdateServiceHandler {
   return async (_, __, serviceId, logoPayload) => {
-    const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
-      serviceId
-    )();
+    const errorOrMaybeRetrievedService =
+      await serviceModel.findOneByServiceId(serviceId)();
     if (E.isLeft(errorOrMaybeRetrievedService)) {
       return ResponseErrorQuery(
         "Error trying to retrieve existing service",

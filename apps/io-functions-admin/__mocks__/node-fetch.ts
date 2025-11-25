@@ -22,12 +22,12 @@ const getMockResponse = ({
   status = 100,
   textImpl = async () => mockTextBody
 }: IMockResponseValues = {}): Response =>
-  (({
+  ({
     clone: vi.fn(() => getMockResponse({ jsonImpl, status, textImpl })),
     json: vi.fn(jsonImpl),
     status,
     text: vi.fn(textImpl)
-  } as unknown) as Response);
+  }) as unknown as Response;
 
 export const mockResponse: Response = getMockResponse();
 

@@ -10,7 +10,8 @@ import { IAzureApimConfig } from "../../utils/apim";
 import { RegenerateSubscriptionKeysHandler } from "../handler";
 
 const aValidSubscriptionId = "valid-subscription-id" as NonEmptyString;
-const aNotExistingSubscriptionId = "not-existing-subscription-id" as NonEmptyString;
+const aNotExistingSubscriptionId =
+  "not-existing-subscription-id" as NonEmptyString;
 const aBreakingApimSubscriptionId = "broken-subscription-id" as NonEmptyString;
 
 vi.mock("@azure/arm-apimanagement");
@@ -80,9 +81,8 @@ describe("RegenerateSubscriptionKeysHandler", () => {
   });
 
   it("should return a not found error response if the subscription is not found", async () => {
-    const regenerateSubscriptionKeysHandler = RegenerateSubscriptionKeysHandler(
-      fakeApimConfig
-    );
+    const regenerateSubscriptionKeysHandler =
+      RegenerateSubscriptionKeysHandler(fakeApimConfig);
     const response = await regenerateSubscriptionKeysHandler(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockedContext as any,
@@ -95,9 +95,8 @@ describe("RegenerateSubscriptionKeysHandler", () => {
   });
 
   it("should return a not found error response if the API management client returns an error", async () => {
-    const regenerateSubscriptionKeysHandler = RegenerateSubscriptionKeysHandler(
-      fakeApimConfig
-    );
+    const regenerateSubscriptionKeysHandler =
+      RegenerateSubscriptionKeysHandler(fakeApimConfig);
     const response = await regenerateSubscriptionKeysHandler(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockedContext as any,
@@ -110,9 +109,8 @@ describe("RegenerateSubscriptionKeysHandler", () => {
   });
 
   it("should regenerate the requested api keys for an existing subscription", async () => {
-    const regenerateSubscriptionKeysHandler = RegenerateSubscriptionKeysHandler(
-      fakeApimConfig
-    );
+    const regenerateSubscriptionKeysHandler =
+      RegenerateSubscriptionKeysHandler(fakeApimConfig);
     // Primary key regeneration
     const firstResponse = await regenerateSubscriptionKeysHandler(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

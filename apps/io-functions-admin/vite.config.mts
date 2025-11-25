@@ -6,6 +6,7 @@ export default defineConfig({
       exclude: [
         "dist",
         "*.js",
+        "*.mts",
         "**/__mocks__",
         "utils/config.ts",
         "/node_modules",

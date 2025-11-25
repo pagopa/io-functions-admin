@@ -118,13 +118,12 @@ export function UpdateSubscriptionCidrsHandler(
       return maybeSubscriptionExists.left;
     }
 
-    const errorOrMaybeUpdatedSubscriptionCIDRs = await subscriptionCIDRsModel.upsert(
-      {
+    const errorOrMaybeUpdatedSubscriptionCIDRs =
+      await subscriptionCIDRsModel.upsert({
         cidrs: toAuthorizedCIDRs(Array.from(cidrs)),
         kind: "INewSubscriptionCIDRs",
         subscriptionId
-      }
-    )();
+      })();
     if (E.isLeft(errorOrMaybeUpdatedSubscriptionCIDRs)) {
       return ResponseErrorQuery(
         "Error trying to update subscription cidrs",

@@ -8,40 +8,37 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { Context } from "@azure/functions";
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-
-import { pipe } from "fp-ts/lib/function";
-
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   makeUserDataProcessingId,
   USER_DATA_PROCESSING_COLLECTION_NAME,
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-
+import { readableReport } from "@pagopa/ts-commons/lib/reporters";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
-import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import setUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
-import sendUserDataDownloadMessageActivity from "../SendUserDataDownloadMessageActivity";
+
 import extractUserDataActivity from "../ExtractUserDataActivity";
+import sendUserDataDownloadMessageActivity from "../SendUserDataDownloadMessageActivity";
+import setUserDataProcessingStatusActivity from "../SetUserDataProcessingStatusActivity";
 import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
 
 const config = getConfigOrThrow();
 
-const context = ({
+const context = {
   log: {
-    // eslint-disable-next-line no-console
     error: console.error,
-    // eslint-disable-next-line no-console
+
     info: console.log,
-    // eslint-disable-next-line no-console
+
     verbose: console.log
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any) as Context;
+} as any as Context;
 
 const database = cosmosdbClient.database(config.COSMOSDB_NAME);
 
@@ -49,7 +46,7 @@ const userDataProcessingModel = new UserDataProcessingModel(
   database.container(USER_DATA_PROCESSING_COLLECTION_NAME)
 );
 
-, @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function run(): Promise<any> {
   const fiscalCode = pipe(
     process.argv[2],
@@ -59,15 +56,14 @@ async function run(): Promise<any> {
     })
   );
 
-  const errorOrMaybeRetrievedUserDataProcessing = await userDataProcessingModel.findLastVersionByModelId(
-    [
+  const errorOrMaybeRetrievedUserDataProcessing =
+    await userDataProcessingModel.findLastVersionByModelId([
       makeUserDataProcessingId(
         UserDataProcessingChoiceEnum.DOWNLOAD,
         fiscalCode
       ),
       fiscalCode
-    ]
-  )();
+    ])();
 
   if (E.isLeft(errorOrMaybeRetrievedUserDataProcessing)) {
     throw new Error(
@@ -83,7 +79,6 @@ async function run(): Promise<any> {
 
   const currentUserDataProcessing = maybeUserDataProcessing.value;
 
-  // eslint-disable-next-line no-console
   console.log(
     "Found user data processing request (v=%d) with status %s",
     currentUserDataProcessing.version,
@@ -128,7 +123,6 @@ async function run(): Promise<any> {
       })
     )
     .catch(err => {
-      // eslint-disable-next-line no-console
       console.error(err);
       return setUserDataProcessingStatusActivity(context, {
         currentRecord: currentUserDataProcessing,
@@ -138,7 +132,6 @@ async function run(): Promise<any> {
 }
 
 run()
-  // eslint-disable-next-line no-console
   .then(result => console.log("OK", result))
-  // eslint-disable-next-line no-console
+
   .catch(ex => console.error("KO", ex));

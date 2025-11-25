@@ -9,7 +9,8 @@ import { IAzureApimConfig } from "../../utils/apim";
 import { GetSubscriptionKeysHandler } from "../handler";
 
 const aValidSubscriptionId = "valid-subscription-id" as NonEmptyString;
-const aNotExistingSubscriptionId = "not-existing-subscription-id" as NonEmptyString;
+const aNotExistingSubscriptionId =
+  "not-existing-subscription-id" as NonEmptyString;
 const aBreakingApimSubscriptionId = "broken-subscription-id" as NonEmptyString;
 
 vi.mock("@azure/arm-apimanagement");
@@ -49,9 +50,8 @@ const fakeApimConfig: IAzureApimConfig = {
 
 describe("GetSubscriptionKeysHandler", () => {
   it("should return a not found error response if the subscription is not found", async () => {
-    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(
-      fakeApimConfig
-    );
+    const getSubscriptionKeysHandler =
+      GetSubscriptionKeysHandler(fakeApimConfig);
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,
@@ -61,9 +61,8 @@ describe("GetSubscriptionKeysHandler", () => {
   });
 
   it("should return a not found error response if the API management client returns an error", async () => {
-    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(
-      fakeApimConfig
-    );
+    const getSubscriptionKeysHandler =
+      GetSubscriptionKeysHandler(fakeApimConfig);
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,
@@ -73,9 +72,8 @@ describe("GetSubscriptionKeysHandler", () => {
   });
 
   it("should return the api keys for an existing subscription", async () => {
-    const getSubscriptionKeysHandler = GetSubscriptionKeysHandler(
-      fakeApimConfig
-    );
+    const getSubscriptionKeysHandler =
+      GetSubscriptionKeysHandler(fakeApimConfig);
     const response = await getSubscriptionKeysHandler(
       mockedContext as any,
       undefined as any,

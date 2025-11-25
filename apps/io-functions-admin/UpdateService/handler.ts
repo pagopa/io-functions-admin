@@ -84,9 +84,8 @@ export function UpdateServiceHandler(
       );
     }
 
-    const errorOrMaybeRetrievedService = await serviceModel.findOneByServiceId(
-      serviceId
-    )();
+    const errorOrMaybeRetrievedService =
+      await serviceModel.findOneByServiceId(serviceId)();
     if (E.isLeft(errorOrMaybeRetrievedService)) {
       return ResponseErrorQuery(
         "Error trying to retrieve existing service",

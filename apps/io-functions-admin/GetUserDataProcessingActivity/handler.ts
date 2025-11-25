@@ -87,74 +87,74 @@ function assertNever(_: never): void {
  * @param context the Azure functions context
  * @param failure the failure to log
  */
-const logFailure = (context: Context) => (
-  failure: ActivityResultFailure
-): void => {
-  switch (failure.kind) {
-    case "INVALID_INPUT_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
-      );
-      break;
-    case "NOT_FOUND_FAILURE":
-      // it might not be a failure
-      context.log.warn(`${logPrefix}|Error UserDataProcessing not found`);
-      break;
-    case "QUERY_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
-      );
-      break;
-    default:
-      assertNever(failure);
-  }
-};
+const logFailure =
+  (context: Context) =>
+  (failure: ActivityResultFailure): void => {
+    switch (failure.kind) {
+      case "INVALID_INPUT_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
+        );
+        break;
+      case "NOT_FOUND_FAILURE":
+        // it might not be a failure
+        context.log.warn(`${logPrefix}|Error UserDataProcessing not found`);
+        break;
+      case "QUERY_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
+        );
+        break;
+      default:
+        assertNever(failure);
+    }
+  };
 
-export const createSetUserDataProcessingStatusActivityHandler = (
-  userDataProcessingModel: UserDataProcessingModel
-) => (context: Context, input: unknown) =>
-  // the actual handler
-  pipe(
-    input,
-    ActivityInput.decode,
-    E.mapLeft(reason =>
-      ActivityResultInvalidInputFailure.encode({
-        kind: "INVALID_INPUT_FAILURE",
-        reason: readableReport(reason)
-      })
-    ),
-    TE.fromEither,
-    TE.chainW(({ choice, fiscalCode }) =>
-      pipe(
-        userDataProcessingModel.findLastVersionByModelId([
-          makeUserDataProcessingId(choice, fiscalCode),
-          fiscalCode
-        ]),
-        TE.mapLeft(error =>
-          ActivityResultQueryFailure.encode({
-            kind: "QUERY_FAILURE",
-            query: "findOneUserDataProcessingById",
-            reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
-          })
-        ),
-        TE.chainW(
-          TE.fromOption(() =>
-            ActivityResultNotFoundFailure.encode({
-              kind: "NOT_FOUND_FAILURE"
+export const createSetUserDataProcessingStatusActivityHandler =
+  (userDataProcessingModel: UserDataProcessingModel) =>
+  (context: Context, input: unknown) =>
+    // the actual handler
+    pipe(
+      input,
+      ActivityInput.decode,
+      E.mapLeft(reason =>
+        ActivityResultInvalidInputFailure.encode({
+          kind: "INVALID_INPUT_FAILURE",
+          reason: readableReport(reason)
+        })
+      ),
+      TE.fromEither,
+      TE.chainW(({ choice, fiscalCode }) =>
+        pipe(
+          userDataProcessingModel.findLastVersionByModelId([
+            makeUserDataProcessingId(choice, fiscalCode),
+            fiscalCode
+          ]),
+          TE.mapLeft(error =>
+            ActivityResultQueryFailure.encode({
+              kind: "QUERY_FAILURE",
+              query: "findOneUserDataProcessingById",
+              reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
             })
+          ),
+          TE.chainW(
+            TE.fromOption(() =>
+              ActivityResultNotFoundFailure.encode({
+                kind: "NOT_FOUND_FAILURE"
+              })
+            )
           )
         )
-      )
-    ),
-    TE.map(record =>
-      ActivityResultSuccess.encode({
-        kind: "SUCCESS",
-        value: record
-      })
-    ),
-    TE.mapLeft(failure => {
-      logFailure(context)(failure);
-      return failure;
-    }),
-    TE.toUnion
-  )();
+      ),
+      TE.map(record =>
+        ActivityResultSuccess.encode({
+          kind: "SUCCESS",
+          value: record
+        })
+      ),
+      TE.mapLeft(failure => {
+        logFailure(context)(failure);
+        return failure;
+      }),
+      TE.toUnion
+    )();

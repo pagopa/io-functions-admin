@@ -9,6 +9,7 @@ import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import { assert, beforeEach, describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
@@ -17,6 +18,7 @@ import {
   mockOrchestratorGetInput,
   mockOrchestratorTaskAny
 } from "../../__mocks__/durable-functions";
+// eslint-disable-next-line vitest/no-mocks-import
 import {
   aProfile,
   aRetrievedProfile,
@@ -57,9 +59,7 @@ const aProcessableUserDataDelete = pipe(
   },
   ProcessableUserDataDelete.decode,
   E.mapLeft(readableReport),
-  E.getOrElseW((e) =>
-    assert.fail(`Failed creating a mock input document: ${e}`)
-  )
+  E.getOrElseW(e => assert.fail(`Failed creating a mock input document: ${e}`))
 );
 
 const aUserDataDownloadPending = {
@@ -140,22 +140,22 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
   (name === "SetUserDataProcessingStatusActivity"
     ? setUserDataProcessingStatusActivity
     : name === "GetUserDataProcessingActivity"
-    ? getUserDataProcessingActivity
-    : name === "SetUserSessionLockActivity"
-    ? setUserSessionLockActivity
-    : name === "DeleteUserDataActivity"
-    ? deleteUserDataActivity
-    : name === "SendUserDataDeleteEmailActivity"
-    ? sendUserDataDeleteEmailActivity
-    : name === "GetProfileActivity"
-    ? getProfileActivity
-    : name === "GetServicesPreferencesActivity"
-    ? getServicePreferencesActivity
-    : name === "UpdateSubscriptionsFeedActivity"
-    ? updateSubscriptionFeed
-    : name === "IsFailedUserDataProcessingActivity"
-    ? isFailedUserDataProcessingActivity
-    : vi.fn())(name, ...args);
+      ? getUserDataProcessingActivity
+      : name === "SetUserSessionLockActivity"
+        ? setUserSessionLockActivity
+        : name === "DeleteUserDataActivity"
+          ? deleteUserDataActivity
+          : name === "SendUserDataDeleteEmailActivity"
+            ? sendUserDataDeleteEmailActivity
+            : name === "GetProfileActivity"
+              ? getProfileActivity
+              : name === "GetServicesPreferencesActivity"
+                ? getServicePreferencesActivity
+                : name === "UpdateSubscriptionsFeedActivity"
+                  ? updateSubscriptionFeed
+                  : name === "IsFailedUserDataProcessingActivity"
+                    ? isFailedUserDataProcessingActivity
+                    : vi.fn())(name, ...args);
 
 // I assign switchMockImplementation to both because
 // I don't want tests to depend on implementation details
@@ -184,10 +184,11 @@ const consumeOrchestrator = (orch: any) => {
 
 const mockIsUserEligibleForInstantDelete = vi
   .fn()
-  .mockImplementation((_) => false);
+  .mockImplementation(_ => false);
 
 // just a convenient cast, good for every test case
-const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
+const context =
+  mockOrchestratorContext as unknown as IOrchestrationFunctionContext;
 
 // timer are not delayed for test, but we set default values
 // to test any override, i.e. the grace period for failed requests
@@ -196,6 +197,7 @@ const waitForDownloadInterval = 1 as Hour;
 
 const expectedRetryOptions = expect.any(Object);
 
+// eslint-disable-next-line max-lines-per-function
 describe("createUserDataDeleteOrchestratorHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -46,7 +46,17 @@ export function retrievedServiceToVisibleService(
  * When oldService is defined, the service has been updated, or it has been
  * created otherwise.
  */
-export const UpsertServiceEvent = t.intersection([
+export const UpsertServiceEvent: t.IntersectionType<
+  [
+    t.InterfaceType<{
+      newService: typeof RetrievedService;
+      updatedAt: typeof UTCISODateFromString;
+    }>,
+    t.PartialType<{
+      oldService: typeof RetrievedService;
+    }>
+  ]
+> = t.intersection([
   t.interface({
     newService: RetrievedService,
     updatedAt: UTCISODateFromString
@@ -85,7 +95,7 @@ function computeMaybeAction(
     : some("DELETE");
 }
 
-export const handler = function*(
+export const handler = function* (
   context: IOrchestrationFunctionContext
 ): Generator<unknown> {
   const input = context.df.getInput();
@@ -118,23 +128,24 @@ export const handler = function*(
     context.log.verbose(
       `UpdateVisibleServicesActivity|Visible services must be updated|SERVICE_ID=${visibleService.serviceId}|ACTION=${action}`
     );
-    const updateVisibleServicesActivityInput = UpdateVisibleServicesActivityInput.encode(
-      {
+    const updateVisibleServicesActivityInput =
+      UpdateVisibleServicesActivityInput.encode({
         action,
         visibleService
-      }
-    );
+      });
 
     try {
-      const updateVisibleServicesActivityResultJson = yield context.df.callActivityWithRetry(
-        "UpdateVisibleServicesActivity",
-        retryOptions,
-        updateVisibleServicesActivityInput
-      );
+      const updateVisibleServicesActivityResultJson =
+        yield context.df.callActivityWithRetry(
+          "UpdateVisibleServicesActivity",
+          retryOptions,
+          updateVisibleServicesActivityInput
+        );
 
-      const errorOrUpdateVisibleServicesActivityResult = UpdateVisibleServicesActivityResult.decode(
-        updateVisibleServicesActivityResultJson
-      );
+      const errorOrUpdateVisibleServicesActivityResult =
+        UpdateVisibleServicesActivityResult.decode(
+          updateVisibleServicesActivityResultJson
+        );
 
       if (E.isLeft(errorOrUpdateVisibleServicesActivityResult)) {
         context.log.error(

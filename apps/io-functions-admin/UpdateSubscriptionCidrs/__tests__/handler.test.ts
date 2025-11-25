@@ -51,10 +51,10 @@ const aValidSubscription: SubscriptionContract = {
   type: undefined
 };
 
-const aCIDRsPayload = [("1.2.3.4/5" as any) as CIDR] as any;
+const aCIDRsPayload = ["1.2.3.4/5" as any as CIDR] as any;
 
 const aSubscriptionCidrs = {
-  cidrs: (["1.2.3.4/5"] as unknown) as CIDR[],
+  cidrs: ["1.2.3.4/5"] as unknown as CIDR[],
   id: "aSubscriptionId"
 };
 
@@ -87,7 +87,7 @@ describe("UpdateSubscriptionCidrs", () => {
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
     );
 
     const response = await updateSubscriptionCidrs(
@@ -114,7 +114,7 @@ describe("UpdateSubscriptionCidrs", () => {
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
     );
 
     const response = await updateSubscriptionCidrs(
@@ -133,7 +133,7 @@ describe("UpdateSubscriptionCidrs", () => {
       subscription: {
         get: vi.fn(() =>
           Promise.resolve({
-            ...((aValidSubscription as any) as SubscriptionContract)
+            ...(aValidSubscription as any as SubscriptionContract)
           })
         )
       }
@@ -147,7 +147,7 @@ describe("UpdateSubscriptionCidrs", () => {
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
     );
 
     const response = await updateSubscriptionCidrs(
@@ -166,7 +166,7 @@ describe("UpdateSubscriptionCidrs", () => {
       subscription: {
         get: vi.fn(() =>
           Promise.resolve({
-            ...((aValidSubscription as any) as SubscriptionContract)
+            ...(aValidSubscription as any as SubscriptionContract)
           })
         )
       }
@@ -175,7 +175,7 @@ describe("UpdateSubscriptionCidrs", () => {
     const mockSubscriptionCIDRsModel = {
       upsert: vi.fn(() =>
         TE.right({
-          cidrs: (["1.2.3.4/5"] as unknown) as CIDR[],
+          cidrs: ["1.2.3.4/5"] as unknown as CIDR[],
           subscriptionId: "aSubscriptionId"
         })
       )
@@ -183,7 +183,7 @@ describe("UpdateSubscriptionCidrs", () => {
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeApimConfig,
-      (mockSubscriptionCIDRsModel as any) as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
     );
 
     const response = await updateSubscriptionCidrs(

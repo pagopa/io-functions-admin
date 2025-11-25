@@ -8,10 +8,10 @@ export const cosmosErrorsToString = (errs: CosmosErrors): NonEmptyString =>
     errs.kind === "COSMOS_EMPTY_RESPONSE"
       ? "Empty response"
       : errs.kind === "COSMOS_DECODING_ERROR"
-      ? "Decoding error: " + readableReportSimplified(errs.error)
-      : errs.kind === "COSMOS_CONFLICT_RESPONSE"
-      ? "Conflict error"
-      : "Generic error: " + JSON.stringify(errs.error),
+        ? "Decoding error: " + readableReportSimplified(errs.error)
+        : errs.kind === "COSMOS_CONFLICT_RESPONSE"
+          ? "Conflict error"
+          : "Generic error: " + JSON.stringify(errs.error),
 
     errorString => errorString as NonEmptyString
   );

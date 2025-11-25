@@ -44,10 +44,10 @@ const mockUnlockUserSession = vi.fn().mockImplementation(async () =>
   })
 );
 
-const mockClient = ({
+const mockClient = {
   lockUserSession: mockLockUserSession,
   unlockUserSession: mockUnlockUserSession
-} as unknown) as Client<"ApiKeyAuth">;
+} as unknown as Client<"ApiKeyAuth">;
 
 describe("createSetUserSessionLockActivityHandler", () => {
   beforeEach(() => {

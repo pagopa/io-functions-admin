@@ -11,31 +11,34 @@
  * @returns
  */
 
-export const withRetry = ({
-  delayMS = 100,
-  maxAttempts = 3,
-  whileCondition = (_: unknown): true => true
-}: {
-  readonly delayMS?: number;
-  readonly maxAttempts?: number;
-  readonly whileCondition?: (failure: unknown) => boolean;
-} = {}) => <T>(operation: () => Promise<T>) => async (): Promise<T> => {
-  // eslint-disable-next-line functional/no-let
-  let remainingAttempts = maxAttempts;
+export const withRetry =
+  ({
+    delayMS = 100,
+    maxAttempts = 3,
+    whileCondition = (_: unknown): true => true
+  }: {
+    readonly delayMS?: number;
+    readonly maxAttempts?: number;
+    readonly whileCondition?: (failure: unknown) => boolean;
+  } = {}) =>
+  <T>(operation: () => Promise<T>) =>
+  async (): Promise<T> => {
+    // eslint-disable-next-line functional/no-let
+    let remainingAttempts = maxAttempts;
 
-  while (true) {
-    try {
-      return await operation();
-    } catch (error) {
-      remainingAttempts--;
+    while (true) {
+      try {
+        return await operation();
+      } catch (error) {
+        remainingAttempts--;
 
-      if (!remainingAttempts || !whileCondition(error)) {
-        throw error;
-      }
+        if (!remainingAttempts || !whileCondition(error)) {
+          throw error;
+        }
 
-      if (delayMS) {
-        await new Promise(done => setTimeout(done, delayMS));
+        if (delayMS) {
+          await new Promise(done => setTimeout(done, delayMS));
+        }
       }
     }
-  }
-};
+  };

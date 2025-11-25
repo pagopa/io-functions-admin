@@ -72,52 +72,51 @@ export const ActivityResult = t.taggedUnion("kind", [
 
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
-export const createUserDataProcessingCheckLastStatusActivityHandler = (
-  userDataProcessingModel: UserDataProcessingModel
-): ((context: Context, input: unknown) => Promise<ActivityResult>) => (
-  _: Context,
-  input: unknown
-): Promise<ActivityResult> =>
-  pipe(
-    input,
-    ActivityInput.decode,
-    E.mapLeft((reason: t.Errors) =>
-      ActivityResultInvalidInputFailure.encode({
-        kind: "INVALID_INPUT_FAILURE",
-        reason: readableReport(reason)
-      })
-    ),
-    TE.fromEither,
-    TE.chainW(({ choice, fiscalCode }) =>
-      pipe(
-        userDataProcessingModel.findLastVersionByModelId([
-          makeUserDataProcessingId(choice, fiscalCode),
-          fiscalCode
-        ]),
-        TE.mapLeft(error =>
-          ActivityResultQueryFailure.encode({
-            kind: "QUERY_FAILURE",
-            query: "findOneUserDataProcessingById",
-            reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
-          })
-        ),
-        TE.chainW(
-          flow(
-            O.map(r => r.status),
-            TE.fromOption(() =>
-              ActivityResultNotFoundFailure.encode({
-                kind: "NOT_FOUND_FAILURE"
-              })
+export const createUserDataProcessingCheckLastStatusActivityHandler =
+  (
+    userDataProcessingModel: UserDataProcessingModel
+  ): ((context: Context, input: unknown) => Promise<ActivityResult>) =>
+  (_: Context, input: unknown): Promise<ActivityResult> =>
+    pipe(
+      input,
+      ActivityInput.decode,
+      E.mapLeft((reason: t.Errors) =>
+        ActivityResultInvalidInputFailure.encode({
+          kind: "INVALID_INPUT_FAILURE",
+          reason: readableReport(reason)
+        })
+      ),
+      TE.fromEither,
+      TE.chainW(({ choice, fiscalCode }) =>
+        pipe(
+          userDataProcessingModel.findLastVersionByModelId([
+            makeUserDataProcessingId(choice, fiscalCode),
+            fiscalCode
+          ]),
+          TE.mapLeft(error =>
+            ActivityResultQueryFailure.encode({
+              kind: "QUERY_FAILURE",
+              query: "findOneUserDataProcessingById",
+              reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
+            })
+          ),
+          TE.chainW(
+            flow(
+              O.map(r => r.status),
+              TE.fromOption(() =>
+                ActivityResultNotFoundFailure.encode({
+                  kind: "NOT_FOUND_FAILURE"
+                })
+              )
             )
           )
         )
-      )
-    ),
-    TE.map(status =>
-      ActivityResultSuccess.encode({
-        kind: "SUCCESS",
-        value: status
-      })
-    ),
-    TE.toUnion
-  )();
+      ),
+      TE.map(status =>
+        ActivityResultSuccess.encode({
+          kind: "SUCCESS",
+          value: status
+        })
+      ),
+      TE.toUnion
+    )();

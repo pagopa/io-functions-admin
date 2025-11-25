@@ -42,54 +42,56 @@ type TableEntry = Readonly<{
   }>;
 }>;
 
-export const GetFailedUserDataProcessingHandler = (
-  tableService: TableService,
-  failedUserDataProcessingTable: NonEmptyString
-): IHttpHandler => async (
-  _,
-  choice,
-  fiscalCode
-): Promise<
-  | IResponseErrorInternal
-  | IResponseErrorNotFound
-  | IResponseSuccessJson<ResultSet>
-> =>
-  pipe(
-    TE.tryCatch(
-      () =>
-        new Promise<O.Option<TableEntry>>((resolve, reject) =>
-          tableService.retrieveEntity(
-            failedUserDataProcessingTable,
-            choice,
-            fiscalCode,
-            // TODO: Refactor for using the new `@azure/data-tables` library
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            null,
-            (error: Error, result: TableEntry, response: ServiceResponse) =>
-              response.isSuccessful
-                ? resolve(O.some(result))
-                : response.statusCode === 404
-                ? resolve(O.none)
-                : reject(error)
-          )
-        ),
-      E.toError
-    ),
-    TE.mapLeft(er => ResponseErrorInternal(er.message)),
-    TE.chainW(
-      flow(
-        TE.fromOption(() =>
-          ResponseErrorNotFound("Not found!", "No record found.")
-        ),
-        TE.map(rs => ({
-          failedDataProcessingUser: rs.RowKey._
-        }))
-      )
-    ),
-    TE.map(ResponseSuccessJson),
-    TE.toUnion
-  )();
+export const GetFailedUserDataProcessingHandler =
+  (
+    tableService: TableService,
+    failedUserDataProcessingTable: NonEmptyString
+  ): IHttpHandler =>
+  async (
+    _,
+    choice,
+    fiscalCode
+  ): Promise<
+    | IResponseErrorInternal
+    | IResponseErrorNotFound
+    | IResponseSuccessJson<ResultSet>
+  > =>
+    pipe(
+      TE.tryCatch(
+        () =>
+          new Promise<O.Option<TableEntry>>((resolve, reject) =>
+            tableService.retrieveEntity(
+              failedUserDataProcessingTable,
+              choice,
+              fiscalCode,
+              // TODO: Refactor for using the new `@azure/data-tables` library
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              null,
+              (error: Error, result: TableEntry, response: ServiceResponse) =>
+                response.isSuccessful
+                  ? resolve(O.some(result))
+                  : response.statusCode === 404
+                    ? resolve(O.none)
+                    : reject(error)
+            )
+          ),
+        E.toError
+      ),
+      TE.mapLeft(er => ResponseErrorInternal(er.message)),
+      TE.chainW(
+        flow(
+          TE.fromOption(() =>
+            ResponseErrorNotFound("Not found!", "No record found.")
+          ),
+          TE.map(rs => ({
+            failedDataProcessingUser: rs.RowKey._
+          }))
+        )
+      ),
+      TE.map(ResponseSuccessJson),
+      TE.toUnion
+    )();
 
 export const GetFailedUserDataProcessing = (
   tableService: TableService,

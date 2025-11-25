@@ -78,11 +78,11 @@ vi.mocked(ProfileModel.prototype.findLastVersionByModelId).mockImplementation(
     return TE.right(O.none);
   }
 );
-vi.mocked(
-  ProfileModel.prototype.update
-).mockImplementation((profile: RetrievedProfile) => TE.right(profile));
+vi.mocked(ProfileModel.prototype.update).mockImplementation(
+  (profile: RetrievedProfile) => TE.right(profile)
+);
 
-const profileModel = new ProfileModel(({} as any) as Container);
+const profileModel = new ProfileModel({} as any as Container);
 
 const ConsoleLogger: L.Logger = {
   format: L.format.json,

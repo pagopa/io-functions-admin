@@ -23,7 +23,10 @@ export const ActivityInput = t.interface({
 export type ActivityInput = t.TypeOf<typeof ActivityInput>;
 
 // Activity result
-export const ActivityResultSuccess = t.interface({
+export const ActivityResultSuccess: t.InterfaceType<{
+  kind: t.LiteralType<"SUCCESS">;
+  value: typeof RetrievedProfile;
+}> = t.interface({
   kind: t.literal("SUCCESS"),
   value: RetrievedProfile
 });
@@ -65,10 +68,10 @@ export const ActivityResultFailure = t.taggedUnion("kind", [
 ]);
 export type ActivityResultFailure = t.TypeOf<typeof ActivityResultFailure>;
 
-export const ActivityResult = t.taggedUnion("kind", [
-  ActivityResultSuccess,
-  ActivityResultFailure
-]);
+export const ActivityResult: t.TaggedUnionType<
+  "kind",
+  [typeof ActivityResultSuccess, typeof ActivityResultFailure]
+> = t.taggedUnion("kind", [ActivityResultSuccess, ActivityResultFailure]);
 
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
@@ -84,72 +87,73 @@ function assertNever(_: never): void {
  * @param context the Azure functions context
  * @param failure the failure to log
  */
-const logFailure = (context: Context) => (
-  failure: ActivityResultFailure
-): void => {
-  switch (failure.kind) {
-    case "INVALID_INPUT_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
-      );
-      break;
-    case "NOT_FOUND_FAILURE":
-      // it might not be a failure
-      context.log.warn(`${logPrefix}|Error Profile not found`);
-      break;
-    case "QUERY_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
-      );
-      break;
-    default:
-      assertNever(failure);
-  }
-};
+const logFailure =
+  (context: Context) =>
+  (failure: ActivityResultFailure): void => {
+    switch (failure.kind) {
+      case "INVALID_INPUT_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
+        );
+        break;
+      case "NOT_FOUND_FAILURE":
+        // it might not be a failure
+        context.log.warn(`${logPrefix}|Error Profile not found`);
+        break;
+      case "QUERY_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
+        );
+        break;
+      default:
+        assertNever(failure);
+    }
+  };
 
-export const createGetProfileActivityHandler = (profileModel: ProfileModel) => (
-  context: Context,
-  input: unknown
-) =>
-  pipe(
-    input,
-    ActivityInput.decode,
-    // the actual handler
-    E.mapLeft(reason =>
-      ActivityResultInvalidInputFailure.encode({
-        kind: "INVALID_INPUT_FAILURE",
-        reason: readableReport(reason)
-      })
-    ),
-    TE.fromEither,
-    TE.chainW(({ fiscalCode }) =>
-      pipe(
-        profileModel.findLastVersionByModelId([fiscalCode]),
-        TE.mapLeft(error =>
-          ActivityResultQueryFailure.encode({
-            kind: "QUERY_FAILURE",
-            query: "findLastVersionByModelId",
-            reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
-          })
-        ),
-        TE.chainW(
-          TE.fromOption(() =>
-            ActivityResultNotFoundFailure.encode({
-              kind: "NOT_FOUND_FAILURE"
+export const createGetProfileActivityHandler =
+  (
+    profileModel: ProfileModel
+  ): ((context: Context, input: unknown) => Promise<ActivityResult>) =>
+  (context: Context, input: unknown): Promise<ActivityResult> =>
+    pipe(
+      input,
+      ActivityInput.decode,
+      // the actual handler
+      E.mapLeft(reason =>
+        ActivityResultInvalidInputFailure.encode({
+          kind: "INVALID_INPUT_FAILURE",
+          reason: readableReport(reason)
+        })
+      ),
+      TE.fromEither,
+      TE.chainW(({ fiscalCode }) =>
+        pipe(
+          profileModel.findLastVersionByModelId([fiscalCode]),
+          TE.mapLeft(error =>
+            ActivityResultQueryFailure.encode({
+              kind: "QUERY_FAILURE",
+              query: "findLastVersionByModelId",
+              reason: `${error.kind}, ${getMessageFromCosmosErrors(error)}`
             })
+          ),
+          TE.chainW(
+            TE.fromOption(() =>
+              ActivityResultNotFoundFailure.encode({
+                kind: "NOT_FOUND_FAILURE"
+              })
+            )
           )
         )
-      )
-    ),
-    TE.map(record =>
-      ActivityResultSuccess.encode({
-        kind: "SUCCESS",
-        value: record
-      })
-    ),
-    TE.mapLeft(failure => {
-      logFailure(context)(failure);
-      return failure;
-    }),
-    TE.toUnion
-  )();
+      ),
+      TE.map(record =>
+        ActivityResultSuccess.encode({
+          kind: "SUCCESS",
+          value: record
+        })
+      ),
+      TE.mapLeft(failure => {
+        logFailure(context)(failure);
+        return failure;
+      }),
+      TE.toUnion
+    )();

@@ -27,7 +27,7 @@ const getOrchestratorStatusMock = vi.fn(
       name: orchestratorId,
       output: failedOrchestratorOutput,
       runtimeStatus: "Completed"
-    } as DurableOrchestrationStatus)
+    }) as DurableOrchestrationStatus
 );
 
 vi.mock("durable-functions", () => ({
@@ -80,7 +80,7 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
   });
 
   it("should handle an invalid input", async () => {
-    const mockModel = ({} as any) as UserDataProcessingModel;
+    const mockModel = {} as any as UserDataProcessingModel;
 
     // @ts-ignore to force bad behavior
     const result = await getFindFailureReasonActivityHandler(contextMock, {

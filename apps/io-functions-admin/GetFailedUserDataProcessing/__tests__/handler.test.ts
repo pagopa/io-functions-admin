@@ -8,19 +8,21 @@ import { assert, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GetFailedUserDataProcessingHandler } from "../handler";
 
-const findEntry = (
-  entries: readonly {
-    PartitionKey: UserDataProcessingChoice;
-    RowKey: FiscalCode;
-  }[]
-) => (choice: UserDataProcessingChoice, fiscalCode: FiscalCode) =>
-  entries.length > 0
-    ? entries
-        .filter(e => e.PartitionKey === choice && e.RowKey === fiscalCode)
-        .map(e => ({
-          RowKey: { _: e.RowKey }
-        }))[0]
-    : null;
+const findEntry =
+  (
+    entries: readonly {
+      PartitionKey: UserDataProcessingChoice;
+      RowKey: FiscalCode;
+    }[]
+  ) =>
+  (choice: UserDataProcessingChoice, fiscalCode: FiscalCode) =>
+    entries.length > 0
+      ? entries
+          .filter(e => e.PartitionKey === choice && e.RowKey === fiscalCode)
+          .map(e => ({
+            RowKey: { _: e.RowKey }
+          }))[0]
+      : null;
 
 const retrieveEntityFailedUserDataProcessingMock = (
   entries: readonly {
@@ -83,16 +85,13 @@ beforeEach(() => {
 
 describe("GetFailedUserDataProcessingHandler", () => {
   it("should return a not found error response if no failed user data processing request is present", async () => {
-    const tableServiceMock = ({
-      retrieveEntity: retrieveEntityFailedUserDataProcessingMock(
-        noFailedRequests
-      )
-    } as any) as TableService;
+    const tableServiceMock = {
+      retrieveEntity:
+        retrieveEntityFailedUserDataProcessingMock(noFailedRequests)
+    } as any as TableService;
 
-    const getFailedUserDataProcessingHandler = GetFailedUserDataProcessingHandler(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingHandler =
+      GetFailedUserDataProcessingHandler(tableServiceMock, storageTableMock);
 
     const result = await getFailedUserDataProcessingHandler(
       {} as any,
@@ -104,16 +103,15 @@ describe("GetFailedUserDataProcessingHandler", () => {
   });
 
   it("should return an internal error response if retrieve entity fails", async () => {
-    const tableServiceMock = ({
-      retrieveEntity: internalErrorRetrieveEntityFailedUserDataProcessingMock(
-        noFailedRequests
-      )
-    } as any) as TableService;
+    const tableServiceMock = {
+      retrieveEntity:
+        internalErrorRetrieveEntityFailedUserDataProcessingMock(
+          noFailedRequests
+        )
+    } as any as TableService;
 
-    const getFailedUserDataProcessingHandler = GetFailedUserDataProcessingHandler(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingHandler =
+      GetFailedUserDataProcessingHandler(tableServiceMock, storageTableMock);
 
     const result = await getFailedUserDataProcessingHandler(
       {} as any,
@@ -125,14 +123,12 @@ describe("GetFailedUserDataProcessingHandler", () => {
   });
 
   it("should return a fiscalcode if a failed request is present", async () => {
-    const tableServiceMock = ({
+    const tableServiceMock = {
       retrieveEntity: retrieveEntityFailedUserDataProcessingMock(failedRequests)
-    } as any) as TableService;
+    } as any as TableService;
 
-    const getFailedUserDataProcessingHandler = GetFailedUserDataProcessingHandler(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingHandler =
+      GetFailedUserDataProcessingHandler(tableServiceMock, storageTableMock);
 
     const result = await getFailedUserDataProcessingHandler(
       {} as any,

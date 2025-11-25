@@ -42,7 +42,8 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/notification";
 import {
   NotificationStatus,
-  NotificationStatusId
+  NotificationStatusId,
+  RetrievedNotificationStatus
 } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import {
   Profile,
@@ -82,6 +83,7 @@ import { pipe } from "fp-ts/lib/function";
 
 import { ArchiveInfo } from "../ExtractUserDataActivity/handler";
 import { EmailAddress } from "../generated/definitions/EmailAddress";
+import { INotificationStatusIdTag } from "../types/io-functions-commons";
 
 export const aFiscalCode = "SPNDNL80A13Y555X" as FiscalCode;
 
@@ -150,10 +152,8 @@ export const aSeralizedService: ApiService = {
 export const aUserDataProcessingChoice: UserDataProcessingChoice =
   UserDataProcessingChoiceEnum.DOWNLOAD;
 
-export const aUserDataProcessingId: UserDataProcessingId = makeUserDataProcessingId(
-  aUserDataProcessingChoice,
-  aFiscalCode
-);
+export const aUserDataProcessingId: UserDataProcessingId =
+  makeUserDataProcessingId(aUserDataProcessingChoice, aFiscalCode);
 
 export const aUserDataProcessingStatus: UserDataProcessingStatus =
   UserDataProcessingStatusEnum.PENDING;
@@ -313,7 +313,14 @@ export const aRetrievedNotification: RetrievedNotification = {
 const aMessageId = "A_MESSAGE_ID" as NonEmptyString;
 
 const aNotificationStatusId = "A_NOTIFICATION_ID:EMAIL" as NotificationStatusId;
-export const aSerializedNotificationStatus = {
+export const aSerializedNotificationStatus: {
+  channel: NotificationChannelEnum;
+  messageId: NonEmptyString;
+  notificationId: NonEmptyString;
+  status: NotificationChannelStatusValueEnum;
+  statusId: INotificationStatusIdTag & NotificationStatusId;
+  updatedAt: string;
+} = {
   channel: NotificationChannelEnum.EMAIL,
   messageId: aMessageId,
   notificationId: "A_NOTIFICATION_ID" as NonEmptyString,
@@ -322,7 +329,7 @@ export const aSerializedNotificationStatus = {
   updatedAt: new Date().toISOString()
 };
 
-export const aNotificationStatus = pipe(
+export const aNotificationStatus: NotificationStatus = pipe(
   aSerializedNotificationStatus,
   NotificationStatus.decode,
   E.getOrElseW(errs => {
@@ -331,10 +338,10 @@ export const aNotificationStatus = pipe(
   })
 );
 
-export const aRetrievedNotificationStatus = {
+export const aRetrievedNotificationStatus: RetrievedNotificationStatus = {
   ...aNotificationStatus,
-  id: aNotificationStatusId
-};
+  id: aNotificationStatusId as any
+} as RetrievedNotificationStatus;
 
 export const aSerializedMessageStatus = {
   messageId: aMessageId,

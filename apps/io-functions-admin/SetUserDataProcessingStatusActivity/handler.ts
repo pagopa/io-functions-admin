@@ -80,80 +80,80 @@ function assertNever(_: never): void {
  * @param context the Azure functions context
  * @param failure the failure to log
  */
-const logFailure = (context: Context) => (
-  failure: ActivityResultFailure
-): void => {
-  switch (failure.kind) {
-    case "INVALID_INPUT_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
-      );
-      break;
-    case "QUERY_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
-      );
-      break;
-    default:
-      assertNever(failure);
-  }
-};
+const logFailure =
+  (context: Context) =>
+  (failure: ActivityResultFailure): void => {
+    switch (failure.kind) {
+      case "INVALID_INPUT_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
+        );
+        break;
+      case "QUERY_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
+        );
+        break;
+      default:
+        assertNever(failure);
+    }
+  };
 
-export const createSetUserDataProcessingStatusActivityHandler = (
-  userDataProcessingModel: UserDataProcessingModel
-) => (context: Context, input: unknown) => {
-  /**
-   * Updates a UserDataProcessing record by creating a new version of it with a chenged status
-   *
-   * @param param0.currentRecord the record to be modified
-   * @param param0.nextStatus: the status to assign the record to
-   *
-   * @returns either an Error or the new created record
-   */
-  const saveNewStatusOnDb = ({
-    currentRecord: { status: _, ...currentRecord },
-    failureReason,
-    nextStatus
-  }: ActivityInput): TE.TaskEither<
-    ActivityResultQueryFailure,
-    UserDataProcessing
-  > =>
-    pipe(
-      userDataProcessingModel.createOrUpdateByNewOne({
-        ...currentRecord,
-        reason: failureReason,
-        status: nextStatus,
-        updatedAt: new Date()
-      }),
-      TE.mapLeft(err =>
-        ActivityResultQueryFailure.encode({
-          kind: "QUERY_FAILURE",
-          query: "userDataProcessingModel.createOrUpdateByNewOne",
-          reason: `${err.kind}, ${getMessageFromCosmosErrors(err)}`
+export const createSetUserDataProcessingStatusActivityHandler =
+  (userDataProcessingModel: UserDataProcessingModel) =>
+  (context: Context, input: unknown) => {
+    /**
+     * Updates a UserDataProcessing record by creating a new version of it with a chenged status
+     *
+     * @param param0.currentRecord the record to be modified
+     * @param param0.nextStatus: the status to assign the record to
+     *
+     * @returns either an Error or the new created record
+     */
+    const saveNewStatusOnDb = ({
+      currentRecord: { status: _, ...currentRecord },
+      failureReason,
+      nextStatus
+    }: ActivityInput): TE.TaskEither<
+      ActivityResultQueryFailure,
+      UserDataProcessing
+    > =>
+      pipe(
+        userDataProcessingModel.createOrUpdateByNewOne({
+          ...currentRecord,
+          reason: failureReason,
+          status: nextStatus,
+          updatedAt: new Date()
+        }),
+        TE.mapLeft(err =>
+          ActivityResultQueryFailure.encode({
+            kind: "QUERY_FAILURE",
+            query: "userDataProcessingModel.createOrUpdateByNewOne",
+            reason: `${err.kind}, ${getMessageFromCosmosErrors(err)}`
+          })
+        )
+      );
+    // the actual handler
+    return pipe(
+      input,
+      ActivityInput.decode,
+      TE.fromEither,
+      TE.mapLeft((reason: t.Errors) =>
+        ActivityResultInvalidInputFailure.encode({
+          kind: "INVALID_INPUT_FAILURE",
+          reason: readableReport(reason)
         })
-      )
-    );
-  // the actual handler
-  return pipe(
-    input,
-    ActivityInput.decode,
-    TE.fromEither,
-    TE.mapLeft((reason: t.Errors) =>
-      ActivityResultInvalidInputFailure.encode({
-        kind: "INVALID_INPUT_FAILURE",
-        reason: readableReport(reason)
-      })
-    ),
-    TE.chainW(saveNewStatusOnDb),
-    TE.map(_ =>
-      ActivityResultSuccess.encode({
-        kind: "SUCCESS"
-      })
-    ),
-    TE.mapLeft(failure => {
-      logFailure(context)(failure);
-      return failure;
-    }),
-    TE.toUnion
-  )();
-};
+      ),
+      TE.chainW(saveNewStatusOnDb),
+      TE.map(_ =>
+        ActivityResultSuccess.encode({
+          kind: "SUCCESS"
+        })
+      ),
+      TE.mapLeft(failure => {
+        logFailure(context)(failure);
+        return failure;
+      }),
+      TE.toUnion
+    )();
+  };

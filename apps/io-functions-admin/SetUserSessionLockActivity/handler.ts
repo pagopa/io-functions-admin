@@ -164,33 +164,33 @@ const callSessionApi = (
     })
   );
 
-export const createSetUserSessionLockActivityHandler = (
-  sessionApiClient: Client<"ApiKeyAuth">
-) => (context: Context, input: unknown) =>
-  pipe(
-    input,
-    ActivityInput.decode,
-    TE.fromEither,
-    TE.mapLeft(err =>
-      InvalidInputFailure.encode({
-        kind: "INVALID_INPUT_FAILURE",
-        reason: readableReport(err)
-      })
-    ),
-    TE.chainW(({ action, fiscalCode }) =>
-      callSessionApi(context, sessionApiClient, action, fiscalCode)
-    ),
-    TE.mapLeft(failure => {
-      context.log.error(`${logPrefix}|ERROR|Activity failed`, failure);
-      // in case of transient failures we let the activity throw, so the orchestrator can retry
-      if (TransientFailure.is(failure)) {
-        throw failure;
-      }
-      return failure;
-    }),
-    TE.map(_ => {
-      context.log.info(`${logPrefix}|INFO|Activity succeeded`);
-      return ActivityResultSuccess.encode({ kind: "SUCCESS" });
-    }),
-    TE.toUnion
-  )();
+export const createSetUserSessionLockActivityHandler =
+  (sessionApiClient: Client<"ApiKeyAuth">) =>
+  (context: Context, input: unknown) =>
+    pipe(
+      input,
+      ActivityInput.decode,
+      TE.fromEither,
+      TE.mapLeft(err =>
+        InvalidInputFailure.encode({
+          kind: "INVALID_INPUT_FAILURE",
+          reason: readableReport(err)
+        })
+      ),
+      TE.chainW(({ action, fiscalCode }) =>
+        callSessionApi(context, sessionApiClient, action, fiscalCode)
+      ),
+      TE.mapLeft(failure => {
+        context.log.error(`${logPrefix}|ERROR|Activity failed`, failure);
+        // in case of transient failures we let the activity throw, so the orchestrator can retry
+        if (TransientFailure.is(failure)) {
+          throw failure;
+        }
+        return failure;
+      }),
+      TE.map(_ => {
+        context.log.info(`${logPrefix}|INFO|Activity succeeded`);
+        return ActivityResultSuccess.encode({ kind: "SUCCESS" });
+      }),
+      TE.toUnion
+    )();

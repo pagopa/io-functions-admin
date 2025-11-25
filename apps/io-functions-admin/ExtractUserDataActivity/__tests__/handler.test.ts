@@ -95,10 +95,10 @@ vi.spyOn(asyncI, "asyncIteratorToArray").mockImplementation(() =>
 );
 
 const mockGetContentFromBlob = vi.fn(() => TE.of(some(aMessageContent)));
-const messageModelMock = ({
+const messageModelMock = {
   findMessages: vi.fn(() => TE.fromEither(E.right(messageIteratorMock))),
   getContentFromBlob: mockGetContentFromBlob
-} as any) as MessageModel;
+} as any as MessageModel;
 
 // ServicePreferences Model
 export async function* asyncIteratorOf<T>(items: T[]) {
@@ -112,42 +112,42 @@ const mockFindAllServPreferencesByFiscalCode = vi.fn(() =>
   asyncIteratorOf([E.right(aRetrievedServicePreferences)])
 );
 
-const servicePreferencesModelMock = ({
+const servicePreferencesModelMock = {
   delete: mockDeleteServicePreferences,
   findAllByFiscalCode: mockFindAllServPreferencesByFiscalCode
-} as unknown) as ServicePreferencesDeletableModel;
+} as unknown as ServicePreferencesDeletableModel;
 
-const iteratorGenMock = async function*(arr: any[]) {
+const iteratorGenMock = async function* (arr: any[]) {
   for (const a of arr) yield a;
 };
 
-const messageViewModelMock = ({
+const messageViewModelMock = {
   getQueryIterator: vi.fn(() => iteratorGenMock([E.right(aMessageView)]))
-} as any) as MessageViewModel;
+} as any as MessageViewModel;
 
-const messageStatusModelMock = ({
+const messageStatusModelMock = {
   findLastVersionByModelId: vi.fn(() =>
     TE.fromEither(E.right(some(aRetrievedMessageStatus)))
   )
-} as any) as MessageStatusModel;
+} as any as MessageStatusModel;
 
-const profileModelMock = ({
+const profileModelMock = {
   findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(some(aProfile))))
-} as any) as ProfileModel;
+} as any as ProfileModel;
 
 const mockFindNotificationForMessage = vi.fn(() =>
   TE.of(some(aRetrievedNotification))
 );
-const notificationModelMock = ({
+const notificationModelMock = {
   findNotificationForMessage: mockFindNotificationForMessage,
   getQueryIterator: vi.fn(() => notificationIteratorMock)
-} as any) as NotificationModel;
+} as any as NotificationModel;
 
-const notificationStatusModelMock = ({
+const notificationStatusModelMock = {
   findOneNotificationStatusByNotificationChannel: vi.fn(() =>
     TE.fromEither(E.right(some(aRetrievedNotificationStatus)))
   )
-} as any) as NotificationStatusModel;
+} as any as NotificationStatusModel;
 
 // this is a little bit convoluted as we're mocking
 // two synchronized streams that end with a promise (zip)
@@ -155,13 +155,13 @@ const notificationStatusModelMock = ({
 const setupStreamMocks = () => {
   const { e1: errorOrResult, e2: resolve } = DeferredPromise<void>();
   const aBlobStream = new stream.PassThrough();
-  const blobServiceMock = ({
+  const blobServiceMock = {
     createWriteStreamToBlockBlob: vi.fn((_, __, ___, cb) => {
       // the following callback must be executed after zipStream.finalize
       errorOrResult.then(cb).catch();
       return aBlobStream;
     })
-  } as any) as BlobService;
+  } as any as BlobService;
   const aZipStream = archiver.create("zip");
   const origFinalize = aZipStream.finalize.bind(aZipStream);
   // eslint-disable-next-line functional/immutable-data
@@ -215,12 +215,12 @@ describe("createExtractUserDataActivityHandler", () => {
     const { aZipStream, blobServiceMock } = setupStreamMocks();
     const appendSpy = vi.spyOn(aZipStream, "append");
 
-    const notificationWebhookModelMock = ({
+    const notificationWebhookModelMock = {
       findNotificationForMessage: vi.fn(() =>
         TE.fromEither(E.right(some(aRetrievedNotification)))
       ),
       getQueryIterator: vi.fn(() => notificationIteratorMock)
-    } as any) as NotificationModel;
+    } as any as NotificationModel;
 
     const handler = createExtractUserDataActivityHandler({
       messageContentBlobService: blobServiceMock,

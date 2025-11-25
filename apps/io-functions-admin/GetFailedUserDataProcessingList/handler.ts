@@ -35,46 +35,48 @@ type TableEntry = Readonly<{
   }>;
 }>;
 
-export const GetFailedUserDataProcessingListHandler = (
-  tableService: TableService,
-  failedUserDataProcessingTable: NonEmptyString
-): IHttpHandler => async (
-  ctx,
-  choice
-): Promise<IResponseErrorInternal | IResponseSuccessJson<ResultSet>> => {
-  const tableQuery = new TableQuery()
-    .select("RowKey")
-    .where("PartitionKey == ?", choice);
+export const GetFailedUserDataProcessingListHandler =
+  (
+    tableService: TableService,
+    failedUserDataProcessingTable: NonEmptyString
+  ): IHttpHandler =>
+  async (
+    ctx,
+    choice
+  ): Promise<IResponseErrorInternal | IResponseSuccessJson<ResultSet>> => {
+    const tableQuery = new TableQuery()
+      .select("RowKey")
+      .where("PartitionKey == ?", choice);
 
-  return pipe(
-    TE.tryCatch(
-      () =>
-        new Promise<TableService.QueryEntitiesResult<TableEntry>>(
-          (resolve, reject) =>
-            tableService.queryEntities(
-              failedUserDataProcessingTable,
-              tableQuery,
-              // TODO: Refactor for using the new `@azure/data-tables` library
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              null,
-              (
-                error: Error,
-                result: TableService.QueryEntitiesResult<TableEntry>,
-                response: ServiceResponse
-              ) => (response.isSuccessful ? resolve(result) : reject(error))
-            )
-        ),
-      E.toError
-    ),
-    TE.map(rs => ({
-      failedDataProcessingUsers: rs.entries.map(e => e.RowKey._)
-    })),
-    TE.mapLeft(er => ResponseErrorInternal(er.message)),
-    TE.map(ResponseSuccessJson),
-    TE.toUnion
-  )();
-};
+    return pipe(
+      TE.tryCatch(
+        () =>
+          new Promise<TableService.QueryEntitiesResult<TableEntry>>(
+            (resolve, reject) =>
+              tableService.queryEntities(
+                failedUserDataProcessingTable,
+                tableQuery,
+                // TODO: Refactor for using the new `@azure/data-tables` library
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                null,
+                (
+                  error: Error,
+                  result: TableService.QueryEntitiesResult<TableEntry>,
+                  response: ServiceResponse
+                ) => (response.isSuccessful ? resolve(result) : reject(error))
+              )
+          ),
+        E.toError
+      ),
+      TE.map(rs => ({
+        failedDataProcessingUsers: rs.entries.map(e => e.RowKey._)
+      })),
+      TE.mapLeft(er => ResponseErrorInternal(er.message)),
+      TE.map(ResponseSuccessJson),
+      TE.toUnion
+    )();
+  };
 
 export const GetFailedUserDataProcessingList = (
   tableService: TableService,

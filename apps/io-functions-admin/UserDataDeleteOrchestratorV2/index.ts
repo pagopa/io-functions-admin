@@ -9,7 +9,7 @@ import { createUserDataDeleteOrchestratorHandler } from "./handler";
 
 const config = getConfigOrThrow();
 
-const waitInterval = (config.USER_DATA_DELETE_DELAY_DAYS as unknown) as Day;
+const waitInterval = config.USER_DATA_DELETE_DELAY_DAYS as unknown as Day;
 
 const orchestrator = df.orchestrator(
   createUserDataDeleteOrchestratorHandler(

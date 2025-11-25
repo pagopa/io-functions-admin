@@ -41,8 +41,8 @@ const toString = (err: unknown): string =>
   typeof err === "string"
     ? err
     : err instanceof Error
-    ? err.message
-    : JSON.stringify(err);
+      ? err.message
+      : JSON.stringify(err);
 
 /**
  * to cast an error to QueryFailure
@@ -74,37 +74,37 @@ export const toDocumentDeleteFailure = (
  * @param context the Azure functions context
  * @param failure the failure to log
  */
-export const logFailure = (context: Context, logPrefix: string) => (
-  failure: ActivityResultFailure
-): void => {
-  switch (failure.kind) {
-    case "BLOB_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error saving blob|ERROR=${failure.reason}`
-      );
-      break;
-    case "DELETE_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error deleting data|ERROR=${failure.reason}`
-      );
-      break;
-    case "INVALID_INPUT_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
-      );
-      break;
-    case "QUERY_FAILURE":
-      context.log.error(
-        `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
-      );
-      break;
-    case "USER_NOT_FOUND_FAILURE":
-      context.log.error(`${logPrefix}|Error user not found|ERROR=`);
-      break;
-    default:
-      assertNever(failure);
-  }
-};
+export const logFailure =
+  (context: Context, logPrefix: string) =>
+  (failure: ActivityResultFailure): void => {
+    switch (failure.kind) {
+      case "BLOB_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error saving blob|ERROR=${failure.reason}`
+        );
+        break;
+      case "DELETE_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error deleting data|ERROR=${failure.reason}`
+        );
+        break;
+      case "INVALID_INPUT_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
+        );
+        break;
+      case "QUERY_FAILURE":
+        context.log.error(
+          `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
+        );
+        break;
+      case "USER_NOT_FOUND_FAILURE":
+        context.log.error(`${logPrefix}|Error user not found|ERROR=`);
+        break;
+      default:
+        assertNever(failure);
+    }
+  };
 
 /**
  * Saves data into a dedicated blob

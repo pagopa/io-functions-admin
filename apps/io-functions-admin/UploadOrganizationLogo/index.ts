@@ -18,9 +18,9 @@ const blobService = createBlobService(config.AssetsStorageConnection);
 
 // eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
-const contextTransport = (new AzureContextTransport(() => logger, {
+const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"
-}) as unknown) as winston.transport;
+}) as unknown as winston.transport;
 winston.add(contextTransport);
 
 // Setup Express

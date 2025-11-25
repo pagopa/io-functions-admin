@@ -49,7 +49,7 @@ export async function* errorMessageIterator(error: any) {
 }
 
 // MessageContentBlobService
-const messageContentBlobService = ({} as unknown) as BlobService;
+const messageContentBlobService = {} as unknown as BlobService;
 
 // Message Model
 const mockGetContentFromBlob = vi.fn(() => TE.of(some(aMessageContent)));
@@ -58,59 +58,59 @@ const mockFindMessages = vi.fn(() =>
 );
 const mockDeleteContentFromBlob = vi.fn(() => TE.of(true));
 const mockDeleteMessage = vi.fn(() => TE.of(true));
-const messageModel = ({
+const messageModel = {
   deleteContentFromBlob: mockDeleteContentFromBlob,
   deleteMessage: mockDeleteMessage,
   findMessages: mockFindMessages,
   getContentFromBlob: mockGetContentFromBlob
-} as unknown) as MessageDeletableModel;
+} as unknown as MessageDeletableModel;
 
 const mockDeleteMessageView = vi.fn(() => TE.of(true));
 const mockFindMessageView = vi.fn(() => TE.of(some(aRetrievedMessageView)));
-const messageViewModel = ({
+const messageViewModel = {
   deleteMessageView: mockDeleteMessageView,
   find: mockFindMessageView
-} as unknown) as MessageViewDeletableModel;
+} as unknown as MessageViewDeletableModel;
 
 // ServicePreferences Model
 const mockDeleteServicePreferences = vi.fn(() => TE.of("anything"));
 const mockFindAllServPreferencesByFiscalCode = vi.fn(() =>
   asyncIteratorOf([E.right(aRetrievedServicePreferences)])
 );
-const servicePreferencesModel = ({
+const servicePreferencesModel = {
   delete: mockDeleteServicePreferences,
   findAllByFiscalCode: mockFindAllServPreferencesByFiscalCode
-} as unknown) as ServicePreferencesDeletableModel;
+} as unknown as ServicePreferencesDeletableModel;
 
 // MessageStatusModel
 const mockMessageStatusFindAllVersionsByModelId = vi.fn(() =>
   asyncIteratorOf([E.right(aRetrievedMessageStatus)])
 );
 const mockDeleteMessageStatusVersion = vi.fn(() => TE.of(true));
-const messageStatusModel = ({
+const messageStatusModel = {
   deleteMessageStatusVersion: mockDeleteMessageStatusVersion,
   findAllVersionsByModelId: mockMessageStatusFindAllVersionsByModelId
-} as unknown) as MessageStatusDeletableModel;
+} as unknown as MessageStatusDeletableModel;
 
 // NotificationModel
 const mockFindNotificationForMessage = vi.fn(() =>
   TE.of(some(aRetrievedNotification))
 );
 const mockDeleteNotification = vi.fn(() => TE.of(true));
-const notificationModel = ({
+const notificationModel = {
   deleteNotification: mockDeleteNotification,
   findNotificationForMessage: mockFindNotificationForMessage
-} as unknown) as NotificationDeletableModel;
+} as unknown as NotificationDeletableModel;
 
 // NotificationStatusModel
 const mockFindAllVersionsByNotificationId = vi.fn(() =>
   asyncIteratorOf([E.right(aRetrievedNotificationStatus)])
 );
 const mockDeleteNotificationStatusVersion = vi.fn(() => TE.of(true));
-const notificationStatusModel = ({
+const notificationStatusModel = {
   deleteNotificationStatusVersion: mockDeleteNotificationStatusVersion,
   findAllVersionsByNotificationId: mockFindAllVersionsByNotificationId
-} as unknown) as NotificationStatusDeletableModel;
+} as unknown as NotificationStatusDeletableModel;
 
 // ProfileModel
 const mockProfileFindAllVersionsByModelId = vi.fn(() =>
@@ -120,18 +120,18 @@ const mockDeleteProfileVersion = vi.fn(() => TE.of(true));
 const mockFindLastVersionByModelId = vi.fn(() =>
   TE.of(some(aRetrievedProfile))
 );
-const profileModel = ({
+const profileModel = {
   deleteProfileVersion: mockDeleteProfileVersion,
   findAllVersionsByModelId: mockProfileFindAllVersionsByModelId,
   findLastVersionByModelId: mockFindLastVersionByModelId
-} as unknown) as ProfileDeletableModel;
+} as unknown as ProfileDeletableModel;
 
 // backup BlobService
 const mockCreateBlockBlobFromText = vi.fn((_, __, ___, cb) => cb(null, "any"));
 const userDataBackup = {
-  blobService: ({
+  blobService: {
     createBlockBlobFromText: mockCreateBlockBlobFromText
-  } as unknown) as BlobService,
+  } as unknown as BlobService,
   containerName: "container",
   folder: "folder"
 } as IBlobServiceInfo;
@@ -140,9 +140,9 @@ const authenticationLockService = AuthenticationLockServiceMock;
 
 // ProfileEmailsRepository
 const mockDelete = vi.fn(() => Promise.resolve(undefined));
-const profileEmailsRepository = ({
+const profileEmailsRepository = {
   delete: mockDelete
-} as unknown) as IProfileEmailWriter;
+} as unknown as IProfileEmailWriter;
 
 // eslint-disable-next-line max-lines-per-function
 describe(`backupAndDeleteAllUserData`, () => {

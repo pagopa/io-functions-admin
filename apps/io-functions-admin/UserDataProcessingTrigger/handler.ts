@@ -1,16 +1,17 @@
 import { Context } from "@azure/functions";
-import * as df from "durable-functions";
-import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
-import { Lazy, pipe } from "fp-ts/lib/function";
-import * as TE from "fp-ts/lib/TaskEither";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import * as t from "io-ts";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { TableUtilities } from "azure-storage";
+import * as df from "durable-functions";
+import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
 import * as E from "fp-ts/lib/Either";
+import { Lazy, pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
+
 import {
   ABORT_EVENT as ABORT_DELETE_EVENT,
   makeOrchestratorId as makeDeleteOrchestratorId
@@ -100,18 +101,17 @@ export const ClosedUserDataProcessing = t.intersection([
 const CosmosDbDocumentCollection = t.readonlyArray(t.readonly(t.UnknownRecord));
 type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const startOrchestrator = async (
   dfClient: DurableOrchestrationClient,
   orchestratorName:
-    | "UserDataDownloadOrchestrator"
-    | "UserDataDeleteOrchestratorV2",
+    | "UserDataDeleteOrchestratorV2"
+    | "UserDataDownloadOrchestrator",
   orchestratorId: string,
   orchestratorInput: unknown
 ): Promise<string> =>
   pipe(
     isOrchestratorRunning(dfClient, orchestratorId),
-    TE.chain((_) =>
+    TE.chain(_ =>
       !_.isRunning
         ? TE.tryCatch(
             () =>
@@ -127,7 +127,7 @@ const startOrchestrator = async (
     ),
 
     // if something wrong, just raise the error
-    TE.mapLeft((error) => {
+    TE.mapLeft(error => {
       throw error;
     }),
     TE.toUnion
@@ -232,72 +232,86 @@ const Processable = t.union([
   ClosedUserDataProcessing
 ]);
 
-const getAction = (
-  context: Context,
-  insertFailure: InsertTableEntity,
-  removeFailure: DeleteTableEntity
-) => (processable: Processable): Lazy<Promise<string | void>> =>
-  flags.ENABLE_USER_DATA_DOWNLOAD && ProcessableUserDataDownload.is(processable)
-    ? (): Promise<string> =>
-        startUserDataDownloadOrchestrator(context, processable)
-    : flags.ENABLE_USER_DATA_DELETE && ProcessableUserDataDelete.is(processable)
-    ? (): Promise<string> =>
-        startUserDataDeleteOrchestrator(context, processable)
-    : ProcessableUserDataDeleteAbort.is(processable)
-    ? (): Promise<void> => raiseAbortEventOnOrchestrator(context, processable)
-    : FailedUserDataProcessing.is(processable)
-    ? (): Promise<void> =>
-        processFailedUserDataProcessing(context, processable, insertFailure)
-    : ClosedUserDataProcessing.is(processable)
-    ? (): Promise<void> =>
-        processClosedUserDataProcessing(context, processable, removeFailure)
-    : async () => void 0;
+const getAction =
+  (
+    context: Context,
+    insertFailure: InsertTableEntity,
+    removeFailure: DeleteTableEntity
+  ) =>
+  (processable: Processable): Lazy<Promise<string | void>> =>
+    flags.ENABLE_USER_DATA_DOWNLOAD &&
+    ProcessableUserDataDownload.is(processable)
+      ? (): Promise<string> =>
+          startUserDataDownloadOrchestrator(context, processable)
+      : flags.ENABLE_USER_DATA_DELETE &&
+          ProcessableUserDataDelete.is(processable)
+        ? (): Promise<string> =>
+            startUserDataDeleteOrchestrator(context, processable)
+        : ProcessableUserDataDeleteAbort.is(processable)
+          ? (): Promise<void> =>
+              raiseAbortEventOnOrchestrator(context, processable)
+          : FailedUserDataProcessing.is(processable)
+            ? (): Promise<void> =>
+                processFailedUserDataProcessing(
+                  context,
+                  processable,
+                  insertFailure
+                )
+            : ClosedUserDataProcessing.is(processable)
+              ? (): Promise<void> =>
+                  processClosedUserDataProcessing(
+                    context,
+                    processable,
+                    removeFailure
+                  )
+              : async () => void 0;
 
-export const triggerHandler = (
-  insertFailure: InsertTableEntity,
-  removeFailure: DeleteTableEntity
-) => (
-  context: Context,
-  input: unknown
-): Promise<ReadonlyArray<string | void>> => {
-  const operations = pipe(
-    input,
-    CosmosDbDocumentCollection.decode,
-    E.fold(
-      (err) => {
-        throw Error(
-          `${logPrefix}: cannot decode input [${readableReport(err)}]`
-        );
-      },
-      (docs) =>
-        docs.reduce(
-          (lazyOperations, processableOrNot) =>
-            pipe(
-              processableOrNot,
-              Processable.decode,
-              E.map(getAction(context, insertFailure, removeFailure)),
-              E.fold(
-                (_) => {
-                  context.log.warn(
-                    `${logPrefix}: skipping document [${JSON.stringify(
-                      processableOrNot
-                    )}]`
-                  );
-                  return lazyOperations;
-                },
-                (lazyOp) => [...lazyOperations, lazyOp]
-              )
-            ),
-          [] as ReadonlyArray<Lazy<Promise<string | void>>>
-        )
-    )
-  );
+export const triggerHandler =
+  (insertFailure: InsertTableEntity, removeFailure: DeleteTableEntity) =>
+  (
+    context: Context,
+    input: unknown
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+  ): Promise<readonly (string | void)[]> => {
+    const operations = pipe(
+      input,
+      CosmosDbDocumentCollection.decode,
+      E.fold(
+        err => {
+          throw Error(
+            `${logPrefix}: cannot decode input [${readableReport(err)}]`
+          );
+        },
+        docs =>
+          docs.reduce(
+            (lazyOperations, processableOrNot) =>
+              pipe(
+                processableOrNot,
+                Processable.decode,
+                E.map(getAction(context, insertFailure, removeFailure)),
+                E.fold(
+                  _ => {
+                    context.log.warn(
+                      `${logPrefix}: skipping document [${JSON.stringify(
+                        processableOrNot
+                      )}]`
+                    );
+                    return lazyOperations;
+                  },
+                  lazyOp => [...lazyOperations, lazyOp]
+                )
+              ),
+            // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+            [] as readonly Lazy<Promise<string | void>>[]
+          )
+      )
+    );
 
-  context.log.info(
-    `${logPrefix}: processing ${operations.length} document${
-      operations.length === 1 ? "" : "s"
-    }`
-  );
+    context.log.info(
+      `${logPrefix}: processing ${operations.length} document${
+        operations.length === 1 ? "" : "s"
+      }`
+    );
 
-  return Promise.all(operations.map((op) => op()));
-};
+    return Promise.all(operations.map(op => op()));
+  };

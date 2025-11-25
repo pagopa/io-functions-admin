@@ -93,8 +93,9 @@ export function GetUsersHandler(
               items: users,
               next:
                 userSubscriptionList.results.length === pageSize
-                  ? `https://${azureApimHost}/adm/users?cursor=${cursor +
-                      users.length}`
+                  ? `https://${azureApimHost}/adm/users?cursor=${
+                      cursor + users.length
+                    }`
                   : undefined
             })
           ),

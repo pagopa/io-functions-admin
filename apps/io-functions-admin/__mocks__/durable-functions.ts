@@ -4,13 +4,13 @@ import { Context } from "@azure/functions";
 import { vi } from "vitest";
 
 export const OrchestrationRuntimeStatus = {
-  Running: "Running",
+  Canceled: "Canceled",
   Completed: "Completed",
   ContinuedAsNew: "ContinuedAsNew",
   Failed: "Failed",
-  Canceled: "Canceled",
-  Terminated: "Terminated",
-  Pending: "Pending"
+  Pending: "Pending",
+  Running: "Running",
+  Terminated: "Terminated"
 };
 
 export const mockStatusRunning = {
@@ -26,9 +26,7 @@ export const mockStartNew = vi.fn((_, __, ___) =>
 export const mockGetStatus = vi
   .fn()
   .mockImplementation(async () => mockStatusCompleted);
-export const mockTerminate = vi.fn(async (_, __) => {
-  return;
-});
+export const mockTerminate = vi.fn(async (_, __) => void 0);
 
 export const mockRaiseEvent = vi.fn().mockImplementation(async () => void 0);
 
@@ -41,7 +39,7 @@ export const getClient = vi.fn().mockImplementation(() => ({
 
 export const RetryOptions = vi.fn(() => ({}));
 
-export const context = ({
+export const context = {
   bindings: {
     orchestrationClient: {}
   },
@@ -54,7 +52,7 @@ export const context = ({
 
     warn: vi.fn().mockImplementation(console.log)
   }
-} as any) as Context;
+} as any as Context;
 
 //
 // Orchestrator context
@@ -115,4 +113,4 @@ export const mockOrchestratorContext = {
 
 export const orchestrator = vi
   .fn()
-  .mockImplementation((fn) => () => fn(mockOrchestratorContext));
+  .mockImplementation(fn => () => fn(mockOrchestratorContext));

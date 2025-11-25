@@ -20,11 +20,11 @@ import {
 
 describe("GetProfileActivityHandler", () => {
   it("should handle a result", async () => {
-    const mockModel = ({
+    const mockModel = {
       findLastVersionByModelId: vi.fn(() =>
         TE.fromEither(E.right(some(aRetrievedProfile)))
       )
-    } as any) as ProfileModel;
+    } as any as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -36,9 +36,9 @@ describe("GetProfileActivityHandler", () => {
   });
 
   it("should handle a record not found failure", async () => {
-    const mockModel = ({
+    const mockModel = {
       findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(none)))
-    } as any) as ProfileModel;
+    } as any as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -50,11 +50,11 @@ describe("GetProfileActivityHandler", () => {
   });
 
   it("should handle a query error", async () => {
-    const mockModel = ({
+    const mockModel = {
       findLastVersionByModelId: vi.fn(() =>
         TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
-    } as any) as ProfileModel;
+    } as any as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -66,9 +66,9 @@ describe("GetProfileActivityHandler", () => {
   });
 
   it("should handle a rejection", async () => {
-    const mockModel = ({
+    const mockModel = {
       findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(none)))
-    } as any) as ProfileModel;
+    } as any as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -80,7 +80,7 @@ describe("GetProfileActivityHandler", () => {
   });
 
   it("should handle an invalid input", async () => {
-    const mockModel = ({} as any) as ProfileModel;
+    const mockModel = {} as any as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
 

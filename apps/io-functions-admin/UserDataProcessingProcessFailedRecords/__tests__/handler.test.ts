@@ -29,10 +29,11 @@ vi.mock("durable-functions", () => ({
         name: orchestratorId,
         output: null,
         runtimeStatus: "Completed"
-      } as DurableOrchestrationStatus),
+      }) as DurableOrchestrationStatus,
     startNew: async (
       orchestratorName: string,
       orchestratorId: string,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       orchestratorInput: string
     ) => orchestratorId
   }),
@@ -118,6 +119,7 @@ const recordMock = (
   choice: UserDataProcessingChoiceEnum,
   fiscalCode: FiscalCode,
   status: UserDataProcessingStatusEnum,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   version: NonNegativeInteger
 ): UserDataProcessing => ({
   choice: choice,
@@ -133,7 +135,7 @@ const recordMock = (
 const recordsIterator = (query: SqlQuerySpec | string) => ({
   async *[Symbol.asyncIterator]() {
     // I don't care for string queries, but I manage it to keep signatures coherent
-    const queriedRecords = userDataProcessingRecords.filter((r) =>
+    const queriedRecords = userDataProcessingRecords.filter(r =>
       typeof query === "string" || query.parameters === undefined
         ? false
         : r.status === query.parameters[0].value
@@ -141,7 +143,7 @@ const recordsIterator = (query: SqlQuerySpec | string) => ({
     for (const record of queriedRecords) {
       // wait for 100ms to not pass the 5000ms limit of jest
       // and keep the asynchrounous behaviour
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 100));
       yield [
         E.tryCatch(
           () =>
@@ -151,7 +153,7 @@ const recordsIterator = (query: SqlQuerySpec | string) => ({
               record.status,
               1 as NonNegativeInteger
             ),
-          (_) => [
+          _ => [
             {
               message: "error"
             } as t.ValidationError
@@ -165,6 +167,7 @@ const recordsIterator = (query: SqlQuerySpec | string) => ({
 const getQueryIteratorMock = vi.fn(
   (
     query: SqlQuerySpec | string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     options?: FeedOptions
   ): AsyncIterable<readonly t.Validation<UserDataProcessing>[]> =>
     recordsIterator(query)
@@ -172,9 +175,9 @@ const getQueryIteratorMock = vi.fn(
 
 // this mocked model returns an async iterable for getQueryIterator
 // that returns only records that respect a query by status value
-const userDataProcessingModelMock = ({
+const userDataProcessingModelMock = {
   getQueryIterator: getQueryIteratorMock
-} as unknown) as UserDataProcessingModel;
+} as unknown as UserDataProcessingModel;
 
 beforeEach(() => {
   vi.clearAllMocks();

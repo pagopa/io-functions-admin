@@ -74,17 +74,17 @@ export function apiServiceToService(service: ApiService): Service {
             }
           }
         : service.service_metadata
-        ? ({
-            ...commonService,
-            serviceMetadata: {
-              ...commonService.serviceMetadata,
-              // When service_metadata is defined the default value of category is STANDARD
-              category: StandardServiceCategoryEnum.STANDARD,
-              customSpecialFlow: undefined
-            }
-          } as Service)
-        : // Service without metadata
-          commonService
+          ? ({
+              ...commonService,
+              serviceMetadata: {
+                ...commonService.serviceMetadata,
+                // When service_metadata is defined the default value of category is STANDARD
+                category: StandardServiceCategoryEnum.STANDARD,
+                customSpecialFlow: undefined
+              }
+            } as Service)
+          : // Service without metadata
+            commonService
   );
 }
 

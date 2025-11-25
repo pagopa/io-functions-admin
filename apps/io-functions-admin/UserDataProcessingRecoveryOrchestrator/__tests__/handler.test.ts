@@ -4,8 +4,9 @@ import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/iorchestrationfunctioncontext";
 import * as E from "fp-ts/lib/Either";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import {
   mockOrchestratorCallActivity,
   mockOrchestratorCallActivityWithRetry,
@@ -47,10 +48,10 @@ const switchMockImplementation = (name: string, ...args: readonly unknown[]) =>
   (name === "UserDataProcessingCheckLastStatusActivity"
     ? checkLastStatusActivity
     : name === "UserDataProcessingFindFailureReasonActivity"
-    ? findFailureReasonActivity
-    : name === "SetUserDataProcessingStatusActivity"
-    ? setUserDataProcessingStatusActivity
-    : vi.fn())(name, ...args);
+      ? findFailureReasonActivity
+      : name === "SetUserDataProcessingStatusActivity"
+        ? setUserDataProcessingStatusActivity
+        : vi.fn())(name, ...args);
 
 // I assign switchMockImplementation to both because
 // I don't want tests to depend on implementation details
@@ -67,7 +68,6 @@ mockOrchestratorCallActivityWithRetry.mockImplementation(
  * @returns the last value yielded by the orchestrator
  */
 const consumeOrchestrator = (orch: any) => {
-  // eslint-disable-next-line functional/no-let
   let prevValue: unknown;
   while (true) {
     const { done, value } = orch.next(prevValue);
@@ -78,7 +78,8 @@ const consumeOrchestrator = (orch: any) => {
   }
 };
 
-const context = (mockOrchestratorContext as unknown) as IOrchestrationFunctionContext;
+const context =
+  mockOrchestratorContext as unknown as IOrchestrationFunctionContext;
 const choice = "DELETE" as UserDataProcessingChoice;
 const fiscalCode = "DQFCOC07A82Y456X" as FiscalCode;
 
@@ -126,12 +127,9 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     };
     mockOrchestratorGetInput.mockReturnValueOnce(aFailedUserDataProcessing);
 
-    checkLastStatusActivity.mockImplementationOnce(
-      // eslint-disable-next-line sonarjs/no-duplicate-string
-      () => {
-        throw "any error";
-      }
-    );
+    checkLastStatusActivity.mockImplementationOnce(() => {
+      throw "any error";
+    });
 
     const result = consumeOrchestrator(handler(context));
 
@@ -159,12 +157,9 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     };
     mockOrchestratorGetInput.mockReturnValueOnce(aFailedUserDataProcessing);
 
-    findFailureReasonActivity.mockImplementationOnce(
-      // eslint-disable-next-line sonarjs/no-duplicate-string
-      () => {
-        throw "any error";
-      }
-    );
+    findFailureReasonActivity.mockImplementationOnce(() => {
+      throw "any error";
+    });
 
     const result = consumeOrchestrator(handler(context));
 
@@ -193,12 +188,9 @@ describe("UserDataProcessingRecoveryOrchestrator", () => {
     };
     mockOrchestratorGetInput.mockReturnValueOnce(aFailedUserDataProcessing);
 
-    setUserDataProcessingStatusActivity.mockImplementationOnce(
-      // eslint-disable-next-line sonarjs/no-duplicate-string
-      () => {
-        throw "any error";
-      }
-    );
+    setUserDataProcessingStatusActivity.mockImplementationOnce(() => {
+      throw "any error";
+    });
 
     const result = consumeOrchestrator(handler(context));
 
