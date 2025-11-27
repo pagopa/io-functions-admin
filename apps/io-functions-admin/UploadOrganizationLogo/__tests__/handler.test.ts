@@ -2,7 +2,7 @@
 
 import { OrganizationFiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { BlobService } from "azure-storage";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { Logo } from "../../generated/definitions/Logo";
 import { UploadOrganizationLogoHandler } from "../handler";
@@ -22,7 +22,7 @@ describe("UploadOrganizationLogoHandler", () => {
 
     const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
-    } as any as BlobService;
+    } as unknown as BlobService;
 
     const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
       blobServiceMock,
@@ -45,7 +45,7 @@ describe("UploadOrganizationLogoHandler", () => {
     const mockedContext = {};
     const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
-    } as any as BlobService;
+    } as unknown as BlobService;
     const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
       blobServiceMock,
       logosUrl
@@ -67,7 +67,7 @@ describe("UploadOrganizationLogoHandler", () => {
     const mockedContext = {};
     const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb("any", null))
-    } as any as BlobService;
+    } as unknown as BlobService;
     const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
       blobServiceMock,
       logosUrl

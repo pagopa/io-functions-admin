@@ -17,7 +17,6 @@ const azureApimConfig = {
   subscriptionId: config.AZURE_SUBSCRIPTION_ID
 };
 
-// eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"

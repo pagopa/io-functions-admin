@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
@@ -5,7 +6,7 @@ import {
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
 import * as E from "fp-ts/lib/Either";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   ActivityResultFailure,
@@ -49,12 +50,12 @@ const retrieveEntityFailedUserDataProcessingMock = (
   );
 
 const internalErrorRetrieveEntityFailedUserDataProcessingMock = (
-  entries: readonly {
+  _entries: readonly {
     PartitionKey: UserDataProcessingChoice;
     RowKey: FiscalCode;
   }[]
 ) =>
-  vi.fn((_, choice, fiscalCode, ____, cb) =>
+  vi.fn((_, _choice, _fiscalCode, ____, cb) =>
     cb(new Error("Internal error"), null, { isSuccessful: false })
   );
 
@@ -93,7 +94,7 @@ describe("IsFailedUserDataProcessingHandler", () => {
     const tableServiceMock = {
       retrieveEntity:
         retrieveEntityFailedUserDataProcessingMock(noFailedRequests)
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingHandler = IsFailedUserDataProcessing(
       tableServiceMock,
@@ -123,7 +124,7 @@ describe("IsFailedUserDataProcessingHandler", () => {
     const tableServiceMock = {
       retrieveEntity:
         internalErrorRetrieveEntityFailedUserDataProcessingMock(failedRequests)
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingHandler = IsFailedUserDataProcessing(
       tableServiceMock,
@@ -152,7 +153,7 @@ describe("IsFailedUserDataProcessingHandler", () => {
     const tableServiceMock = {
       retrieveEntity:
         retrieveEntityFailedUserDataProcessingMock(noFailedRequests)
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingHandler = IsFailedUserDataProcessing(
       tableServiceMock,
@@ -177,7 +178,7 @@ describe("IsFailedUserDataProcessingHandler", () => {
   it("should succeed with true value if failed user data processing is present", async () => {
     const tableServiceMock = {
       retrieveEntity: retrieveEntityFailedUserDataProcessingMock(failedRequests)
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingHandler = IsFailedUserDataProcessing(
       tableServiceMock,

@@ -19,7 +19,6 @@ const storageConnectionString =
 const failedUserDataProcessingTable = config.FAILED_USER_DATA_PROCESSING_TABLE;
 const tableService = createTableService(storageConnectionString);
 
-// eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"

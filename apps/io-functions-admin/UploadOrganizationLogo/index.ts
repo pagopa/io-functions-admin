@@ -16,7 +16,6 @@ const logosUrl = config.LOGOS_URL;
 
 const blobService = createBlobService(config.AssetsStorageConnection);
 
-// eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"

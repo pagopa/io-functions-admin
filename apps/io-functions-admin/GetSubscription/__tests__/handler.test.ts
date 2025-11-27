@@ -1,4 +1,4 @@
-// eslint-disable @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ApiManagementClient,
   SubscriptionContract
@@ -7,7 +7,7 @@ import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
-import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+import { describe, expect, it, Mock, vi } from "vitest";
 
 import { SubscriptionWithoutKeys } from "../../generated/definitions/SubscriptionWithoutKeys";
 import * as ApimUtils from "../../utils/apim";
@@ -65,7 +65,6 @@ spyOnGetApiClient.mockImplementation(() =>
 const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
-// eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("GetSubscription", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>

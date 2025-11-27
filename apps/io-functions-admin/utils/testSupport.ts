@@ -1,7 +1,3 @@
-/* eslint-disable sonarjs/no-identical-functions */
-
-/* eslint-disable prefer-arrow/prefer-arrow-functions */
-/* eslint-disable functional/no-let */
 // eslint-disable @typescript-eslint/no-explicit-any
 
 export const ReadonlyArrayToAsyncIterable = <T>(

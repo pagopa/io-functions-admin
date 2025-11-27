@@ -67,6 +67,7 @@ mockOrchestratorCallActivityWithRetry.mockImplementation(
  *
  * @returns the last value yielded by the orchestrator
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const consumeOrchestrator = (orch: any) => {
   let prevValue: unknown;
   while (true) {

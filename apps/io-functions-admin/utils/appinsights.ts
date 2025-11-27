@@ -32,16 +32,16 @@ const maskUserProcessingIdPreprocessor = (
         /^([A-Z]{6})(.{10})(-DOWNLOAD|-DELETE)$/,
         "$1$3"
       );
-      // eslint-disable-next-line functional/immutable-data
+
       data.properties[USER_DATA_PROCESSING_ID_KEY] = maskedUserDataProcessingId;
-      // eslint-disable-next-line functional/immutable-data
+
       envelope.tags[ai.defaultClient.context.keys.operationId] =
         maskedUserDataProcessingId;
-      // eslint-disable-next-line functional/immutable-data
+
       envelope.tags[ai.defaultClient.context.keys.operationParentId] =
         maskedUserDataProcessingId;
     }
-  } catch (e) {
+  } catch (_e) {
     // ignore errors caused by missing properties
   }
   // sending the event

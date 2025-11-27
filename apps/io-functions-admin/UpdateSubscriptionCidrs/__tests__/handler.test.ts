@@ -1,4 +1,4 @@
-// eslint-disable @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ApiManagementClient,
   SubscriptionContract
@@ -12,7 +12,7 @@ import { CIDR } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import { none } from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
-import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+import { describe, expect, it, Mock, vi } from "vitest";
 
 import { SubscriptionCIDRs } from "../../generated/definitions/SubscriptionCIDRs";
 import * as ApimUtils from "../../utils/apim";
@@ -51,7 +51,7 @@ const aValidSubscription: SubscriptionContract = {
   type: undefined
 };
 
-const aCIDRsPayload = ["1.2.3.4/5" as any as CIDR] as any;
+const aCIDRsPayload = ["1.2.3.4/5" as unknown as CIDR] as any;
 
 const aSubscriptionCidrs = {
   cidrs: ["1.2.3.4/5"] as unknown as CIDR[],
@@ -75,7 +75,6 @@ spyOnGetApiClient.mockImplementation(() =>
 const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
-// eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("UpdateSubscriptionCidrs", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>
@@ -87,7 +86,7 @@ describe("UpdateSubscriptionCidrs", () => {
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeApimConfig,
-      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as unknown as SubscriptionCIDRsModel
     );
 
     const response = await updateSubscriptionCidrs(
@@ -114,7 +113,7 @@ describe("UpdateSubscriptionCidrs", () => {
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeApimConfig,
-      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as unknown as SubscriptionCIDRsModel
     );
 
     const response = await updateSubscriptionCidrs(
@@ -133,7 +132,7 @@ describe("UpdateSubscriptionCidrs", () => {
       subscription: {
         get: vi.fn(() =>
           Promise.resolve({
-            ...(aValidSubscription as any as SubscriptionContract)
+            ...(aValidSubscription as unknown as SubscriptionContract)
           })
         )
       }
@@ -147,7 +146,7 @@ describe("UpdateSubscriptionCidrs", () => {
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeApimConfig,
-      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as unknown as SubscriptionCIDRsModel
     );
 
     const response = await updateSubscriptionCidrs(
@@ -166,7 +165,7 @@ describe("UpdateSubscriptionCidrs", () => {
       subscription: {
         get: vi.fn(() =>
           Promise.resolve({
-            ...(aValidSubscription as any as SubscriptionContract)
+            ...(aValidSubscription as unknown as SubscriptionContract)
           })
         )
       }
@@ -183,7 +182,7 @@ describe("UpdateSubscriptionCidrs", () => {
 
     const updateSubscriptionCidrs = UpdateSubscriptionCidrsHandler(
       fakeApimConfig,
-      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as unknown as SubscriptionCIDRsModel
     );
 
     const response = await updateSubscriptionCidrs(

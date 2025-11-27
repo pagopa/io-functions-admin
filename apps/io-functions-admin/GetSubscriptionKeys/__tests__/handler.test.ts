@@ -1,9 +1,8 @@
-// eslint-disable @typescript-eslint/no-explicit-any
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+import { assert, describe, expect, it, Mock, vi } from "vitest";
 
 import { IAzureApimConfig } from "../../utils/apim";
 import { GetSubscriptionKeysHandler } from "../handler";

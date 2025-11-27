@@ -17,6 +17,7 @@
     "dist",
     "**/__tests__/**",
     "**/__mocks__/**",
-    "*.mts"
+    "vite.config.mts",
+    "eslint.config.mjs"
   ],
 }

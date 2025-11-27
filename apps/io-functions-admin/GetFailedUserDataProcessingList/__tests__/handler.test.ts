@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
 } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GetFailedUserDataProcessingListHandler } from "../handler";
 
@@ -23,7 +24,7 @@ const queryEntitiesFailedUserDataProcessingMock = (
             ? entries
                 .filter(
                   e =>
-                    tableQuery._where[0] ==
+                    tableQuery._where[0] ===
                     "PartitionKey eq '" + e.PartitionKey + "'"
                 )
                 .map(e => ({
@@ -74,7 +75,7 @@ describe("GetFailedUserDataProcessingListHandler", () => {
   it("should return an empty json if no failed user data processing request is present", async () => {
     const tableServiceMock = {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(noFailedRequests)
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingListHandler =
       GetFailedUserDataProcessingListHandler(
@@ -100,7 +101,7 @@ describe("GetFailedUserDataProcessingListHandler", () => {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         oneFailedDeleteRequest
       )
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingListHandler =
       GetFailedUserDataProcessingListHandler(
@@ -126,7 +127,7 @@ describe("GetFailedUserDataProcessingListHandler", () => {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         oneFailedDownloadRequest
       )
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingListHandler =
       GetFailedUserDataProcessingListHandler(
@@ -152,7 +153,7 @@ describe("GetFailedUserDataProcessingListHandler", () => {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         oneFailedDownloadRequest
       )
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingListHandler =
       GetFailedUserDataProcessingListHandler(
@@ -178,7 +179,7 @@ describe("GetFailedUserDataProcessingListHandler", () => {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         oneFailedDeleteRequest
       )
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingListHandler =
       GetFailedUserDataProcessingListHandler(
@@ -204,7 +205,7 @@ describe("GetFailedUserDataProcessingListHandler", () => {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         twoFailedDifferentRequests
       )
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingListHandler =
       GetFailedUserDataProcessingListHandler(
@@ -232,7 +233,7 @@ describe("GetFailedUserDataProcessingListHandler", () => {
       queryEntities: queryEntitiesFailedUserDataProcessingMock(
         twoFailedDifferentRequests
       )
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingListHandler =
       GetFailedUserDataProcessingListHandler(

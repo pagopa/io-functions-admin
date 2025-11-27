@@ -37,8 +37,7 @@ const context = {
 
     verbose: console.log
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any as Context;
+} as unknown as Context;
 
 const database = cosmosdbClient.database(config.COSMOSDB_NAME);
 

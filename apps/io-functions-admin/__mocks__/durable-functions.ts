@@ -52,7 +52,7 @@ export const context = {
 
     warn: vi.fn().mockImplementation(console.log)
   }
-} as any as Context;
+} as unknown as Context;
 
 //
 // Orchestrator context
@@ -67,6 +67,7 @@ export const mockOrchestratorCallActivity = vi
   }));
 export const mockOrchestratorCallActivityWithRetry = vi
   .fn()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   .mockImplementation((name: string, retryOptions: any, input?: unknown) => ({
     input,
     name,

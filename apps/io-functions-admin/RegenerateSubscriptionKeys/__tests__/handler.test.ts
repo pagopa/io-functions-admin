@@ -128,6 +128,7 @@ describe("RegenerateSubscriptionKeysHandler", () => {
         secondary_key: mockedSubscription.secondaryKey
       }
     });
+    // eslint-disable-next-line vitest/prefer-called-with
     expect(mockRegeneratePrimaryKey).toHaveBeenCalled();
     expect(mockRegenerateSecondaryKey).not.toHaveBeenCalled();
 
@@ -152,6 +153,7 @@ describe("RegenerateSubscriptionKeysHandler", () => {
       }
     });
     expect(mockRegeneratePrimaryKey).not.toHaveBeenCalled();
+    // eslint-disable-next-line vitest/prefer-called-with
     expect(mockRegenerateSecondaryKey).toHaveBeenCalled();
   });
 });

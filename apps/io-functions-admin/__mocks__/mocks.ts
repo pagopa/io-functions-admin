@@ -340,6 +340,7 @@ export const aNotificationStatus: NotificationStatus = pipe(
 
 export const aRetrievedNotificationStatus: RetrievedNotificationStatus = {
   ...aNotificationStatus,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   id: aNotificationStatusId as any
 } as RetrievedNotificationStatus;
 

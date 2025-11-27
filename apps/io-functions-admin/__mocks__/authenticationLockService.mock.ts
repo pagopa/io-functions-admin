@@ -26,7 +26,7 @@ export const deleteUserAuthenticationMock = vi.fn(() =>
 export const AuthenticationLockServiceMock: AuthenticationLockService = {
   deleteUserAuthenticationLockData: deleteUserAuthenticationMock,
   getAllUserAuthenticationLockData: getAllUserAuthenticationLockDataMock
-} as any as AuthenticationLockService;
+} as unknown as AuthenticationLockService;
 
 // --------------------------------
 // \ AuthenticationLockService Mock

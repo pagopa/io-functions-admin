@@ -1,5 +1,5 @@
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { isCosmosErrors } from "../utils";
 
@@ -7,6 +7,7 @@ describe("utils", () => {
   // --------------
   // Just a bunch of types needed for creating a tuple from an union type
   // See https://www.hacklewayne.com/typescript-convert-union-to-tuple-array-yes-but-how
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   type Contra<T> = T extends any ? (arg: T) => void : never;
   type InferContra<T> = [T] extends [(arg: infer I) => void] ? I : never;
   type PickOne<T> = InferContra<InferContra<Contra<Contra<T>>>>;

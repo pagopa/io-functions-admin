@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, sonarjs/no-identical-functions */
-
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
@@ -9,9 +7,11 @@ import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/uti
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as TE from "fp-ts/lib/TaskEither";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { context as contextMock } from "../../__mocks__/durable-functions";
+// eslint-disable-next-line vitest/no-mocks-import
 import { aUserDataProcessing } from "../../__mocks__/mocks";
 import {
   ActivityInput,
@@ -31,7 +31,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
           })
         )
       )
-    } as any as UserDataProcessingModel;
+    } as unknown as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -51,7 +51,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       createOrUpdateByNewOne: vi.fn(() =>
         TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
-    } as any as UserDataProcessingModel;
+    } as unknown as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -79,10 +79,11 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
   });
 
   it("should handle an invalid input", async () => {
-    const mockModel = {} as any as UserDataProcessingModel;
+    const mockModel = {} as unknown as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
     const result = await handler(contextMock, {
       invalid: "input"
@@ -120,10 +121,11 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
           })
         )
       )
-    } as any as UserDataProcessingModel;
+    } as unknown as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
     const result = await handler(contextMock, {
       currentRecord: aFailedUserDataProcessing,
@@ -160,10 +162,11 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
           })
         )
       )
-    } as any as UserDataProcessingModel;
+    } as unknown as UserDataProcessingModel;
 
     const handler = createSetUserDataProcessingStatusActivityHandler(mockModel);
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
     const result = await handler(contextMock, {
       currentRecord: aFailedUserDataProcessing,

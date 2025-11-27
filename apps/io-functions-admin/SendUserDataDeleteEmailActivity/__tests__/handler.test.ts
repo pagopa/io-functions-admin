@@ -1,7 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable sonarjs/no-duplicate-string */
-/* eslint-disable sonar/sonar-max-lines-per-function */
-/* eslint-disable sonarjs/no-identical-functions */
 
 import { EmailAddress } from "@pagopa/io-functions-commons/dist/generated/definitions/EmailAddress";
 // imported all /mailer/transports instead of /mailer to allow spyOn() to work
@@ -10,7 +7,7 @@ import * as mail from "@pagopa/io-functions-commons/dist/src/mailer/transports";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as HtmlToText from "html-to-text";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActivityInput, getActivityFunction } from "../handler";
 

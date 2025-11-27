@@ -43,12 +43,11 @@ type IUpdateServiceHandler = (
   serviceId: ServiceId,
   logoPayload: ApiLogo
 ) => Promise<
-  // eslint-disable-next-line @typescript-eslint/ban-types
   | IResponseErrorInternal
   | IResponseErrorNotFound
   | IResponseErrorQuery
   | IResponseErrorValidation
-  | IResponseSuccessRedirectToResource<{}, {}>
+  | IResponseSuccessRedirectToResource<object, object>
 >;
 
 const imageValidationErrorResponse = () =>
@@ -96,7 +95,8 @@ export function UpdateServiceLogoHandler(
     const bufferImage = Buffer.from(logoPayload.logo, "base64");
     const lowerCaseServiceId = serviceId.toLowerCase();
     return pipe(
-      O.tryCatch(() => UPNG.decode(bufferImage)),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      O.tryCatch(() => UPNG.decode(bufferImage as any)),
       O.fold(
         () =>
           E.left<IResponseErrorValidation, UPNG.Image>(

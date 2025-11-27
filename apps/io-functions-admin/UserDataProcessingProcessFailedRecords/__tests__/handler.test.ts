@@ -18,7 +18,6 @@ import { context } from "../../__mocks__/functions";
 import { processFailedUserDataProcessingHandler } from "../handler";
 
 vi.mock("durable-functions", () => ({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getClient: (_context: unknown) => ({
     getStatus: async (orchestratorId: string) =>
       ({
@@ -31,10 +30,9 @@ vi.mock("durable-functions", () => ({
         runtimeStatus: "Completed"
       }) as DurableOrchestrationStatus,
     startNew: async (
-      orchestratorName: string,
+      _orchestratorName: string,
       orchestratorId: string,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      orchestratorInput: string
+      _orchestratorInput: string
     ) => orchestratorId
   }),
   OrchestrationRuntimeStatus: {
@@ -119,8 +117,7 @@ const recordMock = (
   choice: UserDataProcessingChoiceEnum,
   fiscalCode: FiscalCode,
   status: UserDataProcessingStatusEnum,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  version: NonNegativeInteger
+  _version: NonNegativeInteger
 ): UserDataProcessing => ({
   choice: choice,
   createdAt: new Date(),
@@ -167,8 +164,7 @@ const recordsIterator = (query: SqlQuerySpec | string) => ({
 const getQueryIteratorMock = vi.fn(
   (
     query: SqlQuerySpec | string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    options?: FeedOptions
+    _options?: FeedOptions
   ): AsyncIterable<readonly t.Validation<UserDataProcessing>[]> =>
     recordsIterator(query)
 );

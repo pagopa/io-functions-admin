@@ -41,7 +41,7 @@ export const GetFailedUserDataProcessingListHandler =
     failedUserDataProcessingTable: NonEmptyString
   ): IHttpHandler =>
   async (
-    ctx,
+    _ctx,
     choice
   ): Promise<IResponseErrorInternal | IResponseSuccessJson<ResultSet>> => {
     const tableQuery = new TableQuery()

@@ -115,13 +115,13 @@ export const OrchestratorResult = t.union([
 ]);
 
 const retryOptions = new RetryOptions(5000, 10);
-// eslint-disable-next-line functional/immutable-data
+
 retryOptions.backoffCoefficient = 1.5;
 
 const toActivityFailure = (
   err: { readonly kind: string },
   activityName: string,
-  // eslint-disable-next-line @typescript-eslint/ban-types
+
   extra?: object
 ) =>
   ActivityFailure.encode({
@@ -412,7 +412,6 @@ function* updateSubscriptionFeed(
     version
   };
 
-  // eslint-disable-next-line functional/no-let
   let result;
 
   if (servicePreferencesSettings.mode !== ServicesPreferencesModeEnum.LEGACY) {
@@ -589,7 +588,6 @@ export const createUserDataDeleteOrchestratorHandler = (
           yield waitForDownloadEvent;
         }
 
-        // eslint-disable-next-line extra-rules/no-commented-out-code
         // backup&delete data
         yield* deleteUserData(context, currentUserDataProcessing);
 

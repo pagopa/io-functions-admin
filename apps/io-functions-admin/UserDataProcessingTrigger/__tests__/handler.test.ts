@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable vitest/prefer-called-with */
 // eslint-disable @typescript-eslint/no-explicit-any
 
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableUtilities } from "azure-storage";
 import * as E from "fp-ts/lib/Either";
@@ -123,7 +123,7 @@ describe("UserDataProcessingTrigger", () => {
       const handler = triggerHandler(insertEntity, deleteEntity);
       await handler(context, input);
       assert.fail("it should throw");
-    } catch (error) {
+    } catch (_error) {
       expect(mockStartNew).not.toHaveBeenCalled();
     }
   });

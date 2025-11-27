@@ -1,4 +1,4 @@
-// eslint-disable @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
 import {
   CosmosErrors,
@@ -8,7 +8,7 @@ import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { SubscriptionCIDRs } from "../../generated/definitions/SubscriptionCIDRs";
 import { GetSubscriptionCidrsHandler } from "../handler";
@@ -18,7 +18,6 @@ const fakeSubscriptionId = "a-non-empty-string";
 const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
-// eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("GetSubscriptionCidrs", () => {
   it("should return an internal server error response if the Subscription CIDRs model return a CosmosError", async () => {
     const mockSubscriptionCIDRsModel = {
@@ -28,7 +27,7 @@ describe("GetSubscriptionCidrs", () => {
     };
 
     const getSubscriptionCidrsHandler = GetSubscriptionCidrsHandler(
-      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as unknown as SubscriptionCIDRsModel
     );
 
     const response = await getSubscriptionCidrsHandler(
@@ -49,7 +48,7 @@ describe("GetSubscriptionCidrs", () => {
     };
 
     const getSubscriptionCidrsHandler = GetSubscriptionCidrsHandler(
-      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as unknown as SubscriptionCIDRsModel
     );
 
     const response = await getSubscriptionCidrsHandler(
@@ -72,7 +71,7 @@ describe("GetSubscriptionCidrs", () => {
     };
 
     const getSubscriptionCidrsHandler = GetSubscriptionCidrsHandler(
-      mockSubscriptionCIDRsModel as any as SubscriptionCIDRsModel
+      mockSubscriptionCIDRsModel as unknown as SubscriptionCIDRsModel
     );
 
     const response = await getSubscriptionCidrsHandler(

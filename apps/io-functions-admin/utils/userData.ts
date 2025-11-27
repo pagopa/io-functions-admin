@@ -19,8 +19,6 @@ import {
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as t from "io-ts";
 
-import type { INotificationStatusIdTag } from "../types/io-functions-commons";
-
 // like Notification, but it's export-safe (the decoder removes webhook's sensitive data)
 export const SafeNotification = t.intersection([
   NotificationBase,

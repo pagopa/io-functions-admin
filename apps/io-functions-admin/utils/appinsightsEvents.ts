@@ -14,7 +14,6 @@ export const trackUserDataDeleteEvent = (
   userDataProcessing: UserDataProcessing
 ) =>
   trackEvent({
-    // eslint-disable-next-line sonarjs/no-duplicate-string
     name: `user.data.delete.${eventName}`,
     properties: {
       [USER_DATA_PROCESSING_ID_KEY]: userDataProcessing.userDataProcessingId
@@ -53,7 +52,6 @@ export const trackUserDataDownloadEvent = (
   userDataProcessing: UserDataProcessing
 ) =>
   trackEvent({
-    // eslint-disable-next-line sonarjs/no-duplicate-string
     name: `user.data.download.${eventName}`,
     properties: {
       [USER_DATA_PROCESSING_ID_KEY]: userDataProcessing.userDataProcessingId

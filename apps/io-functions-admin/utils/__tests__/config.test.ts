@@ -1,7 +1,7 @@
 import { MailerConfig } from "@pagopa/io-functions-commons/dist/src/mailer";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { assert, describe, expect, it } from "vitest";
 
 const aMailFrom = "example@test.com";
 
@@ -108,6 +108,7 @@ describe("MailerConfig", () => {
     });
   });
 
+  // eslint-disable-next-line vitest/expect-expect
   it("should require mailhog if not in prod", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
@@ -118,6 +119,7 @@ describe("MailerConfig", () => {
     expectLeft(result);
   });
 
+  // eslint-disable-next-line vitest/expect-expect
   it("should require at least on transporter if in prod", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
@@ -128,6 +130,7 @@ describe("MailerConfig", () => {
     expectLeft(result);
   });
 
+  // eslint-disable-next-line vitest/expect-expect
   it("should not allow mailhog if in prod", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
@@ -139,6 +142,7 @@ describe("MailerConfig", () => {
     expectLeft(result);
   });
 
+  // eslint-disable-next-line vitest/expect-expect
   it("should not decode configuration with empty transport", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom,
@@ -150,6 +154,7 @@ describe("MailerConfig", () => {
     expectLeft(result);
   });
 
+  // eslint-disable-next-line vitest/expect-expect
   it("should not decode configuration when no transporter is specified", () => {
     const rawConf = {
       MAIL_FROM: aMailFrom
@@ -159,6 +164,7 @@ describe("MailerConfig", () => {
     expectLeft(result);
   });
 
+  // eslint-disable-next-line vitest/expect-expect
   it("should not decode ambiguos configuration", () => {
     const withMailUp = {
       MAILUP_SECRET: "a-mu-secret",

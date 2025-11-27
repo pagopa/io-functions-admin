@@ -109,7 +109,7 @@ export function UpdateSubscriptionCidrsHandler(
   azureApimConfig: IAzureApimConfig,
   subscriptionCIDRsModel: SubscriptionCIDRsModel
 ): IUpdateSubscriptionCidrsHandler {
-  return async (context, _, subscriptionId, cidrs) => {
+  return async (_context, _, subscriptionId, cidrs) => {
     const maybeSubscriptionExists = await subscriptionExists(
       azureApimConfig,
       subscriptionId

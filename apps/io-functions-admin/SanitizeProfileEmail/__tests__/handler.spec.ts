@@ -10,8 +10,9 @@ import * as ai from "applicationinsights";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
-import { afterEach, assert, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { aFiscalCode, aRetrievedProfile } from "../../__mocks__/mocks";
 import { ProfileToSanitize, sanitizeProfileEmail } from "../handler";
 
@@ -82,7 +83,7 @@ vi.mocked(ProfileModel.prototype.update).mockImplementation(
   (profile: RetrievedProfile) => TE.right(profile)
 );
 
-const profileModel = new ProfileModel({} as any as Container);
+const profileModel = new ProfileModel({} as unknown as Container);
 
 const ConsoleLogger: L.Logger = {
   format: L.format.json,

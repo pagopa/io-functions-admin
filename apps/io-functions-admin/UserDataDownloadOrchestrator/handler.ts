@@ -66,13 +66,13 @@ export const OrchestratorResult = t.union([
 ]);
 
 const retryOptions = new RetryOptions(5000, 10);
-// eslint-disable-next-line functional/immutable-data
+
 retryOptions.backoffCoefficient = 1.5;
 
 const toActivityFailure = (
   err: t.Errors,
   activityName: string,
-  // eslint-disable-next-line @typescript-eslint/ban-types
+
   extra?: object
 ) =>
   ActivityFailure.encode({

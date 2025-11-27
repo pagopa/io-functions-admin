@@ -12,6 +12,7 @@ import * as asyncI from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import archiver = require("archiver");
 import { BlobService } from "azure-storage";
 import * as E from "fp-ts/lib/Either";
@@ -23,7 +24,9 @@ import * as stream from "stream";
 import { assert, beforeEach, describe, expect, it, vi } from "vitest";
 import * as yaml from "yaml";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { context as contextMock } from "../../__mocks__/durable-functions";
+// eslint-disable-next-line vitest/no-mocks-import
 import {
   aFiscalCode,
   aMessageView,
@@ -32,6 +35,7 @@ import {
   aRetrievedNotificationStatus,
   aRetrievedServicePreferences
 } from "../../__mocks__/mocks";
+// eslint-disable-next-line vitest/no-mocks-import
 import {
   aMessageContent,
   aRetrievedMessageWithoutContent,
@@ -85,7 +89,6 @@ vi.spyOn(asyncI, "asyncIterableToArray").mockImplementationOnce(() =>
   ])
 );
 
-// eslint-disable-next-line sonarjs/no-identical-functions
 vi.spyOn(asyncI, "mapAsyncIterable").mockImplementationOnce(() => ({
   [Symbol.asyncIterator]: () => messageIteratorMock
 }));
@@ -98,7 +101,7 @@ const mockGetContentFromBlob = vi.fn(() => TE.of(some(aMessageContent)));
 const messageModelMock = {
   findMessages: vi.fn(() => TE.fromEither(E.right(messageIteratorMock))),
   getContentFromBlob: mockGetContentFromBlob
-} as any as MessageModel;
+} as unknown as MessageModel;
 
 // ServicePreferences Model
 export async function* asyncIteratorOf<T>(items: T[]) {
@@ -123,17 +126,17 @@ const iteratorGenMock = async function* (arr: any[]) {
 
 const messageViewModelMock = {
   getQueryIterator: vi.fn(() => iteratorGenMock([E.right(aMessageView)]))
-} as any as MessageViewModel;
+} as unknown as MessageViewModel;
 
 const messageStatusModelMock = {
   findLastVersionByModelId: vi.fn(() =>
     TE.fromEither(E.right(some(aRetrievedMessageStatus)))
   )
-} as any as MessageStatusModel;
+} as unknown as MessageStatusModel;
 
 const profileModelMock = {
   findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(some(aProfile))))
-} as any as ProfileModel;
+} as unknown as ProfileModel;
 
 const mockFindNotificationForMessage = vi.fn(() =>
   TE.of(some(aRetrievedNotification))
@@ -141,18 +144,19 @@ const mockFindNotificationForMessage = vi.fn(() =>
 const notificationModelMock = {
   findNotificationForMessage: mockFindNotificationForMessage,
   getQueryIterator: vi.fn(() => notificationIteratorMock)
-} as any as NotificationModel;
+} as unknown as NotificationModel;
 
 const notificationStatusModelMock = {
   findOneNotificationStatusByNotificationChannel: vi.fn(() =>
     TE.fromEither(E.right(some(aRetrievedNotificationStatus)))
   )
-} as any as NotificationStatusModel;
+} as unknown as NotificationStatusModel;
 
 // this is a little bit convoluted as we're mocking
 // two synchronized streams that end with a promise (zip)
 // and a callback (blob) that must be called after the promise resolves
 const setupStreamMocks = () => {
+  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
   const { e1: errorOrResult, e2: resolve } = DeferredPromise<void>();
   const aBlobStream = new stream.PassThrough();
   const blobServiceMock = {
@@ -161,13 +165,13 @@ const setupStreamMocks = () => {
       errorOrResult.then(cb).catch();
       return aBlobStream;
     })
-  } as any as BlobService;
+  } as unknown as BlobService;
   const aZipStream = archiver.create("zip");
   const origFinalize = aZipStream.finalize.bind(aZipStream);
-  // eslint-disable-next-line functional/immutable-data
-  vi.spyOn(aZipStream, "finalize")
-    .mockImplementation()
-    .mockImplementationOnce(() => origFinalize().then(resolve));
+
+  vi.spyOn(aZipStream, "finalize").mockImplementationOnce(() =>
+    origFinalize().then(resolve)
+  );
   vi.spyOn(zipstream, "getEncryptedZipStream").mockReturnValueOnce(aZipStream);
   return { aZipStream, blobServiceMock };
 };
@@ -220,7 +224,7 @@ describe("createExtractUserDataActivityHandler", () => {
         TE.fromEither(E.right(some(aRetrievedNotification)))
       ),
       getQueryIterator: vi.fn(() => notificationIteratorMock)
-    } as any as NotificationModel;
+    } as unknown as NotificationModel;
 
     const handler = createExtractUserDataActivityHandler({
       messageContentBlobService: blobServiceMock,

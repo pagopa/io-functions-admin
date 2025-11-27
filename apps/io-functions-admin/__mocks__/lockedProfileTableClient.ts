@@ -1,8 +1,4 @@
-import {
-  TableClient,
-  TableInsertEntityHeaders,
-  TableTransactionResponse
-} from "@azure/data-tables";
+import { TableClient, TableTransactionResponse } from "@azure/data-tables";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { vi } from "vitest";
 
@@ -42,11 +38,12 @@ export async function* errorProfileLockedRecordIterator(): ReturnType<
   yield aNotReleasedData;
   throw new Error("an Error");
 }
-export async function* getProfileLockedRecordIterator(values: any[]) {
+export async function* getProfileLockedRecordIterator(values: unknown[]) {
   for (const value of values) yield value;
 }
 export async function* noProfileLockedRecordIterator(): ReturnType<
   typeof profileLockedRecordIterator
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
 > {}
 export async function* profileLockedRecordIterator() {
   yield aNotReleasedData;

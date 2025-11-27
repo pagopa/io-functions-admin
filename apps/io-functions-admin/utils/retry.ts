@@ -23,7 +23,6 @@ export const withRetry =
   } = {}) =>
   <T>(operation: () => Promise<T>) =>
   async (): Promise<T> => {
-    // eslint-disable-next-line functional/no-let
     let remainingAttempts = maxAttempts;
 
     while (true) {

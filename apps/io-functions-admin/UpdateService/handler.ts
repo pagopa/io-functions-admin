@@ -75,7 +75,7 @@ export function UpdateService(
 export function UpdateServiceHandler(
   serviceModel: ServiceModel
 ): IUpdateServiceHandler {
-  return async (context, _, serviceId, servicePayload) => {
+  return async (_context, _, serviceId, servicePayload) => {
     if (servicePayload.service_id !== serviceId) {
       return ResponseErrorValidation(
         "Error validating payload",
@@ -110,7 +110,6 @@ export function UpdateServiceHandler(
      only if the "cmsTag" field is not present, so when a service is updated using the old APIs the "cmsTag" field needs to be removed.
     */
     if ("cmsTag" in existingService) {
-      // eslint-disable-next-line fp/no-delete, functional/immutable-data
       delete existingService["cmsTag"];
     }
 

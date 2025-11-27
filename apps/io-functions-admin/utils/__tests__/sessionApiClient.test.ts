@@ -3,9 +3,11 @@
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
-import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+import { describe, expect, it, Mock } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { aFiscalCode } from "../../__mocks__/mocks";
+// eslint-disable-next-line vitest/no-mocks-import
 import { createMockFetch } from "../../__mocks__/node-fetch";
 import { createClient } from "../sm-internal/client";
 import { ProblemJson } from "../sm-internal/ProblemJson";

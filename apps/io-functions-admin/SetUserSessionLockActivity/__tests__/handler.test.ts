@@ -1,13 +1,13 @@
-/* eslint-disable sonarjs/no-identical-functions */
-
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { right } from "fp-ts/lib/Either";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { context } from "../../__mocks__/durable-functions";
+// eslint-disable-next-line vitest/no-mocks-import
 import { aFiscalCode } from "../../__mocks__/mocks";
 import { Client } from "../../utils/sm-internal/client";
 import { SuccessResponse } from "../../utils/sm-internal/SuccessResponse";

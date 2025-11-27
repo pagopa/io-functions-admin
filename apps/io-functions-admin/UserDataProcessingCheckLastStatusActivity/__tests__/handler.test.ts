@@ -1,12 +1,13 @@
 import { UserDataProcessingModel } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { right } from "fp-ts/lib/Either";
 import * as E from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { context as contextMock } from "../../__mocks__/durable-functions";
+// eslint-disable-next-line vitest/no-mocks-import
 import {
   aFiscalCode,
   aUserDataProcessing,
@@ -27,7 +28,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
   it("should handle a result", async () => {
     const mockModel = {
       findLastVersionByModelId: vi.fn(() => TE.right(some(aUserDataProcessing)))
-    } as any as UserDataProcessingModel;
+    } as unknown as UserDataProcessingModel;
 
     const handler =
       createUserDataProcessingCheckLastStatusActivityHandler(mockModel);
@@ -50,7 +51,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
   it("should handle a record not found failure", async () => {
     const mockModel = {
       findLastVersionByModelId: vi.fn(() => TE.right(none))
-    } as any as UserDataProcessingModel;
+    } as unknown as UserDataProcessingModel;
 
     const handler =
       createUserDataProcessingCheckLastStatusActivityHandler(mockModel);
@@ -68,7 +69,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
       findLastVersionByModelId: vi.fn(() =>
         TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
-    } as any as UserDataProcessingModel;
+    } as unknown as UserDataProcessingModel;
 
     const handler =
       createUserDataProcessingCheckLastStatusActivityHandler(mockModel);
@@ -84,7 +85,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
   it("should handle a rejection", async () => {
     const mockModel = {
       findLastVersionByModelId: vi.fn(() => TE.right(none))
-    } as any as UserDataProcessingModel;
+    } as unknown as UserDataProcessingModel;
 
     const handler =
       createUserDataProcessingCheckLastStatusActivityHandler(mockModel);
@@ -98,11 +99,12 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
   });
 
   it("should handle an invalid input", async () => {
-    const mockModel = {} as any as UserDataProcessingModel;
+    const mockModel = {} as unknown as UserDataProcessingModel;
 
     const handler =
       createUserDataProcessingCheckLastStatusActivityHandler(mockModel);
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
     const result = await handler(contextMock, {
       invalid: "input"

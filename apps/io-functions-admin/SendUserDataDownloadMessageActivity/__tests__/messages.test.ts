@@ -1,9 +1,10 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const marked = require("marked");
 
 const aUrl = "any-url";
 const aBlobName = "any-blob-name";
 
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { userDataDownloadMessage } from "../messages";
 

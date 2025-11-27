@@ -1,8 +1,7 @@
-// eslint-disable @typescript-eslint/no-explicit-any
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ApiManagementClient } from "@azure/arm-apimanagement";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
-import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+import { describe, expect, it, Mock, vi } from "vitest";
 
 import { IAzureApimConfig } from "../../utils/apim";
 import {
@@ -144,7 +143,6 @@ describe("GetUsers", () => {
   });
 
   it("should return an internal error response if the API management client returns invalid data", async () => {
-    // eslint-disable-next-line functional/prefer-readonly-type
     const mockedApimUsersList: any[] & { nextLink?: string } = [
       mockedUserContract1,
       mockedInvalidUserContract
@@ -220,13 +218,13 @@ describe("GetUsers", () => {
     mockApiManagementClient
       .mockImplementationOnce(() => ({
         user: {
-          listByService: (_: string, __: string, options: { skip: number }) =>
+          listByService: (_: string, __: string, _options: { skip: number }) =>
             ReadonlyArrayToAsyncIterable(mockedApimUsersList.slice(0, pageSize))
         }
       }))
       .mockImplementationOnce(() => ({
         user: {
-          listByService: (_: string, __: string, options: { skip: number }) =>
+          listByService: (_: string, __: string, _options: { skip: number }) =>
             ReadonlyArrayToAsyncIterable(mockedApimUsersList.slice(pageSize))
         }
       }));

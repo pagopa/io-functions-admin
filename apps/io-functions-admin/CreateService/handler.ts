@@ -63,7 +63,7 @@ export function CreateService(
 export function CreateServiceHandler(
   serviceModel: ServiceModel
 ): ICreateServiceHandler {
-  return async (context, _, servicePayload) => {
+  return async (_context, _, servicePayload) => {
     const newService = {
       ...apiServiceToService(servicePayload),
       kind: "INewService" as const

@@ -1,6 +1,7 @@
 import * as E from "fp-ts/lib/Either";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { aServicePreference } from "../../__mocks__/mocks";
 import { AllUserData } from "../userData";
 

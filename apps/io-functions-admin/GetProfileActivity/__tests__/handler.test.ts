@@ -1,13 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, sonarjs/no-identical-functions */
-
 import { ProfileModel } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import * as E from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { context as contextMock } from "../../__mocks__/durable-functions";
+// eslint-disable-next-line vitest/no-mocks-import
 import { aFiscalCode, aRetrievedProfile } from "../../__mocks__/mocks";
 import {
   ActivityInput,
@@ -24,7 +24,7 @@ describe("GetProfileActivityHandler", () => {
       findLastVersionByModelId: vi.fn(() =>
         TE.fromEither(E.right(some(aRetrievedProfile)))
       )
-    } as any as ProfileModel;
+    } as unknown as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -38,7 +38,7 @@ describe("GetProfileActivityHandler", () => {
   it("should handle a record not found failure", async () => {
     const mockModel = {
       findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(none)))
-    } as any as ProfileModel;
+    } as unknown as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -54,7 +54,7 @@ describe("GetProfileActivityHandler", () => {
       findLastVersionByModelId: vi.fn(() =>
         TE.left(toCosmosErrorResponse({ kind: "COSMOS_ERROR_RESPONSE" }))
       )
-    } as any as ProfileModel;
+    } as unknown as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -68,7 +68,7 @@ describe("GetProfileActivityHandler", () => {
   it("should handle a rejection", async () => {
     const mockModel = {
       findLastVersionByModelId: vi.fn(() => TE.fromEither(E.right(none)))
-    } as any as ProfileModel;
+    } as unknown as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
     const input: ActivityInput = {
@@ -80,10 +80,11 @@ describe("GetProfileActivityHandler", () => {
   });
 
   it("should handle an invalid input", async () => {
-    const mockModel = {} as any as ProfileModel;
+    const mockModel = {} as unknown as ProfileModel;
 
     const handler = createGetProfileActivityHandler(mockModel);
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
     const result = await handler(contextMock, {
       invalid: "input"

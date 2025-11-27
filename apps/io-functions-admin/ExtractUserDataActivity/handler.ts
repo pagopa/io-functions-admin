@@ -608,7 +608,6 @@ export interface IActivityHandlerInput {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const cleanData = (v: any) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { _attachments, _etag, _rid, _self, _ts, ...clean } = v;
   return clean;
 };

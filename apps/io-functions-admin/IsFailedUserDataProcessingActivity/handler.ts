@@ -43,7 +43,7 @@ type TableEntry = Readonly<{
 
 export const IsFailedUserDataProcessing =
   (tableService: TableService, failedUserDataProcessingTable: NonEmptyString) =>
-  (context: Context, input: unknown): Promise<ActivityResult> =>
+  (_context: Context, input: unknown): Promise<ActivityResult> =>
     pipe(
       input,
       ActivityInput.decode,

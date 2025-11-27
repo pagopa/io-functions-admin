@@ -18,10 +18,9 @@ const config = getConfigOrThrow();
 
 const getResponsePayloadOrThrow = (
   spidBlobItemVal: SpidBlobItem,
-  pk: NonEmptyString,
+  _pk: NonEmptyString,
   context: Context
 ) => {
-  // eslint-disable-next-line functional/no-let
   let responsePayload: string;
 
   if (PlainTextSpidBlobItem.is(spidBlobItemVal)) {
@@ -89,7 +88,6 @@ const CheckXmlCryptoCVESamlResponse = async (context: Context) => {
 
   if (hasCommentsOnAnyDigestValueRes || hasMoreSingnedNodesRes) {
     trackEvent({
-      // eslint-disable-next-line sonarjs/no-duplicate-string
       name: `spid.error.validation`,
       properties: {
         blobName,

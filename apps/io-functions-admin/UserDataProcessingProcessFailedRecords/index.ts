@@ -24,7 +24,6 @@ const userDataProcessingModel = new UserDataProcessingModel(
   userDataProcessingContainer
 );
 
-// eslint-disable-next-line functional/no-let
 let logger: Context["log"] | undefined;
 const contextTransport = new AzureContextTransport(() => logger, {
   level: "debug"

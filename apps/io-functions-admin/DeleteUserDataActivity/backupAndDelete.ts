@@ -81,11 +81,9 @@ const executeRecursiveBackupAndDelete = <T>(
           pipe(
             sequenceT(TE.ApplicativeSeq)<
               DataFailure,
-              // eslint-disable-next-line functional/prefer-readonly-type
               [
                 TE.TaskEither<DataFailure, T>,
                 TE.TaskEither<DataFailure, string>,
-                // eslint-disable-next-line functional/prefer-readonly-type
                 TE.TaskEither<DataFailure, readonly T[]>
               ]
             >(
@@ -295,7 +293,6 @@ const backupAndDeleteNotification = ({
   pipe(
     sequenceT(TE.ApplicativeSeq)<
       DataFailure,
-      // eslint-disable-next-line functional/prefer-readonly-type
       [
         TE.TaskEither<DataFailure, RetrievedNotification>,
         TE.TaskEither<DataFailure, string>
@@ -409,7 +406,6 @@ const backupAndDeleteMessage = ({
   pipe(
     sequenceT(TE.ApplicativeSeq)<
       DataFailure,
-      // eslint-disable-next-line functional/prefer-readonly-type
       [
         TE.TaskEither<DataFailure, RetrievedMessageWithoutContent>,
         TE.TaskEither<DataFailure, string>
@@ -608,7 +604,7 @@ const backupAndDeleteAllMessagesData = ({
               // cast needed because findMessages has a wrong signature
 
               const retrievedMessage =
-                message as any as RetrievedMessageWithoutContent;
+                message as unknown as RetrievedMessageWithoutContent;
               return pipe(
                 sequenceT(TE.ApplicativeSeq)(
                   backupAndDeleteMessageView({

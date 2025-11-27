@@ -1,10 +1,10 @@
-// eslint-disable @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { ApiManagementClient, GroupContract } from "@azure/arm-apimanagement";
 import { UserGroup } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { right } from "fp-ts/lib/Either";
 import { fromEither, left } from "fp-ts/lib/TaskEither";
-import { assert, beforeEach, describe, expect, it, Mock, vi } from "vitest";
+import { describe, expect, it, Mock, vi } from "vitest";
 
 import { EmailAddress } from "../../generated/definitions/EmailAddress";
 import * as ApimUtils from "../../utils/apim";
@@ -92,7 +92,7 @@ spyOnGetApiClient.mockImplementation(() =>
 const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
-// eslint-disable-next-line sonar/sonar-max-lines-per-function
+// eslint-disable-next-line max-lines-per-function
 describe("UpdateUserGroups", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>

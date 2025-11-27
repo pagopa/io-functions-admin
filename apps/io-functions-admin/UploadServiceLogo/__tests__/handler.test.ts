@@ -5,7 +5,7 @@ import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { BlobService } from "azure-storage";
 import { none, some } from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { Logo } from "../../generated/definitions/Logo";
 import { UpdateServiceLogoHandler } from "../handler";
@@ -73,7 +73,7 @@ describe("UpdateServiceLogoHandler", () => {
 
     const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
-    } as any as BlobService;
+    } as unknown as BlobService;
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
@@ -111,7 +111,7 @@ describe("UpdateServiceLogoHandler", () => {
     };
     const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
-    } as any as BlobService;
+    } as unknown as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
       blobServiceMock,
@@ -143,7 +143,7 @@ describe("UpdateServiceLogoHandler", () => {
     };
     const blobServiceMock = {
       createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb("any", null))
-    } as any as BlobService;
+    } as unknown as BlobService;
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
       blobServiceMock,

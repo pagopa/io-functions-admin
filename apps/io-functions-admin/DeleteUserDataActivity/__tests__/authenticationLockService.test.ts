@@ -4,6 +4,7 @@ import * as NEA from "fp-ts/NonEmptyArray";
 import * as ROA from "fp-ts/ReadonlyArray";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import {
   aFiscalCode,
   anothernUnlockCode,

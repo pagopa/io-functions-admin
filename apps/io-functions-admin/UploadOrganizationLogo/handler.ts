@@ -35,10 +35,9 @@ type IUploadOrganizationLogoHandler = (
   organizationFiscalCode: OrganizationFiscalCode,
   logoPayload: ApiLogo
 ) => Promise<
-  // eslint-disable-next-line @typescript-eslint/ban-types
   | IResponseErrorInternal
   | IResponseErrorValidation
-  | IResponseSuccessRedirectToResource<{}, {}>
+  | IResponseSuccessRedirectToResource<object, object>
 >;
 
 const imageValidationErrorResponse = () =>
@@ -95,7 +94,8 @@ export function UploadOrganizationLogoHandler(
       ""
     );
     return pipe(
-      O.tryCatch(() => UPNG.decode(bufferImage)),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      O.tryCatch(() => UPNG.decode(bufferImage as any)),
       TE.fromOption(() => imageValidationErrorResponse()),
       TE.chain(image =>
         TE.fromPredicate(

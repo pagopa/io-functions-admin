@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { GroupContract } from "@azure/arm-apimanagement";
 import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as TE from "fp-ts/lib/TaskEither";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as ApimUtils from "../../utils/apim";
 import { IAzureApimConfig } from "../../utils/apim";
@@ -17,7 +18,7 @@ const fakeApimConfig: IAzureApimConfig = {
   subscriptionId: "subscription id"
 };
 
-const fakeUserName = "a-non-empty-string";
+// const fakeUserName = "a-non-empty-string";
 
 const aValidSubscriptionId = "valid-subscription-id" as NonEmptyString;
 const aNotExistingSubscriptionId =
@@ -84,7 +85,6 @@ spyOnGetApiClient.mockImplementation(() => TE.of(mockApiManagementClient));
 const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
-// eslint-disable-next-line sonar/sonar-max-lines-per-function
 describe("GetImpersonateServiceHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();

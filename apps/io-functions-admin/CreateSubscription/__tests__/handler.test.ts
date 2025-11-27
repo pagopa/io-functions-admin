@@ -1,5 +1,4 @@
-// eslint-disable @typescript-eslint/no-explicit-any
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ApiManagementClient,
   ProductContract,
@@ -9,7 +8,7 @@ import {
 import { RestError } from "@azure/ms-rest-js";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
-import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
+import { describe, expect, it, Mock, vi } from "vitest";
 
 import { ProductNamePayload } from "../../generated/definitions/ProductNamePayload";
 import { Subscription } from "../../generated/definitions/Subscription";
@@ -27,7 +26,6 @@ const fakeApimConfig: IAzureApimConfig = {
   subscriptionId: "subscription id"
 };
 
-// eslint-disable-next-line functional/prefer-readonly-type
 const fakeParams = ["user@example.com", "newSubscriptionId"];
 const fakePayload = {
   product_name: "another-non-empty-string"
@@ -89,7 +87,7 @@ spyOnGetApiClient.mockImplementation(() =>
 const mockLog = vi.fn();
 const mockedContext = { log: { error: mockLog } };
 
-// eslint-disable-next-line sonar/sonar-max-lines-per-function
+// eslint-disable-next-line max-lines-per-function
 describe("CreateSubscription", () => {
   it("should return an internal error response if the API management client can not be got", async () => {
     spyOnGetApiClient.mockImplementationOnce(() =>

@@ -238,6 +238,7 @@ const getAction =
     insertFailure: InsertTableEntity,
     removeFailure: DeleteTableEntity
   ) =>
+  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
   (processable: Processable): Lazy<Promise<string | void>> =>
     flags.ENABLE_USER_DATA_DOWNLOAD &&
     ProcessableUserDataDownload.is(processable)

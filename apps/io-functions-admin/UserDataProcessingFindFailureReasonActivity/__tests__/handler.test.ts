@@ -1,9 +1,10 @@
-import { UserDataProcessingModel } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
 import * as E from "fp-ts/lib/Either";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+// eslint-disable-next-line vitest/no-mocks-import
 import { context as contextMock } from "../../__mocks__/functions";
+// eslint-disable-next-line vitest/no-mocks-import
 import { aFiscalCode, aUserDataProcessing } from "../../__mocks__/mocks";
 import {
   ActivityInput,
@@ -31,7 +32,7 @@ const getOrchestratorStatusMock = vi.fn(
 );
 
 vi.mock("durable-functions", () => ({
-  getClient: (context: any) => ({
+  getClient: (_context: unknown) => ({
     getStatus: getOrchestratorStatusMock
   }),
   OrchestrationRuntimeStatus: {
@@ -55,14 +56,14 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
     if (E.isRight(decodedResult)) {
       expect(decodedResult.right).toEqual({
         kind: "SUCCESS",
-        value: JSON.stringify(failedOrchestratorOutput, (key, value) => value)
+        value: JSON.stringify(failedOrchestratorOutput, (_key, value) => value)
       });
     }
   });
 
   it("should handle a record not found failure", async () => {
     getOrchestratorStatusMock.mockImplementationOnce(
-      async (orchestratorId: string) => {
+      async (_orchestratorId: string) => {
         throw "Not found";
       }
     );
@@ -80,8 +81,7 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
   });
 
   it("should handle an invalid input", async () => {
-    const mockModel = {} as any as UserDataProcessingModel;
-
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
     const result = await getFindFailureReasonActivityHandler(contextMock, {
       invalid: "input"

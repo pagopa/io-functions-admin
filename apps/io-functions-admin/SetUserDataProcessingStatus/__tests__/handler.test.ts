@@ -34,28 +34,28 @@ const makeUserDataProcessingId = vi.fn(
     pipe(
       `${fiscalCode}-${choice}`,
       UserDataProcessingId.decode,
-      E.getOrElseW(errors => {
+      E.getOrElseW(_errors => {
         throw new Error("");
       })
     )
 );
 
 const mockUserDataProcessingModel = {
-  createOrUpdateByNewOne: vi.fn((u: UserDataProcessing) =>
+  createOrUpdateByNewOne: vi.fn((_u: UserDataProcessing) =>
     throwError()
       ? TE.left<CosmosErrors, UserDataProcessing>({
           kind: "COSMOS_ERROR_RESPONSE"
         } as CosmosErrors)
       : TE.of<CosmosErrors, UserDataProcessing>(aUserDataProcessing)
   ),
-  findLastVersionByModelId: vi.fn(([modelId, partitionKey]) =>
+  findLastVersionByModelId: vi.fn(([_modelId, partitionKey]) =>
     TE.of<CosmosErrors, Option<UserDataProcessing>>(
-      aUserDataProcessing.fiscalCode == partitionKey
+      aUserDataProcessing.fiscalCode === partitionKey
         ? some(aUserDataProcessing)
         : none
     )
   )
-} as any as UserDataProcessingModel;
+} as unknown as UserDataProcessingModel;
 
 describe("setUserDataProcessingStatusHandler", () => {
   beforeEach(() => {
@@ -198,6 +198,7 @@ describe("setUserDataProcessingStatusHandler", () => {
       context,
       aUserDataProcessingChoice,
       aFiscalCode,
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore to force bad behavior
       UserDataProcessingStatusEnum.WIP
     );

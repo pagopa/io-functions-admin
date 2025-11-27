@@ -14,6 +14,7 @@ const tableService = createTableService(connectionString);
 export const index = async (
   context: Context,
   input: unknown
+  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
 ): Promise<readonly (string | void)[]> => {
   const handler = triggerHandler(
     insertTableEntity(tableService, failedUserDataProcessingTable),

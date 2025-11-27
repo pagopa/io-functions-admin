@@ -1,5 +1,5 @@
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { isErrorStatusCode, parseOwnerIdFullPath } from "../apim";
 

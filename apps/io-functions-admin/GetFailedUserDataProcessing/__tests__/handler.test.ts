@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
 } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
-import { assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GetFailedUserDataProcessingHandler } from "../handler";
 
@@ -44,12 +45,12 @@ const retrieveEntityFailedUserDataProcessingMock = (
   );
 
 const internalErrorRetrieveEntityFailedUserDataProcessingMock = (
-  entries: readonly {
+  _entries: readonly {
     PartitionKey: UserDataProcessingChoice;
     RowKey: FiscalCode;
   }[]
 ) =>
-  vi.fn((_, choice, fiscalCode, ____, cb) =>
+  vi.fn((_, _choice, _fiscalCode, ____, cb) =>
     cb(new Error("Internal error"), null, { isSuccessful: false })
   );
 
@@ -88,7 +89,7 @@ describe("GetFailedUserDataProcessingHandler", () => {
     const tableServiceMock = {
       retrieveEntity:
         retrieveEntityFailedUserDataProcessingMock(noFailedRequests)
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingHandler =
       GetFailedUserDataProcessingHandler(tableServiceMock, storageTableMock);
@@ -108,7 +109,7 @@ describe("GetFailedUserDataProcessingHandler", () => {
         internalErrorRetrieveEntityFailedUserDataProcessingMock(
           noFailedRequests
         )
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingHandler =
       GetFailedUserDataProcessingHandler(tableServiceMock, storageTableMock);
@@ -125,7 +126,7 @@ describe("GetFailedUserDataProcessingHandler", () => {
   it("should return a fiscalcode if a failed request is present", async () => {
     const tableServiceMock = {
       retrieveEntity: retrieveEntityFailedUserDataProcessingMock(failedRequests)
-    } as any as TableService;
+    } as unknown as TableService;
 
     const getFailedUserDataProcessingHandler =
       GetFailedUserDataProcessingHandler(tableServiceMock, storageTableMock);
