@@ -1,3 +1,4 @@
+// TODO: Should be removed after the boortstrap migration is completed
 module "dx-github-selfhosted-runner-on-container-app-jobs" {
   source     = "pagopa-dx/github-selfhosted-runner-on-container-app-jobs/azurerm"
   version    = "~> 1.0"
