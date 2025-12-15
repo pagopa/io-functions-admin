@@ -38,10 +38,6 @@ locals {
     resource_group_name = "terraform-state-rg"
   }
 
-  infra = {
-    resource_group_name = "terraform-state-rg"
-  }
-
   repository = {
     name = "io-functions-admin"
   }
