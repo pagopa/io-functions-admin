@@ -5,6 +5,7 @@
         "clean": "turbo run clean",
         "code-review": "turbo run generate && turbo run format:check lint:check test:coverage",
         "lint": "turbo run lint",
+        "lint-api": "turbo run lint-api",
         "format": "turbo run format",
         "test": "turbo run test",
         "test:coverage": "turbo run test:coverage",
