@@ -79,6 +79,10 @@ data "azuread_group" "developers" {
   display_name = local.adgroups.devs_name
 }
 
+data "azurerm_resource_group" "terraform_state_infra" {
+  name = local.infra.resource_group_name
+}
+
 module "repo" {
   source  = "pagopa-dx/azure-github-environment-bootstrap/azurerm"
   version = "~> 3.0"
@@ -93,6 +97,8 @@ module "repo" {
 
   subscription_id = data.azurerm_subscription.current.id
   tenant_id       = data.azurerm_client_config.current.tenant_id
+
+  additional_resource_group_ids = [data.azurerm_resource_group.terraform_state_infra.id]
 
   entraid_groups = {
     admins_object_id = data.azuread_group.admins.object_id
