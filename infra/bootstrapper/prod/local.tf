@@ -3,7 +3,7 @@ locals {
   env_short       = "p"
   location        = "italynorth"
   domain          = "plt"
-  instance_number = "01"
+  instance_number = "02"
 
   adgroups = {
     admins_name = "io-p-adgroup-platform-admins"
