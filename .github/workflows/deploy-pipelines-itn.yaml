@@ -21,3 +21,7 @@ jobs:
       web_app_name: io-p-itn-admin-func-01
       use_labels: false
       disable_auto_staging_deploy: true
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
