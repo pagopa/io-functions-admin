@@ -1,17 +1,23 @@
-name: Deploy Pipelines ITN - PROD
+name: Deploy Function App (io-functions-admin)
 
 on:
-  workflow_dispatch:
-      
+  workflow_dispatch: {}
+  push:
+    branches:
+      - master
+    paths:
+      - "apps/io-functions-admin/CHANGELOG.md"
+      - ".github/workflows/deploy-pipelines-itn.yaml"
+
 jobs:
-  deploy_on_prod:
-    uses: pagopa/dx/.github/workflows/legacy_deploy_pipelines.yaml@main
-    name: Deploy on PROD ITN
+  deploy:
+    name: Deploy io-functions-admin
+    uses: pagopa/dx/.github/workflows/release-azure-appsvc-v1.yaml@6645470d1f31a0aad00899bacc93687458570434
     secrets: inherit
     with:
-      environment: 'prod'
-      resource_group_name: 'io-p-itn-platform-admin-rg-01'
-      app_name: 'io-p-itn-admin-func-01'
-      use_staging_slot: true
-      use_private_agent: true
-      health_check_path: '/info'
+      workspace_name: io-functions-admin
+      environment: app-prod
+      resource_group_name: io-p-itn-platform-admin-rg-01
+      web_app_name: io-p-itn-admin-func-01
+      use_labels: false
+      disable_auto_staging_deploy: true
