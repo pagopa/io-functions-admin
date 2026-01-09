@@ -1,0 +1,101 @@
+import {
+  ProfileModel,
+  RetrievedProfile
+} from "@pagopa/io-functions-commons/dist/src/models/profile";
+import * as L from "@pagopa/logger";
+import { hashFiscalCode } from "@pagopa/ts-commons/lib/hash";
+import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { TelemetryClient } from "applicationinsights";
+import { flow, pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as RTE from "fp-ts/lib/ReaderTaskEither";
+import * as TE from "fp-ts/lib/TaskEither";
+import * as t from "io-ts";
+
+import { cosmosErrorsToString } from "../utils/errors";
+
+export const ProfileToSanitize = t.type({
+  email: EmailString,
+  fiscalCode: FiscalCode
+});
+
+export type ProfileToSanitize = t.TypeOf<typeof ProfileToSanitize>;
+
+interface IProfileModel {
+  readonly profileModel: ProfileModel;
+}
+
+const getProfile =
+  (fiscalCode: ProfileToSanitize["fiscalCode"]) =>
+  (r: IProfileModel): TE.TaskEither<Error, O.Option<RetrievedProfile>> =>
+    pipe(
+      r.profileModel.findLastVersionByModelId([fiscalCode]),
+      TE.mapLeft(flow(cosmosErrorsToString, Error))
+    );
+
+const isProfileEligibleForUpdate =
+  (duplicatedEmail: EmailString) =>
+  (profile: RetrievedProfile): boolean =>
+    profile.isEmailValidated === true &&
+    profile.email?.toLowerCase() === duplicatedEmail.toLowerCase();
+
+const getProfileForUpdate = (
+  profile: ProfileToSanitize
+): RTE.ReaderTaskEither<IProfileModel, Error, O.Option<RetrievedProfile>> =>
+  pipe(
+    getProfile(profile.fiscalCode),
+    RTE.map(O.filter(isProfileEligibleForUpdate(profile.email)))
+  );
+
+// after this date, e-mail notification of IO messages becomes an opt-in feature
+// so we should set "isEmailEnabled: false" to profiles that haven't updated before
+// this date.
+const OPT_OUT_EMAIL_SWITCH_DATE = 1625781600;
+
+const updateProfile =
+  (profile: RetrievedProfile) =>
+  (r: IProfileModel): TE.TaskEither<Error, RetrievedProfile> =>
+    pipe(
+      r.profileModel.update({
+        ...profile,
+        isEmailEnabled:
+          profile._ts < OPT_OUT_EMAIL_SWITCH_DATE
+            ? false
+            : profile.isEmailEnabled,
+        isEmailValidated: false
+      }),
+      TE.mapLeft(flow(cosmosErrorsToString, Error))
+    );
+
+const trackResetEmailValidationEvent =
+  (profile: Pick<RetrievedProfile, "fiscalCode">) =>
+  (r: { readonly telemetryClient?: TelemetryClient }) =>
+  (): void =>
+    r.telemetryClient?.trackEvent({
+      name: "io.citizen-auth.reset_email_validation",
+      tagOverrides: {
+        "ai.user.id": hashFiscalCode(profile.fiscalCode),
+        samplingEnabled: "false"
+      }
+    });
+
+export const sanitizeProfileEmail = flow(
+  getProfileForUpdate,
+  RTE.chainFirstW(maybe =>
+    L.debugRTE("profile retrieved", {
+      isProfileEligibleForUpdate: O.isSome(maybe)
+    })
+  ),
+  RTE.chain(
+    flow(
+      O.map(
+        flow(
+          updateProfile,
+          RTE.chainFirstW(() => L.debugRTE("profile updated")),
+          RTE.chainFirstReaderIOKW(trackResetEmailValidationEvent)
+        )
+      ),
+      O.getOrElseW(() => RTE.right(void 0))
+    )
+  )
+);

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "**/env.example"
+  ],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "**/*.ts",
+        "package.json",
+        "tsconfig.json"
+      ],
+      "outputs": [
+        "dist/**"
+      ],
+      "dependsOn": [
+        "^clean",
+        "clean",
+        "^generate",
+        "generate",
+        "^build"
+      ]
+    },
+    "typecheck": {
+      "inputs": [
+        "**/*.ts",
+        "package.json",
+        "tsconfig.json"
+      ],
+      "outputs": [],
+      "dependsOn": [
+        "^build",
+        "^typecheck"
+      ]
+    },
+    "format": {},
+    "format:check": {},
+    "lint": {
+      "inputs": [
+        "**/*.ts"
+      ]
+    },
+    "lint:check": {
+      "inputs": [
+        "**/*.ts"
+      ]
+    },
+    "lint-api": {
+      "inputs": ["openapi/**/*.yaml"],
+      "outputLogs": "full"
+    },
+    "test": {
+      "inputs": [
+        "**/*.ts",
+        "jest.config.js"
+      ],
+      "dependsOn": [
+        "^build",
+        "^test"
+      ],
+      "outputLogs": "full"
+    },
+    "test:coverage": {
+      "inputs": [
+        "**/*.ts",
+        "jest.config.js"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
+      "dependsOn": [
+        "^build",
+        "^test"
+      ],
+      "outputLogs": "errors-only"
+    },
+    "generate": {
+      "inputs": [
+        "openapi/**/*.yaml",
+        "openapi/**/*.yaml.template"
+      ],
+      "outputs": [
+        "generated/**/*.ts"
+      ],
+      "outputLogs": "errors-only"
+    },
+    "clean": {
+      "inputs": [
+        "dist/**"
+      ],
+      "cache": false
+    }
+  }
+}

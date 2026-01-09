@@ -1,0 +1,83 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { OrganizationFiscalCode } from "@pagopa/ts-commons/lib/strings";
+import { BlobService } from "azure-storage";
+import { describe, expect, it, vi } from "vitest";
+
+import { Logo } from "../../generated/definitions/Logo";
+import { UploadOrganizationLogoHandler } from "../handler";
+
+const anOrganizationFiscalCode = "00000000000" as OrganizationFiscalCode;
+const logosUrl = "LOGOS_URL";
+describe("UploadOrganizationLogoHandler", () => {
+  it("should return a validation error response if the request payload is invalid", async () => {
+    const requestPayload = {
+      logo: "AAAAAAAA"
+    } as Logo;
+    const mockedContext = {
+      bindings: {
+        logo: undefined
+      }
+    };
+
+    const blobServiceMock = {
+      createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
+    } as unknown as BlobService;
+
+    const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
+      blobServiceMock,
+      logosUrl
+    );
+    const response = await uploadOrganizationLogoHandler(
+      mockedContext as any,
+      undefined as any, // Not used
+      anOrganizationFiscalCode,
+      requestPayload
+    );
+
+    expect(response.kind).toBe("IResponseErrorValidation");
+  });
+
+  it("should return a success response if the request payload is valid", async () => {
+    const requestPayload = {
+      logo: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    } as Logo;
+    const mockedContext = {};
+    const blobServiceMock = {
+      createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
+    } as unknown as BlobService;
+    const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
+      blobServiceMock,
+      logosUrl
+    );
+    const response = await uploadOrganizationLogoHandler(
+      mockedContext as any,
+      undefined as any, // Not used
+      anOrganizationFiscalCode,
+      requestPayload
+    );
+
+    expect(response.kind).toBe("IResponseSuccessRedirectToResource");
+  });
+
+  it("should return an internal error response if blob write fails", async () => {
+    const requestPayload = {
+      logo: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    } as Logo;
+    const mockedContext = {};
+    const blobServiceMock = {
+      createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb("any", null))
+    } as unknown as BlobService;
+    const uploadOrganizationLogoHandler = UploadOrganizationLogoHandler(
+      blobServiceMock,
+      logosUrl
+    );
+    const response = await uploadOrganizationLogoHandler(
+      mockedContext as any,
+      undefined as any, // Not used
+      anOrganizationFiscalCode,
+      requestPayload
+    );
+    expect(response.kind).toBe("IResponseErrorInternal");
+  });
+});
