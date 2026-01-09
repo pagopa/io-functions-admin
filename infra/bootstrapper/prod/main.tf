@@ -71,6 +71,10 @@ data "azurerm_resource_group" "common_itn" {
   name = "${local.prefix}-${local.env_short}-itn-common-rg-01"
 }
 
+data "azurerm_resource_group" "fn_admin_rg" {
+  name = "${local.prefix}-${local.env_short}-itn-platform-admin-rg-01"
+}
+
 data "azuread_group" "admins" {
   display_name = local.adgroups.admins_name
 }
@@ -90,6 +94,7 @@ module "repo" {
     domain          = local.domain
     instance_number = local.instance_number
   }
+  additional_resource_group_ids = [data.azurerm_resource_group.fn_admin_rg.id]
 
   subscription_id = data.azurerm_subscription.current.id
   tenant_id       = data.azurerm_client_config.current.tenant_id
