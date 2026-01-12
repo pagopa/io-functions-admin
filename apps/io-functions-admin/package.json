@@ -1,6 +1,6 @@
 {
   "name": "io-functions-admin",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "license": "MIT",
   "scripts": {
     "clean": "shx rm -rf dist",

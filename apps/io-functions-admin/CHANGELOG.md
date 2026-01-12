@@ -1,5 +1,11 @@
 ### Changelog
 
+## 2.0.2
+
+### Patch Changes
+
+- c474eab: Fix AI dependency version conflict
+
 ## 2.0.1
 
 ### Patch Changes
