@@ -69,7 +69,7 @@
     "@types/archiver": "^3.1.1",
     "@types/randomstring": "^1.1.6",
     "@xmldom/xmldom": "^0.7.13",
-    "applicationinsights": "^1.8.10",
+    "applicationinsights": "^2.9.8",
     "archiver": "^4.0.2",
     "archiver-zip-encrypted": "^1.0.8",
     "azure-storage": "^2.10.4",
