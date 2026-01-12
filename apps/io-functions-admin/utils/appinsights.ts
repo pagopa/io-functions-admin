@@ -61,7 +61,7 @@ export const initTelemetryClient = (
         E.fold(
           _ => undefined,
           instrumentationKey => {
-            initAppInsights(instrumentationKey, {
+            const defaultClient = initAppInsights(instrumentationKey, {
               disableAppInsights: env.APPINSIGHTS_DISABLE === "true",
               samplingPercentage: pipe(
                 env.APPINSIGHTS_SAMPLING_PERCENTAGE,
@@ -69,10 +69,10 @@ export const initTelemetryClient = (
                 E.getOrElse(() => DEFAULT_SAMPLING_PERCENTAGE)
               )
             });
-            ai.defaultClient.addTelemetryProcessor(
+            defaultClient.addTelemetryProcessor(
               maskUserProcessingIdPreprocessor
             );
-            return ai.defaultClient;
+            return defaultClient;
           }
         )
       );

@@ -2881,7 +2881,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"applicationinsights@npm:^2.9.5, applicationinsights@npm:^2.9.6":
+"applicationinsights@npm:^2.9.5, applicationinsights@npm:^2.9.6, applicationinsights@npm:^2.9.8":
   version: 2.9.8
   resolution: "applicationinsights@npm:2.9.8"
   dependencies:
@@ -6608,7 +6608,7 @@ __metadata:
     "@types/upng-js": "npm:^2.1.1"
     "@vitest/coverage-v8": "npm:^3.2.4"
     "@xmldom/xmldom": "npm:^0.7.13"
-    applicationinsights: "npm:^1.8.10"
+    applicationinsights: "npm:^2.9.8"
     archiver: "npm:^4.0.2"
     archiver-zip-encrypted: "npm:^1.0.8"
     auto-changelog: "npm:^2.3.0"
