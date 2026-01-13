@@ -6626,7 +6626,7 @@ __metadata:
     fp-ts: "npm:^2.16.5"
     html-to-text: "npm:^5.1.1"
     io-ts: "npm:^2.2.21"
-    marked: "npm:^3.0.2"
+    marked: "npm:^4.0.0"
     modclean: "npm:^3.0.0-beta.1"
     node-fetch: "npm:^2.6.1"
     nodemailer: "npm:^6.6.1"
@@ -7960,12 +7960,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:^3.0.2":
-  version: 3.0.8
-  resolution: "marked@npm:3.0.8"
+"marked@npm:^4.0.0":
+  version: 4.3.0
+  resolution: "marked@npm:4.3.0"
   bin:
-    marked: bin/marked
-  checksum: 10c0/29958c83ece5a318fe0f292229a4691b2f945cdb265628fecbcb9570b579937a48cdc04a0e899ae247d05d024400f24acd6fa88491e43becc9182f38e06c1de2
+    marked: bin/marked.js
+  checksum: 10c0/0013463855e31b9c88d8bb2891a611d10ef1dc79f2e3cbff1bf71ba389e04c5971298c886af0be799d7fa9aa4593b086a136062d59f1210b0480b026a8c5dc47
   languageName: node
   linkType: hard
 
