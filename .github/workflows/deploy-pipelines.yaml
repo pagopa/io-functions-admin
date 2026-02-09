@@ -7,7 +7,7 @@ on:
       - master
     paths:
       - "apps/io-functions-admin/CHANGELOG.md"
-      - ".github/workflows/deploy-pipelines-itn.yaml"
+      - ".github/workflows/deploy-pipelines.yaml"
 
 jobs:
   deploy:

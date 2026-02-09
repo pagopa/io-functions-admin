@@ -2,8 +2,8 @@ locals {
   prefix    = "io"
   env_short = "p"
 
-  location       = "westeurope"
-  location_short = "weu"
+  location       = "italynorth"
+  location_short = "itn"
 
   common_project = "${local.prefix}-${local.env_short}"
 
@@ -19,13 +19,8 @@ locals {
     Source         = "https://github.com/pagopa/io-functions-admin/blob/main/infra/resources/prod"
   }
 
-  # ITN
-  location_itn       = "italynorth"
-  location_short_itn = "itn"
-  project_itn        = "${local.prefix}-${local.env_short}-${local.location_short_itn}"
-
   apim_itn = {
-    name                = "${local.project_itn}-apim-01"
-    resource_group_name = "${local.project_itn}-common-rg-01"
+    name                = "${local.project}-apim-01"
+    resource_group_name = "${local.project}-common-rg-01"
   }
 }
