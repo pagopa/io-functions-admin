@@ -1,0 +1,74 @@
+/**
+ * Azure Functions v4 entry point — src/main.ts
+ *
+ * This file replaces all per-function index.ts entry points.
+ * Fill in the imports, dependency setup, and app.http() registrations
+ * for the specific Azure Functions app being migrated.
+ *
+ * Usage:
+ *   1. Copy this file to src/main.ts in the target app.
+ *   2. Replace placeholder imports and handler names with the real ones.
+ *   3. Initialise all shared dependencies (clients, models, config).
+ *   4. Register every HTTP function via app.http(...).
+ *   5. Ensure package.json has "main": "dist/main.js".
+ */
+
+import { app } from "@azure/functions";
+
+// ---------------------------------------------------------------------------
+// IMPORT CLIENTS / INFRA HELPERS
+// ---------------------------------------------------------------------------
+// Example:
+// import { CosmosClient } from "@azure/cosmos";
+// import { TableClient } from "@azure/data-tables";
+
+// ---------------------------------------------------------------------------
+// IMPORT CONFIG
+// ---------------------------------------------------------------------------
+// import { getConfigOrThrow } from "./utils/config";
+
+// ---------------------------------------------------------------------------
+// IMPORT HANDLERS
+// (keep one import per handler module for clarity)
+// ---------------------------------------------------------------------------
+// import { HandlerName } from "./HandlerFolder/handler";
+
+// ---------------------------------------------------------------------------
+// CONFIG SETUP
+// ---------------------------------------------------------------------------
+// const config = getConfigOrThrow();
+
+// ---------------------------------------------------------------------------
+// DEPENDENCY INITIALISATION
+// Example:
+// const cosmosClient = new CosmosClient({
+//   endpoint: config.COSMOSDB_URI,
+//   key: config.COSMOSDB_KEY,
+// });
+// const container = cosmosClient.database(config.COSMOSDB_NAME).container(COLLECTION_NAME);
+// const myModel = new MyModel(container);
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// MOUNT HANDLERS
+//
+// For each Azure Function in this app, call app.http().
+// The "route" value should match what was previously in function.json.
+// The "authLevel" should match the previous function.json authLevel.
+// The "methods" array uses uppercase strings: ["GET"], ["POST"], etc.
+//
+// Example:
+// app.http("Info", {
+//   methods: ["GET"],
+//   authLevel: "anonymous",
+//   route: "info",
+//   handler: Info(),
+// });
+//
+// app.http("CreateItem", {
+//   methods: ["POST"],
+//   authLevel: "function",
+//   route: "items",
+//   handler: CreateItem(myModel),
+// });
+// ---------------------------------------------------------------------------
