@@ -247,6 +247,39 @@ Use the [main.ts template](../templates/main.ts.template) as a starting point an
 
 Methods in `function.json` are lowercase (`"get"`, `"post"`), but `app.http` accepts both cases. Use uppercase for clarity: `["GET"]`, `["POST"]`.
 
+### Path parameter naming for fiscal code middlewares
+
+The following middlewares from `@pagopa/io-functions-commons` hard-code the param key they read from `req.params`:
+
+| Middleware | Hard-coded param key |
+|---|---|
+| `SandboxFiscalCodeMiddleware` | `"fiscalcode"` (all lowercase) |
+| `FiscalCodeMiddleware` | `"fiscalcode"` (all lowercase) |
+| `OptionalFiscalCodeMiddleware` | `"fiscalcode"` (all lowercase) |
+
+**Rule:** when any of these middlewares is used, the `route` in `app.http()` **must** contain `{fiscalcode}` (all lowercase), regardless of the casing used in the old `function.json` binding or the old express route in `index.ts`.
+
+```typescript
+// WRONG — camelCase {fiscalCode} does not match the hard-coded "fiscalcode" key
+app.http("CreateDevelopmentProfile", {
+  route: "adm/development-profiles/{fiscalCode}",   // ❌
+  ...
+});
+
+// CORRECT — lowercase {fiscalcode} matches what the middleware reads
+app.http("CreateDevelopmentProfile", {
+  route: "adm/development-profiles/{fiscalcode}",   // ✅
+  ...
+});
+```
+
+**Double-check procedure:** before writing the `route` string, inspect both sources in the old v3 code:
+
+1. **`function.json`** — look at the `route` binding (e.g. `"adm/development-profiles/{fiscalcode}"`). This tells you the URL shape but may use a different casing than what the middleware expects.
+2. **`index.ts`** express route — look at the `app.get/post/...` call (e.g. `app.post("/adm/development-profiles/:fiscalcode", ...)`). The param name after `:` in the express route is what `req.params` will contain, and therefore what the middleware reads.
+
+If the two sources disagree on casing, **the express route in `index.ts` is authoritative** because it determines what ends up in `req.params`. When migrating to v4, use that same casing (which for all fiscal-code middlewares is `fiscalcode` — all lowercase).
+
 ---
 
 ## 4. Delete Per-Function Files
