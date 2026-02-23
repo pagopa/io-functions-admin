@@ -7,7 +7,7 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
+import { DurableOrchestrationStatus } from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { Branded } from "io-ts";
 import * as t from "io-ts";

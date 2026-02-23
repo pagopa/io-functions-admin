@@ -1,4 +1,4 @@
-import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
+import { DurableOrchestrationStatus } from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { describe, expect, it, vi } from "vitest";
 
