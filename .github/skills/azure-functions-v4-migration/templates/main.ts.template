@@ -2,18 +2,21 @@
  * Azure Functions v4 entry point — src/main.ts
  *
  * This file replaces all per-function index.ts entry points.
- * Fill in the imports, dependency setup, and app.http() registrations
+ * Fill in the imports, dependency setup, and registrations
  * for the specific Azure Functions app being migrated.
  *
  * Usage:
  *   1. Copy this file to src/main.ts in the target app.
  *   2. Replace placeholder imports and handler names with the real ones.
  *   3. Initialise all shared dependencies (clients, models, config).
- *   4. Register every HTTP function via app.http(...).
+ *   4. Register every function via app.http(), app.storageQueue(),
+ *      app.cosmosDB(), app.storageBlob(), df.app.activity(), df.app.orchestration().
  *   5. Ensure package.json has "main": "dist/main.js".
  */
 
-import { app } from "@azure/functions";
+import { app, output } from "@azure/functions";
+import * as df from "durable-functions";
+// import { RetryOptions } from "durable-functions";
 
 // ---------------------------------------------------------------------------
 // IMPORT CLIENTS / INFRA HELPERS
@@ -32,6 +35,8 @@ import { app } from "@azure/functions";
 // (keep one import per handler module for clarity)
 // ---------------------------------------------------------------------------
 // import { HandlerName } from "./HandlerFolder/handler";
+// import { ActivityName, getActivityHandler } from "./MyActivity/handler";
+// import { OrchestratorName, getHandler as getOrchestratorHandler } from "./MyOrchestrator/handler";
 
 // ---------------------------------------------------------------------------
 // CONFIG SETUP
@@ -50,7 +55,93 @@ import { app } from "@azure/functions";
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// MOUNT HANDLERS
+// DURABLE FUNCTIONS — ACTIVITIES
+//
+// For each activity, register via df.app.activity().
+// The handler receives (input, context) — note the swapped param order vs v3.
+//
+// Example:
+// df.app.activity(ActivityName, {
+//   handler: getActivityHandler(myModel),
+// });
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// DURABLE FUNCTIONS — ORCHESTRATORS
+//
+// For each orchestrator, register via df.app.orchestration().
+// Pass the generator function directly — no df.orchestrator() wrapper.
+//
+// Example:
+// df.app.orchestration(
+//   "MyOrchestrator",
+//   getOrchestratorHandler({ dep1, dep2 }),
+// );
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// QUEUE TRIGGERS
+//
+// For each queue trigger, register via app.storageQueue().
+// The handler receives (queueItem, context).
+//
+// Example:
+// app.storageQueue("MyQueueFunction", {
+//   connection: "MY_STORAGE_CONNECTION_STRING",
+//   queueName: "%MY_QUEUE_NAME%",
+//   handler: myQueueHandler,
+// });
+//
+// With durable client + output queue:
+// const myOutput = output.storageQueue({
+//   connection: "MY_STORAGE_CONNECTION_STRING",
+//   queueName: "%OUTPUT_QUEUE_NAME%",
+// });
+//
+// app.storageQueue("MyQueueWithOrchestrator", {
+//   connection: "MY_STORAGE_CONNECTION_STRING",
+//   queueName: "%INPUT_QUEUE_NAME%",
+//   extraInputs: [df.input.durableClient()],
+//   extraOutputs: [myOutput],
+//   handler: myHandler(myOutput),
+// });
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// COSMOSDB TRIGGERS (CHANGE FEED)
+//
+// For each CosmosDB change feed trigger, register via app.cosmosDB().
+// The handler receives (documents, context).
+//
+// Example:
+// app.cosmosDB("MyChangeFeedTrigger", {
+//   connection: "COSMOSDB_CONNECTION_STRING",
+//   databaseName: "%COSMOSDB_NAME%",
+//   containerName: "my-container",
+//   leaseContainerName: "change-feed-leases",
+//   leaseContainerPrefix: "myPrefix",
+//   createLeaseContainerIfNotExists: true,
+//   extraInputs: [df.input.durableClient()],
+//   handler: myChangeFeedHandler,
+// });
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// BLOB TRIGGERS
+//
+// For each blob trigger, register via app.storageBlob().
+// The handler receives (blob, context).
+//
+// Example:
+// app.storageBlob("MyBlobTrigger", {
+//   connection: "MY_STORAGE_CONNECTION_STRING",
+//   path: "my-container/{name}",
+//   handler: myBlobHandler,
+// });
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// HTTP TRIGGERS
 //
 // For each Azure Function in this app, call app.http().
 // The "route" value should match what was previously in function.json.
