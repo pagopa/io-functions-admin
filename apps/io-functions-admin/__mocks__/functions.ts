@@ -1,15 +1,16 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { vi } from "vitest";
 
 export const context = {
-  bindings: {},
-  log: {
-    error: vi.fn().mockImplementation(console.log),
+  debug: vi.fn().mockImplementation(console.log),
 
-    info: vi.fn().mockImplementation(console.log),
+  error: vi.fn().mockImplementation(console.log),
 
-    verbose: vi.fn().mockImplementation(console.log),
+  extraInputs: {
+    get: vi.fn()
+  },
 
-    warn: vi.fn().mockImplementation(console.log)
-  }
-} as unknown as Context;
+  log: vi.fn().mockImplementation(console.log),
+
+  warn: vi.fn().mockImplementation(console.log)
+} as unknown as InvocationContext;

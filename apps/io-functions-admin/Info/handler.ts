@@ -1,3 +1,4 @@
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   checkApplicationHealth,
   checkAzureCosmosDbHealth,
@@ -5,14 +6,12 @@ import {
   checkUrlHealth,
   HealthCheck
 } from "@pagopa/io-functions-commons/dist/src/utils/healthcheck";
-import { wrapRequestHandler } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseSuccessJson,
   ResponseErrorInternal,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
-import express from "express";
 import { pipe } from "fp-ts/lib/function";
 import * as TE from "fp-ts/lib/TaskEither";
 
@@ -31,7 +30,7 @@ type InfoHandler = () => Promise<
 >;
 type ProblemSource = "AzureCosmosDB" | "AzureStorage" | "Config" | "Url";
 
-export function Info(): express.RequestHandler {
+export function Info() {
   return pipe(
     checkApplicationHealth(IConfig, [
       (config: IConfig): HealthCheck<"AzureCosmosDB", true> =>
@@ -50,7 +49,7 @@ export function Info(): express.RequestHandler {
         checkUrlHealth(config.LOGOS_URL)
     ]),
     InfoHandler,
-    wrapRequestHandler
+    handler => wrapHandlerV4([], handler)
   );
 }
 

@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
@@ -12,6 +12,8 @@ import * as t from "io-ts";
 
 import { makeOrchestratorId as makeDeleteOrchestratorId } from "../UserDataDeleteOrchestratorV2/utils";
 import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
+
+export const ActivityName = "UserDataProcessingFindFailureReasonActivity";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -81,8 +83,8 @@ export const ActivityResult = t.taggedUnion("kind", [
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 export const getFindFailureReasonActivityHandler = async (
-  context: Context,
-  input: unknown
+  input: unknown,
+  context: InvocationContext
 ): Promise<ActivityResult> =>
   pipe(
     input,

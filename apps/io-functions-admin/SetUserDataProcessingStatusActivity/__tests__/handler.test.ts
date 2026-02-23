@@ -41,7 +41,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       },
       nextStatus: UserDataProcessingStatusEnum.WIP
     };
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     expect(result.kind).toEqual("SUCCESS");
   });
@@ -61,7 +61,7 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
       },
       nextStatus: UserDataProcessingStatusEnum.WIP
     };
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     pipe(
       result,
@@ -85,9 +85,12 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
-    const result = await handler(contextMock, {
-      invalid: "input"
-    });
+    const result = await handler(
+      {
+        invalid: "input"
+      },
+      contextMock
+    );
 
     pipe(
       result,
@@ -127,10 +130,13 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
-    const result = await handler(contextMock, {
-      currentRecord: aFailedUserDataProcessing,
-      nextStatus: UserDataProcessingStatusEnum.PENDING
-    });
+    const result = await handler(
+      {
+        currentRecord: aFailedUserDataProcessing,
+        nextStatus: UserDataProcessingStatusEnum.PENDING
+      },
+      contextMock
+    );
     console.log(result);
     pipe(
       result,
@@ -168,10 +174,13 @@ describe("SetUserDataProcessingStatusActivityHandler", () => {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
-    const result = await handler(contextMock, {
-      currentRecord: aFailedUserDataProcessing,
-      nextStatus: UserDataProcessingStatusEnum.PENDING
-    });
+    const result = await handler(
+      {
+        currentRecord: aFailedUserDataProcessing,
+        nextStatus: UserDataProcessingStatusEnum.PENDING
+      },
+      contextMock
+    );
     console.log(result);
     pipe(
       result,

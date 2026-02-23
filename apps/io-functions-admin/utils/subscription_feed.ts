@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService, TableUtilities } from "azure-storage";
 import * as A from "fp-ts/lib/Array";
@@ -44,7 +44,7 @@ export type SubscriptionFeedEntitySelector = t.TypeOf<
 export const updateSubscriptionStatus =
   (tableService: TableService, tableName: NonEmptyString) =>
   async (
-    context: Context,
+    context: InvocationContext,
     logPrefix: string,
     version: number,
     deleteEntity: SubscriptionFeedEntitySelector,
@@ -63,9 +63,7 @@ export const updateSubscriptionStatus =
             async () => {
               // First we try to delete a previous (un)subscriptions operation
               // from the subscription feed entries for the current day
-              context.log.verbose(
-                `${logPrefix}|KEY=${_.rowKey}|Deleting entity`
-              );
+              context.debug(`${logPrefix}|KEY=${_.rowKey}|Deleting entity`);
               const { e1: maybeError2, e2: uResponse2 } =
                 await deleteEntityHandler({
                   PartitionKey: eg.String(_.partitionKey),
@@ -103,15 +101,13 @@ export const updateSubscriptionStatus =
           .map(_ => _.value.message)
           .join("|")
       );
-      context.log.error(`${logPrefix}|ERROR=${errors.message}}`);
+      context.error(`${logPrefix}|ERROR=${errors.message}}`);
       throw errors;
     }
 
     // If deleteEntity has not found any entry or insert is required,
     // we insert the new (un)subscription entry into the feed
-    context.log.verbose(
-      `${logPrefix}|KEY=${insertEntity.rowKey}|Inserting entity`
-    );
+    context.debug(`${logPrefix}|KEY=${insertEntity.rowKey}|Inserting entity`);
     const { e1: resultOrError, e2: sResponse } = await insertEntityHandler({
       PartitionKey: eg.String(insertEntity.partitionKey),
       RowKey: eg.String(insertEntity.rowKey),
@@ -119,7 +115,7 @@ export const updateSubscriptionStatus =
     });
     if (E.isLeft(resultOrError) && sResponse.statusCode !== 409) {
       // retry
-      context.log.error(`${logPrefix}|ERROR=${resultOrError.left.message}`);
+      context.error(`${logPrefix}|ERROR=${resultOrError.left.message}`);
       throw resultOrError.left;
     }
 

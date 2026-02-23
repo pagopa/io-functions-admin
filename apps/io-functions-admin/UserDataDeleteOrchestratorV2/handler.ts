@@ -7,12 +7,7 @@ import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { Day, Hour } from "@pagopa/ts-commons/lib/units";
-import {
-  IOrchestrationFunctionContext,
-  RetryOptions,
-  Task,
-  TaskSet
-} from "durable-functions/lib/src/classes";
+import { OrchestrationContext, RetryOptions, Task } from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
@@ -59,6 +54,8 @@ import { IsUserEligibleForInstantDelete } from "../utils/config";
 import { ABORT_EVENT, addDays, addHours } from "./utils";
 
 const logPrefix = "UserDataDeleteOrchestrator";
+
+export const OrchestratorName = "UserDataDeleteOrchestratorV2";
 
 const printableError = (error: Error | t.Errors | unknown): string =>
   error instanceof Error
@@ -132,7 +129,7 @@ const toActivityFailure = (
   });
 
 function* deleteUserData(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   currentRecord: UserDataProcessing
 ): Generator<Task> {
   const backupFolder = `${
@@ -149,7 +146,7 @@ function* deleteUserData(
     result,
     DeleteUserDataActivityResultSuccess.decode,
     E.getOrElseW(_ => {
-      context.log.error(
+      context.error(
         `${logPrefix}|ERROR|DeleteUserDataActivity fail`,
         result,
         readableReport(_)
@@ -163,7 +160,7 @@ function* deleteUserData(
 }
 
 function* getProfile(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   fiscalCode: FiscalCode
 ): Generator<Task, RetrievedProfile> {
   const result = yield context.df.callActivity(
@@ -176,7 +173,7 @@ function* getProfile(
     result,
     GetProfileActivityResultSuccess.decode,
     E.getOrElseW(_ => {
-      context.log.error(
+      context.error(
         `${logPrefix}|ERROR|GetProfileActivity fail|${readableReport(
           _
         )}|result=${JSON.stringify(result)}`
@@ -197,18 +194,18 @@ function* getProfile(
  * @returns
  */
 function* getServicesPreferences(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   { fiscalCode, servicePreferencesSettings }: RetrievedProfile
 ): Generator<Task, readonly ServicePreference[]> {
   // This procedure makes no sense for LEGACY account
   if (servicePreferencesSettings.mode === ServicesPreferencesModeEnum.LEGACY) {
-    context.log.verbose(
+    context.debug(
       `${logPrefix}|VERBOSE|Executing getServicesPreferences - LEGACY MODE`
     );
     return [];
   }
 
-  context.log.verbose(
+  context.debug(
     `${logPrefix}|VERBOSE|Executing getServicesPreferences - NO LEGACY MODE`
   );
 
@@ -235,7 +232,7 @@ function* getServicesPreferences(
     E.fold(
       err => {
         // Invalid Activity input. The orchestration fail
-        context.log.error(
+        context.error(
           `${logPrefix}|GetServicesPreferencesActivity|ERROR=${err.message}`
         );
         throw err;
@@ -246,7 +243,7 @@ function* getServicesPreferences(
 }
 
 function* hasPendingDownload(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   fiscalCode: FiscalCode
 ): Generator<Task> {
   const result = yield context.df.callActivity(
@@ -286,7 +283,7 @@ function* hasPendingDownload(
 }
 
 function* isFailedUserDataProcessing(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   currentRecord: UserDataProcessing
 ): Generator<Task, boolean> {
   const result = yield context.df.callActivityWithRetry(
@@ -311,7 +308,7 @@ function* isFailedUserDataProcessing(
 }
 
 function* sendUserDataDeleteEmail(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   toAddress: EmailAddress,
   fiscalCode: FiscalCode
 ): Generator<Task> {
@@ -326,7 +323,7 @@ function* sendUserDataDeleteEmail(
     result,
     SendUserDataDeleteEmailActivityResultSuccess.decode,
     E.getOrElseW(_ => {
-      context.log.error(
+      context.error(
         `${logPrefix}|ERROR|SendUserDataDeleteEmailActivity fail|${readableReport(
           _
         )}`
@@ -340,7 +337,7 @@ function* sendUserDataDeleteEmail(
 }
 
 function* setUserDataProcessingStatus(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   currentRecord: UserDataProcessing,
   nextStatus: UserDataProcessingStatusEnum
 ): Generator<Task> {
@@ -368,7 +365,7 @@ function* setUserDataProcessingStatus(
 }
 
 function* setUserSessionLock(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   { action, fiscalCode }: SetUserSessionLockActivityInput
 ): Generator<Task> {
   const result = yield context.df.callActivityWithRetry(
@@ -383,7 +380,7 @@ function* setUserSessionLock(
     result,
     SetUserSessionLockActivityResultSuccess.decode,
     E.getOrElseW(_ => {
-      context.log.error(
+      context.error(
         `${logPrefix}|ERROR|SetUserSessionLockActivity fail|${readableReport(
           _
         )}`
@@ -400,7 +397,7 @@ function* setUserSessionLock(
 }
 
 function* updateSubscriptionFeed(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   { fiscalCode, servicePreferencesSettings, version }: RetrievedProfile,
   servicesPreferences: readonly ServicePreference[]
 ): Generator<Task, "SUCCESS"> {
@@ -415,7 +412,7 @@ function* updateSubscriptionFeed(
   let result;
 
   if (servicePreferencesSettings.mode !== ServicesPreferencesModeEnum.LEGACY) {
-    context.log.verbose(
+    context.debug(
       `${logPrefix}|VERBOSE|Executing updateSubscriptionFeed - NO LEGACY MODE`
     );
 
@@ -430,7 +427,7 @@ function* updateSubscriptionFeed(
       input
     );
   } else {
-    context.log.verbose(
+    context.debug(
       `${logPrefix}|VERBOSE|Executing updateSubscriptionFeed - LEGACY MODE`
     );
 
@@ -444,9 +441,7 @@ function* updateSubscriptionFeed(
   }
 
   if (result === "FAILURE") {
-    context.log.error(
-      `${logPrefix}|ERROR|UpdateSubscriptionsFeedActivity fail`
-    );
+    context.error(`${logPrefix}|ERROR|UpdateSubscriptionsFeedActivity fail`);
     throw toActivityFailure(
       { kind: "UPDATE_SUBSCRIPTIONS_FEED" },
       "UpdateSubscriptionsFeedActivity"
@@ -469,9 +464,7 @@ export const createUserDataDeleteOrchestratorHandler = (
   waitForDownloadInterval: Hour = 12 as Hour
 ) =>
   // eslint-disable-next-line max-lines-per-function
-  function* (
-    context: IOrchestrationFunctionContext
-  ): Generator<Task | TaskSet> {
+  function* (context: OrchestrationContext): Generator<Task> {
     const document = context.df.getInput();
     // This check has been done on the trigger, so it should never fail.
     // However, it's worth the effort to check it twice
@@ -479,7 +472,7 @@ export const createUserDataDeleteOrchestratorHandler = (
       document,
       ProcessableUserDataDelete.decode,
       E.mapLeft(err => {
-        context.log.error(
+        context.error(
           `${logPrefix}|WARN|Cannot decode ProcessableUserDataDelete document: ${readableReport(
             err
           )}`
@@ -498,7 +491,7 @@ export const createUserDataDeleteOrchestratorHandler = (
     const currentUserDataProcessing =
       invalidInputOrCurrentUserDataProcessing.right;
 
-    context.log.verbose(
+    context.debug(
       `${logPrefix}|VERBOSE|Executing delete`,
       currentUserDataProcessing
     );
@@ -521,7 +514,7 @@ export const createUserDataDeleteOrchestratorHandler = (
       const isFailedUserDataProcessingRequest =
         yield* isFailedUserDataProcessing(context, currentUserDataProcessing);
 
-      context.log.verbose(
+      context.debug(
         `${logPrefix}|VERBOSE|isFailedUserDataProcessingRequest=${isFailedUserDataProcessingRequest}`
       );
 
@@ -540,7 +533,7 @@ export const createUserDataDeleteOrchestratorHandler = (
       // we wait for eventually abort message from the user
       const canceledRequestEvent = context.df.waitForExternalEvent(ABORT_EVENT);
 
-      context.log.verbose(
+      context.debug(
         `${logPrefix}|VERBOSE|Operation stopped for ${gracePeriod} days`
       );
 
@@ -553,7 +546,7 @@ export const createUserDataDeleteOrchestratorHandler = (
       ]);
 
       if (triggeredEvent === intervalExpiredEvent) {
-        context.log.verbose(
+        context.debug(
           `${logPrefix}|VERBOSE|Operation resumed after ${gracePeriod} days`
         );
 
@@ -578,7 +571,7 @@ export const createUserDataDeleteOrchestratorHandler = (
           )
         ) {
           // we wait some more time for the download process to end
-          context.log.verbose(
+          context.debug(
             `${logPrefix}|VERBOSE|Found an active DOWNLOAD procedure, wait for ${waitForDownloadInterval} hours`
           );
           const waitForDownloadEvent = context.df.createTimer(
@@ -628,7 +621,7 @@ export const createUserDataDeleteOrchestratorHandler = (
         // stop the timer to let the orchestrator end
         intervalExpiredEvent.cancel();
 
-        context.log.verbose(
+        context.debug(
           `${logPrefix}|VERBOSE|Operation resumed because of abort event`
         );
 
@@ -643,7 +636,7 @@ export const createUserDataDeleteOrchestratorHandler = (
         return OrchestratorSuccess.encode({ kind: "SUCCESS", type: "ABORTED" });
       }
     } catch (error) {
-      context.log.error(
+      context.error(
         `${logPrefix}|ERROR|Failed processing user data for delete: ${printableError(
           error
         )}`

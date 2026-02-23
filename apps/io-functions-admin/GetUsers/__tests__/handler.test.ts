@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ApiManagementClient } from "@azure/arm-apimanagement";
+import { InvocationContext } from "@azure/functions";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import { describe, expect, it, Mock, vi } from "vitest";
 
@@ -114,7 +115,12 @@ const mockGetToken = vi.fn();
 
 mockGetToken.mockImplementation(() => Promise.resolve(undefined));
 
-const mockedContext = { log: { error: mockLog } };
+const mockedContext = {
+  debug: vi.fn(),
+  error: mockLog,
+  log: vi.fn(),
+  warn: vi.fn()
+} as unknown as InvocationContext;
 
 describe("GetUsers", () => {
   it("should return an internal error response if the API management client returns an error", async () => {

@@ -1,11 +1,7 @@
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import {
-  IOrchestrationFunctionContext,
-  RetryOptions,
-  Task
-} from "durable-functions/lib/src/classes";
+import { OrchestrationContext, RetryOptions, Task } from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
@@ -25,6 +21,8 @@ import {
 import { FailedUserDataProcessing } from "../UserDataProcessingTrigger/handler";
 
 const logPrefix = "UserDataProcessingRecoveryOrchestrator";
+
+export const OrchestratorName = "UserDataProcessingRecoveryOrchestrator";
 
 const printableError = (error: Error | t.Errors | unknown): string =>
   error instanceof Error
@@ -98,11 +96,11 @@ const toActivityFailure = (
   });
 
 function* getLastStatus(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   failedUserDataProcessing: FailedUserDataProcessing
 ): Generator<Task, CheckLastStatusActivityResultSuccess> {
   // we call the activity that gets the last status of for the given record
-  context.log.info(
+  context.log(
     `${logPrefix}|INFO|Getting last status for ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode}`
   );
   const result = yield context.df.callActivity(
@@ -117,7 +115,7 @@ function* getLastStatus(
     result,
     CheckLastStatusActivityResultSuccess.decode,
     E.getOrElseW(e => {
-      context.log.error(
+      context.error(
         `${logPrefix}|ERROR|UserDataProcessingCheckLastStatusActivity fail|${readableReport(
           e
         )}|result=${JSON.stringify(result)}`
@@ -131,12 +129,12 @@ function* getLastStatus(
 }
 
 function* saveNewFailedRecordWithReason(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   currentRecord: FailedUserDataProcessing,
   failureReason: NonEmptyString
 ): Generator<Task, SetUserDataProcessingStatusActivityResultSuccess> {
   // we call the activity tha saves a new record with failed status and a failure reason
-  context.log.info(
+  context.log(
     `${logPrefix}|INFO|Saving reason ${failureReason} for ${currentRecord.choice}-${currentRecord.fiscalCode}`
   );
   const result = yield context.df.callActivityWithRetry(
@@ -152,7 +150,7 @@ function* saveNewFailedRecordWithReason(
     result,
     SetUserDataProcessingStatusActivityResultSuccess.decode,
     E.getOrElseW(e => {
-      context.log.error(
+      context.error(
         `${logPrefix}|ERROR|SetUserDataProcessingStatusActivity fail|${readableReport(
           e
         )}|result=${JSON.stringify(result)}`
@@ -166,7 +164,7 @@ function* saveNewFailedRecordWithReason(
 }
 
 function* searchForFailureReason(
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   failedUserDataProcessing: FailedUserDataProcessing
 ): Generator<Task, FindFailureReasonActivityResultSuccess> {
   // we return the reason of the failed record if there is one
@@ -180,7 +178,7 @@ function* searchForFailureReason(
   }
   // if there is no reason in the failed record
   // we call the activity that searchs for one
-  context.log.info(
+  context.log(
     `${logPrefix}|INFO|Searching for failure reason of ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode}`
   );
   const result = yield context.df.callActivity(
@@ -195,7 +193,7 @@ function* searchForFailureReason(
     result,
     FindFailureReasonActivityResultSuccess.decode,
     E.getOrElseW(e => {
-      context.log.error(
+      context.error(
         `${logPrefix}|ERROR|UserDataProcessingFindFailureReasonActivity fail|${readableReport(
           e
         )}|result=${JSON.stringify(result)}`
@@ -209,15 +207,15 @@ function* searchForFailureReason(
 }
 
 export const handler = function* (
-  context: IOrchestrationFunctionContext
-): Generator<unknown, OrchestratorResult> {
+  context: OrchestrationContext
+): Generator<Task, OrchestratorResult> {
   const document = context.df.getInput();
 
   const failedUserDataProcessingOrError = pipe(
     document,
     FailedUserDataProcessing.decode,
     E.mapLeft(err => {
-      context.log.error(
+      context.error(
         `${logPrefix}|WARN|Cannot decode FailedUserDataProcessing document: ${readableReport(
           err
         )}`
@@ -236,7 +234,7 @@ export const handler = function* (
 
   const failedUserDataProcessing = failedUserDataProcessingOrError.right;
 
-  context.log.verbose(
+  context.debug(
     `${logPrefix}|VERBOSE|Recovery started for failed record ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode}`,
     failedUserDataProcessing
   );
@@ -249,7 +247,7 @@ export const handler = function* (
     );
 
     if (checkLastStatusResult.value !== UserDataProcessingStatusEnum.FAILED) {
-      context.log.info(
+      context.log(
         `${logPrefix}|INFO|Skipping record ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode} with status ${checkLastStatusResult.value}`
       );
       return OrchestratorResult.encode({ kind: "SKIPPED" });
@@ -273,12 +271,12 @@ export const handler = function* (
       failureReason
     );
 
-    context.log.info(
+    context.log(
       `${logPrefix}|INFO|Recovery finished for failed record ${failedUserDataProcessing.choice}-${failedUserDataProcessing.fiscalCode}`
     );
     return OrchestratorResult.encode({ kind: "SUCCESS", type: "COMPLETED" });
   } catch (error) {
-    context.log.error(
+    context.error(
       `${logPrefix}|ERROR|Recovery failed for record ${
         failedUserDataProcessing.choice
       }-${failedUserDataProcessing.fiscalCode}: ${printableError(error)}`

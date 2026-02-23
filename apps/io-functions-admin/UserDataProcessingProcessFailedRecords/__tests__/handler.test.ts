@@ -31,9 +31,8 @@ vi.mock("durable-functions", () => ({
       }) as DurableOrchestrationStatus,
     startNew: async (
       _orchestratorName: string,
-      orchestratorId: string,
-      _orchestratorInput: string
-    ) => orchestratorId
+      options: { input?: unknown; instanceId?: string }
+    ) => options.instanceId ?? ""
   }),
   OrchestrationRuntimeStatus: {
     Running: "Running"

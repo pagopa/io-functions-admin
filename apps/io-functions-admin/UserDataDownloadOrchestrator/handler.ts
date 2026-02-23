@@ -1,9 +1,6 @@
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import {
-  IOrchestrationFunctionContext,
-  RetryOptions
-} from "durable-functions/lib/src/classes";
+import { OrchestrationContext, RetryOptions, Task } from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as t from "io-ts";
@@ -18,6 +15,8 @@ import {
 } from "../utils/appinsightsEvents";
 
 const logPrefix = "UserDataDownloadOrchestrator";
+
+export const OrchestratorName = "UserDataDownloadOrchestrator";
 
 export type InvalidInputFailure = t.TypeOf<typeof InvalidInputFailure>;
 export const InvalidInputFailure = t.interface({
@@ -83,8 +82,8 @@ const toActivityFailure = (
   });
 
 export const handler = function* (
-  context: IOrchestrationFunctionContext
-): Generator<unknown> {
+  context: OrchestrationContext
+): Generator<Task> {
   const document = context.df.getInput();
   // This check has been done on the trigger, so it should never fail.
   // However, it's worth the effort to check it twice
@@ -92,7 +91,7 @@ export const handler = function* (
     document,
     ProcessableUserDataDownload.decode,
     E.mapLeft(err => {
-      context.log.error(
+      context.error(
         `${logPrefix}|WARN|Cannot decode ProcessableUserDataDownload document: ${readableReport(
           err
         )}`
@@ -185,7 +184,7 @@ export const handler = function* (
       false
     );
 
-    context.log.error(`${logPrefix}|ERROR|${JSON.stringify(error)}`);
+    context.error(`${logPrefix}|ERROR|${JSON.stringify(error)}`);
 
     const orchestrationFailure = pipe(
       error,

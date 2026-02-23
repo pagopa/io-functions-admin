@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { ExtendedProfile } from "@pagopa/io-functions-commons/dist/generated/definitions/ExtendedProfile";
 import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
 import {
@@ -6,6 +6,7 @@ import {
   ProfileModel,
   RetrievedProfile
 } from "@pagopa/io-functions-commons/dist/src/models/profile";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -13,11 +14,7 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { SandboxFiscalCodeMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/sandboxfiscalcode";
-import {
-  IRequestMiddleware,
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
+import { IRequestMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorQuery,
   ResponseErrorQuery
@@ -33,7 +30,6 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { FiscalCode, SandboxFiscalCode } from "@pagopa/ts-commons/lib/strings";
-import express from "express";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 
@@ -76,7 +72,7 @@ export const DeveloperProfilePayloadMiddleware: IRequestMiddleware<
  * Type of an CreateDevelopmentProfile handler.
  */
 type ICreateDevelopmentProfileHandler = (
-  context: Context,
+  context: InvocationContext,
   auth: IAzureApiAuthorization,
   sandboxFiscalCode: SandboxFiscalCode,
   developmentProfile: DevelopmentProfile
@@ -87,18 +83,16 @@ type ICreateDevelopmentProfileHandler = (
   | IResponseSuccessJson<ExtendedProfile>
 >;
 
-export function CreateDevelopmentProfile(
-  profileModel: ProfileModel
-): express.RequestHandler {
+export function CreateDevelopmentProfile(profileModel: ProfileModel) {
   const handler = CreateDevelopmentProfileHandler(profileModel);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     ContextMiddleware(),
     AzureApiAuthMiddleware(new Set([UserGroup.ApiDevelopmentProfileWrite])),
     SandboxFiscalCodeMiddleware,
     DeveloperProfilePayloadMiddleware
-  );
-  return wrapRequestHandler(middlewaresWrap(handler));
+  ] as const;
+  return wrapHandlerV4(middlewares, handler);
 }
 
 /**
@@ -114,7 +108,7 @@ export function CreateDevelopmentProfileHandler(
     const errorOrFiscalCode = FiscalCode.decode(sandboxFiscalCode);
 
     if (E.isLeft(errorOrFiscalCode)) {
-      context.log.error(
+      context.error(
         `${logPrefix}|ERROR=${readableReport(errorOrFiscalCode.left)}`
       );
       return ResponseErrorFromValidationErrors(FiscalCode)(
@@ -140,7 +134,7 @@ export function CreateDevelopmentProfileHandler(
 
     if (E.isLeft(errorOrCreatedProfile)) {
       const error = errorOrCreatedProfile.left;
-      context.log.error(`${logPrefix}|ERROR=${error}`);
+      context.error(`${logPrefix}|ERROR=${error}`);
 
       if (error.kind === "COSMOS_ERROR_RESPONSE" && error.error.code === 409) {
         return ResponseErrorConflict(
@@ -156,7 +150,7 @@ export function CreateDevelopmentProfileHandler(
 
     const createdProfile = errorOrCreatedProfile.right;
 
-    context.log.verbose(`${logPrefix}|SUCCESS`);
+    context.debug(`${logPrefix}|SUCCESS`);
 
     return ResponseSuccessJson(toExtendedProfile(createdProfile));
   };

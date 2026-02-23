@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
+import { InvocationContext } from "@azure/functions";
 import { EmailAddress } from "@pagopa/io-functions-commons/dist/generated/definitions/EmailAddress";
 // imported all /mailer/transports instead of /mailer to allow spyOn() to work
 // https://stackoverflow.com/questions/53162001/typeerror-during-jests-spyon-cannot-set-property-getrequest-of-object-which
@@ -14,16 +13,11 @@ import { ActivityInput, getActivityFunction } from "../handler";
 beforeEach(() => vi.clearAllMocks());
 
 const mockContext = {
-  log: {
-    error: console.error,
-
-    info: console.log,
-
-    verbose: console.log,
-
-    warn: console.warn
-  }
-} as any;
+  debug: vi.fn().mockImplementation(console.log),
+  error: vi.fn().mockImplementation(console.error),
+  log: vi.fn().mockImplementation(console.log),
+  warn: vi.fn().mockImplementation(console.warn)
+} as unknown as InvocationContext;
 
 const HTML_TO_TEXT_OPTIONS: HtmlToText.HtmlToTextOptions = {
   ignoreImage: true, // ignore all document images
@@ -54,8 +48,8 @@ describe("SendUserDataDeleteEmailActivity", () => {
     );
 
     const result = await SendUserDataDeleteEmailActivityHandler(
-      mockContext,
-      input
+      input,
+      mockContext
     );
 
     expect(result.kind).toBe("SUCCESS");
@@ -74,7 +68,7 @@ describe("SendUserDataDeleteEmailActivity", () => {
     );
 
     try {
-      await SendUserDataDeleteEmailActivityHandler(mockContext, input);
+      await SendUserDataDeleteEmailActivityHandler(input, mockContext);
     } catch (e) {
       expect(e).toMatchObject({
         message: "Error while sending email: " + errorMessage

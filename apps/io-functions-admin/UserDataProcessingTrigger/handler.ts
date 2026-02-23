@@ -1,11 +1,10 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { TableUtilities } from "azure-storage";
 import * as df from "durable-functions";
-import { DurableOrchestrationClient } from "durable-functions/lib/src/classes";
 import * as E from "fp-ts/lib/Either";
 import { Lazy, pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
@@ -102,7 +101,7 @@ const CosmosDbDocumentCollection = t.readonlyArray(t.readonly(t.UnknownRecord));
 type CosmosDbDocumentCollection = t.TypeOf<typeof CosmosDbDocumentCollection>;
 
 const startOrchestrator = async (
-  dfClient: DurableOrchestrationClient,
+  dfClient: df.DurableClient,
   orchestratorName:
     | "UserDataDeleteOrchestratorV2"
     | "UserDataDownloadOrchestrator",
@@ -115,11 +114,10 @@ const startOrchestrator = async (
       !_.isRunning
         ? TE.tryCatch(
             () =>
-              dfClient.startNew(
-                orchestratorName,
-                orchestratorId,
-                orchestratorInput
-              ),
+              dfClient.startNew(orchestratorName, {
+                input: orchestratorInput,
+                instanceId: orchestratorId
+              }),
             E.toError
           )
         : // if the orchestrator is already running, just return the id
@@ -134,11 +132,11 @@ const startOrchestrator = async (
   )();
 
 const startUserDataDownloadOrchestrator = (
-  context: Context,
+  context: InvocationContext,
   processable: ProcessableUserDataDownload
 ): Promise<string> => {
   const dfClient = df.getClient(context);
-  context.log.info(
+  context.log(
     `${logPrefix}: starting UserDataDownloadOrchestrator with ${processable.fiscalCode}`
   );
   trackUserDataDownloadEvent("started", processable);
@@ -152,11 +150,11 @@ const startUserDataDownloadOrchestrator = (
 };
 
 const startUserDataDeleteOrchestrator = (
-  context: Context,
+  context: InvocationContext,
   processable: ProcessableUserDataDelete
 ): Promise<string> => {
   const dfClient = df.getClient(context);
-  context.log.info(
+  context.log(
     `${logPrefix}: starting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
   );
   trackUserDataDeleteEvent("started", processable);
@@ -170,11 +168,11 @@ const startUserDataDeleteOrchestrator = (
 };
 
 const raiseAbortEventOnOrchestrator = (
-  context: Context,
+  context: InvocationContext,
   processable: ProcessableUserDataDeleteAbort
 ): Promise<void> => {
   const dfClient = df.getClient(context);
-  context.log.info(
+  context.log(
     `${logPrefix}: aborting UserDataDeleteOrchestrator with ${processable.fiscalCode}`
   );
   trackUserDataDeleteEvent("abort_requested", processable);
@@ -183,13 +181,13 @@ const raiseAbortEventOnOrchestrator = (
 };
 
 const processFailedUserDataProcessing = async (
-  context: Context,
+  context: InvocationContext,
   processable: FailedUserDataProcessing,
   insertEntityFn: InsertTableEntity
 ): Promise<void> => {
   // If a failed user_data_processing has been inserted
   // we insert a record into failed_user_data_processing table storage
-  context.log.verbose(
+  context.debug(
     `${logPrefix}|KEY=${processable.fiscalCode}|Inserting a failed_user_data_processing record`
   );
   const { e1: resultOrError, e2: sResponse } = await insertEntityFn({
@@ -198,18 +196,18 @@ const processFailedUserDataProcessing = async (
     RowKey: eg.String(processable.fiscalCode)
   });
   if (E.isLeft(resultOrError) && sResponse.statusCode !== 409) {
-    context.log.error(`${logPrefix}|ERROR=${resultOrError.left.message}`);
+    context.error(`${logPrefix}|ERROR=${resultOrError.left.message}`);
   }
 };
 
 const processClosedUserDataProcessing = async (
-  context: Context,
+  context: InvocationContext,
   processable: ClosedUserDataProcessing,
   deleteEntityFn: DeleteTableEntity
 ): Promise<void> => {
   // If a completed user_data_processing has been inserted
   // we delete any record from FailedUserDataProcessing table storage
-  context.log.verbose(
+  context.debug(
     `${logPrefix}|KEY=${processable.fiscalCode}|Deleting any failed_user_data_processing record`
   );
   const { e1: maybeError, e2: uResponse } = await deleteEntityFn({
@@ -217,7 +215,7 @@ const processClosedUserDataProcessing = async (
     RowKey: eg.String(processable.fiscalCode)
   });
   if (O.isSome(maybeError) && uResponse.statusCode !== 404) {
-    context.log.error(
+    context.error(
       `${logPrefix}|processClosedUserDataProcessing|ERROR=${maybeError.value.message}`
     );
   }
@@ -234,7 +232,7 @@ const Processable = t.union([
 
 const getAction =
   (
-    context: Context,
+    context: InvocationContext,
     insertFailure: InsertTableEntity,
     removeFailure: DeleteTableEntity
   ) =>
@@ -270,8 +268,8 @@ const getAction =
 export const triggerHandler =
   (insertFailure: InsertTableEntity, removeFailure: DeleteTableEntity) =>
   (
-    context: Context,
-    input: unknown
+    input: unknown,
+    context: InvocationContext
     // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
   ): Promise<readonly (string | void)[]> => {
     const operations = pipe(
@@ -292,7 +290,7 @@ export const triggerHandler =
                 E.map(getAction(context, insertFailure, removeFailure)),
                 E.fold(
                   _ => {
-                    context.log.warn(
+                    context.warn(
                       `${logPrefix}: skipping document [${JSON.stringify(
                         processableOrNot
                       )}]`
@@ -308,7 +306,7 @@ export const triggerHandler =
       )
     );
 
-    context.log.info(
+    context.log(
       `${logPrefix}: processing ${operations.length} document${
         operations.length === 1 ? "" : "s"
       }`

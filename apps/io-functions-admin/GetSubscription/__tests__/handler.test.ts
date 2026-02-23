@@ -3,6 +3,7 @@ import {
   ApiManagementClient,
   SubscriptionContract
 } from "@azure/arm-apimanagement";
+import { InvocationContext } from "@azure/functions";
 import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
@@ -63,7 +64,12 @@ spyOnGetApiClient.mockImplementation(() =>
 );
 
 const mockLog = vi.fn();
-const mockedContext = { log: { error: mockLog } };
+const mockedContext = {
+  debug: vi.fn(),
+  error: mockLog,
+  log: vi.fn(),
+  warn: vi.fn()
+} as unknown as InvocationContext;
 
 describe("GetSubscription", () => {
   it("should return an internal error response if the API management client can not be got", async () => {

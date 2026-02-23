@@ -1,4 +1,5 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -6,10 +7,6 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseErrorValidation,
@@ -20,7 +17,6 @@ import {
 } from "@pagopa/ts-commons/lib/responses";
 import { OrganizationFiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { BlobService } from "azure-storage";
-import express from "express";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
@@ -30,7 +26,7 @@ import { Logo as ApiLogo } from "../generated/definitions/Logo";
 import { LogoPayloadMiddleware } from "../utils/middlewares/service";
 
 type IUploadOrganizationLogoHandler = (
-  context: Context,
+  context: InvocationContext,
   auth: IAzureApiAuthorization,
   organizationFiscalCode: OrganizationFiscalCode,
   logoPayload: ApiLogo
@@ -62,10 +58,10 @@ const upsertBlobFromImageBuffer = (
 export function UploadOrganizationLogo(
   blobService: BlobService,
   logosUrl: string
-): express.RequestHandler {
+) {
   const handler = UploadOrganizationLogoHandler(blobService, logosUrl);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiServiceWrite group
@@ -74,9 +70,9 @@ export function UploadOrganizationLogo(
     RequiredParamMiddleware("organizationfiscalcode", OrganizationFiscalCode),
     // Extracts the Logo payload from the request body
     LogoPayloadMiddleware
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 }
 
 /**

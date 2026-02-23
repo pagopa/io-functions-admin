@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { enumType } from "@pagopa/ts-commons/lib/types";
 import { BlobService } from "azure-storage";
@@ -75,31 +75,29 @@ export const toDocumentDeleteFailure = (
  * @param failure the failure to log
  */
 export const logFailure =
-  (context: Context, logPrefix: string) =>
+  (context: InvocationContext, logPrefix: string) =>
   (failure: ActivityResultFailure): void => {
     switch (failure.kind) {
       case "BLOB_FAILURE":
-        context.log.error(
-          `${logPrefix}|Error saving blob|ERROR=${failure.reason}`
-        );
+        context.error(`${logPrefix}|Error saving blob|ERROR=${failure.reason}`);
         break;
       case "DELETE_FAILURE":
-        context.log.error(
+        context.error(
           `${logPrefix}|Error deleting data|ERROR=${failure.reason}`
         );
         break;
       case "INVALID_INPUT_FAILURE":
-        context.log.error(
+        context.error(
           `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
         );
         break;
       case "QUERY_FAILURE":
-        context.log.error(
+        context.error(
           `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
         );
         break;
       case "USER_NOT_FOUND_FAILURE":
-        context.log.error(`${logPrefix}|Error user not found|ERROR=`);
+        context.error(`${logPrefix}|Error user not found|ERROR=`);
         break;
       default:
         assertNever(failure);

@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
@@ -46,8 +46,8 @@ describe("UpdateSubscriptionsFeedActivity - Service", () => {
     };
 
     const result = await updateSubscriptionFeed(
-      contextMock as unknown as Context,
       input,
+      contextMock as unknown as InvocationContext,
       tableServiceMock,
       "aTable" as NonEmptyString
     );
@@ -82,8 +82,8 @@ describe("UpdateSubscriptionsFeedActivity - Service", () => {
     });
 
     const result = await updateSubscriptionFeed(
-      contextMock as unknown as Context,
       input,
+      contextMock as unknown as InvocationContext,
       tableServiceMock,
       "aTable" as NonEmptyString
     );
@@ -127,8 +127,8 @@ describe("UpdateSubscriptionsFeedActivity - Profile", () => {
     };
 
     const result = await updateSubscriptionFeed(
-      contextMock as unknown as Context,
       input,
+      contextMock as unknown as InvocationContext,
       tableServiceMock,
       "aTable" as NonEmptyString
     );
@@ -170,8 +170,8 @@ describe("UpdateSubscriptionsFeedActivity - Profile", () => {
     });
 
     const result = await updateSubscriptionFeed(
-      contextMock as unknown as Context,
       input,
+      contextMock as unknown as InvocationContext,
       tableServiceMock,
       "aTable" as NonEmptyString
     );
@@ -215,8 +215,8 @@ describe("UpdateSubscriptionsFeedActivity - Profile with preferences", () => {
     };
 
     const result = await updateSubscriptionFeed(
-      contextMock as unknown as Context,
       input,
+      contextMock as unknown as InvocationContext,
       tableServiceMock,
       "aTable" as NonEmptyString
     );

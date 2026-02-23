@@ -201,7 +201,7 @@ describe("createExtractUserDataActivityHandler", () => {
       fiscalCode: aFiscalCode
     };
 
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
     pipe(
       result,
       ActivityResultSuccess.decode,
@@ -242,7 +242,7 @@ describe("createExtractUserDataActivityHandler", () => {
       fiscalCode: aFiscalCode
     };
 
-    await handler(contextMock, input);
+    await handler(input, contextMock);
 
     expect(aZipStream.finalize).toHaveBeenCalledTimes(1);
     const allUserData: AllUserData = yaml.parse(
@@ -273,7 +273,7 @@ describe("createExtractUserDataActivityHandler", () => {
       fiscalCode: aFiscalCode
     };
 
-    await handler(contextMock, input);
+    await handler(input, contextMock);
 
     expect(messageModelMock.getContentFromBlob).toHaveBeenCalledWith(
       blobServiceMock,
@@ -318,7 +318,7 @@ describe("createExtractUserDataActivityHandler", () => {
       fiscalCode: aFiscalCode
     };
 
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     expect(E.isRight(ActivityResultSuccess.decode(result))).toBe(true);
   });
@@ -342,7 +342,7 @@ describe("createExtractUserDataActivityHandler", () => {
       fiscalCode: aFiscalCode
     };
 
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     expect(E.isRight(ActivityResultSuccess.decode(result))).toBe(true);
   });

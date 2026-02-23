@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import {
   ServicePreference,
   ServicesPreferencesModel
@@ -14,6 +14,8 @@ import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
+
+export const ActivityName = "GetServicesPreferencesActivity";
 
 const ActivityInput = t.interface({
   fiscalCode: FiscalCode,
@@ -42,7 +44,7 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
 export const GetServicesPreferencesActivityHandler =
   (servicePreferences: ServicesPreferencesModel) =>
-  async (context: Context, input: unknown): Promise<ActivityResult> =>
+  async (input: unknown, context: InvocationContext): Promise<ActivityResult> =>
     pipe(
       input,
       ActivityInput.decode,
@@ -75,12 +77,12 @@ export const GetServicesPreferencesActivityHandler =
       TE.map(values => values.filter(E.isRight).map(_ => _.right)),
       TE.mapLeft(err => {
         if (err.kind === "INVALID_INPUT") {
-          context.log.error(
+          context.error(
             `GetServicesPreferencesActivityHandler|ERROR|Invalid activity input [${err}]`
           );
           return err;
         }
-        context.log.error(
+        context.error(
           `GetServicesPreferencesActivityHandler|ERROR|Cosmos error [${err.error.message}]`
         );
         throw new Error(err.kind);

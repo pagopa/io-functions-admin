@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import {
   errorsToReadableMessages,
   readableReportSimplified
@@ -9,22 +9,22 @@ import { Errors } from "io-ts";
 const genericErrorDetail = "An error occurred while performing the operation";
 
 export const genericInternalErrorHandler = (
-  context: Context,
+  context: InvocationContext,
   logMessage: string,
   error: Error,
   errorDetail = genericErrorDetail
 ) => {
-  context.log.error(logMessage, error);
+  context.error(logMessage, error);
   return ResponseErrorInternal(errorDetail);
 };
 
 export const genericInternalValidationErrorHandler = (
-  context: Context,
+  context: InvocationContext,
   logMessage: string,
   error: Errors,
   errorDetail = genericErrorDetail
 ) => {
-  context.log.error(logMessage, errorsToReadableMessages(error).join(" / "));
+  context.error(logMessage, errorsToReadableMessages(error).join(" / "));
   return ResponseErrorInternal(errorDetail);
 };
 

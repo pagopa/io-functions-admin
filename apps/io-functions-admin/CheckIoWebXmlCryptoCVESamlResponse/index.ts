@@ -1,3 +1,1 @@
-import CheckXmlCryptoCVESamlResponse from "../CheckXmlCryptoCVESamlResponse";
-
-export default CheckXmlCryptoCVESamlResponse;
+export { CheckXmlCryptoCVESamlResponse } from "../CheckXmlCryptoCVESamlResponse";

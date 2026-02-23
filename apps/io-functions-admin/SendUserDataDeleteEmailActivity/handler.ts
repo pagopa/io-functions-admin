@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
 import { sendMail } from "@pagopa/io-functions-commons/dist/src/mailer";
 import { markdownToHtml } from "@pagopa/io-functions-commons/dist/src/utils/markdown";
@@ -12,6 +12,8 @@ import * as t from "io-ts";
 import * as NodeMailer from "nodemailer";
 
 import { EmailAddress } from "../generated/definitions/EmailAddress";
+
+export const ActivityName = "SendUserDataDeleteEmailActivity";
 
 // TODO: switch text based on user's preferred_language
 const userDataDeleteMessage = pipe(
@@ -64,9 +66,9 @@ export const getActivityFunction =
     lMailerTransporter: NodeMailer.Transporter,
     notificationDefaultParams: INotificationDefaults
   ) =>
-  (context: Context, input: unknown): Promise<ActivityResult> => {
+  (input: unknown, context: InvocationContext): Promise<ActivityResult> => {
     const failure = (reason: string) => {
-      context.log.error(reason);
+      context.error(reason);
       return ActivityResultFailure.encode({
         kind: "FAILURE",
         reason
@@ -91,7 +93,7 @@ export const getActivityFunction =
       TE.fromEither,
       TE.chainW(({ fiscalCode, toAddress }) => {
         const logPrefix = `SendUserDataDeleteEmailActivity|PROFILE=${fiscalCode}`;
-        context.log.verbose(`${logPrefix}|Sending user data delete email`);
+        context.debug(`${logPrefix}|Sending user data delete email`);
 
         const { content } = userDataDeleteMessage;
         return pipe(
@@ -117,9 +119,9 @@ export const getActivityFunction =
               to: toAddress
             })
           ),
-          TE.map(() => context.log.verbose(`${logPrefix}|RESULT=SUCCESS`)),
+          TE.map(() => context.debug(`${logPrefix}|RESULT=SUCCESS`)),
           TE.mapLeft(error => {
-            context.log.error(`${logPrefix}|ERROR=${error.message}`);
+            context.error(`${logPrefix}|ERROR=${error.message}`);
             throw new Error(`Error while sending email: ${error.message}`);
           })
         );

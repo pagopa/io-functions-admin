@@ -36,7 +36,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
       choice: aChoice,
       fiscalCode: aFiscalCode
     };
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     const decodedResult = ActivityResultSuccess.decode(result);
     expect(E.isRight(decodedResult)).toBe(true);
@@ -59,7 +59,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
       choice: aChoice,
       fiscalCode: aFiscalCode
     };
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     expect(E.isRight(ActivityResultNotFoundFailure.decode(result))).toBe(true);
   });
@@ -77,7 +77,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
       choice: aChoice,
       fiscalCode: aFiscalCode
     };
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     expect(E.isRight(ActivityResultQueryFailure.decode(result))).toBe(true);
   });
@@ -93,7 +93,7 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
       choice: aChoice,
       fiscalCode: aFiscalCode
     };
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     expect(E.isRight(ActivityResultNotFoundFailure.decode(result))).toBe(true);
   });
@@ -106,9 +106,12 @@ describe("UserDataProcessingCheckLastStatusActivity", () => {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
-    const result = await handler(contextMock, {
-      invalid: "input"
-    });
+    const result = await handler(
+      {
+        invalid: "input"
+      },
+      contextMock
+    );
 
     expect(E.isRight(ActivityResultInvalidInputFailure.decode(result))).toBe(
       true

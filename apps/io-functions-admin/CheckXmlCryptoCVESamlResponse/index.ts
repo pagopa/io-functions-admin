@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { toPlainText } from "@pagopa/ts-commons/lib/encrypt";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { DOMParser } from "@xmldom/xmldom";
@@ -19,7 +19,7 @@ const config = getConfigOrThrow();
 const getResponsePayloadOrThrow = (
   spidBlobItemVal: SpidBlobItem,
   _pk: NonEmptyString,
-  context: Context
+  context: InvocationContext
 ) => {
   let responsePayload: string;
 
@@ -32,7 +32,7 @@ const getResponsePayloadOrThrow = (
     );
 
     if (E.isLeft(decryptedResponsePayloadRes)) {
-      context.log.error(
+      context.error(
         "Error decrypting SPID response payload",
         decryptedResponsePayloadRes.left
       );
@@ -44,8 +44,11 @@ const getResponsePayloadOrThrow = (
   return responsePayload;
 };
 
-const CheckXmlCryptoCVESamlResponse = async (context: Context) => {
-  const blobName = context.bindingData.blobTrigger;
+export const CheckXmlCryptoCVESamlResponse = async (
+  blob: Buffer,
+  context: InvocationContext
+) => {
+  const blobName = context.triggerMetadata?.name as string;
 
   if (isBlobAboveThreshold(blobName)) {
     trackEvent({
@@ -54,14 +57,13 @@ const CheckXmlCryptoCVESamlResponse = async (context: Context) => {
     return;
   }
 
-  const blobBuffer = context.bindings.InputBlob;
-  const blobString = blobBuffer.toString();
+  const blobString = blob.toString();
   const blobObj = JSON.parse(blobString);
 
   const spidBlobItemRes = SpidBlobItem.decode(blobObj);
 
   if (E.isLeft(spidBlobItemRes)) {
-    context.log.error("Error decoding SPID blob item", spidBlobItemRes.left);
+    context.error("Error decoding SPID blob item", spidBlobItemRes.left);
     throw new Error("Error decoding SPID blob item");
   }
 
@@ -98,5 +100,3 @@ const CheckXmlCryptoCVESamlResponse = async (context: Context) => {
     });
   }
 };
-
-export default CheckXmlCryptoCVESamlResponse;

@@ -1,11 +1,8 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -16,14 +13,13 @@ import {
 import { ResponseErrorNotFound } from "@pagopa/ts-commons/lib/responses";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { ServiceResponse, TableService } from "azure-storage";
-import express from "express";
 import * as E from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 
 type IHttpHandler = (
-  context: Context,
+  context: InvocationContext,
   param1: UserDataProcessingChoice,
   param2: FiscalCode
 ) => Promise<
@@ -96,17 +92,17 @@ export const GetFailedUserDataProcessingHandler =
 export const GetFailedUserDataProcessing = (
   tableService: TableService,
   failedUserDataProcessingTable: NonEmptyString
-): express.RequestHandler => {
+) => {
   const handler = GetFailedUserDataProcessingHandler(
     tableService,
     failedUserDataProcessingTable
   );
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     ContextMiddleware(),
     RequiredParamMiddleware("choice", UserDataProcessingChoice),
     RequiredParamMiddleware("fiscalCode", FiscalCode)
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 };

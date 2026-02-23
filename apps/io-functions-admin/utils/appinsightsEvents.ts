@@ -1,7 +1,7 @@
 // eslint-disable sonarjs/no-duplicate-string
 
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
-import { IOrchestrationFunctionContext } from "durable-functions/lib/src/iorchestrationfunctioncontext";
+import { OrchestrationContext } from "durable-functions";
 
 import {
   trackEvent,
@@ -28,7 +28,7 @@ export const trackUserDataDeleteException = (
   eventName: string,
   exception: Error,
   userDataProcessing: UserDataProcessing,
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   isSampled = true
 ) =>
   // avoiding duplicate exceptions
@@ -66,7 +66,7 @@ export const trackUserDataDownloadException = (
   eventName: string,
   exception: Error,
   userDataProcessing: UserDataProcessing,
-  context: IOrchestrationFunctionContext,
+  context: OrchestrationContext,
   isSampled = true
 ) =>
   // avoiding duplicate exceptions

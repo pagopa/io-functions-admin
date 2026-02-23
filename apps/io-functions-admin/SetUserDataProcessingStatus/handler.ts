@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
@@ -6,12 +6,9 @@ import {
   UserDataProcessing,
   UserDataProcessingModel
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -21,7 +18,6 @@ import {
   ResponseSuccessAccepted
 } from "@pagopa/ts-commons/lib/responses";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import express from "express";
 import * as E from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
@@ -44,7 +40,7 @@ type AllowedUserDataProcessingStatus = t.TypeOf<
 >;
 
 type IHttpHandler = (
-  context: Context,
+  context: InvocationContext,
   param1: UserDataProcessingChoice,
   param2: FiscalCode,
   param3: AllowedUserDataProcessingStatus
@@ -107,15 +103,15 @@ export const setUserDataProcessingStatusHandler =
 
 export const setUserDataProcessingStatus = (
   userDataProcessingModel: UserDataProcessingModel
-): express.RequestHandler => {
+) => {
   const handler = setUserDataProcessingStatusHandler(userDataProcessingModel);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     ContextMiddleware(),
     RequiredParamMiddleware("choice", UserDataProcessingChoice),
     RequiredParamMiddleware("fiscalCode", FiscalCode),
     RequiredParamMiddleware("newStatus", AllowedUserDataProcessingStatus)
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 };

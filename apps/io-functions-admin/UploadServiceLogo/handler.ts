@@ -1,15 +1,12 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
   UserGroup
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorQuery,
   ResponseErrorQuery
@@ -25,7 +22,6 @@ import {
   ResponseSuccessRedirectToResource
 } from "@pagopa/ts-commons/lib/responses";
 import { BlobService } from "azure-storage";
-import express from "express";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
@@ -38,7 +34,7 @@ import { LogoPayloadMiddleware } from "../utils/middlewares/service";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 
 type IUpdateServiceHandler = (
-  context: Context,
+  context: InvocationContext,
   auth: IAzureApiAuthorization,
   serviceId: ServiceId,
   logoPayload: ApiLogo
@@ -158,10 +154,10 @@ export function UploadServiceLogo(
   serviceModel: ServiceModel,
   blobService: BlobService,
   logosUrl: string
-): express.RequestHandler {
+) {
   const handler = UpdateServiceLogoHandler(serviceModel, blobService, logosUrl);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiServiceWrite group
@@ -170,7 +166,7 @@ export function UploadServiceLogo(
     ServiceIdMiddleware,
     // Extracts the Logo payload from the request body
     LogoPayloadMiddleware
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 }

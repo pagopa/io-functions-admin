@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { ServiceResponse, TableService } from "azure-storage";
@@ -7,6 +7,8 @@ import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
+
+export const ActivityName = "IsFailedUserDataProcessingActivity";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -43,7 +45,7 @@ type TableEntry = Readonly<{
 
 export const IsFailedUserDataProcessing =
   (tableService: TableService, failedUserDataProcessingTable: NonEmptyString) =>
-  (_context: Context, input: unknown): Promise<ActivityResult> =>
+  (input: unknown, _context: InvocationContext): Promise<ActivityResult> =>
     pipe(
       input,
       ActivityInput.decode,

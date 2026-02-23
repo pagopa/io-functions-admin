@@ -1,17 +1,14 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
 import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
   UserGroup
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorQuery,
   ResponseErrorQuery
@@ -25,7 +22,6 @@ import {
   ResponseErrorValidation,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
-import express from "express";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
 
@@ -37,7 +33,7 @@ import { ServicePayloadMiddleware } from "../utils/middlewares/service";
 import { ServiceIdMiddleware } from "../utils/middlewares/serviceid";
 
 type IUpdateServiceHandler = (
-  context: Context,
+  context: InvocationContext,
   auth: IAzureApiAuthorization,
   serviceId: ServiceId,
   servicePayload: ApiService
@@ -49,12 +45,10 @@ type IUpdateServiceHandler = (
   | IResponseSuccessJson<ApiService>
 >;
 
-export function UpdateService(
-  serviceModel: ServiceModel
-): express.RequestHandler {
+export function UpdateService(serviceModel: ServiceModel) {
   const handler = UpdateServiceHandler(serviceModel);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiServiceWrite group
@@ -63,9 +57,9 @@ export function UpdateService(
     ServiceIdMiddleware,
     // Extracts the Service payload from the request body
     ServicePayloadMiddleware
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 }
 
 /**

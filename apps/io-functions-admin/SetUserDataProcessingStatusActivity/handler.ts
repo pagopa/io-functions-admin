@@ -2,7 +2,7 @@
  * Updates the status of a UserDataProcessing record
  */
 
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
   UserDataProcessing,
@@ -15,6 +15,8 @@ import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
 
 import { getMessageFromCosmosErrors } from "../utils/conversions";
+
+export const ActivityName = "SetUserDataProcessingStatusActivity";
 
 // Activity input
 export const ActivityInput = t.intersection([
@@ -81,16 +83,16 @@ function assertNever(_: never): void {
  * @param failure the failure to log
  */
 const logFailure =
-  (context: Context) =>
+  (context: InvocationContext) =>
   (failure: ActivityResultFailure): void => {
     switch (failure.kind) {
       case "INVALID_INPUT_FAILURE":
-        context.log.error(
+        context.error(
           `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
         );
         break;
       case "QUERY_FAILURE":
-        context.log.error(
+        context.error(
           `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
         );
         break;
@@ -101,7 +103,7 @@ const logFailure =
 
 export const createSetUserDataProcessingStatusActivityHandler =
   (userDataProcessingModel: UserDataProcessingModel) =>
-  (context: Context, input: unknown) => {
+  (input: unknown, context: InvocationContext) => {
     /**
      * Updates a UserDataProcessing record by creating a new version of it with a chenged status
      *
