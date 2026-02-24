@@ -4,7 +4,7 @@ import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { Day, Hour } from "@pagopa/ts-commons/lib/units";
-import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
+import { OrchestrationContext } from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import { assert, beforeEach, describe, expect, it, vi } from "vitest";
@@ -188,8 +188,7 @@ const mockIsUserEligibleForInstantDelete = vi
   .mockImplementation(_ => false);
 
 // just a convenient cast, good for every test case
-const context =
-  mockOrchestratorContext as unknown as IOrchestrationFunctionContext;
+const context = mockOrchestratorContext as unknown as OrchestrationContext;
 
 // timer are not delayed for test, but we set default values
 // to test any override, i.e. the grace period for failed requests

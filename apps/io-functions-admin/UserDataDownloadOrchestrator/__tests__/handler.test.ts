@@ -1,7 +1,7 @@
 /* eslint-disable vitest/prefer-called-with */
 // eslint-disable @typescript-eslint/no-explicit-any
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
+import { OrchestrationContext } from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -80,8 +80,7 @@ const consumeOrchestrator = (orch: any) => {
 };
 
 // just a convenient cast, good for every test case
-const context =
-  mockOrchestratorContext as unknown as IOrchestrationFunctionContext;
+const context = mockOrchestratorContext as unknown as OrchestrationContext;
 
 const expectedRetryOptions = expect.any(Object);
 

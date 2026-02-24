@@ -659,21 +659,30 @@ For each activity/orchestrator directory:
 
 ### 7j. Update Durable Functions test mocks
 
+When updating unit tests for orchestrators (e.g., in `__tests__/handler.test.ts`), you must update the context type and its import path.
+
 ```typescript
 // BEFORE
+import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
+// or
 import { IOrchestrationFunctionContext } from "durable-functions/lib/src/iorchestrationfunctioncontext";
+
 const contextMock = {
   df: { callActivity: mockCallActivity, getInput: mockGetInput },
 } as unknown as IOrchestrationFunctionContext;
+// or, if you import from the shared mock file:
+const contextMock = mockOrchestratorContext as unknown as IOrchestrationFunctionContext;
 
 // AFTER
 import { OrchestrationContext } from "durable-functions";
 const contextMock = {
   df: { callActivity: mockCallActivity, getInput: mockGetInput },
 } as unknown as OrchestrationContext;
+// or, if you import from the shared mock file:
+const context = mockOrchestratorContext as unknown as OrchestrationContext;
 ```
 
-For the `durable-functions` mock module:
+For the `durable-functions` mock module (`__mocks__/durable-functions.ts`):
 
 ```typescript
 // BEFORE
