@@ -292,11 +292,7 @@ const notificationModel = new NotificationModel(
 const notificationStatusModel = new NotificationStatusModel(
   database.container(NOTIFICATION_STATUS_COLLECTION_NAME)
 );
-const extractServicePreferencesDeletableModel =
-  new ServicePreferencesDeletableModel(
-    database.container(SERVICE_PREFERENCES_COLLECTION_NAME),
-    SERVICE_PREFERENCES_COLLECTION_NAME
-  );
+
 const userDataBlobService = createBlobService(
   config.UserDataArchiveStorageConnection
 );
@@ -533,7 +529,7 @@ df.app.activity(ExtractUserDataActivityName, {
     notificationModel,
     notificationStatusModel,
     profileModel,
-    servicePreferencesModel: extractServicePreferencesDeletableModel,
+    servicePreferencesModel: servicePreferencesDeletableModel,
     userDataBlobService,
     userDataContainerName
   })
@@ -667,9 +663,7 @@ app.storageQueue("SanitizeProfileEmail", {
   connection: "CitizenAuthStorageConnection",
   handler: createSanitizeProfileEmailsFunction({
     inputDecoder: ProfileToSanitize,
-    profileModel: new ProfileModel(
-      cosmosdbInstance.container(PROFILE_COLLECTION_NAME)
-    ),
+    profileModel: profileModel,
     telemetryClient: initTelemetryClient()
   }),
   queueName: "%SanitizeUserProfileQueueName%"

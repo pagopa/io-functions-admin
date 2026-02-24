@@ -101,7 +101,7 @@ export const updateSubscriptionStatus =
           .map(_ => _.value.message)
           .join("|")
       );
-      context.error(`${logPrefix}|ERROR=${errors.message}}`);
+      context.error(`${logPrefix}|ERROR=${errors.message}`);
       throw errors;
     }
 

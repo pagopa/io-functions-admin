@@ -29,7 +29,7 @@ import { logFailure } from "./utils";
 
 export const ActivityName = "DeleteUserDataActivity";
 
-const logPrefix = `DeleteUserDataActivity`;
+const logPrefix = ActivityName;
 
 export interface IActivityHandlerInput {
   readonly authenticationLockService: AuthenticationLockService;
