@@ -31,6 +31,7 @@
     "@pagopa/openapi-codegen-ts": "^10.0.5",
     "@pagopa/typescript-config-node": "*",
     "@types/documentdb": "^1.10.8",
+    "@types/express": "^4.17.13",
     "@types/html-to-text": "^5.1.1",
     "@types/node": "~20.12.2",
     "@types/nodemailer": "^4.6.8",
