@@ -12,6 +12,7 @@ import * as t from "io-ts";
 
 import { makeOrchestratorId as makeDeleteOrchestratorId } from "../UserDataDeleteOrchestratorV2/utils";
 import { makeOrchestratorId as makeDownloadOrchestratorId } from "../UserDataDownloadOrchestrator/utils";
+import { isInstanceNotFoundError } from "../utils/orchestrator";
 
 export const ActivityName = "UserDataProcessingFindFailureReasonActivity";
 
@@ -109,10 +110,15 @@ export const getFindFailureReasonActivityHandler = async (
           df
             .getClient(context)
             .getStatus(failedUserDataProcessingOrchestratorId),
-        () =>
-          ActivityResultFailure.encode({
-            kind: "NOT_FOUND_FAILURE"
-          })
+        // In durable-functions v3 getStatus throws on 404.
+        // We distinguish instance-not-found from unexpected errors.
+        (err): ActivityResultFailure =>
+          isInstanceNotFoundError(E.toError(err))
+            ? ActivityResultFailure.encode({ kind: "NOT_FOUND_FAILURE" })
+            : ActivityResultFailure.encode({
+                kind: "UNHANDLED",
+                reason: E.toError(err).message
+              })
       );
     }),
     TE.map(orchestratorStatus =>

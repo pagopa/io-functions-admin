@@ -65,6 +65,8 @@ See [middleware changes](./references/migration-guide.md#6-update-custom-middlew
 
 See [Durable Functions migration](./references/migration-guide.md#7-durable-functions-migration-durable-functions-v1--v3).
 
+> **Important**: `durable-functions` v3 introduces **behavioral breaking changes** beyond signature updates. In particular, `DurableClient.getStatus()` now **throws an Error** on HTTP 404 (instance not found) instead of silently returning a partial status object. See [section 7k](./references/migration-guide.md#7k-handle-durable-functions-v3-behavioral-breaking-changes) for patterns to handle these corner cases.
+
 ### 8. Migrate Queue Triggers
 
 See [Queue trigger migration](./references/migration-guide.md#8-queue-triggers).

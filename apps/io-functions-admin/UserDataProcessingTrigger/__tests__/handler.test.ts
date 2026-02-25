@@ -27,6 +27,8 @@ vi.mock("durable-functions", async () => {
 // eslint-disable-next-line vitest/no-mocks-import
 import {
   context,
+  makeGetStatus404Error,
+  mockGetStatus,
   mockRaiseEvent,
   mockStartNew
 } from "../../__mocks__/durable-functions";
@@ -171,6 +173,26 @@ describe("UserDataProcessingTrigger", () => {
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
     expect(mockRaiseEvent).toHaveBeenCalledTimes(processableDocsAbort.length);
+  });
+
+  it("should start orchestrator even when getStatus throws 404 (v3 instance not found)", async () => {
+    // In durable-functions v3, getStatus throws on 404.
+    // isOrchestratorRunning should treat this as "not running" and proceed
+    // to start a new orchestrator instance.
+    mockGetStatus.mockRejectedValue(
+      makeGetStatus404Error("test-orchestrator-id")
+    );
+
+    const processableDocs: readonly UserDataProcessing[] = [
+      aProcessableDownload
+    ];
+
+    const input: readonly any[] = [...processableDocs].map(toUndecoded);
+
+    const handler = triggerHandler(insertEntity, deleteEntity);
+    await handler(input, context);
+
+    expect(mockStartNew).toHaveBeenCalledTimes(1);
   });
 });
 
