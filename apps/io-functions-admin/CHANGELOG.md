@@ -1,5 +1,11 @@
 ### Changelog
 
+## 3.0.1
+
+### Patch Changes
+
+- e1f7704: Fix 404 Exception in getStatus orchestrator client
+
 ## 3.0.0
 
 ### Major Changes
