@@ -10,15 +10,39 @@ export const OrchestrationRuntimeStatus = {
   Failed: "Failed",
   Pending: "Pending",
   Running: "Running",
+  Suspended: "Suspended",
   Terminated: "Terminated"
 };
 
 export const mockStatusRunning = {
+  createdTime: new Date(),
+  input: null,
+  instanceId: "orchestratorId",
+  lastUpdatedTime: new Date(),
+  name: "orchestratorId",
+  output: null,
   runtimeStatus: OrchestrationRuntimeStatus.Running
 };
 export const mockStatusCompleted = {
+  createdTime: new Date(),
+  input: null,
+  instanceId: "orchestratorId",
+  lastUpdatedTime: new Date(),
+  name: "orchestratorId",
+  output: null,
   runtimeStatus: OrchestrationRuntimeStatus.Completed
 };
+
+/**
+ * Simulates the durable-functions v3 getStatus 404 error.
+ * In v3, getStatus throws when the Durable Task extension replies with
+ * HTTP 404 (instance not found).
+ */
+export const makeGetStatus404Error = (instanceId: string): Error =>
+  new Error(
+    `DurableClient error: Durable Functions extension replied with HTTP 404 response. ` +
+      `This usually means we could not find any data associated with the instanceId provided: ${instanceId}.`
+  );
 
 export const mockStartNew = vi.fn((_name, _options?) =>
   Promise.resolve("instanceId")

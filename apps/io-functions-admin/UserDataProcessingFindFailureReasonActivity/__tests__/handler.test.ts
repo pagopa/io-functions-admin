@@ -11,6 +11,7 @@ import {
   ActivityResultInvalidInputFailure,
   ActivityResultNotFoundFailure,
   ActivityResultSuccess,
+  ActivityResultUnhandledFailure,
   getFindFailureReasonActivityHandler
 } from "../handler";
 
@@ -64,7 +65,11 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
   it("should handle a record not found failure", async () => {
     getOrchestratorStatusMock.mockImplementationOnce(
       async (_orchestratorId: string) => {
-        throw "Not found";
+        // durable-functions v3 throws with HTTP 404 message on instance not found
+        throw new Error(
+          `DurableClient error: Durable Functions extension replied with HTTP 404 response. ` +
+            `This usually means we could not find any data associated with the instanceId provided: ${_orchestratorId}.`
+        );
       }
     );
 
@@ -78,6 +83,25 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
     );
 
     expect(E.isRight(ActivityResultNotFoundFailure.decode(result))).toBe(true);
+  });
+
+  it("should return UNHANDLED failure for non-404 errors", async () => {
+    getOrchestratorStatusMock.mockImplementationOnce(
+      async (_orchestratorId: string) => {
+        throw new Error("Connection refused");
+      }
+    );
+
+    const input: ActivityInput = {
+      choice: aChoice,
+      fiscalCode: aFiscalCode
+    };
+    const result = await getFindFailureReasonActivityHandler(
+      input,
+      contextMock
+    );
+
+    expect(E.isRight(ActivityResultUnhandledFailure.decode(result))).toBe(true);
   });
 
   it("should handle an invalid input", async () => {

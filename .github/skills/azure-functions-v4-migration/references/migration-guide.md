@@ -717,6 +717,144 @@ const res = await handler(contextMock, input);
 
 // AFTER
 const res = await handler(input, contextMock);
+
+---
+
+### 7k. Handle `durable-functions` v3 behavioral breaking changes
+
+Beyond signature changes, `durable-functions` v3 introduces **behavioral breaking changes** in `DurableClient` methods. These are silent regressions that won't cause compile-time errors but will change runtime behavior.
+
+#### `getStatus()` throws on HTTP 404 (instance not found)
+
+This is the **most critical** behavioral change.
+
+| Behavior | v1/v2 | v3 |
+|----------|-------|-----|
+| Instance not found (404) | Returns `response.data as DurableOrchestrationStatus` (may be empty/partial) | **Throws `Error`** with message containing `"HTTP 404"` |
+| Valid response (200/202) | Returns raw `response.data` cast | Wraps in `new DurableOrchestrationStatus(response.data)` — validates required fields via constructor |
+| Empty response body | Returns whatever `response.data` is | **Throws `Error`** (`"empty HTTP ... response"`) |
+
+**Impact**: Any code that calls `getStatus()` and expects it to silently return on not-found will now crash.
+
+**Pattern — wrapping `getStatus` in `TE.tryCatch`:**
+
+If your code wraps `getStatus()` in `TE.tryCatch` and maps all errors uniformly, you must now distinguish 404 errors from other failures:
+
+```typescript
+// BEFORE — all errors treated the same (v1/v2: 404 never reached here)
+TE.tryCatch(
+  () => client.getStatus(instanceId),
+  () => ({ kind: "NOT_FOUND_FAILURE" })
+)
+
+// AFTER — distinguish 404 from unexpected errors
+import { isInstanceNotFoundError } from "../utils/orchestrator";
+
+TE.tryCatch(
+  () => client.getStatus(instanceId),
+  (err): FailureResult =>
+    isInstanceNotFoundError(E.toError(err))
+      ? { kind: "NOT_FOUND_FAILURE" }
+      : { kind: "UNHANDLED", reason: E.toError(err).message }
+)
+```
+
+**Pattern — 404 as "orchestrator not running":**
+
+Utility functions that call `getStatus()` to check if an orchestrator exists should treat 404 as "not found / not running" rather than propagating the error:
+
+```typescript
+// utils/orchestrator.ts
+import * as df from "durable-functions";
+import { DurableOrchestrationStatus } from "durable-functions";
+import { toError } from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as TE from "fp-ts/lib/TaskEither";
+
+export const isInstanceNotFoundError = (error: Error): boolean =>
+  error.message?.includes("HTTP 404");
+
+export const isOrchestratorRunning = (
+  client: df.DurableClient,
+  orchestratorId: string
+): TE.TaskEither<
+  Error,
+  DurableOrchestrationStatus & { readonly isRunning: boolean }
+> =>
+  pipe(
+    TE.tryCatch(() => client.getStatus(orchestratorId), toError),
+    TE.map(status => ({
+      ...status,
+      isRunning:
+        status.runtimeStatus === df.OrchestrationRuntimeStatus.Running ||
+        status.runtimeStatus === df.OrchestrationRuntimeStatus.Pending
+    })),
+    // durable-functions v3: getStatus throws on 404 (instance not found).
+    // Treat as "not running" to preserve v2 semantic behaviour.
+    TE.orElse(error =>
+      isInstanceNotFoundError(error)
+        ? TE.of({
+            createdTime: new Date(0),
+            instanceId: orchestratorId,
+            lastUpdatedTime: new Date(0),
+            name: orchestratorId,
+            runtimeStatus:
+              "Unknown" as unknown as df.OrchestrationRuntimeStatus,
+            input: null,
+            output: null,
+            isRunning: false as const
+          } as DurableOrchestrationStatus & { readonly isRunning: false })
+        : TE.left(error)
+    )
+  );
+```
+
+#### `DurableOrchestrationStatus` constructor validation (v3)
+
+In v3, `getStatus()` wraps the response in `new DurableOrchestrationStatus(data)` which validates required fields (`name`, `instanceId`, `createdTime`, `lastUpdatedTime`, `runtimeStatus`). If the Durable Task extension returns malformed data, this constructor throws a `TypeError`. This won't contain `"HTTP 404"` in the message, so `isInstanceNotFoundError` correctly returns `false` — the error will propagate as an unexpected failure.
+
+#### Other method changes (reference)
+
+| Method | v1/v2 | v3 | Used in codebase? |
+|--------|-------|-----|-------------------|
+| `raiseEvent()` on 404 | Rejects with `"No instance with ID '...' found."` | Same behavior | Yes |
+| `terminate()` on 404 | Rejects with `"No instance with ID '...' found."` | Same behavior | No (only mocked) |
+| `rewind()` on 410 | `"The rewind operation is only supported..."` | Uses HTTP 412 instead of 410; adds 501 for unsupported storage | No |
+| `startNew()` signature | `(name, instanceId?, input?)` | `(name, options?: { instanceId?, input?, version? })` | Yes — already migrated |
+| `raiseEvent()` signature | `(id, name, data, taskHub?, conn?)` | `(id, name, data, options?: TaskHubOptions)` | Yes — no optional params used |
+| New: `suspend()` / `resume()` | N/A | Available | No |
+
+#### Updating mocks for v3 behavior
+
+The shared mock file should expose a helper to simulate the v3 404 error:
+
+```typescript
+// __mocks__/durable-functions.ts
+export const makeGetStatus404Error = (instanceId: string): Error =>
+  new Error(
+    `DurableClient error: Durable Functions extension replied with HTTP 404 response. ` +
+      `This usually means we could not find any data associated with the instanceId provided: ${instanceId}.`
+  );
+```
+
+Mock `getStatus` responses should include all required `DurableOrchestrationStatus` fields:
+
+```typescript
+export const mockStatusCompleted = {
+  createdTime: new Date(),
+  instanceId: "orchestratorId",
+  lastUpdatedTime: new Date(),
+  name: "orchestratorId",
+  input: null,
+  output: null,
+  runtimeStatus: OrchestrationRuntimeStatus.Completed
+};
+```
+
+To test the 404 scenario:
+
+```typescript
+mockGetStatus.mockRejectedValue(makeGetStatus404Error("my-instance-id"));
 ```
 
 ---
