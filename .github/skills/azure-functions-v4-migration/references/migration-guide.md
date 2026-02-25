@@ -717,7 +717,6 @@ const res = await handler(contextMock, input);
 
 // AFTER
 const res = await handler(input, contextMock);
-****```
 
 ---
 
