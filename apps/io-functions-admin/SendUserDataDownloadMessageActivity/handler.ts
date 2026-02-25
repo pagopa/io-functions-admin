@@ -1,4 +1,4 @@
-﻿import { Context } from "@azure/functions";
+﻿import { InvocationContext } from "@azure/functions";
 import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
@@ -8,6 +8,8 @@ import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
 
 import { userDataDownloadMessage } from "./messages";
+
+export const ActivityName = "SendUserDataDownloadMessageActivity";
 
 /**
  * Send a single user data download message
@@ -65,9 +67,9 @@ export const getActivityFunction =
     publicDownloadBaseUrl: NonEmptyString,
     timeoutFetch: typeof fetch
   ) =>
-  (context: Context, input: unknown): Promise<ActivityResult> => {
+  (input: unknown, context: InvocationContext): Promise<ActivityResult> => {
     const failure = (reason: string) => {
-      context.log.error(reason);
+      context.error(reason);
       return ActivityResultFailure.encode({
         kind: "FAILURE",
         reason
@@ -92,7 +94,7 @@ export const getActivityFunction =
       TE.fromEither,
       TE.chainW(({ blobName, fiscalCode, password }) => {
         const logPrefix = `SendUserDataDownloadMessageActivity|PROFILE=${fiscalCode}`;
-        context.log.verbose(`${logPrefix}|Sending user data download message`);
+        context.debug(`${logPrefix}|Sending user data download message`);
 
         return TE.tryCatch(
           async () => {
@@ -121,7 +123,7 @@ export const getActivityFunction =
               }
             }
 
-            context.log.verbose(`${logPrefix}|RESPONSE=${status}`);
+            context.debug(`${logPrefix}|RESPONSE=${status}`);
             return success();
           },
           e => failure(E.toError(e).message)

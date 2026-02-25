@@ -1,6 +1,6 @@
 // eslint-disable @typescript-eslint/no-explicit-any
 
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { vi } from "vitest";
 
 export const OrchestrationRuntimeStatus = {
@@ -20,7 +20,7 @@ export const mockStatusCompleted = {
   runtimeStatus: OrchestrationRuntimeStatus.Completed
 };
 
-export const mockStartNew = vi.fn((_, __, ___) =>
+export const mockStartNew = vi.fn((_name, _options?) =>
   Promise.resolve("instanceId")
 );
 export const mockGetStatus = vi
@@ -39,20 +39,23 @@ export const getClient = vi.fn().mockImplementation(() => ({
 
 export const RetryOptions = vi.fn(() => ({}));
 
+export const input = {
+  durableClient: vi.fn().mockReturnValue({})
+};
+
 export const context = {
-  bindings: {
-    orchestrationClient: {}
+  debug: vi.fn().mockImplementation(console.log),
+
+  error: vi.fn().mockImplementation(console.log),
+
+  extraInputs: {
+    get: vi.fn()
   },
-  log: {
-    error: vi.fn().mockImplementation(console.log),
 
-    info: vi.fn().mockImplementation(console.log),
+  log: vi.fn().mockImplementation(console.log),
 
-    verbose: vi.fn().mockImplementation(console.log),
-
-    warn: vi.fn().mockImplementation(console.log)
-  }
-} as unknown as Context;
+  warn: vi.fn().mockImplementation(console.log)
+} as unknown as InvocationContext;
 
 //
 // Orchestrator context
@@ -112,6 +115,7 @@ export const mockOrchestratorContext = {
   }
 };
 
-export const orchestrator = vi
-  .fn()
-  .mockImplementation(fn => () => fn(mockOrchestratorContext));
+export const app = {
+  activity: vi.fn(),
+  orchestration: vi.fn()
+};

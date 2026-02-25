@@ -2,7 +2,7 @@
  * Interacts with Session API to lock/unlock user
  */
 
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { toError } from "fp-ts/lib/Either";
@@ -12,6 +12,8 @@ import * as t from "io-ts";
 
 import { Client } from "../utils/sm-internal/client";
 import { SuccessResponse } from "../utils/sm-internal/SuccessResponse";
+
+export const ActivityName = "SetUserSessionLockActivity";
 
 const assertNever = (_: never): never => {
   throw new Error("should not have executed this");
@@ -79,7 +81,7 @@ const logPrefix = `SetUserSessionLockActivity`;
  * @param fiscalCode
  */
 const callSessionApi = (
-  context: Context,
+  context: InvocationContext,
   sessionApiClient: Client<"ApiKeyAuth">,
   action: ActivityInput["action"],
   fiscalCode: FiscalCode
@@ -99,7 +101,7 @@ const callSessionApi = (
         }
       },
       error => {
-        context.log.error(`${logPrefix}|ERROR|failed using api`, action, error);
+        context.error(`${logPrefix}|ERROR|failed using api`, action, error);
         return ApiCallFailure.encode({
           kind: "API_CALL_FAILURE",
           reason: toError(error).message
@@ -110,7 +112,7 @@ const callSessionApi = (
       flow(
         TE.fromEither,
         TE.mapLeft(error => {
-          context.log.error(
+          context.error(
             `${logPrefix}|ERROR|failed decoding api payload`,
             action,
             error
@@ -129,7 +131,7 @@ const callSessionApi = (
         case 400:
         case 401:
         case 404:
-          context.log.error(
+          context.error(
             `${logPrefix}|ERROR|API bad request ${status}`,
             action,
             value
@@ -144,7 +146,7 @@ const callSessionApi = (
             })
           );
         case 500:
-          context.log.error(
+          context.error(
             `${logPrefix}|ERROR|API error response ${status}`,
             action,
             value
@@ -166,7 +168,7 @@ const callSessionApi = (
 
 export const createSetUserSessionLockActivityHandler =
   (sessionApiClient: Client<"ApiKeyAuth">) =>
-  (context: Context, input: unknown) =>
+  (input: unknown, context: InvocationContext) =>
     pipe(
       input,
       ActivityInput.decode,
@@ -181,7 +183,7 @@ export const createSetUserSessionLockActivityHandler =
         callSessionApi(context, sessionApiClient, action, fiscalCode)
       ),
       TE.mapLeft(failure => {
-        context.log.error(`${logPrefix}|ERROR|Activity failed`, failure);
+        context.error(`${logPrefix}|ERROR|Activity failed`, failure);
         // in case of transient failures we let the activity throw, so the orchestrator can retry
         if (TransientFailure.is(failure)) {
           throw failure;
@@ -189,7 +191,7 @@ export const createSetUserSessionLockActivityHandler =
         return failure;
       }),
       TE.map(_ => {
-        context.log.info(`${logPrefix}|INFO|Activity succeeded`);
+        context.log(`${logPrefix}|INFO|Activity succeeded`);
         return ActivityResultSuccess.encode({ kind: "SUCCESS" });
       }),
       TE.toUnion

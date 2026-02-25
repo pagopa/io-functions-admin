@@ -5,6 +5,7 @@ import {
   SubscriptionContract,
   UserContract
 } from "@azure/arm-apimanagement";
+import { InvocationContext } from "@azure/functions";
 import { RestError } from "@azure/ms-rest-js";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
@@ -85,7 +86,12 @@ spyOnGetApiClient.mockImplementation(() =>
 );
 
 const mockLog = vi.fn();
-const mockedContext = { log: { error: mockLog } };
+const mockedContext = {
+  debug: vi.fn(),
+  error: mockLog,
+  log: vi.fn(),
+  warn: vi.fn()
+} as unknown as InvocationContext;
 
 // eslint-disable-next-line max-lines-per-function
 describe("CreateSubscription", () => {

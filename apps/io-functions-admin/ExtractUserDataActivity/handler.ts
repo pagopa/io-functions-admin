@@ -2,7 +2,7 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
 import {
   MessageModel,
@@ -47,6 +47,8 @@ import { ServicePreferencesDeletableModel } from "../utils/extensions/models/ser
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
 import { getEncryptedZipStream } from "../utils/zip";
+
+export const ActivityName = "ExtractUserDataActivity";
 
 export const ArchiveInfo = t.interface({
   blobName: NonEmptyString,
@@ -147,26 +149,26 @@ function assertNever(_: never): void {
  * @param failure the failure to log
  */
 const logFailure =
-  (context: Context) =>
+  (context: InvocationContext) =>
   (failure: ActivityResultFailure): void => {
     switch (failure.kind) {
       case "ARCHIVE_GENERATION_FAILURE":
-        context.log.error(
+        context.error(
           `${logPrefix}|Error saving zip bundle|ERROR=${failure.reason}`
         );
         break;
       case "INVALID_INPUT_FAILURE":
-        context.log.error(
+        context.error(
           `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
         );
         break;
       case "QUERY_FAILURE":
-        context.log.error(
+        context.error(
           `${logPrefix}|Error ${failure.query} query error|ERROR=${failure.reason}`
         );
         break;
       case "USER_NOT_FOUND_FAILURE":
-        context.log.error(`${logPrefix}|Error user not found|ERROR=`);
+        context.error(`${logPrefix}|Error user not found|ERROR=`);
         break;
       default:
         assertNever(failure);
@@ -628,10 +630,10 @@ export function createExtractUserDataActivityHandler({
   userDataBlobService,
   userDataContainerName
 }: IActivityHandlerInput): (
-  context: Context,
-  input: unknown
+  input: unknown,
+  context: InvocationContext
 ) => Promise<ActivityResult> {
-  return (context: Context, input: unknown) =>
+  return (input: unknown, context: InvocationContext) =>
     pipe(
       input,
       ActivityInput.decode,

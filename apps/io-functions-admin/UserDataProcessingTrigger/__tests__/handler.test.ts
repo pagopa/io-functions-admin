@@ -121,7 +121,7 @@ describe("UserDataProcessingTrigger", () => {
 
     try {
       const handler = triggerHandler(insertEntity, deleteEntity);
-      await handler(context, input);
+      await handler(input, context);
       assert.fail("it should throw");
     } catch (_error) {
       expect(mockStartNew).not.toHaveBeenCalled();
@@ -142,7 +142,7 @@ describe("UserDataProcessingTrigger", () => {
     ];
 
     const handler = triggerHandler(insertEntity, deleteEntity);
-    await handler(context, input);
+    await handler(input, context);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
   });
@@ -167,7 +167,7 @@ describe("UserDataProcessingTrigger", () => {
     ].map(toUndecoded);
 
     const handler = triggerHandler(insertEntity, deleteEntity);
-    await handler(context, input);
+    await handler(input, context);
 
     expect(mockStartNew).toHaveBeenCalledTimes(processableDocs.length);
     expect(mockRaiseEvent).toHaveBeenCalledTimes(processableDocsAbort.length);
@@ -247,7 +247,7 @@ describe("FailedUserDataProcessing", () => {
     );
 
     const handler = triggerHandler(insertEntity, deleteEntity);
-    await handler(context, input);
+    await handler(input, context);
 
     expect(insertEntity).toBeCalled();
     expect(insertEntity).toBeCalledTimes(1);
@@ -269,7 +269,7 @@ describe("FailedUserDataProcessing", () => {
       .map(v => ({ ...v, reason: undefined }));
 
     const handler = triggerHandler(insertEntity, deleteEntity);
-    await handler(context, input);
+    await handler(input, context);
 
     expect(insertEntity).toBeCalled();
     expect(insertEntity).toBeCalledTimes(1);
@@ -293,7 +293,7 @@ describe("ClosedUserDataProcessing", () => {
     );
 
     const handler = triggerHandler(insertEntity, deleteEntity);
-    await handler(context, input);
+    await handler(input, context);
 
     expect(deleteEntity).toBeCalled();
     expect(deleteEntity).toBeCalledTimes(1);

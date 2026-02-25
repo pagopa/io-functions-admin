@@ -1,4 +1,4 @@
-import { DurableOrchestrationStatus } from "durable-functions/lib/src/durableorchestrationstatus";
+import { DurableOrchestrationStatus } from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { describe, expect, it, vi } from "vitest";
 
@@ -47,8 +47,8 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
       fiscalCode: aFiscalCode
     };
     const result = await getFindFailureReasonActivityHandler(
-      contextMock,
-      input
+      input,
+      contextMock
     );
 
     const decodedResult = ActivityResultSuccess.decode(result);
@@ -73,8 +73,8 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
       fiscalCode: aFiscalCode
     };
     const result = await getFindFailureReasonActivityHandler(
-      contextMock,
-      input
+      input,
+      contextMock
     );
 
     expect(E.isRight(ActivityResultNotFoundFailure.decode(result))).toBe(true);
@@ -83,9 +83,12 @@ describe("UserDataProcessingFindFailureReasonActivity", () => {
   it("should handle an invalid input", async () => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
-    const result = await getFindFailureReasonActivityHandler(contextMock, {
-      invalid: "input"
-    });
+    const result = await getFindFailureReasonActivityHandler(
+      {
+        invalid: "input"
+      },
+      contextMock
+    );
 
     expect(E.isRight(ActivityResultInvalidInputFailure.decode(result))).toBe(
       true

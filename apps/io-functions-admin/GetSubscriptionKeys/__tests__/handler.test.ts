@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ApiManagementClient } from "@azure/arm-apimanagement";
+import { InvocationContext } from "@azure/functions";
 import { RestError } from "@azure/ms-rest-js";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { assert, describe, expect, it, Mock, vi } from "vitest";
@@ -39,7 +40,12 @@ mockApiManagementClient.mockImplementation(() => ({
 }));
 mockGetToken.mockImplementation(() => Promise.resolve(undefined));
 
-const mockedContext = { log: { error: mockLog } };
+const mockedContext = {
+  debug: vi.fn(),
+  error: mockLog,
+  log: vi.fn(),
+  warn: vi.fn()
+} as unknown as InvocationContext;
 
 const fakeApimConfig: IAzureApimConfig = {
   apim: "apim",

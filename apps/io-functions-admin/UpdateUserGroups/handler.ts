@@ -1,7 +1,8 @@
 /* eslint-disable max-lines-per-function */
 import { ApiManagementClient, GroupContract } from "@azure/arm-apimanagement";
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -10,10 +11,6 @@ import {
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredBodyPayloadMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_body_payload";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -24,7 +21,6 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import express from "express";
 import { sequenceT } from "fp-ts/lib/Apply";
 import * as A from "fp-ts/lib/Array";
 import * as E from "fp-ts/lib/Either";
@@ -44,7 +40,7 @@ import {
 } from "../utils/errorHandler";
 
 type IGetSubscriptionKeysHandler = (
-  context: Context,
+  context: InvocationContext,
   auth: IAzureApiAuthorization,
   email: EmailAddress,
   userGroupsPayload: UserGroupsPayload
@@ -62,12 +58,10 @@ interface IGroupsClusterization {
   readonly toBeRemoved: readonly string[];
 }
 
-export function UpdateUserGroup(
-  azureApimConfig: IAzureApimConfig
-): express.RequestHandler {
+export function UpdateUserGroup(azureApimConfig: IAzureApimConfig) {
   const handler = UpdateUserGroupHandler(azureApimConfig);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiServiceKeyRead group
@@ -76,9 +70,9 @@ export function UpdateUserGroup(
     RequiredParamMiddleware("email", EmailAddress),
     // Extract the user groups payload from the request body
     RequiredBodyPayloadMiddleware(UserGroupsPayload)
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 }
 
 export function UpdateUserGroupHandler(

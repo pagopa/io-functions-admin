@@ -101,11 +101,14 @@ describe("IsFailedUserDataProcessingHandler", () => {
       storageTableMock
     );
 
-    const result = await getFailedUserDataProcessingHandler({} as any, {
-      a: "a",
-      b: "b",
-      c: "c"
-    });
+    const result = await getFailedUserDataProcessingHandler(
+      {
+        a: "a",
+        b: "b",
+        c: "c"
+      },
+      {} as any
+    );
 
     expect(ActivityResultFailure.is(result)).toBe(true);
     const decodedResult = ActivityResultFailure.decode(result);
@@ -131,10 +134,13 @@ describe("IsFailedUserDataProcessingHandler", () => {
       storageTableMock
     );
 
-    const result = await getFailedUserDataProcessingHandler({} as any, {
-      choice: UserDataProcessingChoiceEnum.DELETE,
-      fiscalCode: fiscalCode1
-    });
+    const result = await getFailedUserDataProcessingHandler(
+      {
+        choice: UserDataProcessingChoiceEnum.DELETE,
+        fiscalCode: fiscalCode1
+      },
+      {} as any
+    );
 
     expect(ActivityResultFailure.is(result)).toBe(true);
     const decodedResult = ActivityResultFailure.decode(result);
@@ -160,10 +166,13 @@ describe("IsFailedUserDataProcessingHandler", () => {
       storageTableMock
     );
 
-    const result = await getFailedUserDataProcessingHandler({} as any, {
-      choice: UserDataProcessingChoiceEnum.DELETE,
-      fiscalCode: fiscalCode1
-    });
+    const result = await getFailedUserDataProcessingHandler(
+      {
+        choice: UserDataProcessingChoiceEnum.DELETE,
+        fiscalCode: fiscalCode1
+      },
+      {} as any
+    );
 
     expect(ActivityResultSuccess.is(result)).toBe(true);
     const decodedResult = ActivityResultSuccess.decode(result);
@@ -185,10 +194,13 @@ describe("IsFailedUserDataProcessingHandler", () => {
       storageTableMock
     );
 
-    const result = await getFailedUserDataProcessingHandler({} as any, {
-      choice: UserDataProcessingChoiceEnum.DELETE,
-      fiscalCode: fiscalCode1
-    });
+    const result = await getFailedUserDataProcessingHandler(
+      {
+        choice: UserDataProcessingChoiceEnum.DELETE,
+        fiscalCode: fiscalCode1
+      },
+      {} as any
+    );
 
     expect(ActivityResultSuccess.is(result)).toBe(true);
     const decodedResult = ActivityResultSuccess.decode(result);

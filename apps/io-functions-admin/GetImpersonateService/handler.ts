@@ -1,4 +1,5 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -6,8 +7,6 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
-import { withRequestMiddlewares } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
-import { wrapRequestHandler } from "@pagopa/ts-commons/lib/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -16,7 +15,6 @@ import {
   ResponseErrorNotFound,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
-import express from "express";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
@@ -27,7 +25,7 @@ import { getSubscription, getUser, mapApimRestError } from "../utils/apim";
 import { getApiClient, getUserGroups, IAzureApimConfig } from "../utils/apim";
 
 type IGetImpersonateService = (
-  context: Context,
+  context: InvocationContext,
   auth: IAzureApiAuthorization,
   serviceId: ServiceId
 ) => Promise<
@@ -45,21 +43,19 @@ const chainNullableWithNotFound = (
     TE.fromOption(() => ResponseErrorNotFound("Not found", "Not Found"))
   );
 
-export function GetImpersonateService(
-  azureApimConfig: IAzureApimConfig
-): express.RequestHandler {
+export function GetImpersonateService(azureApimConfig: IAzureApimConfig) {
   const handler = GetImpersonateServiceHandler(azureApimConfig);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiUserAdmin group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
     // Extract the serviceId value from the request
     RequiredParamMiddleware("serviceId", ServiceId)
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 }
 
 /**

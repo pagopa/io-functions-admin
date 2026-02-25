@@ -57,7 +57,7 @@ describe("createSetUserSessionLockActivityHandler", () => {
   it("should fail on invalid input", async () => {
     const handler = createSetUserSessionLockActivityHandler(mockClient);
 
-    const result = await handler(context, "invalid");
+    const result = await handler("invalid", context);
     expect(E.isRight(InvalidInputFailure.decode(result))).toBe(true);
   });
 
@@ -65,11 +65,11 @@ describe("createSetUserSessionLockActivityHandler", () => {
     const handler = createSetUserSessionLockActivityHandler(mockClient);
 
     await handler(
-      context,
       ActivityInput.encode({
         action: "LOCK",
         fiscalCode: aFiscalCode
-      })
+      }),
+      context
     );
     expect(mockLockUserSession).toHaveBeenCalledTimes(1);
     expect(mockUnlockUserSession).not.toHaveBeenCalled();
@@ -79,11 +79,11 @@ describe("createSetUserSessionLockActivityHandler", () => {
     const handler = createSetUserSessionLockActivityHandler(mockClient);
 
     await handler(
-      context,
       ActivityInput.encode({
         action: "UNLOCK",
         fiscalCode: aFiscalCode
-      })
+      }),
+      context
     );
     expect(mockUnlockUserSession).toHaveBeenCalledTimes(1);
     expect(mockLockUserSession).not.toHaveBeenCalled();
@@ -100,11 +100,11 @@ describe("createSetUserSessionLockActivityHandler", () => {
     // we wrap in a try/catch so we can test both cases
     try {
       const result = await handler(
-        context,
         ActivityInput.encode({
           action: "LOCK",
           fiscalCode: aFiscalCode
-        })
+        }),
+        context
       );
       expect(E.isRight(TransientFailure.decode(result))).toBe(false);
       expect(E.isRight(ApiCallFailure.decode(result))).toBe(true);
@@ -123,11 +123,11 @@ describe("createSetUserSessionLockActivityHandler", () => {
     // we wrap in a try/catch so we can test both cases
     try {
       const result = await handler(
-        context,
         ActivityInput.encode({
           action: "LOCK",
           fiscalCode: aFiscalCode
-        })
+        }),
+        context
       );
       expect(E.isRight(TransientFailure.decode(result))).toBe(false);
       expect(E.isRight(ApiCallFailure.decode(result))).toBe(true);
@@ -150,11 +150,11 @@ describe("createSetUserSessionLockActivityHandler", () => {
     // we wrap in a try/catch so we can test both cases
     try {
       const result = await handler(
-        context,
         ActivityInput.encode({
           action: "LOCK",
           fiscalCode: aFiscalCode
-        })
+        }),
+        context
       );
       expect(E.isRight(TransientFailure.decode(result))).toBe(false);
       expect(E.isRight(ApiCallFailure.decode(result))).toBe(true);
@@ -177,11 +177,11 @@ describe("createSetUserSessionLockActivityHandler", () => {
     // we wrap in a try/catch so we can test both cases
     try {
       const result = await handler(
-        context,
         ActivityInput.encode({
           action: "LOCK",
           fiscalCode: aFiscalCode
-        })
+        }),
+        context
       );
       expect(E.isRight(TransientFailure.decode(result))).toBe(false);
       expect(E.isRight(BadApiRequestFailure.decode(result))).toBe(true);

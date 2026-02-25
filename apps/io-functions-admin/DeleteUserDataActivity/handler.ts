@@ -2,7 +2,7 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
@@ -27,7 +27,9 @@ import {
 } from "./types";
 import { logFailure } from "./utils";
 
-const logPrefix = `DeleteUserDataActivity`;
+export const ActivityName = "DeleteUserDataActivity";
+
+const logPrefix = ActivityName;
 
 export interface IActivityHandlerInput {
   readonly authenticationLockService: AuthenticationLockService;
@@ -62,10 +64,10 @@ export function createDeleteUserDataActivityHandler({
   userDataBackupBlobService,
   userDataBackupContainerName
 }: IActivityHandlerInput): (
-  context: Context,
-  input: unknown
+  input: unknown,
+  context: InvocationContext
 ) => Promise<ActivityResult> {
-  return (context: Context, input: unknown) =>
+  return (input: unknown, context: InvocationContext) =>
     pipe(
       input,
       ActivityInput.decode,

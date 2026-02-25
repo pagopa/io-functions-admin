@@ -1,9 +1,10 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
 import {
   asyncIteratorToArray,
   flattenAsyncIterator
 } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import {
   AzureApiAuthMiddleware,
@@ -12,10 +13,6 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
-import {
   IResponseErrorQuery,
   ResponseErrorQuery
 } from "@pagopa/io-functions-commons/dist/src/utils/response";
@@ -23,7 +20,6 @@ import {
   IResponseSuccessJson,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
-import express from "express";
 import * as E from "fp-ts/lib/Either";
 import { identity, pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
@@ -35,7 +31,7 @@ import * as TE from "fp-ts/lib/TaskEither";
 import { ServiceIdWithVersion } from "../generated/definitions/ServiceIdWithVersion";
 
 type IGetServicesHandler = (
-  context: Context,
+  context: InvocationContext,
   auth: IAzureApiAuthorization
 ) => Promise<IGetServicesHandlerResult>;
 
@@ -46,19 +42,17 @@ type IGetServicesHandlerResult =
       readonly page_size: number;
     }>;
 
-export function GetServices(
-  serviceModel: ServiceModel
-): express.RequestHandler {
+export function GetServices(serviceModel: ServiceModel) {
   const handler = GetServicesHandler(serviceModel);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiServiceList group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceList]))
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 }
 
 /**

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { InvocationContext } from "@azure/functions";
 import { SubscriptionCIDRsModel } from "@pagopa/io-functions-commons/dist/src/models/subscription_cidrs";
 import {
   CosmosErrors,
@@ -16,7 +17,12 @@ import { GetSubscriptionCidrsHandler } from "../handler";
 const fakeSubscriptionId = "a-non-empty-string";
 
 const mockLog = vi.fn();
-const mockedContext = { log: { error: mockLog } };
+const mockedContext = {
+  debug: vi.fn(),
+  error: mockLog,
+  log: vi.fn(),
+  warn: vi.fn()
+} as unknown as InvocationContext;
 
 describe("GetSubscriptionCidrs", () => {
   it("should return an internal server error response if the Subscription CIDRs model return a CosmosError", async () => {

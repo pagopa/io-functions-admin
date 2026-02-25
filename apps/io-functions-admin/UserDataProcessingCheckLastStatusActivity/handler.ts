@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
 import {
@@ -14,6 +14,8 @@ import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
 
 import { getMessageFromCosmosErrors } from "../utils/conversions";
+
+export const ActivityName = "UserDataProcessingCheckLastStatusActivity";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -75,8 +77,11 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 export const createUserDataProcessingCheckLastStatusActivityHandler =
   (
     userDataProcessingModel: UserDataProcessingModel
-  ): ((context: Context, input: unknown) => Promise<ActivityResult>) =>
-  (_: Context, input: unknown): Promise<ActivityResult> =>
+  ): ((
+    input: unknown,
+    context: InvocationContext
+  ) => Promise<ActivityResult>) =>
+  (input: unknown, _: InvocationContext): Promise<ActivityResult> =>
     pipe(
       input,
       ActivityInput.decode,

@@ -1,4 +1,4 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
 import {
   UserDataProcessing,
@@ -8,12 +8,9 @@ import {
   asyncIteratorToArray,
   flattenAsyncIterator
 } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorQuery,
   ResponseErrorQuery
@@ -22,8 +19,6 @@ import { IResponseSuccessJson } from "@pagopa/ts-commons/lib/responses";
 import { ResponseSuccessJson } from "@pagopa/ts-commons/lib/responses";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as df from "durable-functions";
-import { DurableOrchestrationClient } from "durable-functions/lib/src/durableorchestrationclient";
-import express from "express";
 import * as A from "fp-ts/lib/Array";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
@@ -34,7 +29,7 @@ import { isOrchestratorRunning } from "../utils/orchestrator";
 const logPrefix = "UserDataProcessingProcessFailedRecordsHandler";
 
 type IGetFailedUserDataProcessingHandler = (
-  context: Context
+  context: InvocationContext
 ) => Promise<IGetFailedUserDataProcessingHandlerResult>;
 
 type IGetFailedUserDataProcessingHandlerResult =
@@ -42,7 +37,7 @@ type IGetFailedUserDataProcessingHandlerResult =
   | IResponseSuccessJson<readonly (string | undefined)[]>;
 
 const startOrchestrator = async (
-  dfClient: DurableOrchestrationClient,
+  dfClient: df.DurableClient,
   orchestratorName: "UserDataProcessingRecoveryOrchestrator",
   orchestratorId: string,
   orchestratorInput: unknown
@@ -53,11 +48,10 @@ const startOrchestrator = async (
       !_.isRunning
         ? TE.tryCatch(
             () =>
-              dfClient.startNew(
-                orchestratorName,
-                orchestratorId,
-                orchestratorInput
-              ),
+              dfClient.startNew(orchestratorName, {
+                input: orchestratorInput,
+                instanceId: orchestratorId
+              }),
             E.toError
           )
         : // if the orchestrator is already running, just return the id
@@ -77,11 +71,11 @@ const makeOrchestratorId = (
 ): string => `${choice}-${fiscalCode}-FAILED-USER-DATA-PROCESSING-RECOVERY`;
 
 const startUserDataProcessingRecoveryOrchestrator = async (
-  context: Context,
+  context: InvocationContext,
   processable: UserDataProcessing
 ): Promise<string> => {
   const dfClient = df.getClient(context);
-  context.log.info(
+  context.log(
     `${logPrefix}: starting UserDataProcessingRecoveryOrchestrator for ${processable.choice}-${processable.fiscalCode}`
   );
   const orchestratorId = makeOrchestratorId(
@@ -101,7 +95,7 @@ export const processFailedUserDataProcessingHandler =
     userDataProcessingModel: UserDataProcessingModel
   ): IGetFailedUserDataProcessingHandler =>
   async (
-    context: Context
+    context: InvocationContext
   ): Promise<IGetFailedUserDataProcessingHandlerResult> => {
     const listOfFailedUserDataProcessing = new Set<string>();
     return pipe(
@@ -151,7 +145,7 @@ export const processFailedUserDataProcessingHandler =
                   );
                 },
                 e => {
-                  context.log.error(`${logPrefix}|ERROR|${e}`);
+                  context.error(`${logPrefix}|ERROR|${e}`);
                   return toCosmosErrorResponse(e);
                 }
               )
@@ -167,15 +161,15 @@ export const processFailedUserDataProcessingHandler =
 
 export const processFailedUserDataProcessing = (
   userDataProcessingModel: UserDataProcessingModel
-): express.RequestHandler => {
+) => {
   const handler = processFailedUserDataProcessingHandler(
     userDataProcessingModel
   );
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     // Extract Azure Functions bindings
     ContextMiddleware()
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 };

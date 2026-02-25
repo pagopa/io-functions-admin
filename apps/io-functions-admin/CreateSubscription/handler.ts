@@ -1,5 +1,6 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
@@ -7,10 +8,6 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredBodyPayloadMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_body_payload";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseErrorNotFound,
@@ -21,7 +18,6 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import express from "express";
 import { flow, identity, pipe } from "fp-ts/lib/function";
 import * as TE from "fp-ts/lib/TaskEither";
 import { Errors } from "io-ts";
@@ -43,7 +39,7 @@ import { CreateSubscriptionParamsMiddleware } from "../utils/middlewares/createS
 import { withRetry } from "../utils/retry";
 
 type ICreateSubscriptionHandler = (
-  context: Context,
+  context: InvocationContext,
   auth: IAzureApiAuthorization,
   requestParams: readonly [EmailAddress, NonEmptyString],
   productNamePayload: ProductNamePayload
@@ -54,12 +50,10 @@ type ICreateSubscriptionHandler = (
   | IResponseSuccessJson<Subscription>
 >;
 
-export function CreateSubscription(
-  azureApimConfig: IAzureApimConfig
-): express.RequestHandler {
+export function CreateSubscription(azureApimConfig: IAzureApimConfig) {
   const handler = CreateSubscriptionHandler(azureApimConfig);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiUserAdmin group
@@ -71,9 +65,9 @@ export function CreateSubscription(
     CreateSubscriptionParamsMiddleware,
     // Extract the productName from the request body
     RequiredBodyPayloadMiddleware(ProductNamePayload)
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 }
 
 /**

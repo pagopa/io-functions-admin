@@ -1,16 +1,13 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
 import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
   UserGroup
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseErrorQuery,
   ResponseErrorQuery
@@ -20,7 +17,6 @@ import {
   IResponseSuccessJson,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
-import express from "express";
 import { isLeft } from "fp-ts/lib/Either";
 
 import {
@@ -30,7 +26,7 @@ import {
 import { ServicePayloadMiddleware } from "../utils/middlewares/service";
 
 type ICreateServiceHandler = (
-  context: Context,
+  context: InvocationContext,
   auth: IAzureApiAuthorization,
   servicePayload: ApiService
 ) => Promise<
@@ -39,21 +35,19 @@ type ICreateServiceHandler = (
   | IResponseSuccessJson<ApiService>
 >;
 
-export function CreateService(
-  serviceModel: ServiceModel
-): express.RequestHandler {
+export function CreateService(serviceModel: ServiceModel) {
   const handler = CreateServiceHandler(serviceModel);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiServiceWrite group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceWrite])),
     // Extracts the Service payload from the request body
     ServicePayloadMiddleware
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 }
 
 /**

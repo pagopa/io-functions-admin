@@ -1,21 +1,19 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { asyncIteratorToPageArray } from "@pagopa/io-functions-commons/dist/src/utils/async";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   AzureApiAuthMiddleware,
   IAzureApiAuthorization,
   UserGroup
 } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/azure_api_auth";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
-import { withRequestMiddlewares } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
-import { wrapRequestHandler } from "@pagopa/ts-commons/lib/request_middleware";
 import {
   IResponseErrorInternal,
   IResponseSuccessJson,
   ResponseErrorInternal,
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
-import express from "express";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as RA from "fp-ts/lib/ReadonlyArray";
@@ -27,7 +25,7 @@ import { userContractToApiUser } from "../utils/conversions";
 import { CursorMiddleware } from "../utils/middlewares/cursorMiddleware";
 
 type IGetSubscriptionKeysHandler = (
-  context: Context,
+  context: InvocationContext,
   auth: IAzureApiAuthorization,
   cursor?: number
 ) => Promise<IResponseErrorInternal | IResponseSuccessJson<UserCollection>>;
@@ -36,19 +34,19 @@ export function GetUsers(
   azureApimConfig: IAzureApimConfig,
   functionsUrl: string,
   pageSize: NonNegativeInteger
-): express.RequestHandler {
+) {
   const handler = GetUsersHandler(azureApimConfig, functionsUrl, pageSize);
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     // Extract Azure Functions bindings
     ContextMiddleware(),
     // Allow only users in the ApiUserAdmin group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
     // Extract the skip value from the request
     CursorMiddleware
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 }
 
 /**
@@ -85,7 +83,7 @@ export function GetUsersHandler(
           RA.map(userContractToApiUser),
           RA.sequence(E.Applicative),
           E.mapLeft(error => {
-            context.log.error("GetUsers | ", error);
+            context.error("GetUsers | ", error);
             return ResponseErrorInternal("Validation error");
           }),
           E.map(users =>
@@ -103,7 +101,7 @@ export function GetUsersHandler(
         )
       ),
       TE.mapLeft(error => {
-        context.log.error("GetUsers | ", error);
+        context.error("GetUsers | ", error);
         return ResponseErrorInternal("Internal server error");
       }),
       TE.toUnion

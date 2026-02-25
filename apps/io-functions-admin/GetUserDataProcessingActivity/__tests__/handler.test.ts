@@ -33,7 +33,7 @@ describe("GetUserDataProcessingActivityHandler", () => {
       choice: aChoice,
       fiscalCode: aFiscalCode
     };
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     expect(E.isRight(ActivityResultSuccess.decode(result))).toBe(true);
   });
@@ -48,7 +48,7 @@ describe("GetUserDataProcessingActivityHandler", () => {
       choice: aChoice,
       fiscalCode: aFiscalCode
     };
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     expect(E.isRight(ActivityResultNotFoundFailure.decode(result))).toBe(true);
   });
@@ -65,7 +65,7 @@ describe("GetUserDataProcessingActivityHandler", () => {
       choice: aChoice,
       fiscalCode: aFiscalCode
     };
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     expect(E.isRight(ActivityResultQueryFailure.decode(result))).toBe(true);
   });
@@ -80,7 +80,7 @@ describe("GetUserDataProcessingActivityHandler", () => {
       choice: aChoice,
       fiscalCode: aFiscalCode
     };
-    const result = await handler(contextMock, input);
+    const result = await handler(input, contextMock);
 
     expect(E.isRight(ActivityResultNotFoundFailure.decode(result))).toBe(true);
   });
@@ -92,9 +92,12 @@ describe("GetUserDataProcessingActivityHandler", () => {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore to force bad behavior
-    const result = await handler(contextMock, {
-      invalid: "input"
-    });
+    const result = await handler(
+      {
+        invalid: "input"
+      },
+      contextMock
+    );
 
     expect(E.isRight(ActivityResultInvalidInputFailure.decode(result))).toBe(
       true

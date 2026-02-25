@@ -1,10 +1,7 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
+import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import { ContextMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/context_middleware";
 import { RequiredParamMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/middlewares/required_param";
-import {
-  withRequestMiddlewares,
-  wrapRequestHandler
-} from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import {
   IResponseSuccessJson,
   ResponseSuccessJson
@@ -15,13 +12,12 @@ import {
 } from "@pagopa/ts-commons/lib/responses";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { ServiceResponse, TableQuery, TableService } from "azure-storage";
-import express from "express";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as TE from "fp-ts/lib/TaskEither";
 
 type IHttpHandler = (
-  context: Context,
+  context: InvocationContext,
   param: NonEmptyString
 ) => Promise<IResponseErrorInternal | IResponseSuccessJson<ResultSet>>;
 
@@ -81,16 +77,16 @@ export const GetFailedUserDataProcessingListHandler =
 export const GetFailedUserDataProcessingList = (
   tableService: TableService,
   failedUserDataProcessingTable: NonEmptyString
-): express.RequestHandler => {
+) => {
   const handler = GetFailedUserDataProcessingListHandler(
     tableService,
     failedUserDataProcessingTable
   );
 
-  const middlewaresWrap = withRequestMiddlewares(
+  const middlewares = [
     ContextMiddleware(),
     RequiredParamMiddleware("choice", NonEmptyString)
-  );
+  ] as const;
 
-  return wrapRequestHandler(middlewaresWrap(handler));
+  return wrapHandlerV4(middlewares, handler);
 };

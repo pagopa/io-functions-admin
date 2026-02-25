@@ -1,6 +1,8 @@
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import { VisibleService } from "@pagopa/io-functions-commons/dist/src/models/visible_service";
 import * as t from "io-ts";
+
+export const ActivityName = "UpdateVisibleServicesActivity";
 
 const AddVisibleServiceInput = t.interface({
   action: t.literal("UPSERT"),
@@ -38,7 +40,7 @@ export type Result = t.TypeOf<typeof Result>;
  */
 export const getUpdateVisibleServicesActivityHandler =
   () =>
-  async (_: Context, __: unknown): Promise<unknown> =>
+  async (__: unknown, _: InvocationContext): Promise<unknown> =>
     Result.encode({
       kind: "SUCCESS"
     });

@@ -2,7 +2,7 @@
  * Get a Profile record
  */
 
-import { Context } from "@azure/functions";
+import { InvocationContext } from "@azure/functions";
 import {
   ProfileModel,
   RetrievedProfile
@@ -15,6 +15,8 @@ import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
 
 import { getMessageFromCosmosErrors } from "../utils/conversions";
+
+export const ActivityName = "GetProfileActivity";
 
 // Activity input
 export const ActivityInput = t.interface({
@@ -88,20 +90,20 @@ function assertNever(_: never): void {
  * @param failure the failure to log
  */
 const logFailure =
-  (context: Context) =>
+  (context: InvocationContext) =>
   (failure: ActivityResultFailure): void => {
     switch (failure.kind) {
       case "INVALID_INPUT_FAILURE":
-        context.log.error(
+        context.error(
           `${logPrefix}|Error decoding input|ERROR=${failure.reason}`
         );
         break;
       case "NOT_FOUND_FAILURE":
         // it might not be a failure
-        context.log.warn(`${logPrefix}|Error Profile not found`);
+        context.warn(`${logPrefix}|Error Profile not found`);
         break;
       case "QUERY_FAILURE":
-        context.log.error(
+        context.error(
           `${logPrefix}|Error ${failure.query} query error |ERROR=${failure.reason}`
         );
         break;
@@ -113,8 +115,11 @@ const logFailure =
 export const createGetProfileActivityHandler =
   (
     profileModel: ProfileModel
-  ): ((context: Context, input: unknown) => Promise<ActivityResult>) =>
-  (context: Context, input: unknown): Promise<ActivityResult> =>
+  ): ((
+    input: unknown,
+    context: InvocationContext
+  ) => Promise<ActivityResult>) =>
+  (input: unknown, context: InvocationContext): Promise<ActivityResult> =>
     pipe(
       input,
       ActivityInput.decode,

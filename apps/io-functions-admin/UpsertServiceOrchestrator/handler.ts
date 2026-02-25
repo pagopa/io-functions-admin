@@ -3,7 +3,7 @@ import { VisibleService } from "@pagopa/io-functions-commons/dist/src/models/vis
 import { UTCISODateFromString } from "@pagopa/ts-commons/lib/dates";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import * as df from "durable-functions";
-import { IOrchestrationFunctionContext } from "durable-functions/lib/src/classes";
+import { OrchestrationContext, Task } from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { isSome, none, Option, some } from "fp-ts/lib/Option";
 import * as t from "io-ts";
@@ -12,6 +12,8 @@ import {
   Input as UpdateVisibleServicesActivityInput,
   Result as UpdateVisibleServicesActivityResult
 } from "../UpdateVisibleServicesActivity/handler";
+
+export const OrchestratorName = "UpsertServiceOrchestrator";
 
 export function retrievedServiceToVisibleService(
   retrievedService: RetrievedService
@@ -96,8 +98,8 @@ function computeMaybeAction(
 }
 
 export const handler = function* (
-  context: IOrchestrationFunctionContext
-): Generator<unknown> {
+  context: OrchestrationContext
+): Generator<Task> {
   const input = context.df.getInput();
 
   const retryOptions = new df.RetryOptions(5000, 10);
@@ -108,7 +110,7 @@ export const handler = function* (
   const errorOrUpsertServiceEvent = UpsertServiceEvent.decode(input);
 
   if (E.isLeft(errorOrUpsertServiceEvent)) {
-    context.log.error(
+    context.error(
       `UpdateVisibleServicesActivity|Cannot parse input|ERROR=${readableReport(
         errorOrUpsertServiceEvent.left
       )}`
@@ -125,7 +127,7 @@ export const handler = function* (
   const visibleService = retrievedServiceToVisibleService(newService);
   if (isSome(maybeAction)) {
     const action = maybeAction.value;
-    context.log.verbose(
+    context.debug(
       `UpdateVisibleServicesActivity|Visible services must be updated|SERVICE_ID=${visibleService.serviceId}|ACTION=${action}`
     );
     const updateVisibleServicesActivityInput =
@@ -148,7 +150,7 @@ export const handler = function* (
         );
 
       if (E.isLeft(errorOrUpdateVisibleServicesActivityResult)) {
-        context.log.error(
+        context.error(
           `UpdateVisibleServicesActivity|Can't decode result|SERVICE_ID=${
             visibleService.serviceId
           }|ERROR=${readableReport(
@@ -163,21 +165,21 @@ export const handler = function* (
         errorOrUpdateVisibleServicesActivityResult.right;
 
       if (updateVisibleServicesActivityResult.kind === "SUCCESS") {
-        context.log.verbose(
+        context.debug(
           `UpdateVisibleServicesActivity|Update success|SERVICE_ID=${visibleService.serviceId}|ACTION=${action}`
         );
       } else {
-        context.log.error(
+        context.error(
           `UpdateVisibleServicesActivity|Activity failure|SERVICE_ID=${visibleService.serviceId}|ERROR=${updateVisibleServicesActivityResult.reason}`
         );
       }
     } catch (e) {
-      context.log.error(
+      context.error(
         `UpdateVisibleServicesActivity|Max retry exceeded|SERVICE_ID=${visibleService.serviceId}|ERROR=${e}`
       );
     }
   } else {
-    context.log.verbose(
+    context.debug(
       `UpdateVisibleServicesActivity|No need to update visible services|SERVICE_ID=${visibleService.serviceId}`
     );
   }
