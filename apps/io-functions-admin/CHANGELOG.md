@@ -1,5 +1,11 @@
 ### Changelog
 
+## 3.0.0
+
+### Major Changes
+
+- 5ca1d49: Migrate to Programming Model V4
+
 ## 2.0.2
 
 ### Patch Changes
