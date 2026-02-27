@@ -247,9 +247,73 @@ Use the [main.ts template](../templates/main.ts.template) as a starting point an
 
 Methods in `function.json` are lowercase (`"get"`, `"post"`), but `app.http` accepts both cases. Use uppercase for clarity: `["GET"]`, `["POST"]`.
 
-### Path parameter naming for fiscal code middlewares
+### Parameter name alignment between route/request and middlewares
 
-The following middlewares from `@pagopa/io-functions-commons` hard-code the param key they read from `req.params`:
+Every middleware that reads a value from the request does so by indexing into a specific part of the request object using the `name` string you pass as the first argument. **The `name` must exactly match the identifier the runtime uses to populate that part of the request** — a mismatch is silently swallowed (validation always fails or returns `O.none`) with no runtime error or warning.
+
+| Middleware | Reads from | `name` must exactly match |
+|---|---|---|
+| `RequiredParamMiddleware(name, type)` | `request.params[name]` | Route placeholder `{name}` in `app.http` `route` |
+| `OptionalParamMiddleware(name, type)` | `request.params[name]` | Route placeholder `{name}` in `app.http` `route` |
+| `RequiredQueryParamMiddleware(name, type)` | `request.query[name]` | Query-string key `?name=…` |
+| `OptionalQueryParamMiddleware(name, type)` | `request.query[name]` | Query-string key `?name=…` |
+| `RequiredHeaderMiddleware(name, type)` | `request.headers[name]` | HTTP header name — **lowercase** (Azure Functions v4 normalises all incoming header names to lowercase in `request.headers`) |
+
+#### Path parameters
+
+```typescript
+// WRONG — middleware reads request.params["serviceId"] but the route populates "service_id"
+app.http("GetService", {
+  route: "v1/services/{service_id}",   // ❌  populates request.params["service_id"]
+  ...
+});
+const middlewares = [
+  RequiredParamMiddleware("serviceId", NonEmptyString),  // ❌  looks for "serviceId" → always undefined
+] as const;
+
+// CORRECT — the name passed to the middleware is identical to the route placeholder
+app.http("GetService", {
+  route: "v1/services/{service_id}",   // ✅
+  ...
+});
+const middlewares = [
+  RequiredParamMiddleware("service_id", NonEmptyString),  // ✅
+] as const;
+```
+
+#### Query parameters
+
+```typescript
+// WRONG — middleware looks for "pageCursor" but the client sends ?page_cursor=…
+const middlewares = [
+  OptionalQueryParamMiddleware("pageCursor", NonEmptyString),   // ❌  always O.none
+] as const;
+
+// CORRECT
+const middlewares = [
+  OptionalQueryParamMiddleware("page_cursor", NonEmptyString),  // ✅
+] as const;
+```
+
+#### Headers
+
+Azure Functions v4 normalises all incoming HTTP header names to **lowercase** before populating `request.headers`. Always use lowercase for the `name` argument.
+
+```typescript
+// WRONG — "X-Subscription-Id" is never found because request.headers uses lowercase keys
+const middlewares = [
+  RequiredHeaderMiddleware("X-Subscription-Id", NonEmptyString),  // ❌
+] as const;
+
+// CORRECT
+const middlewares = [
+  RequiredHeaderMiddleware("x-subscription-id", NonEmptyString),  // ✅
+] as const;
+```
+
+#### Special case: hard-coded fiscal code middlewares
+
+The following middlewares hard-code the param key they read from `request.params` — the key is not visible at the call site:
 
 | Middleware | Hard-coded param key |
 |---|---|
@@ -257,7 +321,7 @@ The following middlewares from `@pagopa/io-functions-commons` hard-code the para
 | `FiscalCodeMiddleware` | `"fiscalcode"` (all lowercase) |
 | `OptionalFiscalCodeMiddleware` | `"fiscalcode"` (all lowercase) |
 
-**Rule:** when any of these middlewares is used, the `route` in `app.http()` **must** contain `{fiscalcode}` (all lowercase), regardless of the casing used in the old `function.json` binding or the old express route in `index.ts`.
+This is a specific application of the general rule above. When any of these middlewares is used, the `route` in `app.http()` **must** contain `{fiscalcode}` (all lowercase), regardless of the casing used in the old `function.json` binding or the old express route in `index.ts`.
 
 ```typescript
 // WRONG — camelCase {fiscalCode} does not match the hard-coded "fiscalcode" key
@@ -282,7 +346,171 @@ If the two sources disagree on casing, **the express route in `index.ts` is auth
 
 ---
 
-## 4. Delete Per-Function Files
+## 4. Retry Policy Migration
+
+Before deleting `function.json` files (next step), scan them for `retry` configurations. Retry policies must be migrated differently depending on the trigger type:
+
+- **Binding-level retry** (Queue Storage, Blob Storage): migrate to `host.json` `extensions` section
+- **Runtime retry policies** (CosmosDB, Event Hubs, Kafka, Timer): migrate to per-function `retry` option in code registrations
+
+> **Reference**: [Azure Functions error handling and retries](https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-error-pages?tabs=fixed-delay%2Cisolated-process%2Cnode-v4%2Cpython-v2&pivots=programming-language-typescript#retries)
+
+### 4a. Discovery — scan `function.json` files for retry configs
+
+Scan all `function.json` files in the project for the `"retry"` property. Group any retry configurations found by trigger type:
+
+```bash
+# Find all function.json files with retry configs
+grep -rl '"retry"' */function.json
+```
+
+Classify each retry config by its trigger type:
+
+| Trigger type | Retry mechanism | Migration target |
+|-------------|----------------|-----------------|
+| `queueTrigger` | Binding-level (built-in) | `host.json` → `extensions.queues` |
+| `blobTrigger` | Binding-level (built-in) | `host.json` → `extensions.blobs` |
+| `cosmosDBTrigger` | Runtime retry policy | `app.cosmosDB()` → `retry` option |
+| `timerTrigger` | Runtime retry policy | `app.timer()` → `retry` option |
+| `eventHubTrigger` | Runtime retry policy | `app.eventHub()` → `retry` option |
+| `kafkaTrigger` | Runtime retry policy | `app.kafka()` → `retry` option |
+
+### 4b. Queue triggers — migrate to `host.json` `extensions.queues`
+
+Queue triggers do **not** support runtime retry policies in GA. Instead, the built-in dequeue retry mechanism is configured in `host.json`.
+
+> **⚠️ Known limitation**: The built-in queue retry uses a **fixed** `visibilityTimeout` (not exponential backoff). If the original `function.json` uses `exponentialBackoff`, this is a behavioral difference that must be documented.
+
+**BEFORE** — `function.json` with exponential backoff retry:
+```json
+{
+  "bindings": [
+    {
+      "name": "queueItem",
+      "type": "queueTrigger",
+      "direction": "in",
+      "queueName": "my-queue",
+      "connection": "MyStorageConnection"
+    }
+  ],
+  "retry": {
+    "strategy": "exponentialBackoff",
+    "maxRetryCount": 5,
+    "minimumInterval": "00:00:30",
+    "maximumInterval": "00:05:00"
+  }
+}
+```
+
+**AFTER** — `host.json` with `extensions.queues` (remove `retry` from function registration):
+
+The agent MUST compute `maxDequeueCount` to approximate the same total retry window as the original exponential backoff:
+
+1. Calculate the total time covered by exponential backoff: sum of all intervals across `maxRetryCount` attempts, where each interval is `min(minimumInterval × 2^(attempt-1), maximumInterval)`
+2. Choose `visibilityTimeout` equal to `minimumInterval` (first backoff step)
+3. Compute `maxDequeueCount` = ceil(totalExponentialTime / visibilityTimeout)
+
+**Example calculation** (maxRetryCount=5, minimumInterval=30s, maximumInterval=300s):
+- Intervals: 30, 60, 120, 240, 300 → total ≈ 750s
+- visibilityTimeout = "00:00:30" (= minimumInterval)
+- maxDequeueCount = ceil(750 / 30) = 25
+
+```json
+// host.json — AFTER
+{
+  "version": "2.0",
+  "extensions": {
+    "queues": {
+      // Migrated from function.json exponentialBackoff retry:
+      //   maxRetryCount=5, minimumInterval=00:00:30, maximumInterval=00:05:00
+      //   Exponential intervals: 30s, 60s, 120s, 240s, 300s → total=750s
+      //   visibilityTimeout=30s → maxDequeueCount=ceil(750/30)=25
+      "maxDequeueCount": 25,
+      "visibilityTimeout": "00:00:30"
+    }
+  }
+}
+```
+
+**In `main.ts`** — do NOT add a `retry` option to `app.storageQueue()`:
+
+```typescript
+// Queue triggers do NOT support runtime retry policies in GA
+app.storageQueue("MyQueueFunction", {
+  connection: "MyStorageConnection",
+  queueName: "my-queue",
+  // NO `retry` option here — use host.json extensions.queues instead
+  handler: myHandler,
+});
+```
+
+### 4c. CosmosDB triggers — per-function `retry` option
+
+CosmosDB triggers support runtime retry policies. The `retry` block from `function.json` moves to the `retry` property in `app.cosmosDB()` registration.
+
+**BEFORE** — `function.json`:
+```json
+{
+  "bindings": [
+    {
+      "type": "cosmosDBTrigger",
+      "name": "documents",
+      "direction": "in",
+      "databaseName": "my-db",
+      "containerName": "my-container",
+      "connection": "CosmosDBConnection",
+      "leaseContainerName": "leases",
+      "createLeaseContainerIfNotExists": true
+    }
+  ],
+  "retry": {
+    "strategy": "exponentialBackoff",
+    "maxRetryCount": -1,
+    "minimumInterval": "00:00:05",
+    "maximumInterval": "00:30:00"
+  }
+}
+```
+
+**AFTER** — `app.cosmosDB()` in `main.ts`:
+```typescript
+app.cosmosDB("MyCosmosFunction", {
+  connection: "CosmosDBConnection",
+  databaseName: "my-db",
+  containerName: "my-container",
+  leaseContainerName: "leases",
+  createLeaseContainerIfNotExists: true,
+  retry: {
+    strategy: "exponentialBackoff",
+    maxRetryCount: -1,
+    minimumInterval: { seconds: 5 },
+    maximumInterval: { minutes: 30 },
+  },
+  handler: myHandler,
+});
+```
+
+> **Note**: The interval format changes from v3 `"HH:mm:ss"` strings to v4 `{ seconds: N }` / `{ minutes: N }` objects. Convert carefully:
+> - `"00:00:05"` → `{ seconds: 5 }`
+> - `"00:05:00"` → `{ minutes: 5 }`
+> - `"00:30:00"` → `{ minutes: 30 }`
+> - `"01:00:00"` → `{ hours: 1 }`
+
+### 4d. Uniformity check — prompt user when configs differ within the same trigger type
+
+After grouping all retry configs by trigger type:
+
+- **Queue triggers**: If all queue triggers share the same retry config → apply a single `extensions.queues` config in `host.json`. If they differ → list all distinct configs and **ask the user** to pick one global value or enter a custom one (since `host.json` applies to all queue triggers globally).
+- **CosmosDB triggers** (and other per-function retry types): Each function registration receives its own `retry` option independently. Do NOT unify or prompt the user — use the retry config from each function's `function.json` as-is.
+- **Do NOT** try to unify across different trigger types (queue vs CosmosDB) — they use different mechanisms by design.
+
+### 4e. Functions with no retry policy
+
+Functions that do **not** have a `retry` block in their `function.json` should **not** have retry added during migration. Preserve the existing behavior — do not introduce retry where none existed before.
+
+---
+
+## 5. Delete Per-Function Files
 
 For each function sub-directory (e.g., `Info/`, `ValidateProfileEmailV2/`):
 
@@ -291,13 +519,13 @@ For each function sub-directory (e.g., `Info/`, `ValidateProfileEmailV2/`):
 
 ---
 
-## 5. Update Tests
+## 6. Update Tests
 
 Unit tests need updates in three areas: the mock context shape, the handler call parameter order, and the durable-functions mock API.
 
 ---
 
-### 5a. Replace the mock `Context` with `InvocationContext`
+### 6a. Replace the mock `Context` with `InvocationContext`
 
 Any test that creates an inline mock context must switch from the v3 nested-log shape to the v4 flat shape.
 
@@ -345,7 +573,7 @@ In assertions or anywhere a specific logger method is referenced:
 
 ---
 
-### 5b. Swap activity / trigger handler parameter order
+### 6b. Swap activity / trigger handler parameter order
 
 In v4, **all non-HTTP handlers** receive `(input, context)` — data first, context second. Tests that called `handler(context, input)` must be updated to `handler(input, context)`.
 
@@ -396,7 +624,7 @@ updateSubscriptionFeed(input, contextMock as unknown as InvocationContext, table
 
 ---
 
-### 5c. Update durable-functions mocks
+### 6c. Update durable-functions mocks
 
 #### `startNew` signature (v1 → v3)
 
@@ -463,7 +691,7 @@ export const app = {
 
 ---
 
-## 6. Update Custom Middlewares
+## 7. Update Custom Middlewares
 
 Replace manually written Express-style middlewares with typed helpers from `@pagopa/io-functions-commons`:
 
@@ -507,15 +735,15 @@ export const MyBodyMiddleware = RequiredBodyPayloadMiddleware(MyPayloadType);
 
 ---
 
-## 7. Durable Functions Migration (`durable-functions` v1 → v3)
+## 8. Durable Functions Migration (`durable-functions` v1 → v3)
 
 The `durable-functions` package v3 is required for programming model v4. This affects both orchestrators and activities.
 
-### 7a. Package upgrade
+### 8a. Package upgrade
 
 See [package.json changes](#upgrade-durable-functions-if-applicable).
 
-### 7b. Replace Durable Functions imports
+### 8b. Replace Durable Functions imports
 
 **Remove:**
 ```typescript
@@ -532,7 +760,7 @@ import * as df from "durable-functions";
 // DurableOrchestrationClient → df.DurableClient (accessed via df.getClient(context))
 ```
 
-### 7c. Replace orchestrator context type
+### 8c. Replace orchestrator context type
 
 All occurrences of `IOrchestrationFunctionContext` become `OrchestrationContext`:
 
@@ -546,7 +774,7 @@ import { OrchestrationContext } from "durable-functions";
 function* handler(context: OrchestrationContext): Generator<Task> { ... }
 ```
 
-### 7d. Replace `df.orchestrator()` wrapper
+### 8d. Replace `df.orchestrator()` wrapper
 
 In v3, orchestrators are no longer wrapped with `df.orchestrator()`. The generator function is passed directly to `df.app.orchestration()` in `main.ts`.
 
@@ -560,7 +788,7 @@ export default orchestrator;
 df.app.orchestration("MyOrchestrator", handler);
 ```
 
-### 7e. Replace `client.startNew()` API
+### 8e. Replace `client.startNew()` API
 
 The `startNew` call signature changed in durable-functions v3:
 
@@ -572,7 +800,7 @@ await client.startNew("OrchestratorName", undefined, { message: data });
 await client.startNew("OrchestratorName", { input: { message: data } });
 ```
 
-### 7f. Orchestrator replay-safe logging
+### 8f. Orchestrator replay-safe logging
 
 In v3, orchestrator context exposes `context.df.isReplaying`. Guard log calls to avoid duplicate logs during replays:
 
@@ -596,7 +824,7 @@ if (!context.df.isReplaying) {
 
 > **Note**: `context.log.verbose()` becomes `context.trace()` in the v4 orchestrator context.
 
-### 7g. Register activities in `main.ts`
+### 8g. Register activities in `main.ts`
 
 Activities are registered via `df.app.activity()` instead of per-function `function.json`.
 
@@ -628,7 +856,7 @@ df.app.activity(ActivityName, {
 });
 ```
 
-### 7h. Register orchestrators in `main.ts`
+### 8h. Register orchestrators in `main.ts`
 
 Orchestrators are registered via `df.app.orchestration()`. The generator function is passed directly — no `df.orchestrator()` wrapper.
 
@@ -651,13 +879,13 @@ df.app.orchestration(
 );
 ```
 
-### 7i. Delete per-function files for activities and orchestrators
+### 8i. Delete per-function files for activities and orchestrators
 
 For each activity/orchestrator directory:
 1. **Delete `function.json`** (was `{ bindings: [{ type: "activityTrigger" }] }` or `{ bindings: [{ type: "orchestrationTrigger" }] }`)
 2. **Delete `index.ts`** (was either `export default handler` or `export default df.orchestrator(handler)`)
 
-### 7j. Update Durable Functions test mocks
+### 8j. Update Durable Functions test mocks
 
 When updating unit tests for orchestrators (e.g., in `__tests__/handler.test.ts`), you must update the context type and its import path.
 
@@ -720,7 +948,7 @@ const res = await handler(input, contextMock);
 
 ---
 
-### 7k. Handle `durable-functions` v3 behavioral breaking changes
+### 8k. Handle `durable-functions` v3 behavioral breaking changes
 
 Beyond signature changes, `durable-functions` v3 introduces **behavioral breaking changes** in `DurableClient` methods. These are silent regressions that won't cause compile-time errors but will change runtime behavior.
 
@@ -859,11 +1087,11 @@ mockGetStatus.mockRejectedValue(makeGetStatus404Error("my-instance-id"));
 
 ---
 
-## 8. Queue Triggers
+## 9. Queue Triggers
 
 Queue triggers in `function.json` become `app.storageQueue()` registrations in `main.ts`.
 
-### 8a. Basic queue trigger
+### 9a. Basic queue trigger
 
 ```json
 // BEFORE — function.json
@@ -901,7 +1129,7 @@ const myQueueHandler = async (queueItem: unknown, context: InvocationContext): P
 
 > **Note**: Like activities, parameter order is swapped — `(queueItem, context)` instead of `(context, queueItem)`.
 
-### 8b. Queue trigger with durable client
+### 9b. Queue trigger with durable client
 
 When a queue trigger needs to start orchestrators, add `df.input.durableClient()` as extra input:
 
@@ -926,7 +1154,7 @@ const client: DurableOrchestrationClient = df.getClient(context);
 const client = df.getClient(context);
 ```
 
-### 8c. Queue trigger with output bindings
+### 9c. Queue trigger with output bindings
 
 When a queue trigger writes to an output queue:
 
@@ -959,11 +1187,11 @@ context.extraOutputs.set(notifyQueueOutput, encodedMessage);
 
 ---
 
-## 9. CosmosDB Trigger (Change Feed)
+## 10. CosmosDB Trigger (Change Feed)
 
 CosmosDB change feed triggers in `function.json` become `app.cosmosDB()` registrations in `main.ts`.
 
-### 9a. Basic CosmosDB trigger
+### 10a. Basic CosmosDB trigger
 
 ```json
 // BEFORE — function.json
@@ -1007,7 +1235,7 @@ app.cosmosDB("UserDataProcessingTrigger", {
 
 > **Key change**: the v3 `orchestrationClient` binding becomes `extraInputs: [df.input.durableClient()]`.
 
-### 9b. Handler signature
+### 10b. Handler signature
 
 ```typescript
 // BEFORE
@@ -1027,11 +1255,11 @@ export const handler = async (documents: unknown[], context: InvocationContext):
 
 ---
 
-## 10. Blob Triggers
+## 11. Blob Triggers
 
 Blob triggers in `function.json` become `app.storageBlob()` registrations in `main.ts`.
 
-### 10a. Registration
+### 11a. Registration
 
 ```json
 // BEFORE — function.json
@@ -1057,7 +1285,7 @@ app.storageBlob("CheckXmlCryptoCVESamlResponse", {
 });
 ```
 
-### 10b. Handler signature
+### 11b. Handler signature
 
 ```typescript
 // BEFORE
@@ -1081,11 +1309,11 @@ const handler = async (blob: Buffer, context: InvocationContext): Promise<void> 
 
 ---
 
-## 11. Handler-Kit Queue Functions
+## 12. Handler-Kit Queue Functions
 
 Queue functions that use `@pagopa/handler-kit` and `@pagopa/handler-kit-azure-func` need a package upgrade. The handler pattern and `azureFunction()` API remain the same.
 
-### 11a. Package upgrade
+### 12a. Package upgrade
 
 See [package.json changes](#upgrade-handler-kit-if-applicable).
 
@@ -1098,7 +1326,7 @@ See [package.json changes](#upgrade-handler-kit-if-applicable).
 }
 ```
 
-### 11b. No handler code changes required
+### 12b. No handler code changes required
 
 The `azureFunction(H.of(handler))` pattern continues to work after the package upgrade. The `index.ts` file can still be used as the entry point for handler-kit functions, or the function can be registered in `main.ts`.
 
@@ -1115,7 +1343,7 @@ export default createFunction({
 });
 ```
 
-### 11c. Optional: register in `main.ts`
+### 12c. Optional: register in `main.ts`
 
 If you want to unify all registrations in `main.ts`, you can register the handler-kit function as a queue trigger:
 
@@ -1142,6 +1370,19 @@ In this case, delete the per-function `function.json` and `index.ts`.
 - [ ] `package.json`: add `"main": "dist/main.js"`, upgrade `@azure/functions` to `^4.0.0`, update `@pagopa/io-functions-commons` to `^30.0.0`, remove Express/winston deps
 - [ ] Each HTTP `handler.ts`: replace `wrapRequestHandler` / `withRequestMiddlewares` with `wrapHandlerV4`, replace `Context` with `InvocationContext`, update logger calls
 - [ ] Create `src/main.ts` with all registrations (HTTP + non-HTTP)
+
+### Retry Policies
+
+- [ ] Scan all `function.json` files for `retry` configurations **before deleting them**
+- [ ] For queue triggers: add `extensions.queues` section to `host.json` with `maxDequeueCount` and `visibilityTimeout`
+- [ ] For queue triggers: do NOT add `retry` option to `app.storageQueue()` registrations (not supported in GA)
+- [ ] For CosmosDB triggers: add `retry` option to `app.cosmosDB()` registrations with strategy, maxRetryCount, and intervals
+- [ ] Convert interval format from `"HH:mm:ss"` strings to `{ seconds: N }` / `{ minutes: N }` objects for v4
+- [ ] If retry configs differ within the same trigger type, prompt the user for a unified value
+- [ ] Verify that functions without retry in v3 have no retry in v4
+
+### Cleanup
+
 - [ ] Delete all per-function `function.json` files
 - [ ] Delete all per-function `index.ts` entry points
 - [ ] Update tests: replace `Context` mocks, update log spy references
