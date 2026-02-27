@@ -1,5 +1,11 @@
 ### Changelog
 
+## 3.0.2
+
+### Patch Changes
+
+- 8df1b0f: Fix parameters name with wrong camel case format
+
 ## 3.0.1
 
 ### Patch Changes
