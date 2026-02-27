@@ -1,6 +1,6 @@
 ---
 name: azure-functions-v4-migration
-description: Guides migration of Azure Functions apps from deprecated v3 model (Express-based, per-function index.ts + function.json) to the v4 programming model using wrapHandlerV4 from @pagopa/io-functions-commons. Covers HTTP triggers, Durable Functions (orchestrators + activities), Queue triggers, CosmosDB change feed triggers, Blob triggers, and handler-kit queue functions. Use when asked to upgrade Azure Functions, migrate from v3 to v4, replace wrapRequestHandler with wrapHandlerV4, remove function.json and index.ts per-function files, or create a single main.ts entry point.
+description: Guides migration of Azure Functions apps from deprecated v3 model (Express-based, per-function index.ts + function.json) to the v4 programming model using wrapHandlerV4 from @pagopa/io-functions-commons. Covers HTTP triggers, Durable Functions (orchestrators + activities), Queue triggers, CosmosDB change feed triggers, Blob triggers, handler-kit queue functions, and retry policy migration. Use when asked to upgrade Azure Functions, migrate from v3 to v4, replace wrapRequestHandler with wrapHandlerV4, remove function.json and index.ts per-function files, create a single main.ts entry point, or migrate retry configurations from function.json to host.json / per-function v4 registrations.
 license: Complete terms in LICENSE.txt
 ---
 
@@ -24,6 +24,9 @@ This skill guides the migration of Azure Function apps in this monorepo from the
 - Migrating blob triggers from `function.json` to `app.storageBlob()` registrations
 - Upgrading `@pagopa/handler-kit` / `@pagopa/handler-kit-azure-func` for queue functions
 - Replacing Express-style custom middlewares with `@pagopa/io-functions-commons` built-in middlewares
+- Migrating `retry` blocks from `function.json` to `host.json` / per-function v4 registrations
+- Converting queue trigger retry policies to `host.json` `extensions.queues` configuration
+- Converting CosmosDB/Timer/EventHub trigger retry policies to per-function `retry` options in code
 
 ## Prerequisites
 
@@ -49,39 +52,45 @@ See [handler.ts changes](./references/migration-guide.md#2-handlerts-changes).
 
 See [main.ts creation](./references/migration-guide.md#3-create-srcmaints) and use the [main.ts template](./templates/main.ts.template) as a starting point.
 
-### 4. Delete per-function `function.json` and `index.ts` files
+### 4. Migrate Retry Policies
 
-See [cleanup steps](./references/migration-guide.md#4-delete-per-function-files).
+See [Retry Policy Migration](./references/migration-guide.md#4-retry-policy-migration).
 
-### 5. Update tests
+> **Important**: Scan all `function.json` files for `retry` configurations **before deleting them** in the next step. Queue triggers use `host.json` `extensions.queues` (binding-level retry), while CosmosDB/Timer/EventHub triggers use per-function `retry` options in code registrations.
 
-See [test changes](./references/migration-guide.md#5-update-tests).
+### 5. Delete per-function `function.json` and `index.ts` files
 
-### 6. Update custom middlewares
+See [cleanup steps](./references/migration-guide.md#5-delete-per-function-files).
 
-See [middleware changes](./references/migration-guide.md#6-update-custom-middlewares).
+### 6. Update tests
 
-### 7. Migrate Durable Functions (orchestrators + activities)
+See [test changes](./references/migration-guide.md#6-update-tests).
 
-See [Durable Functions migration](./references/migration-guide.md#7-durable-functions-migration-durable-functions-v1--v3).
+### 7. Update custom middlewares
 
-> **Important**: `durable-functions` v3 introduces **behavioral breaking changes** beyond signature updates. In particular, `DurableClient.getStatus()` now **throws an Error** on HTTP 404 (instance not found) instead of silently returning a partial status object. See [section 7k](./references/migration-guide.md#7k-handle-durable-functions-v3-behavioral-breaking-changes) for patterns to handle these corner cases.
+See [middleware changes](./references/migration-guide.md#7-update-custom-middlewares).
 
-### 8. Migrate Queue Triggers
+### 8. Migrate Durable Functions (orchestrators + activities)
 
-See [Queue trigger migration](./references/migration-guide.md#8-queue-triggers).
+See [Durable Functions migration](./references/migration-guide.md#8-durable-functions-migration-durable-functions-v1--v3).
 
-### 9. Migrate CosmosDB Change Feed Triggers
+> **Important**: `durable-functions` v3 introduces **behavioral breaking changes** beyond signature updates. In particular, `DurableClient.getStatus()` now **throws an Error** on HTTP 404 (instance not found) instead of silently returning a partial status object. See [section 8k](./references/migration-guide.md#8k-handle-durable-functions-v3-behavioral-breaking-changes) for patterns to handle these corner cases.
 
-See [CosmosDB trigger migration](./references/migration-guide.md#9-cosmosdb-trigger-change-feed).
+### 9. Migrate Queue Triggers
 
-### 10. Migrate Blob Triggers
+See [Queue trigger migration](./references/migration-guide.md#9-queue-triggers).
 
-See [Blob trigger migration](./references/migration-guide.md#10-blob-triggers).
+### 10. Migrate CosmosDB Change Feed Triggers
 
-### 11. Upgrade handler-kit Queue Functions
+See [CosmosDB trigger migration](./references/migration-guide.md#10-cosmosdb-trigger-change-feed).
 
-See [handler-kit upgrade](./references/migration-guide.md#11-handler-kit-queue-functions).
+### 11. Migrate Blob Triggers
+
+See [Blob trigger migration](./references/migration-guide.md#11-blob-triggers).
+
+### 12. Upgrade handler-kit Queue Functions
+
+See [handler-kit upgrade](./references/migration-guide.md#12-handler-kit-queue-functions).
 
 ---
 
@@ -116,6 +125,20 @@ All `vitest` test suites must pass. If tests fail after migration, check that:
 - Handler imports reference the updated `handler.ts` exports (not old `index.ts`).
 - Mocked types use `InvocationContext` instead of `Context` (v3).
 - Orchestrator handlers use `OrchestrationContext` instead of `IOrchestrationFunctionContext`.
+
+### Step D — Parameter name alignment
+
+For every HTTP trigger, verify that the `name` argument passed to each middleware **exactly matches** the corresponding identifier used by the runtime:
+
+| Middleware                              | Must match                                       |
+| --------------------------------------- | ------------------------------------------------ |
+| `RequiredParamMiddleware(name, …)`      | Route placeholder `{name}` in `app.http` `route` |
+| `OptionalParamMiddleware(name, …)`      | Route placeholder `{name}` in `app.http` `route` |
+| `RequiredQueryParamMiddleware(name, …)` | Query-string key `?name=…`                       |
+| `OptionalQueryParamMiddleware(name, …)` | Query-string key `?name=…`                       |
+| `RequiredHeaderMiddleware(name, …)`     | HTTP header name — **lowercase** only            |
+
+Mismatches are **silently swallowed** at runtime: validation always fails or returns `O.none` even for well-formed requests, with no error or warning emitted. See [Parameter name alignment between route/request and middlewares](./references/migration-guide.md#parameter-name-alignment-between-routerequest-and-middlewares) for examples and the special-case fiscal code middlewares.
 
 ### Iteration policy
 
