@@ -403,21 +403,21 @@ app.http("GetSubscription", {
   authLevel: "function",
   handler: GetSubscription(azureApimConfig),
   methods: ["GET"],
-  route: "adm/subscriptions/{subscriptionid}"
+  route: "adm/subscriptions/{subscriptionId}"
 });
 
 app.http("GetSubscriptionCidrs", {
   authLevel: "function",
   handler: GetSubscriptionCidrs(subscriptionCIDRsModel),
   methods: ["GET"],
-  route: "adm/subscriptions/{subscriptionid}/cidrs"
+  route: "adm/subscriptions/{subscriptionId}/cidrs"
 });
 
 app.http("GetSubscriptionKeys", {
   authLevel: "function",
   handler: GetSubscriptionKeys(azureApimConfig),
   methods: ["GET"],
-  route: "adm/services/{serviceid}/keys"
+  route: "adm/services/{serviceId}/keys"
 });
 
 app.http("GetImpersonateService", {
@@ -442,7 +442,7 @@ app.http("RegenerateSubscriptionKeys", {
   authLevel: "function",
   handler: RegenerateSubscriptionKeys(azureApimConfig),
   methods: ["PUT"],
-  route: "adm/services/{serviceid}/keys"
+  route: "adm/services/{serviceId}/keys"
 });
 
 app.http("SetUserDataProcessingStatus", {
@@ -463,7 +463,7 @@ app.http("UpdateSubscriptionCidrs", {
   authLevel: "function",
   handler: UpdateSubscriptionCidrs(azureApimConfig, subscriptionCIDRsModel),
   methods: ["PUT"],
-  route: "adm/subscriptions/{subscriptionid}/cidrs"
+  route: "adm/subscriptions/{subscriptionId}/cidrs"
 });
 
 app.http("UpdateUserGroups", {

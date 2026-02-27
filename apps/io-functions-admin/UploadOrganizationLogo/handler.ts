@@ -67,7 +67,7 @@ export function UploadOrganizationLogo(
     // Allow only users in the ApiServiceWrite group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceWrite])),
     // Extract organization Fiscal code from path
-    RequiredParamMiddleware("organizationfiscalcode", OrganizationFiscalCode),
+    RequiredParamMiddleware("organizationFiscalCode", OrganizationFiscalCode),
     // Extracts the Logo payload from the request body
     LogoPayloadMiddleware
   ] as const;

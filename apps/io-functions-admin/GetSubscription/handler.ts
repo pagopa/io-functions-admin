@@ -46,7 +46,7 @@ export function GetSubscription(azureApimConfig: IAzureApimConfig) {
     // Allow only users in the ApiUserAdmin group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
     // Extract the subscription id value from the request
-    RequiredParamMiddleware("subscriptionid", NonEmptyString)
+    RequiredParamMiddleware("subscriptionId", NonEmptyString)
   ] as const;
 
   return wrapHandlerV4(middlewares, handler);
