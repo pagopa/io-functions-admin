@@ -89,7 +89,7 @@ export function UpdateSubscriptionCidrs(
     // Allow only users in the ApiUserAdmin group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiUserAdmin])),
     // Extract the subscription id value from the request
-    RequiredParamMiddleware("subscriptionid", NonEmptyString),
+    RequiredParamMiddleware("subscriptionId", NonEmptyString),
     // Extract the body payload from the request
     RequiredBodyPayloadMiddleware(CIDRsPayload)
   ] as const;
