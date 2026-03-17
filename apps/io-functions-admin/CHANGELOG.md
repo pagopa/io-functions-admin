@@ -1,5 +1,11 @@
 ### Changelog
 
+## 4.0.0
+
+### Major Changes
+
+- e8dde03: Bump node version to 22.22.0
+
 ## 3.0.2
 
 ### Patch Changes
