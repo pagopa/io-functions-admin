@@ -47,6 +47,10 @@ locals {
     resource_group_name = "io-p-rg-common"
   }
 
+  keyvault_common_ids = [
+    data.azurerm_key_vault.common.id
+  ]
+
   tags = {
     CreatedBy      = "Terraform"
     Environment    = "Prod"
