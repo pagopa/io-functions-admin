@@ -19,16 +19,6 @@ locals {
     }
   }
 
-  apim = {
-    name                = "${local.prefix}-${local.env_short}-itn-apim-01"
-    resource_group_name = "${local.prefix}-${local.env_short}-itn-common-rg-01"
-  }
-
-  vnet = {
-    name                = "${local.prefix}-${local.env_short}-itn-common-vnet-01"
-    resource_group_name = "${local.prefix}-${local.env_short}-itn-common-rg-01"
-  }
-
   dns_zones = {
     resource_group_name = "${local.prefix}-${local.env_short}-rg-common"
   }
@@ -46,6 +36,10 @@ locals {
     name                = "io-p-kv-common"
     resource_group_name = "io-p-rg-common"
   }
+
+  keyvault_common_ids = [
+    data.azurerm_key_vault.common.id
+  ]
 
   tags = {
     CreatedBy      = "Terraform"
