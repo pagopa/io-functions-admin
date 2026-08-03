@@ -10,6 +10,11 @@ locals {
   project        = "${local.prefix}-${local.env_short}-${local.location_short}"
   project_legacy = "${local.prefix}-${local.env_short}"
 
+  cidr_subnet = "10.20.34.64/26"
+
+  vnet_common_name_itn           = "${local.project}-common-vnet-01"
+  common_resource_group_name_itn = "${local.project}-common-rg-01"
+
   tags = {
     CostCenter     = "TS310 - PAGAMENTI & SERVIZI"
     CreatedBy      = "Terraform"
