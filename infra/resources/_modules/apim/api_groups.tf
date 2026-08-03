@@ -1,5 +1,5 @@
 module "api_v2_admin" {
-  source = "github.com/pagopa/terraform-azurerm-v3//api_management_api?ref=v8.27.0"
+  source = "github.com/pagopa/terraform-azurerm-v4//api_management_api?ref=v6.14.0"
 
   name                = "io-admin-api"
   api_management_name = var.apim_name
