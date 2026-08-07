@@ -63,11 +63,6 @@ data "azurerm_storage_account" "ioweb_spid_logs_storage" {
   resource_group_name = "io-p-weu-ioweb-storage-rg"
 }
 
-data "azurerm_cosmosdb_account" "cosmos_api" {
-  name                = format("%s-cosmos-api", local.project)
-  resource_group_name = local.rg_internal_name
-}
-
 #
 # UNIQUE EMAIL ENFORCEMENT
 #
@@ -76,20 +71,6 @@ data "azurerm_cosmosdb_account" "cosmos_api" {
 data "azurerm_storage_account" "auth_maintenance_storage" {
   name                = replace(format("%s-itn-auth-mnt-st-01", local.project), "-", "")
   resource_group_name = format("%s-itn-auth-main-rg-01", local.project)
-}
-
-#
-# Monitoring
-#
-
-data "azurerm_application_insights" "application_insights" {
-  name                = format("%s-ai-common", local.project)
-  resource_group_name = local.rg_common_name
-}
-
-data "azurerm_monitor_action_group" "error_action_group" {
-  name                = "${var.prefix}${var.env_short}error"
-  resource_group_name = local.rg_common_name
 }
 
 data "azurerm_linux_function_app" "session_manager_internal" {
