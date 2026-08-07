@@ -83,6 +83,29 @@ variable "admin_snet_cidr" {
   description = "Admin Subnet CIDR"
 }
 
+variable "cosmos_db_attributes" {
+  type        = map(any)
+  sensitive   = true
+  description = "Informations about the Cosmos DB, such as primary key and endpoint"
+}
+
+variable "application_insights_id" {
+  type        = string
+  sensitive   = true
+  description = "Application Insight id"
+}
+
+variable "application_insights_instrumentation_key" {
+  type        = string
+  sensitive   = true
+  description = "Application Insight instrumentation key"
+}
+
+variable "application_insights_error_action_group_id" {
+  type        = string
+  description = "Application Insights error action group id"
+}
+
 #
 # Autoscaler
 #

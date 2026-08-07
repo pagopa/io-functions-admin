@@ -3,7 +3,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "alert_failed_delete_p
   enabled             = true
   name                = "[IO-AUTH | ${module.function_admin_itn.function_app.function_app.name}] Found one or more failed DELETE procedures"
   resource_group_name = var.resource_group_name
-  scopes              = [data.azurerm_application_insights.application_insights.id]
+  scopes              = [var.application_insights_id]
   description         = <<EOT
     Found one or more failed DELETE procedures.
     Check ${local.function_admin.app_settings_common.FAILED_USER_DATA_PROCESSING_TABLE} table in
@@ -46,7 +46,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "alert_failed_download
   enabled             = true
   name                = "[IO-AUTH | ${module.function_admin_itn.function_app.function_app.name}] Found one or more failed DOWNLOAD procedures"
   resource_group_name = var.resource_group_name
-  scopes              = [data.azurerm_application_insights.application_insights.id]
+  scopes              = [var.application_insights_id]
   description         = <<EOT
     Found one or more failed DOWNLOAD procedures.
     Check ${local.function_admin.app_settings_common.FAILED_USER_DATA_PROCESSING_TABLE} table in

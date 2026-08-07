@@ -59,9 +59,9 @@ module "function_admin_itn" {
     }
   )
 
-  application_insights_key = data.azurerm_application_insights.application_insights.instrumentation_key
+  application_insights_key = var.application_insights_instrumentation_key
 
-  action_group_ids = [data.azurerm_monitor_action_group.error_action_group.id]
+  action_group_ids = [var.application_insights_error_action_group_id]
 
   tags = var.tags
 }

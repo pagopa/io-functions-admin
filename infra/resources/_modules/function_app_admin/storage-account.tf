@@ -22,7 +22,7 @@ module "function_admin_storage_account" {
     versioning = true
   }
 
-  action_group_id = data.azurerm_monitor_action_group.error_action_group.id
+  action_group_id = var.application_insights_error_action_group_id
 
   tags = var.tags
 }
@@ -71,7 +71,7 @@ module "user_data_backups_storage_account" {
     versioning = true
   }
 
-  action_group_id = data.azurerm_monitor_action_group.error_action_group.id
+  action_group_id = var.application_insights_error_action_group_id
 
   tags = var.tags
 }
@@ -107,7 +107,7 @@ module "user_data_download_storage_account" {
     versioning = true
   }
 
-  action_group_id = data.azurerm_monitor_action_group.error_action_group.id
+  action_group_id = var.application_insights_error_action_group_id
 
   tags = var.tags
 }

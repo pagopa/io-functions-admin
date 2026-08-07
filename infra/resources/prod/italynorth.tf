@@ -15,13 +15,17 @@ resource "azurerm_resource_group" "function_admin_itn_rg" {
 }
 
 module "function_app_admin_itn" {
-  source                         = "../_modules/function_app_admin"
-  prefix                         = local.prefix
-  env_short                      = local.env_short
-  resource_group_name            = azurerm_resource_group.function_admin_itn_rg.name
-  vnet_common_name_itn           = local.vnet_common_name_itn
-  common_resource_group_name_itn = local.common_resource_group_name_itn
-  project_itn                    = local.project
-  admin_snet_cidr                = local.cidr_subnet
-  tags                           = local.tags
+  source                                     = "../_modules/function_app_admin"
+  prefix                                     = local.prefix
+  env_short                                  = local.env_short
+  resource_group_name                        = azurerm_resource_group.function_admin_itn_rg.name
+  vnet_common_name_itn                       = local.vnet_common_name_itn
+  common_resource_group_name_itn             = local.common_resource_group_name_itn
+  project_itn                                = local.project
+  admin_snet_cidr                            = local.cidr_subnet
+  cosmos_db_attributes                       = local.platform_data_platform.cosmos_api.weu
+  application_insights_error_action_group_id = local.platform_observability.monitoring_westeurope.action_groups.error
+  application_insights_instrumentation_key   = local.platform_observability.monitoring_westeurope.appi_instrumentation_key
+  application_insights_id                    = local.platform_observability.monitoring_westeurope.appi.id
+  tags                                       = local.tags
 }

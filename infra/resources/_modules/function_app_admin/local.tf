@@ -12,11 +12,9 @@ locals {
       NODE_ENV = "production"
 
       COSMOSDB_NAME              = "db"
-      COSMOSDB_URI               = data.azurerm_cosmosdb_account.cosmos_api.endpoint
-      COSMOSDB_KEY               = data.azurerm_cosmosdb_account.cosmos_api.primary_key
-      COSMOSDB_CONNECTION_STRING = format("AccountEndpoint=%s;AccountKey=%s;", data.azurerm_cosmosdb_account.cosmos_api.endpoint, data.azurerm_cosmosdb_account.cosmos_api.primary_key)
-
-      #APPINSIGHTS_INSTRUMENTATIONKEY = data.azurerm_application_insights.application_insights.instrumentation_key
+      COSMOSDB_URI               = var.cosmos_db_attributes.endpoint
+      COSMOSDB_KEY               = var.cosmos_db_attributes.primary_key
+      COSMOSDB_CONNECTION_STRING = format("AccountEndpoint=%s;AccountKey=%s;", var.cosmos_db_attributes.endpoint, var.cosmos_db_attributes.primary_key)
 
       StorageConnection = data.azurerm_storage_account.storage_api.primary_connection_string
 
