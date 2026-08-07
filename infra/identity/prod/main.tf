@@ -48,25 +48,18 @@ module "federated_identities" {
   tags = local.tags
 }
 
-// TODO: Should be removed after the boortstrap migration is completed
-resource "azurerm_key_vault_access_policy" "common_ci" {
-  key_vault_id = data.azurerm_key_vault.common.id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = module.federated_identities.federated_ci_identity.id
+# The KV access policies are managed here now: https://github.com/pagopa/io-infra/blob/main/src/core/prod/westeurope.tf#L72
 
-  secret_permissions = [
-    "Get",
-    "List"
-  ]
+removed {
+  from = azurerm_key_vault_access_policy.common_cd
+  lifecycle {
+    destroy = false
+  }
 }
-// TODO: Should be removed after the boortstrap migration is completed
-resource "azurerm_key_vault_access_policy" "common_cd" {
-  key_vault_id = data.azurerm_key_vault.common.id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = module.federated_identities.federated_cd_identity.id
 
-  secret_permissions = [
-    "Get",
-    "List"
-  ]
+removed {
+  from = azurerm_key_vault_access_policy.common_ci
+  lifecycle {
+    destroy = false
+  }
 }
