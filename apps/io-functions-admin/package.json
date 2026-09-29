@@ -68,7 +68,7 @@
     "@pagopa/ts-commons": "^13.1.2",
     "@types/archiver": "^3.1.1",
     "@types/randomstring": "^1.1.6",
-    "@xmldom/xmldom": "^0.7.13",
+    "@xmldom/xmldom": "^0.8.0",
     "applicationinsights": "^2.9.8",
     "archiver": "^4.0.2",
     "archiver-zip-encrypted": "^1.0.8",
