@@ -36,6 +36,16 @@ module "function_admin_itn" {
 
   sticky_app_setting_names = [
     "APPINSIGHTS_CLOUD_ROLE_NAME",
+    "COSMOSDB_IDENTITY__accountEndpoint",
+    "COSMOSDB_IDENTITY__credential",
+    "STORAGE_BLOB_ENDPOINT",
+    "ASSETS_STORAGE_BLOB_ENDPOINT",
+    "USER_DATA_BACKUP_STORAGE_BLOB_ENDPOINT",
+    "USER_DATA_ARCHIVE_STORAGE_BLOB_ENDPOINT",
+    "API_STORAGE_TABLE_ENDPOINT",
+    "SESSION_STORAGE_TABLE_ENDPOINT",
+    "CitizenAuthQueueConnection__queueServiceUri",
+    "CitizenAuthQueueConnection__credential",
     "AzureWebJobs.UserDataProcessingTrigger.Disabled",
     "AzureWebJobs.SanitizeProfileEmail.Disabled",
     "AzureWebJobs.UserDataDeleteOrchestratorV2.Disabled",

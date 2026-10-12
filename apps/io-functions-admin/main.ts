@@ -680,7 +680,7 @@ const createSanitizeProfileEmailsFunction = azureFunction(
 );
 
 app.storageQueue("SanitizeProfileEmail", {
-  connection: "CitizenAuthStorageConnection",
+  connection: "CitizenAuthQueueConnection",
   handler: createSanitizeProfileEmailsFunction({
     inputDecoder: ProfileToSanitize,
     profileModel: profileModel,
