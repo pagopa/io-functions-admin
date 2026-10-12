@@ -78,11 +78,6 @@ locals {
       # Instant delete
       INSTANT_DELETE_ENABLED_USERS = join(",", [data.azurerm_key_vault_secret.fn_admin_INSTANT_DELETE_ENABLED_USERS.value, module.tests.users.light])
 
-      # Temporany
-      IOPSTLOGS_STORAGE_CONNECTION_STRING = data.azurerm_storage_account.logs02.primary_connection_string,
-      LOG_RSA_PK                          = "@Microsoft.KeyVault(VaultName=${data.azurerm_key_vault.common.name};SecretName=funcapp-KEY-SPIDLOGS-PRIV)",
-
-      IOWEBLOGS_STORAGE_CONNECTION_STRING = data.azurerm_storage_account.ioweb_spid_logs_storage.primary_connection_string
     }
   }
 }

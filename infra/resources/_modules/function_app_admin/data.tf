@@ -53,16 +53,6 @@ data "azurerm_storage_account" "assets_cdn" {
   resource_group_name = local.rg_common_name
 }
 
-data "azurerm_storage_account" "logs02" {
-  name                = replace("${local.project}-stlogs02", "-", "")
-  resource_group_name = "${local.project}-rg-operations"
-}
-
-data "azurerm_storage_account" "ioweb_spid_logs_storage" {
-  name                = "iopweuiowebspidlogsimst"
-  resource_group_name = "io-p-weu-ioweb-storage-rg"
-}
-
 #
 # UNIQUE EMAIL ENFORCEMENT
 #
