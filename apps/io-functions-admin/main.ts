@@ -49,7 +49,6 @@ import { createBlobService, createTableService } from "azure-storage";
 import * as df from "durable-functions";
 import * as HtmlToText from "html-to-text";
 
-import { CheckXmlCryptoCVESamlResponse } from "./CheckXmlCryptoCVESamlResponse";
 import { CreateDevelopmentProfile } from "./CreateDevelopmentProfile/handler";
 import { CreateService } from "./CreateService/handler";
 import { CreateSubscription } from "./CreateSubscription/handler";
@@ -667,20 +666,4 @@ app.storageQueue("SanitizeProfileEmail", {
     telemetryClient: initTelemetryClient()
   }),
   queueName: "%SanitizeUserProfileQueueName%"
-});
-
-// =============================================================================
-// Blob Triggers
-// =============================================================================
-
-app.storageBlob("CheckXmlCryptoCVESamlResponse", {
-  connection: "IOPSTLOGS_STORAGE_CONNECTION_STRING",
-  handler: CheckXmlCryptoCVESamlResponse,
-  path: "spidassertions/{CF}-2025-03{name}"
-});
-
-app.storageBlob("CheckIoWebXmlCryptoCVESamlResponse", {
-  connection: "IOWEBLOGS_STORAGE_CONNECTION_STRING",
-  handler: CheckXmlCryptoCVESamlResponse,
-  path: "spidlogs/{name}"
 });

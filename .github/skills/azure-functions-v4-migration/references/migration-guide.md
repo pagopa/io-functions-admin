@@ -1269,8 +1269,8 @@ Blob triggers in `function.json` become `app.storageBlob()` registrations in `ma
       "name": "InputBlob",
       "type": "blobTrigger",
       "direction": "in",
-      "path": "spidassertions/{CF}-2025-03{name}",
-      "connection": "IOPSTLOGS_STORAGE_CONNECTION_STRING"
+      "path": "container/{name}",
+      "connection": "BlobStorageConnection"
     }
   ]
 }
@@ -1278,10 +1278,10 @@ Blob triggers in `function.json` become `app.storageBlob()` registrations in `ma
 
 ```typescript
 // AFTER — main.ts
-app.storageBlob("CheckXmlCryptoCVESamlResponse", {
-  connection: "IOPSTLOGS_STORAGE_CONNECTION_STRING",
-  path: "spidassertions/{CF}-2025-03{name}",
-  handler: checkXmlCryptoHandler,
+app.storageBlob("ExampleBlobTrigger", {
+  connection: "BlobStorageConnection",
+  path: "container/{name}",
+  handler: exampleBlobHandler,
 });
 ```
 

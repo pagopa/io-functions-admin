@@ -45,7 +45,6 @@ export const IConfig = t.intersection([
 
     LOCKED_PROFILES_STORAGE_CONNECTION_STRING: NonEmptyString,
     LOCKED_PROFILES_TABLE_NAME: NonEmptyString,
-    LOG_RSA_PK: NonEmptyString,
     LOGOS_URL: NonEmptyString,
     MESSAGE_CONTAINER_NAME: NonEmptyString,
 
