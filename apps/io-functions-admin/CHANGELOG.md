@@ -1,5 +1,11 @@
 ### Changelog
 
+## 4.0.1
+
+### Patch Changes
+
+- eee429d: Remove the SAML response validation blob triggers and their exclusive configuration.
+
 ## 4.0.0
 
 ### Major Changes
