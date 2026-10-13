@@ -2623,13 +2623,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@xmldom/xmldom@npm:^0.7.13":
-  version: 0.7.13
-  resolution: "@xmldom/xmldom@npm:0.7.13"
-  checksum: 10c0/cb02e4e8d986acf18578a5f25d1bce5e18d08718f40d8a0cdd922a4c112c8e00daf94de4e43f9556ed147c696b135f2ab81fa9a2a8a0416f60af15d156b60e40
-  languageName: node
-  linkType: hard
-
 "a-sync-waterfall@npm:^1.0.0":
   version: 1.0.1
   resolution: "a-sync-waterfall@npm:1.0.1"
@@ -6573,7 +6566,6 @@ __metadata:
     "@types/randomstring": "npm:^1.1.6"
     "@types/upng-js": "npm:^2.1.1"
     "@vitest/coverage-v8": "npm:^3.2.4"
-    "@xmldom/xmldom": "npm:^0.7.13"
     applicationinsights: "npm:^2.9.8"
     archiver: "npm:^4.0.2"
     archiver-zip-encrypted: "npm:^1.0.8"
@@ -6609,7 +6601,6 @@ __metadata:
     ulid: "npm:^2.3.0"
     upng-js: "npm:^2.1.0"
     vitest: "npm:^3.2.4"
-    xpath: "npm:^0.0.32"
     yaml: "npm:^1.10.2"
   languageName: unknown
   linkType: soft
@@ -12374,13 +12365,6 @@ __metadata:
   version: 11.0.1
   resolution: "xmlbuilder@npm:11.0.1"
   checksum: 10c0/74b979f89a0a129926bc786b913459bdbcefa809afaa551c5ab83f89b1915bdaea14c11c759284bb9b931e3b53004dbc2181e21d3ca9553eeb0b2a7b4e40c35b
-  languageName: node
-  linkType: hard
-
-"xpath@npm:^0.0.32":
-  version: 0.0.32
-  resolution: "xpath@npm:0.0.32"
-  checksum: 10c0/3743ab91a8ec1b5eac1f27ddf2fbf696fcde8ce487215becde1502b85a309dcd1b0baeaac1ee7a730aea4787d049b67ae89e8aedbe03a5a07a71e62ec296d9de
   languageName: node
   linkType: hard
 

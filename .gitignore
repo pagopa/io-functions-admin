@@ -50,6 +50,7 @@ generated
 .env.prod
 .env.test
 todo.md
+/.local-plans/
 
 /generated
 # eslint section
