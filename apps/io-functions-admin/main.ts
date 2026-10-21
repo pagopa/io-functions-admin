@@ -633,7 +633,10 @@ df.app.orchestration(
 app.cosmosDB("UserDataProcessingTrigger", {
   connection: "COSMOSDB_IDENTITY",
   containerName: "user-data-processing",
-  createLeaseContainerIfNotExists: true,
+  // This lease container is provisioned in advance; keep host-side creation off
+  // so the trigger uses the existing container instead of provisioning one.
+  // This is required using RBAC autentication avoinding 403 Forbidden errors when creating lease container
+  createLeaseContainerIfNotExists: false,
   databaseName: "%COSMOSDB_NAME%",
   extraInputs: [df.input.durableClient()],
   handler: triggerHandler(
