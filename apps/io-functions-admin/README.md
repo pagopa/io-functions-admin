@@ -12,40 +12,40 @@ Blob Storage uses endpoint URLs and the slot's system-assigned identity in Azure
 Local runs use `AzureCliCredential`; authenticate with `az login` and use an
 account with the required data-plane RBAC roles.
 
-| Variable name                     | Description                                                                                      | type   |
-| --------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
-| STORAGE_BLOB_ENDPOINT             | Blob endpoint for message contents                                                              | string |
-| ASSETS_STORAGE_BLOB_ENDPOINT      | Blob endpoint for service and organization logos                                                | string |
-| USER_DATA_BACKUP_STORAGE_BLOB_ENDPOINT | Blob endpoint for GDPR delete backups                                                       | string |
-| USER_DATA_ARCHIVE_STORAGE_BLOB_ENDPOINT | Blob endpoint for GDPR download archives                                                   | string |
-| COSMOSDB_IDENTITY__accountEndpoint | CosmosDB endpoint used by the trigger (local runs use Azure CLI authentication)                   | string |
-| COSMOSDB_URI                      | CosmosDB endpoint used by the application client                                                 | string |
-| COSMOSDB_NAME                     | CosmosDB database name                                                                           | string |
-| LOGOS_URL                         | The url of the service logos storage                                                             | string |
-| SERVICE_PRINCIPAL_CLIENT_ID       | The service principal name used to get the token credentials to connect to the APIM              | string |
-| SERVICE_PRINCIPAL_SECRET          | The service principal secret used to get the token credentials to connect to the APIM            | string |
-| SERVICE_PRINCIPAL_TENANT_ID       | The service principal tenant id used to get the token credentials to connect to the APIM         | string |
-| AZURE_APIM                        | The name of the API Management service used to get the subscriptions                             | string |
-| AZURE_APIM_HOST                   | The host name of the API Management service                                                      | string |
-| AZURE_APIM_RESOURCE_GROUP         | The name of the resource group used to get the subscriptions                                     | string |
-| AZURE_SUBSCRIPTION_ID             | Credentials which identify the Azure subscription, used to init the APIM client                  | string |
-| USER_DATA_CONTAINER_NAME          | Name of the container on which zip files with usr data are stored                                | string |
-| MESSAGE_CONTAINER_NAME            | Name of the container which stores message content                                               | string |
-| PUBLIC_API_URL                    | Internal URL of the API management used to send messages                                         | string |
-| PUBLIC_API_KEY                    | GDPR service access key for the message API                                                      | string |
-| PUBLIC_DOWNLOAD_BASE_URL          | Public URL of user's data zip bundle storage                                                     | string |
-| SESSION_API_URL                   | Internal URL of the BACKEND API used to handle session lock/unlock requests                      | string |
-| SESSION_API_KEY                   | service access key for the session API                                                           | string |
-| USER_DATA_BACKUP_CONTAINER_NAME   | Name of the storage container in which user data is backuped before being permanently deleted    | string |
-| USER_DATA_DELETE_DELAY_DAYS       | How many days to wait when a user asks for cancellation before effectively delete her data       | number |
-| MAIL_FROM                         | Address from which email are sent                                                                | string |
-| SENDGRID_API_KEY                  | If provided, SendGrid will be used                                                               | string |
-| MAILUP_USERNAME                   | If using MailUp, the username                                                                    | string |
-| MAILUP_SECRET                     | If using MailUp, the secret                                                                      | string |
-| MAILHOG_HOSTNAME                  | Required on development, the host name of the MailHog SMTP server                                | string |
-| SubscriptionFeedStorageConnection | Storage connection string for subscription feed                                                  | string |
-| SUBSCRIPTIONS_FEED_TABLE          | Table name for the Subscriptions Feed in the storage                                             | string |
-| GET_USERS_PAGE_SIZE               | Number of elements to be fetched and returned on GetUsers Api invoke (Default=100)               | number |
+| Variable name                           | Description                                                                                   | type   |
+| --------------------------------------- | --------------------------------------------------------------------------------------------- | ------ |
+| STORAGE_BLOB_ENDPOINT                   | Blob endpoint for message contents                                                            | string |
+| ASSETS_STORAGE_BLOB_ENDPOINT            | Blob endpoint for service and organization logos                                              | string |
+| USER_DATA_BACKUP_STORAGE_BLOB_ENDPOINT  | Blob endpoint for GDPR delete backups                                                         | string |
+| USER_DATA_ARCHIVE_STORAGE_BLOB_ENDPOINT | Blob endpoint for GDPR download archives                                                      | string |
+| COSMOSDB_IDENTITY\_\_accountEndpoint    | CosmosDB endpoint used by the trigger (local runs use Azure CLI authentication)               | string |
+| COSMOSDB_URI                            | CosmosDB endpoint used by the application client                                              | string |
+| COSMOSDB_NAME                           | CosmosDB database name                                                                        | string |
+| LOGOS_URL                               | The url of the service logos storage                                                          | string |
+| SERVICE_PRINCIPAL_CLIENT_ID             | The service principal name used to get the token credentials to connect to the APIM           | string |
+| SERVICE_PRINCIPAL_SECRET                | The service principal secret used to get the token credentials to connect to the APIM         | string |
+| SERVICE_PRINCIPAL_TENANT_ID             | The service principal tenant id used to get the token credentials to connect to the APIM      | string |
+| AZURE_APIM                              | The name of the API Management service used to get the subscriptions                          | string |
+| AZURE_APIM_HOST                         | The host name of the API Management service                                                   | string |
+| AZURE_APIM_RESOURCE_GROUP               | The name of the resource group used to get the subscriptions                                  | string |
+| AZURE_SUBSCRIPTION_ID                   | Credentials which identify the Azure subscription, used to init the APIM client               | string |
+| USER_DATA_CONTAINER_NAME                | Name of the container on which zip files with usr data are stored                             | string |
+| MESSAGE_CONTAINER_NAME                  | Name of the container which stores message content                                            | string |
+| PUBLIC_API_URL                          | Internal URL of the API management used to send messages                                      | string |
+| PUBLIC_API_KEY                          | GDPR service access key for the message API                                                   | string |
+| PUBLIC_DOWNLOAD_BASE_URL                | Public URL of user's data zip bundle storage                                                  | string |
+| SESSION_API_URL                         | Internal URL of the BACKEND API used to handle session lock/unlock requests                   | string |
+| SESSION_API_KEY                         | service access key for the session API                                                        | string |
+| USER_DATA_BACKUP_CONTAINER_NAME         | Name of the storage container in which user data is backuped before being permanently deleted | string |
+| USER_DATA_DELETE_DELAY_DAYS             | How many days to wait when a user asks for cancellation before effectively delete her data    | number |
+| MAIL_FROM                               | Address from which email are sent                                                             | string |
+| SENDGRID_API_KEY                        | If provided, SendGrid will be used                                                            | string |
+| MAILUP_USERNAME                         | If using MailUp, the username                                                                 | string |
+| MAILUP_SECRET                           | If using MailUp, the secret                                                                   | string |
+| MAILHOG_HOSTNAME                        | Required on development, the host name of the MailHog SMTP server                             | string |
+| SubscriptionFeedStorageConnection       | Storage connection string for subscription feed                                               | string |
+| SUBSCRIPTIONS_FEED_TABLE                | Table name for the Subscriptions Feed in the storage                                          | string |
+| GET_USERS_PAGE_SIZE                     | Number of elements to be fetched and returned on GetUsers Api invoke (Default=100)            | number |
 
 #### Feature flags
 
