@@ -3,6 +3,8 @@ import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import { assert, describe, expect, it } from "vitest";
 
+import { IConfig } from "../config";
+
 const aMailFrom = "example@test.com";
 
 const noop = () => {};
@@ -25,6 +27,24 @@ const expectLeft = <L, R>(e: E.Either<L, R>, t: (l: L) => void = noop) =>
       assert.fail(`Expecting left, received right. Value: ${JSON.stringify(_)}`)
     )
   );
+
+describe("IConfig", () => {
+  it("requires CosmosDB metadata without requiring key-based settings", () => {
+    const result = IConfig.decode({});
+    if (E.isRight(result)) {
+      assert.fail("Expected the incomplete configuration to be rejected");
+    }
+
+    const invalidKeys = result.left.flatMap(error =>
+      error.context.map(context => context.key)
+    );
+
+    expect(invalidKeys).toContain("COSMOSDB_URI");
+    expect(invalidKeys).toContain("COSMOSDB_NAME");
+    expect(invalidKeys).not.toContain("COSMOSDB_KEY");
+    expect(invalidKeys).not.toContain("COSMOSDB_CONNECTION_STRING");
+  });
+});
 
 describe("MailerConfig", () => {
   it("should decode configuration for sendgrid", () => {

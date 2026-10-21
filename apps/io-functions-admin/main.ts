@@ -631,7 +631,7 @@ df.app.orchestration(
 // =============================================================================
 
 app.cosmosDB("UserDataProcessingTrigger", {
-  connection: "COSMOSDB_CONNECTION_STRING",
+  connection: "COSMOSDB_IDENTITY",
   containerName: "user-data-processing",
   createLeaseContainerIfNotExists: true,
   databaseName: "%COSMOSDB_NAME%",
