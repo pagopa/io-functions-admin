@@ -1,10 +1,10 @@
 import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
   checkApplicationHealth,
-  checkAzureCosmosDbHealth,
   checkAzureStorageHealth,
   checkUrlHealth,
-  HealthCheck
+  HealthCheck,
+  toHealthProblems
 } from "@pagopa/io-functions-commons/dist/src/utils/healthcheck";
 import {
   IResponseErrorInternal,
@@ -17,6 +17,7 @@ import * as TE from "fp-ts/lib/TaskEither";
 
 import * as packageJson from "../package.json";
 import { envConfig, IConfig } from "../utils/config";
+import { cosmosdbClient } from "../utils/cosmosdb";
 
 type HealthChecker = (config: unknown) => HealthCheck<ProblemSource, true>;
 
@@ -30,11 +31,26 @@ type InfoHandler = () => Promise<
 >;
 type ProblemSource = "AzureCosmosDB" | "AzureStorage" | "Config" | "Url";
 
+interface ReadableCosmosDatabase {
+  read: () => Promise<unknown>;
+}
+
+export const checkCosmosDbHealth = (
+  getDatabase: () => ReadableCosmosDatabase
+): HealthCheck<"AzureCosmosDB", true> =>
+  TE.tryCatch(async () => {
+    const database = getDatabase();
+    await database.read();
+    return true as const;
+  }, toHealthProblems("AzureCosmosDB"));
+
 export function Info() {
   return pipe(
     checkApplicationHealth(IConfig, [
       (config: IConfig): HealthCheck<"AzureCosmosDB", true> =>
-        checkAzureCosmosDbHealth(config.COSMOSDB_URI, config.COSMOSDB_KEY),
+        checkCosmosDbHealth(() =>
+          cosmosdbClient.database(config.COSMOSDB_NAME)
+        ),
       (config: IConfig): HealthCheck<"AzureStorage", true> =>
         checkAzureStorageHealth(config.StorageConnection),
       (config: IConfig): HealthCheck<"AzureStorage", true> =>

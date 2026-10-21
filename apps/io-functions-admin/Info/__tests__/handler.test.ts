@@ -1,8 +1,15 @@
 import { HealthProblem } from "@pagopa/io-functions-commons/dist/src/utils/healthcheck";
+import { isLeft } from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { InfoHandler } from "../handler";
+vi.mock("../../utils/cosmosdb", () => ({
+  cosmosdbClient: {
+    database: vi.fn()
+  }
+}));
+
+import { checkCosmosDbHealth, InfoHandler } from "../handler";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -29,5 +36,32 @@ describe("InfoHandler", () => {
     const response = await handler();
 
     expect(response.kind).toBe("IResponseSuccessJson");
+  });
+});
+
+describe("checkCosmosDbHealth", () => {
+  it("returns healthy when the shared database is readable", async () => {
+    const read = vi.fn().mockResolvedValue(undefined);
+    const getDatabase = vi.fn(() => ({ read }));
+
+    const result = await checkCosmosDbHealth(getDatabase)();
+
+    expect(result).toEqual({ _tag: "Right", right: true });
+    expect(getDatabase).toHaveBeenCalledTimes(1);
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns a 403 failure without retrying or falling back", async () => {
+    const read = vi.fn().mockRejectedValue(new Error("403 Forbidden"));
+    const getDatabase = vi.fn(() => ({ read }));
+
+    const result = await checkCosmosDbHealth(getDatabase)();
+
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left.join("\n")).toContain("403 Forbidden");
+    }
+    expect(getDatabase).toHaveBeenCalledTimes(1);
+    expect(read).toHaveBeenCalledTimes(1);
   });
 });
