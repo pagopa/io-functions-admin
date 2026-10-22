@@ -6,7 +6,6 @@ import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingStatus";
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { TableUtilities } from "azure-storage";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import { some } from "fp-ts/lib/Option";
@@ -95,8 +94,6 @@ vi.mock("../../utils/featureFlags", () => ({
     ENABLE_USER_DATA_DOWNLOAD: true
   }
 }));
-
-const eg = TableUtilities.entityGenerator;
 
 const insertEntity = vi.fn(
   () =>
@@ -274,9 +271,9 @@ describe("FailedUserDataProcessing", () => {
     expect(insertEntity).toBeCalled();
     expect(insertEntity).toBeCalledTimes(1);
     expect(insertEntity).toBeCalledWith({
-      PartitionKey: eg.String(failedUserDataProcessing[0].choice),
-      Reason: eg.String(failedUserDataProcessing[0].reason ?? "UNKNOWN"),
-      RowKey: eg.String(failedUserDataProcessing[0].fiscalCode)
+      partitionKey: failedUserDataProcessing[0].choice,
+      Reason: failedUserDataProcessing[0].reason ?? "UNKNOWN",
+      rowKey: failedUserDataProcessing[0].fiscalCode
     });
     expect(deleteEntity).not.toBeCalled();
   });
@@ -296,9 +293,9 @@ describe("FailedUserDataProcessing", () => {
     expect(insertEntity).toBeCalled();
     expect(insertEntity).toBeCalledTimes(1);
     expect(insertEntity).toBeCalledWith({
-      PartitionKey: eg.String(failedUserDataProcessing[0].choice),
-      Reason: eg.String("UNKNOWN"),
-      RowKey: eg.String(failedUserDataProcessing[0].fiscalCode)
+      partitionKey: failedUserDataProcessing[0].choice,
+      Reason: "UNKNOWN",
+      rowKey: failedUserDataProcessing[0].fiscalCode
     });
     expect(deleteEntity).not.toBeCalled();
   });
@@ -320,8 +317,8 @@ describe("ClosedUserDataProcessing", () => {
     expect(deleteEntity).toBeCalled();
     expect(deleteEntity).toBeCalledTimes(1);
     expect(deleteEntity).toBeCalledWith({
-      PartitionKey: eg.String(closedUserDataProcessing[0].choice),
-      RowKey: eg.String(closedUserDataProcessing[0].fiscalCode)
+      partitionKey: closedUserDataProcessing[0].choice,
+      rowKey: closedUserDataProcessing[0].fiscalCode
     });
   });
 });
