@@ -4,7 +4,7 @@ import type { Readable } from "stream";
 
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
 import { BlobServiceClient } from "@azure/storage-blob";
-import { json } from "node:stream/consumers";
+import { json } from "stream/consumers";
 
 /**
  * Creates a Blob Storage credential for the current environment.
