@@ -2,7 +2,7 @@ import { InvocationContext } from "@azure/functions";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
-} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+} from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingChoice";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as df from "durable-functions";
 import * as E from "fp-ts/lib/Either";

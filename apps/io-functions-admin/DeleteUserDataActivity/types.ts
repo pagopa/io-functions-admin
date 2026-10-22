@@ -1,5 +1,6 @@
+import type { BlobServiceClient } from "@azure/storage-blob";
+
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { BlobService } from "azure-storage";
 import * as t from "io-ts";
 
 // Activity input
@@ -75,7 +76,7 @@ export type DataFailure =
 
 // define a value object with the info related to the blob storage for backup files
 export interface IBlobServiceInfo {
-  readonly blobService: BlobService;
+  readonly blobServiceClient: BlobServiceClient;
   readonly containerName: string;
   readonly folder?: NonEmptyString;
 }

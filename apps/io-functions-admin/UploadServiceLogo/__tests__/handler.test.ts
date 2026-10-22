@@ -1,14 +1,28 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import type { BlobServiceClient } from "@azure/storage-blob";
+
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { BlobService } from "azure-storage";
 import { none, some } from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 import { describe, expect, it, vi } from "vitest";
 
 import { Logo } from "../../generated/definitions/Logo";
 import { UpdateServiceLogoHandler } from "../handler";
+
+const setup = () => {
+  const uploadData = vi.fn().mockResolvedValue({});
+  const blockBlobClient = { uploadData };
+  const containerClient = {
+    getBlockBlobClient: vi.fn(() => blockBlobClient)
+  };
+  const blobServiceClient = {
+    getContainerClient: vi.fn(() => containerClient)
+  } as unknown as BlobServiceClient;
+
+  return { blobServiceClient, containerClient, uploadData };
+};
 
 describe("UpdateServiceLogoHandler", () => {
   it("should return a not found error when the service is not found in the db", async () => {
@@ -71,9 +85,7 @@ describe("UpdateServiceLogoHandler", () => {
       }
     };
 
-    const blobServiceMock = {
-      createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
-    } as unknown as BlobService;
+    const { blobServiceClient } = setup();
     const aServiceId = "1" as NonEmptyString;
     const logosUrl = "LOGOS_URL";
     const mockServiceModel = {
@@ -82,7 +94,7 @@ describe("UpdateServiceLogoHandler", () => {
 
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
-      blobServiceMock,
+      blobServiceClient,
       logosUrl
     );
     const response = await updateServiceLogoHandler(
@@ -109,12 +121,10 @@ describe("UpdateServiceLogoHandler", () => {
     const mockServiceModel = {
       findOneByServiceId: vi.fn(() => TE.right(some({})))
     };
-    const blobServiceMock = {
-      createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb(null, "any"))
-    } as unknown as BlobService;
+    const { blobServiceClient, containerClient, uploadData } = setup();
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
-      blobServiceMock,
+      blobServiceClient,
       logosUrl
     );
     const response = await updateServiceLogoHandler(
@@ -129,6 +139,13 @@ describe("UpdateServiceLogoHandler", () => {
     );
 
     expect(response.kind).toBe("IResponseSuccessRedirectToResource");
+    expect(containerClient.getBlockBlobClient).toHaveBeenCalledWith("1.png");
+    expect(uploadData).toHaveBeenCalledWith(
+      Buffer.from(requestPayload.logo, "base64"),
+      expect.objectContaining({
+        blobHTTPHeaders: { blobContentType: "image/png" }
+      })
+    );
   });
 
   it("should return an internal error response if blob write fails", async () => {
@@ -141,12 +158,11 @@ describe("UpdateServiceLogoHandler", () => {
     const mockServiceModel = {
       findOneByServiceId: vi.fn(() => TE.right(some({})))
     };
-    const blobServiceMock = {
-      createBlockBlobFromText: vi.fn((_, __, ___, cb) => cb("any", null))
-    } as unknown as BlobService;
+    const { blobServiceClient, uploadData } = setup();
+    uploadData.mockRejectedValue(new Error("write failed"));
     const updateServiceLogoHandler = UpdateServiceLogoHandler(
       mockServiceModel as any,
-      blobServiceMock,
+      blobServiceClient,
       logosUrl
     );
     const response = await updateServiceLogoHandler(

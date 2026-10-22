@@ -1,4 +1,4 @@
-import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
+import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/Service";
 import { IRequestMiddleware } from "@pagopa/io-functions-commons/dist/src/utils/request_middleware";
 import { ResponseErrorFromValidationErrors } from "@pagopa/ts-commons/lib/responses";
 import * as E from "fp-ts/lib/Either";

@@ -1,5 +1,5 @@
 import { InvocationContext } from "@azure/functions";
-import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
+import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/NewMessage";
 import { sendMail } from "@pagopa/io-functions-commons/dist/src/mailer";
 import { markdownToHtml } from "@pagopa/io-functions-commons/dist/src/utils/markdown";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";

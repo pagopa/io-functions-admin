@@ -44,6 +44,31 @@ describe("IConfig", () => {
     expect(invalidKeys).not.toContain("COSMOSDB_KEY");
     expect(invalidKeys).not.toContain("COSMOSDB_CONNECTION_STRING");
   });
+
+  it("requires Blob endpoints and ignores legacy Blob connection strings", () => {
+    const result = IConfig.decode({
+      AssetsStorageConnection: "UseDevelopmentStorage=true",
+      StorageConnection: "UseDevelopmentStorage=true",
+      UserDataArchiveStorageConnection: "UseDevelopmentStorage=true",
+      UserDataBackupStorageConnection: "UseDevelopmentStorage=true"
+    });
+    if (E.isRight(result)) {
+      assert.fail("Expected endpoint-based Blob configuration to be required");
+    }
+
+    const invalidKeys = result.left.flatMap(error =>
+      error.context.map(context => context.key)
+    );
+
+    expect(invalidKeys).toContain("ASSETS_STORAGE_BLOB_ENDPOINT");
+    expect(invalidKeys).toContain("STORAGE_BLOB_ENDPOINT");
+    expect(invalidKeys).toContain("USER_DATA_ARCHIVE_STORAGE_BLOB_ENDPOINT");
+    expect(invalidKeys).toContain("USER_DATA_BACKUP_STORAGE_BLOB_ENDPOINT");
+    expect(invalidKeys).not.toContain("AssetsStorageConnection");
+    expect(invalidKeys).not.toContain("StorageConnection");
+    expect(invalidKeys).not.toContain("UserDataArchiveStorageConnection");
+    expect(invalidKeys).not.toContain("UserDataBackupStorageConnection");
+  });
 });
 
 describe("MailerConfig", () => {

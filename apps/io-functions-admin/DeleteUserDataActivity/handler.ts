@@ -2,11 +2,12 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
+import type { BlobServiceClient } from "@azure/storage-blob";
+
 import { InvocationContext } from "@azure/functions";
 import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { BlobService } from "azure-storage";
 import { pipe } from "fp-ts/lib/function";
 import * as TE from "fp-ts/lib/TaskEither";
 
@@ -33,7 +34,7 @@ const logPrefix = ActivityName;
 
 export interface IActivityHandlerInput {
   readonly authenticationLockService: AuthenticationLockService;
-  readonly messageContentBlobService: BlobService;
+  readonly messageContentBlobService: BlobServiceClient;
   readonly messageModel: MessageDeletableModel;
   readonly messageStatusModel: MessageStatusDeletableModel;
   readonly messageViewModel: MessageViewDeletableModel;
@@ -42,7 +43,7 @@ export interface IActivityHandlerInput {
   readonly profileEmailsRepository: IProfileEmailWriter;
   readonly profileModel: ProfileDeletableModel;
   readonly servicePreferencesModel: ServicePreferencesDeletableModel;
-  readonly userDataBackupBlobService: BlobService;
+  readonly userDataBackupBlobService: BlobServiceClient;
   readonly userDataBackupContainerName: NonEmptyString;
 }
 
@@ -96,7 +97,7 @@ export function createDeleteUserDataActivityHandler({
             profileModel,
             servicePreferencesModel,
             userDataBackup: {
-              blobService: userDataBackupBlobService,
+              blobServiceClient: userDataBackupBlobService,
               containerName: userDataBackupContainerName,
               folder: backupFolder
             }

@@ -2,12 +2,11 @@
  * This activity extracts all the data about a user contained in our db.
  */
 
+import type { BlobServiceClient } from "@azure/storage-blob";
+
 import { InvocationContext } from "@azure/functions";
-import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
-import {
-  MessageModel,
-  RetrievedMessageWithoutContent
-} from "@pagopa/io-functions-commons/dist/src/models/message";
+import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/NotificationChannel";
+import { RetrievedMessageWithoutContent } from "@pagopa/io-functions-commons/dist/src/models/message";
 import {
   MessageStatus,
   MessageStatusModel
@@ -28,21 +27,20 @@ import {
   flattenAsyncIterator
 } from "@pagopa/io-functions-commons/dist/src/utils/async";
 import { toCosmosErrorResponse } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
-import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { BlobService } from "azure-storage";
-import { sequenceS, sequenceT } from "fp-ts/lib/Apply";
+import { sequenceS } from "fp-ts/lib/Apply";
 import * as E from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import * as ROA from "fp-ts/lib/ReadonlyArray";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
-import * as stream from "stream";
 import * as yaml from "yaml";
 
+import { getBlockBlobClient, uploadBlobStream } from "../utils/blob_storage";
 import { getMessageFromCosmosErrors } from "../utils/conversions";
+import { MessageContentReaderModel } from "../utils/extensions/models/message";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
 import { generateStrongPassword, StrongPassword } from "../utils/random";
 import { AllUserData, MessageContentWithId } from "../utils/userData";
@@ -123,18 +121,6 @@ export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 const logPrefix = `ExtractUserDataActivity`;
 
 /**
- * Converts a Promise<Either<L, R>> that can reject
- * into a TaskEither<Error | L, R>
- */
-const fromPromiseEither = <L, R>(
-  promise: Promise<E.Either<L, R>>
-): TE.TaskEither<Error | L, R> =>
-  pipe(
-    TE.tryCatch(() => promise, E.toError),
-    TE.chainW(TE.fromEither)
-  );
-
-/**
  * To be used for exhaustive checks
  */
 
@@ -208,8 +194,8 @@ export const getProfile = (
  * Retrieves all contents for provided messages
  */
 export const getAllMessageContents = (
-  messageContentBlobService: BlobService,
-  messageModel: MessageModel,
+  messageContentBlobService: BlobServiceClient,
+  messageModel: MessageContentReaderModel,
   messages: readonly RetrievedMessageWithoutContent[]
 ): TE.TaskEither<ActivityResultQueryFailure, readonly MessageContentWithId[]> =>
   pipe(
@@ -217,7 +203,10 @@ export const getAllMessageContents = (
     ROA.map(_ => _.id),
     ROA.map(messageId =>
       pipe(
-        messageModel.getContentFromBlob(messageContentBlobService, messageId),
+        messageModel.getContentFromStorage(
+          messageContentBlobService,
+          messageId
+        ),
         TE.chainW(
           flow(
             TE.fromOption(() => void 0 /* anything will do */),
@@ -354,13 +343,13 @@ export const findAllNotificationStatuses = (
  * @returns Either a failure or a hash set with all the information regarding the user
  */
 export const queryAllUserData = (
-  messageModel: MessageModel,
+  messageModel: MessageContentReaderModel,
   messageStatusModel: MessageStatusModel,
   messageViewModel: MessageViewModel,
   notificationModel: NotificationModel,
   notificationStatusModel: NotificationStatusModel,
   profileModel: ProfileModel,
-  messageContentBlobService: BlobService,
+  messageContentBlobService: BlobServiceClient,
   fiscalCode: FiscalCode,
   servicePreferencesModel: ServicePreferencesDeletableModel
 ): TE.TaskEither<
@@ -509,22 +498,6 @@ export const queryAllUserData = (
     )
   );
 
-const getCreateWriteStreamToBlockBlob =
-  (blobService: BlobService) => (container: string, blob: string) => {
-    const { e1: errorOrResult, e2: resolve } =
-      DeferredPromise<E.Either<Error, BlobService.BlobResult>>();
-    const blobStream = blobService.createWriteStreamToBlockBlob(
-      container,
-      blob,
-      { contentSettings: { contentType: "application/zip" } },
-      (err, result) => (err ? resolve(E.left(err)) : resolve(E.right(result)))
-    );
-
-    return { blobStream, errorOrResult };
-  };
-
-const onStreamFinished = TE.taskify(stream.finished);
-
 /**
  * Creates a bundle with all user data and save it to a blob on a remote storage
  *
@@ -534,7 +507,7 @@ const onStreamFinished = TE.taskify(stream.finished);
  * @returns either a failure or an object with the name of the blob and the password
  */
 export const saveDataToBlob = (
-  blobService: BlobService,
+  blobServiceClient: BlobServiceClient,
   userDataContainerName: string,
   data: AllUserData,
   password: StrongPassword
@@ -557,54 +530,39 @@ export const saveDataToBlob = (
       password
     });
 
-  const { blobStream, errorOrResult } = getCreateWriteStreamToBlockBlob(
-    blobService
-  )(userDataContainerName, blobName);
-
-  zipStream.pipe(blobStream);
   zipStream.append(yaml.stringify(data), {
     name: fileName
   });
 
-  const onZipStreamError = pipe(
-    onStreamFinished(zipStream),
-    TE.mapLeft(failure)
-  );
-
-  const onZipStreamFinalized = pipe(
-    TE.tryCatch(() => zipStream.finalize(), E.toError),
-    TE.mapLeft(failure)
-  );
-
-  // This task will run only when `onZipStreamFinalized` completes.
-  // If `onZipStreamFinalized` does not finish, the process hangs here
-  // until the function runtime timeout is reached
-  const onBlobStreamWritten = pipe(
-    fromPromiseEither(errorOrResult),
-    TE.bimap(failure, success)
-  );
-
-  // run tasks in parallel
   return pipe(
-    sequenceT(TE.ApplicativePar)(
-      onZipStreamError,
-      onZipStreamFinalized,
-      onBlobStreamWritten
-    ),
-    TE.map(([, , blobStreamResult]) => blobStreamResult)
+    TE.tryCatch(async () => {
+      const uploadPromise = uploadBlobStream(
+        getBlockBlobClient(blobServiceClient, userDataContainerName, blobName),
+        zipStream,
+        "application/zip"
+      );
+      try {
+        await Promise.all([zipStream.finalize(), uploadPromise]);
+        return success();
+      } catch (error) {
+        zipStream.destroy(E.toError(error));
+        throw error;
+      }
+    }, E.toError),
+    TE.mapLeft(failure)
   );
 };
 
 export interface IActivityHandlerInput {
-  readonly messageContentBlobService: BlobService;
-  readonly messageModel: MessageModel;
+  readonly messageContentBlobService: BlobServiceClient;
+  readonly messageModel: MessageContentReaderModel;
   readonly messageStatusModel: MessageStatusModel;
   readonly messageViewModel: MessageViewModel;
   readonly notificationModel: NotificationModel;
   readonly notificationStatusModel: NotificationStatusModel;
   readonly profileModel: ProfileModel;
   readonly servicePreferencesModel: ServicePreferencesDeletableModel;
-  readonly userDataBlobService: BlobService;
+  readonly userDataBlobService: BlobServiceClient;
   readonly userDataContainerName: NonEmptyString;
 }
 

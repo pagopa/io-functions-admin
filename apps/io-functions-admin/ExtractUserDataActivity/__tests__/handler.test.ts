@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { MessageModel } from "@pagopa/io-functions-commons/dist/src/models/message";
+import type { BlobServiceClient } from "@azure/storage-blob";
+
 import { MessageStatusModel } from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import {
@@ -9,12 +10,9 @@ import {
 import { NotificationStatusModel } from "@pagopa/io-functions-commons/dist/src/models/notification_status";
 import { ProfileModel } from "@pagopa/io-functions-commons/dist/src/models/profile";
 import * as asyncI from "@pagopa/io-functions-commons/dist/src/utils/async";
-import { DeferredPromise } from "@pagopa/ts-commons/lib/promises";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import archiver = require("archiver");
-import { BlobService } from "azure-storage";
+import * as archiver from "archiver";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import { some } from "fp-ts/lib/Option";
@@ -41,6 +39,7 @@ import {
   aRetrievedMessageWithoutContent,
   aRetrievedNotification
 } from "../../__mocks__/mocks";
+import { MessageContentReaderModel } from "../../utils/extensions/models/message";
 import { ServicePreferencesDeletableModel } from "../../utils/extensions/models/service_preferences";
 import { AllUserData } from "../../utils/userData";
 import * as zipstream from "../../utils/zip";
@@ -97,11 +96,11 @@ vi.spyOn(asyncI, "asyncIteratorToArray").mockImplementation(() =>
   Promise.resolve([[E.right(aRetrievedMessageWithoutContent)]])
 );
 
-const mockGetContentFromBlob = vi.fn(() => TE.of(some(aMessageContent)));
+const mockGetContentFromStorage = vi.fn(() => TE.of(some(aMessageContent)));
 const messageModelMock = {
   findMessages: vi.fn(() => TE.fromEither(E.right(messageIteratorMock))),
-  getContentFromBlob: mockGetContentFromBlob
-} as unknown as MessageModel;
+  getContentFromStorage: mockGetContentFromStorage
+} as unknown as MessageContentReaderModel;
 
 // ServicePreferences Model
 export async function* asyncIteratorOf<T>(items: T[]) {
@@ -152,28 +151,49 @@ const notificationStatusModelMock = {
   )
 } as unknown as NotificationStatusModel;
 
-// this is a little bit convoluted as we're mocking
-// two synchronized streams that end with a promise (zip)
-// and a callback (blob) that must be called after the promise resolves
-const setupStreamMocks = () => {
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-  const { e1: errorOrResult, e2: resolve } = DeferredPromise<void>();
-  const aBlobStream = new stream.PassThrough();
-  const blobServiceMock = {
-    createWriteStreamToBlockBlob: vi.fn((_, __, ___, cb) => {
-      // the following callback must be executed after zipStream.finalize
-      errorOrResult.then(cb).catch();
-      return aBlobStream;
-    })
-  } as unknown as BlobService;
-  const aZipStream = archiver.create("zip");
-  const origFinalize = aZipStream.finalize.bind(aZipStream);
-
-  vi.spyOn(aZipStream, "finalize").mockImplementationOnce(() =>
-    origFinalize().then(resolve)
+const setupStreamMocks = (delayUpload = false) => {
+  let signalUploadStarted: () => void = () => {};
+  const uploadStarted = new Promise<void>(resolve => {
+    signalUploadStarted = resolve;
+  });
+  let releaseUpload: () => void = () => {};
+  let failUpload: (error: Error) => void = () => {};
+  const uploadGate = new Promise<void>((resolve, reject) => {
+    releaseUpload = resolve;
+    failUpload = reject;
+  });
+  const uploadStream = vi.fn(
+    (readable: stream.Readable) =>
+      new Promise((resolve, reject) => {
+        readable.on("data", () => {});
+        readable.once("end", () => {
+          signalUploadStarted();
+          if (delayUpload) {
+            uploadGate.then(() => resolve({}), reject);
+          } else {
+            resolve({});
+          }
+        });
+        readable.once("error", reject);
+      })
   );
+  const blobServiceMock = {
+    getContainerClient: vi.fn(() => ({
+      getBlockBlobClient: vi.fn(() => ({ uploadStream }))
+    }))
+  } as unknown as BlobServiceClient;
+  const aZipStream = archiver.create("zip");
+
+  vi.spyOn(aZipStream, "finalize");
   vi.spyOn(zipstream, "getEncryptedZipStream").mockReturnValueOnce(aZipStream);
-  return { aZipStream, blobServiceMock };
+  return {
+    aZipStream,
+    blobServiceMock,
+    failUpload,
+    releaseUpload,
+    uploadStarted,
+    uploadStream
+  };
 };
 
 const aUserDataContainerName = "aUserDataContainerName" as NonEmptyString;
@@ -275,7 +295,7 @@ describe("createExtractUserDataActivityHandler", () => {
 
     await handler(input, contextMock);
 
-    expect(messageModelMock.getContentFromBlob).toHaveBeenCalledWith(
+    expect(messageModelMock.getContentFromStorage).toHaveBeenCalledWith(
       blobServiceMock,
       aRetrievedMessageWithoutContent.id
     );
@@ -325,7 +345,7 @@ describe("createExtractUserDataActivityHandler", () => {
 
   it("should handle export when some messages have no message content", async () => {
     const { blobServiceMock } = setupStreamMocks();
-    mockGetContentFromBlob.mockImplementationOnce(() => TE.of(none));
+    mockGetContentFromStorage.mockImplementationOnce(() => TE.of(none));
     const handler = createExtractUserDataActivityHandler({
       messageContentBlobService: blobServiceMock,
       messageModel: messageModelMock,
@@ -345,5 +365,62 @@ describe("createExtractUserDataActivityHandler", () => {
     const result = await handler(input, contextMock);
 
     expect(E.isRight(ActivityResultSuccess.decode(result))).toBe(true);
+  });
+});
+
+describe("archive upload lifecycle", () => {
+  it("waits for the archive upload before returning success", async () => {
+    const { blobServiceMock, releaseUpload, uploadStarted } =
+      setupStreamMocks(true);
+    const handler = createExtractUserDataActivityHandler({
+      messageContentBlobService: blobServiceMock,
+      messageModel: messageModelMock,
+      messageStatusModel: messageStatusModelMock,
+      messageViewModel: messageViewModelMock,
+      notificationModel: notificationModelMock,
+      notificationStatusModel: notificationStatusModelMock,
+      profileModel: profileModelMock,
+      servicePreferencesModel: servicePreferencesModelMock,
+      userDataBlobService: blobServiceMock,
+      userDataContainerName: aUserDataContainerName
+    });
+    const resultPromise = handler({ fiscalCode: aFiscalCode }, contextMock);
+    await uploadStarted;
+
+    let completed = false;
+    void resultPromise.then(() => {
+      completed = true;
+    });
+    await Promise.resolve();
+    expect(completed).toBe(false);
+
+    releaseUpload();
+    const result = await resultPromise;
+    expect(E.isRight(ActivityResultSuccess.decode(result))).toBe(true);
+  });
+
+  it("destroys the archive stream when the Blob upload fails", async () => {
+    const { aZipStream, blobServiceMock, failUpload, uploadStarted } =
+      setupStreamMocks(true);
+    const handler = createExtractUserDataActivityHandler({
+      messageContentBlobService: blobServiceMock,
+      messageModel: messageModelMock,
+      messageStatusModel: messageStatusModelMock,
+      messageViewModel: messageViewModelMock,
+      notificationModel: notificationModelMock,
+      notificationStatusModel: notificationStatusModelMock,
+      profileModel: profileModelMock,
+      servicePreferencesModel: servicePreferencesModelMock,
+      userDataBlobService: blobServiceMock,
+      userDataContainerName: aUserDataContainerName
+    });
+    const resultPromise = handler({ fiscalCode: aFiscalCode }, contextMock);
+    await uploadStarted;
+
+    failUpload(new Error("403 Forbidden"));
+    const result = await resultPromise;
+
+    expect(result.kind).toBe("ARCHIVE_GENERATION_FAILURE");
+    expect(aZipStream.destroyed).toBe(true);
   });
 });
