@@ -1,7 +1,7 @@
 import type { BlobClient, BlockBlobClient } from "@azure/storage-blob";
 
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
-import { PassThrough } from "stream";
+import { PassThrough, Readable } from "stream";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -26,15 +26,44 @@ describe("Blob storage helpers", () => {
 
   it("downloads JSON", async () => {
     const blobClient = {
-      downloadToBuffer: vi
-        .fn()
-        .mockResolvedValue(Buffer.from('{"value":"ok"}', "utf8"))
+      download: vi.fn().mockResolvedValue({
+        readableStreamBody: Readable.from([
+          Buffer.from('{"value":"ok"}', "utf8")
+        ])
+      })
     } as unknown as BlobClient;
 
     await expect(downloadBlobAsJson(blobClient)).resolves.toEqual({
       value: "ok"
     });
-    expect(blobClient.downloadToBuffer).toHaveBeenCalledTimes(1);
+    expect(blobClient.download).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails if a download response has no readable stream", async () => {
+    const blobClient = {
+      download: vi.fn().mockResolvedValue({ readableStreamBody: undefined })
+    } as unknown as BlobClient;
+
+    await expect(downloadBlobAsJson(blobClient)).rejects.toThrow(
+      "Blob download did not return a readable stream"
+    );
+  });
+
+  it("propagates errors raised while consuming the download stream", async () => {
+    const streamError = new Error("stream failed");
+    const readableStreamBody = Readable.from(
+      (async function* () {
+        yield Buffer.from('{"value":');
+        throw streamError;
+      })()
+    );
+    const blobClient = {
+      download: vi.fn().mockResolvedValue({ readableStreamBody })
+    } as unknown as BlobClient;
+
+    await expect(downloadBlobAsJson(blobClient)).rejects.toThrow(
+      "stream failed"
+    );
   });
 
   it("uploads JSON, buffers, and streams with their content types", async () => {

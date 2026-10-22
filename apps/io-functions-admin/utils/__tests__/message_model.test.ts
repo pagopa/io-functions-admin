@@ -3,6 +3,7 @@ import type { BlobServiceClient } from "@azure/storage-blob";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import * as O from "fp-ts/lib/Option";
+import { Readable } from "stream";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // eslint-disable-next-line vitest/no-mocks-import
@@ -14,11 +15,14 @@ import {
 
 const messageId = "message-id";
 const containerName = "message-content";
+const downloadResponse = (content: string) => ({
+  readableStreamBody: Readable.from([Buffer.from(content)])
+});
 
 const setup = () => {
   const blobClient = {
     deleteIfExists: vi.fn(),
-    downloadToBuffer: vi.fn()
+    download: vi.fn()
   };
   const containerClient = { getBlobClient: vi.fn(() => blobClient) };
   const blobServiceClient = {
@@ -48,8 +52,8 @@ describe("MessageContentReaderModel Blob content", () => {
   it("reads and decodes <messageId>.json", async () => {
     const { blobClient, blobServiceClient, containerClient, readerModel } =
       setup();
-    blobClient.downloadToBuffer.mockResolvedValue(
-      Buffer.from(JSON.stringify(aMessageContent))
+    blobClient.download.mockResolvedValue(
+      downloadResponse(JSON.stringify(aMessageContent))
     );
 
     const result = await readerModel.getContentFromStorage(
@@ -68,7 +72,7 @@ describe("MessageContentReaderModel Blob content", () => {
 
   it("maps only BlobNotFound to none", async () => {
     const { blobClient, blobServiceClient, readerModel } = setup();
-    blobClient.downloadToBuffer.mockRejectedValue(
+    blobClient.download.mockRejectedValue(
       Object.assign(new Error("Blob not found"), {
         code: "BlobNotFound",
         statusCode: 404
@@ -94,7 +98,7 @@ describe("MessageContentReaderModel Blob content", () => {
     })
   ])("propagates storage failures: %s", async error => {
     const { blobClient, blobServiceClient, readerModel } = setup();
-    blobClient.downloadToBuffer.mockRejectedValue(error);
+    blobClient.download.mockRejectedValue(error);
 
     const result = await readerModel.getContentFromStorage(
       blobServiceClient,
@@ -111,7 +115,7 @@ describe("MessageContentReaderModel Blob content", () => {
     "propagates empty, malformed, or invalid content %s",
     async content => {
       const { blobClient, blobServiceClient, readerModel } = setup();
-      blobClient.downloadToBuffer.mockResolvedValue(Buffer.from(content));
+      blobClient.download.mockResolvedValue(downloadResponse(content));
 
       const result = await readerModel.getContentFromStorage(
         blobServiceClient,
