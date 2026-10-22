@@ -1,24 +1,24 @@
-import { FeatureLevelTypeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/FeatureLevelType";
-import { HttpsUrl } from "@pagopa/io-functions-commons/dist/generated/definitions/HttpsUrl";
-import { MaxAllowedPaymentAmount } from "@pagopa/io-functions-commons/dist/generated/definitions/MaxAllowedPaymentAmount";
-import { MessageBodyMarkdown } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageBodyMarkdown";
-import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
-import { MessageSubject } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageSubject";
-import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
-import { NotificationChannelStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannelStatusValue";
-import { NotRejectedMessageStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotRejectedMessageStatusValue";
-import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
-import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
-import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
-import { TimeToLiveSeconds } from "@pagopa/io-functions-commons/dist/generated/definitions/TimeToLiveSeconds";
+import { FeatureLevelTypeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/FeatureLevelType";
+import { HttpsUrl } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/HttpsUrl";
+import { MaxAllowedPaymentAmount } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/MaxAllowedPaymentAmount";
+import { MessageBodyMarkdown } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/MessageBodyMarkdown";
+import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/MessageContent";
+import { MessageSubject } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/MessageSubject";
+import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/NotificationChannel";
+import { NotificationChannelStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/NotificationChannelStatusValue";
+import { NotRejectedMessageStatusValueEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/NotRejectedMessageStatusValue";
+import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/Service";
+import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/ServiceId";
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/ServicesPreferencesMode";
+import { TimeToLiveSeconds } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/TimeToLiveSeconds";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
-} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+} from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingChoice";
 import {
   UserDataProcessingStatus,
   UserDataProcessingStatusEnum
-} from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+} from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingStatus";
 import {
   MessageWithContent,
   MessageWithoutContent,

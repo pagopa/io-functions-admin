@@ -1,3 +1,5 @@
+import type { BlobServiceClient } from "@azure/storage-blob";
+
 import { InvocationContext } from "@azure/functions";
 import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {
@@ -16,13 +18,17 @@ import {
   ResponseSuccessRedirectToResource
 } from "@pagopa/ts-commons/lib/responses";
 import { OrganizationFiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { BlobService } from "azure-storage";
+import { toError } from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as UPNG from "upng-js";
 
 import { Logo as ApiLogo } from "../generated/definitions/Logo";
+import {
+  getBlockBlobClient,
+  uploadBlobFromBuffer
+} from "../utils/blob_storage";
 import { LogoPayloadMiddleware } from "../utils/middlewares/service";
 
 type IUploadOrganizationLogoHandler = (
@@ -43,44 +49,38 @@ const imageValidationErrorResponse = () =>
   );
 
 const upsertBlobFromImageBuffer = (
-  blobService: BlobService,
+  blobServiceClient: BlobServiceClient,
   containerName: string,
   blobName: string,
   content: Buffer
-): TE.TaskEither<Error, O.Option<BlobService.BlobResult>> =>
-  pipe(
-    TE.taskify<Error, BlobService.BlobResult>(cb =>
-      blobService.createBlockBlobFromText(containerName, blobName, content, cb)
-    )(),
-    TE.map(O.fromNullable)
-  );
+): TE.TaskEither<Error, true> =>
+  TE.tryCatch(async () => {
+    await uploadBlobFromBuffer(
+      getBlockBlobClient(blobServiceClient, containerName, blobName),
+      content,
+      "image/png"
+    );
+    return true as const;
+  }, toError);
 
 export function UploadOrganizationLogo(
-  blobService: BlobService,
+  blobServiceClient: BlobServiceClient,
   logosUrl: string
 ) {
-  const handler = UploadOrganizationLogoHandler(blobService, logosUrl);
+  const handler = UploadOrganizationLogoHandler(blobServiceClient, logosUrl);
 
   const middlewares = [
-    // Extract Azure Functions bindings
     ContextMiddleware(),
-    // Allow only users in the ApiServiceWrite group
     AzureApiAuthMiddleware(new Set([UserGroup.ApiServiceWrite])),
-    // Extract organization Fiscal code from path
     RequiredParamMiddleware("organizationFiscalCode", OrganizationFiscalCode),
-    // Extracts the Logo payload from the request body
     LogoPayloadMiddleware
   ] as const;
 
   return wrapHandlerV4(middlewares, handler);
 }
 
-/**
- * Wraps an UploadOrganizationLogo handler inside an Express request handler.
- */
-
 export function UploadOrganizationLogoHandler(
-  blobService: BlobService,
+  blobServiceClient: BlobServiceClient,
   logosUrl: string
 ): IUploadOrganizationLogoHandler {
   return async (_, __, organizationFiscalCode, logoPayload) => {
@@ -102,7 +102,7 @@ export function UploadOrganizationLogoHandler(
       TE.chainW(() =>
         pipe(
           upsertBlobFromImageBuffer(
-            blobService,
+            blobServiceClient,
             "services",
             `${cleanedOrganizationFiscalCode}.png`,
             bufferImage
@@ -112,22 +112,11 @@ export function UploadOrganizationLogoHandler(
               `Error trying to connect to storage ${err.message}`
             )
           ),
-          TE.chain(
-            O.fold(
-              () =>
-                TE.left(
-                  ResponseErrorInternal(
-                    "Error trying to upload image logo on storage"
-                  )
-                ),
-              () =>
-                TE.of(
-                  ResponseSuccessRedirectToResource(
-                    {},
-                    `${logosUrl}/services/${cleanedOrganizationFiscalCode}.png`,
-                    {}
-                  )
-                )
+          TE.map(() =>
+            ResponseSuccessRedirectToResource(
+              {},
+              `${logosUrl}/services/${cleanedOrganizationFiscalCode}.png`,
+              {}
             )
           )
         )

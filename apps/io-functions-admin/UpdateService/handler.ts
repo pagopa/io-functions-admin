@@ -1,6 +1,6 @@
 import { InvocationContext } from "@azure/functions";
-import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
-import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
+import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/Service";
+import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/ServiceId";
 import { ServiceModel } from "@pagopa/io-functions-commons/dist/src/models/service";
 import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
 import {

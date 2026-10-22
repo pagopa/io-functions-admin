@@ -1,5 +1,5 @@
 import { InvocationContext } from "@azure/functions";
-import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingChoice";
 import {
   UserDataProcessing,
   UserDataProcessingModel

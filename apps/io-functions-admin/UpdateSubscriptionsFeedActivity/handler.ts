@@ -1,5 +1,5 @@
 import { InvocationContext } from "@azure/functions";
-import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
+import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/ServiceId";
 import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";

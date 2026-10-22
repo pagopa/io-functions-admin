@@ -3,10 +3,7 @@ import { app } from "@azure/functions";
 import * as H from "@pagopa/handler-kit";
 import { azureFunction } from "@pagopa/handler-kit-azure-func";
 import { getMailerTransporter } from "@pagopa/io-functions-commons/dist/src/mailer";
-import {
-  MESSAGE_COLLECTION_NAME,
-  MessageModel
-} from "@pagopa/io-functions-commons/dist/src/models/message";
+import { MESSAGE_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/message";
 import {
   MESSAGE_STATUS_COLLECTION_NAME,
   MessageStatusModel
@@ -45,7 +42,7 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { DataTableProfileEmailsRepository } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement/storage";
 import { Day } from "@pagopa/ts-commons/lib/units";
-import { createBlobService, createTableService } from "azure-storage";
+import { createTableService } from "azure-storage";
 import * as df from "durable-functions";
 import * as HtmlToText from "html-to-text";
 
@@ -150,11 +147,18 @@ import {
 import { triggerHandler } from "./UserDataProcessingTrigger/handler";
 import { initTelemetryClient } from "./utils/appinsights";
 import {
+  createBlobServiceClient,
+  createBlobStorageCredential
+} from "./utils/blob_storage";
+import {
   getConfigOrThrow,
   isUserEligibleForInstantDelete
 } from "./utils/config";
 import { cosmosdbClient, cosmosdbInstance } from "./utils/cosmosdb";
-import { MessageDeletableModel } from "./utils/extensions/models/message";
+import {
+  MessageContentReaderModel,
+  MessageDeletableModel
+} from "./utils/extensions/models/message";
 import { MessageStatusDeletableModel } from "./utils/extensions/models/message_status";
 import { MessageViewDeletableModel } from "./utils/extensions/models/message_view";
 import { NotificationDeletableModel } from "./utils/extensions/models/notification";
@@ -223,12 +227,32 @@ subscriptionsFeedTableService.createTableIfNotExists(
 // ---------------------------------------------------------------------------
 // Blob services
 // ---------------------------------------------------------------------------
-const assetsBlobService = createBlobService(config.AssetsStorageConnection);
+const blobStorageCredential = createBlobStorageCredential(config.isProduction);
+const assetsBlobService = createBlobServiceClient(
+  config.ASSETS_STORAGE_BLOB_ENDPOINT,
+  blobStorageCredential
+);
+const messageContentBlobService = createBlobServiceClient(
+  config.STORAGE_BLOB_ENDPOINT,
+  blobStorageCredential
+);
+const userDataBackupBlobService = createBlobServiceClient(
+  config.USER_DATA_BACKUP_STORAGE_BLOB_ENDPOINT,
+  blobStorageCredential
+);
+const userDataArchiveBlobService = createBlobServiceClient(
+  config.USER_DATA_ARCHIVE_STORAGE_BLOB_ENDPOINT,
+  blobStorageCredential
+);
 const logosUrl = config.LOGOS_URL;
 
 // ---------------------------------------------------------------------------
 // DeleteUserDataActivity dependencies
 // ---------------------------------------------------------------------------
+const messageContentReaderModel = new MessageContentReaderModel(
+  database.container(MESSAGE_COLLECTION_NAME),
+  config.MESSAGE_CONTAINER_NAME
+);
 const messageDeletableModel = new MessageDeletableModel(
   database.container(MESSAGE_COLLECTION_NAME),
   config.MESSAGE_CONTAINER_NAME
@@ -252,10 +276,6 @@ const servicePreferencesDeletableModel = new ServicePreferencesDeletableModel(
   database.container(SERVICE_PREFERENCES_COLLECTION_NAME),
   SERVICE_PREFERENCES_COLLECTION_NAME
 );
-const userDataBackupBlobService = createBlobService(
-  config.UserDataBackupStorageConnection
-);
-const messageContentBlobService = createBlobService(config.StorageConnection);
 const userDataBackupContainerName = config.USER_DATA_BACKUP_CONTAINER_NAME;
 const lockedProfilesTableClient = TableClient.fromConnectionString(
   config.LOCKED_PROFILES_STORAGE_CONNECTION_STRING,
@@ -275,10 +295,6 @@ const profileEmailsRepository = new DataTableProfileEmailsRepository(
 // ---------------------------------------------------------------------------
 // ExtractUserDataActivity dependencies
 // ---------------------------------------------------------------------------
-const messageModel = new MessageModel(
-  database.container(MESSAGE_COLLECTION_NAME),
-  config.MESSAGE_CONTAINER_NAME
-);
 const messageStatusModel = new MessageStatusModel(
   database.container(MESSAGE_STATUS_COLLECTION_NAME)
 );
@@ -292,9 +308,6 @@ const notificationStatusModel = new NotificationStatusModel(
   database.container(NOTIFICATION_STATUS_COLLECTION_NAME)
 );
 
-const userDataBlobService = createBlobService(
-  config.UserDataArchiveStorageConnection
-);
 const userDataContainerName = config.USER_DATA_CONTAINER_NAME;
 
 // ---------------------------------------------------------------------------
@@ -338,7 +351,12 @@ const waitInterval = config.USER_DATA_DELETE_DELAY_DAYS as unknown as Day;
 
 app.http("Info", {
   authLevel: "anonymous",
-  handler: Info(),
+  handler: Info({
+    assets: assetsBlobService,
+    messageContent: messageContentBlobService,
+    userDataArchive: userDataArchiveBlobService,
+    userDataBackup: userDataBackupBlobService
+  }),
   methods: ["GET"],
   route: "info"
 });
@@ -522,14 +540,14 @@ df.app.activity(DeleteUserDataActivityName, {
 df.app.activity(ExtractUserDataActivityName, {
   handler: createExtractUserDataActivityHandler({
     messageContentBlobService,
-    messageModel,
+    messageModel: messageContentReaderModel,
     messageStatusModel,
     messageViewModel,
     notificationModel,
     notificationStatusModel,
     profileModel,
     servicePreferencesModel: servicePreferencesDeletableModel,
-    userDataBlobService,
+    userDataBlobService: userDataArchiveBlobService,
     userDataContainerName
   })
 });

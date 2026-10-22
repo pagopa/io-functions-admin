@@ -1,8 +1,8 @@
 /**
  * Collections of types and utils about managing user access rights to their data
  */
-import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
-import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/NotificationChannel";
+import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/MessageContent";
+import { NotificationChannelEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/NotificationChannel";
 import { MessageWithoutContent } from "@pagopa/io-functions-commons/dist/src/models/message";
 import { MessageStatus } from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import { MessageView } from "@pagopa/io-functions-commons/dist/src/models/message_view";

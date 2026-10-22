@@ -1,6 +1,6 @@
 import { InvocationContext } from "@azure/functions";
-import { ExtendedProfile } from "@pagopa/io-functions-commons/dist/generated/definitions/ExtendedProfile";
-import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/ServicesPreferencesMode";
+import { ExtendedProfile } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/ExtendedProfile";
+import { ServicesPreferencesModeEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/ServicesPreferencesMode";
 import {
   NewProfile,
   ProfileModel,

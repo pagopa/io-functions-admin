@@ -1,5 +1,5 @@
 import { InvocationContext } from "@azure/functions";
-import { EmailAddress } from "@pagopa/io-functions-commons/dist/generated/definitions/EmailAddress";
+import { EmailAddress } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/EmailAddress";
 // imported all /mailer/transports instead of /mailer to allow spyOn() to work
 // https://stackoverflow.com/questions/53162001/typeerror-during-jests-spyon-cannot-set-property-getrequest-of-object-which
 import * as mail from "@pagopa/io-functions-commons/dist/src/mailer/transports";

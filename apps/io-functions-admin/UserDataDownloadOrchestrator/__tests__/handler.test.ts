@@ -1,6 +1,6 @@
 /* eslint-disable vitest/prefer-called-with */
 // eslint-disable @typescript-eslint/no-explicit-any
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingStatus";
 import { OrchestrationContext } from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { beforeEach, describe, expect, it, vi } from "vitest";

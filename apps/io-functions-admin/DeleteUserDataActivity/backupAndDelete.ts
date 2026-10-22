@@ -1,4 +1,6 @@
-import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/MessageContent";
+import type { BlobServiceClient } from "@azure/storage-blob";
+
+import { MessageContent } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/MessageContent";
 import {
   RetrievedMessage,
   RetrievedMessageWithoutContent
@@ -13,7 +15,6 @@ import { asyncIteratorToArray } from "@pagopa/io-functions-commons/dist/src/util
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
 import { EmailString, FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { BlobService } from "azure-storage";
 import * as crypto from "crypto";
 import { sequenceT } from "fp-ts/lib/Apply";
 import * as E from "fp-ts/lib/Either";
@@ -432,12 +433,12 @@ const backupAndDeleteMessageContent = ({
   userDataBackup
 }: {
   readonly message: RetrievedMessageWithoutContent;
-  readonly messageContentBlobService: BlobService;
+  readonly messageContentBlobService: BlobServiceClient;
   readonly messageModel: MessageDeletableModel;
   readonly userDataBackup: IBlobServiceInfo;
 }): TE.TaskEither<DataFailure, O.Option<MessageContent>> =>
   pipe(
-    messageModel.getContentFromBlob(messageContentBlobService, message.id),
+    messageModel.getContentFromStorage(messageContentBlobService, message.id),
     TE.chainW(TE.fromOption(() => undefined)),
     TE.foldW(
       _ =>
@@ -452,7 +453,7 @@ const backupAndDeleteMessageContent = ({
           ),
           TE.chainW(_ =>
             pipe(
-              messageModel.deleteContentFromBlob(
+              messageModel.deleteContentFromStorage(
                 messageContentBlobService,
                 message.id
               ),
@@ -571,7 +572,7 @@ const backupAndDeleteAllMessagesData = ({
   userDataBackup
 }: {
   readonly fiscalCode: FiscalCode;
-  readonly messageContentBlobService: BlobService;
+  readonly messageContentBlobService: BlobServiceClient;
   readonly messageModel: MessageDeletableModel;
   readonly messageStatusModel: MessageStatusDeletableModel;
   readonly messageViewModel: MessageViewDeletableModel;
@@ -676,7 +677,7 @@ export const backupAndDeleteAllUserData = ({
 }: {
   readonly authenticationLockService: AuthenticationLockService;
   readonly fiscalCode: FiscalCode;
-  readonly messageContentBlobService: BlobService;
+  readonly messageContentBlobService: BlobServiceClient;
   readonly messageModel: MessageDeletableModel;
   readonly messageStatusModel: MessageStatusDeletableModel;
   readonly messageViewModel: MessageViewDeletableModel;

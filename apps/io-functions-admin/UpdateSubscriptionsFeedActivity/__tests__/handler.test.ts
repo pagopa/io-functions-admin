@@ -1,5 +1,5 @@
 import { InvocationContext } from "@azure/functions";
-import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceId";
+import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/ServiceId";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import { TableService } from "azure-storage";
 import { beforeEach, describe, expect, it, vi } from "vitest";

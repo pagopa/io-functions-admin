@@ -3,8 +3,8 @@ import {
   SubscriptionContract,
   UserContract
 } from "@azure/arm-apimanagement";
-import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/Service";
-import { ServiceMetadata as ApiServiceMetadata } from "@pagopa/io-functions-commons/dist/generated/definitions/ServiceMetadata";
+import { Service as ApiService } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/Service";
+import { ServiceMetadata as ApiServiceMetadata } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/ServiceMetadata";
 import {
   RetrievedService,
   Service,

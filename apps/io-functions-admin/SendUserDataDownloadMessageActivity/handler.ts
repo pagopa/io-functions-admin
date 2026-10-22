@@ -1,5 +1,5 @@
 ﻿import { InvocationContext } from "@azure/functions";
-import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
+import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/NewMessage";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";

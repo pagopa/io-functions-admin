@@ -1,6 +1,6 @@
 import { InvocationContext } from "@azure/functions";
-import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingChoice";
+import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingStatus";
 import {
   makeUserDataProcessingId,
   UserDataProcessingModel
