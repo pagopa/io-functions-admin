@@ -1,3 +1,4 @@
+import { TableClient } from "@azure/data-tables";
 import { InvocationContext } from "@azure/functions";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingChoice";
 import { wrapHandlerV4 } from "@pagopa/io-functions-commons/dist/src/utils/azure-functions-v4-express-adapter";
@@ -11,12 +12,14 @@ import {
   ResponseSuccessJson
 } from "@pagopa/ts-commons/lib/responses";
 import { ResponseErrorNotFound } from "@pagopa/ts-commons/lib/responses";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { ServiceResponse, TableService } from "azure-storage";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
+
+import { TableEntityWithRowKey } from "../types/table";
+import { getTableStorageStatusCode } from "../utils/storage";
 
 type IHttpHandler = (
   context: InvocationContext,
@@ -32,17 +35,8 @@ type ResultSet = Readonly<{
   readonly failedDataProcessingUser: FiscalCode;
 }>;
 
-type TableEntry = Readonly<{
-  readonly RowKey: Readonly<{
-    readonly _: FiscalCode;
-  }>;
-}>;
-
 export const GetFailedUserDataProcessingHandler =
-  (
-    tableService: TableService,
-    failedUserDataProcessingTable: NonEmptyString
-  ): IHttpHandler =>
+  (tableClient: TableClient): IHttpHandler =>
   async (
     _,
     choice,
@@ -53,27 +47,21 @@ export const GetFailedUserDataProcessingHandler =
     | IResponseSuccessJson<ResultSet>
   > =>
     pipe(
-      TE.tryCatch(
-        () =>
-          new Promise<O.Option<TableEntry>>((resolve, reject) =>
-            tableService.retrieveEntity(
-              failedUserDataProcessingTable,
+      TE.tryCatch(async () => {
+        try {
+          return O.some(
+            await tableClient.getEntity<TableEntityWithRowKey<FiscalCode>>(
               choice,
-              fiscalCode,
-              // TODO: Refactor for using the new `@azure/data-tables` library
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              null,
-              (error: Error, result: TableEntry, response: ServiceResponse) =>
-                response.isSuccessful
-                  ? resolve(O.some(result))
-                  : response.statusCode === 404
-                    ? resolve(O.none)
-                    : reject(error)
+              fiscalCode
             )
-          ),
-        E.toError
-      ),
+          );
+        } catch (error) {
+          if (getTableStorageStatusCode(error) === 404) {
+            return O.none;
+          }
+          throw error;
+        }
+      }, E.toError),
       TE.mapLeft(er => ResponseErrorInternal(er.message)),
       TE.chainW(
         flow(
@@ -81,7 +69,7 @@ export const GetFailedUserDataProcessingHandler =
             ResponseErrorNotFound("Not found!", "No record found.")
           ),
           TE.map(rs => ({
-            failedDataProcessingUser: rs.RowKey._
+            failedDataProcessingUser: rs.rowKey
           }))
         )
       ),
@@ -89,14 +77,8 @@ export const GetFailedUserDataProcessingHandler =
       TE.toUnion
     )();
 
-export const GetFailedUserDataProcessing = (
-  tableService: TableService,
-  failedUserDataProcessingTable: NonEmptyString
-) => {
-  const handler = GetFailedUserDataProcessingHandler(
-    tableService,
-    failedUserDataProcessingTable
-  );
+export const GetFailedUserDataProcessing = (tableClient: TableClient) => {
+  const handler = GetFailedUserDataProcessingHandler(tableClient);
 
   const middlewares = [
     ContextMiddleware(),
