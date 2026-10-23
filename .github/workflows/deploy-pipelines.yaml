@@ -12,7 +12,7 @@ on:
 jobs:
   deploy:
     name: Deploy io-functions-admin
-    uses: pagopa/dx/.github/workflows/release-azure-appsvc-v1.yaml@6645470d1f31a0aad00899bacc93687458570434
+    uses: pagopa/dx/.github/workflows/release-azure-appsvc-v1.yaml@7e6e88cf29984e3a54589e1ed51a335e016b3f47
     secrets: inherit
     with:
       workspace_name: io-functions-admin
