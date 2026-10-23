@@ -1,6 +1,5 @@
+import { TableClient } from "@azure/data-tables";
 import { InvocationContext } from "@azure/functions";
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { TableService, TableUtilities } from "azure-storage";
 import * as A from "fp-ts/lib/Array";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
@@ -10,8 +9,6 @@ import * as t from "io-ts";
 
 import { deleteTableEntity, insertTableEntity } from "./storage";
 
-const eg = TableUtilities.entityGenerator;
-
 export const SubscriptionFeedEntitySelector = t.interface({
   partitionKey: t.string,
   rowKey: t.string
@@ -19,7 +16,6 @@ export const SubscriptionFeedEntitySelector = t.interface({
 export type SubscriptionFeedEntitySelector = t.TypeOf<
   typeof SubscriptionFeedEntitySelector
 >;
-
 /**
  * Updates the subscrption status of a user.
  *
@@ -42,7 +38,7 @@ export type SubscriptionFeedEntitySelector = t.TypeOf<
  * a specific service.
  */
 export const updateSubscriptionStatus =
-  (tableService: TableService, tableName: NonEmptyString) =>
+  (tableClient: TableClient) =>
   async (
     context: InvocationContext,
     logPrefix: string,
@@ -52,8 +48,8 @@ export const updateSubscriptionStatus =
     insertEntity: SubscriptionFeedEntitySelector,
     allowInsertIfDeleted: boolean
   ): Promise<true> => {
-    const insertEntityHandler = insertTableEntity(tableService, tableName);
-    const deleteEntityHandler = deleteTableEntity(tableService, tableName);
+    const insertEntityHandler = insertTableEntity(tableClient);
+    const deleteEntityHandler = deleteTableEntity(tableClient);
     // First we try to delete a previous (un)subscriptions operation
     // from the subscription feed entries for the current day
     const deleteResults = await pipe(
@@ -66,8 +62,8 @@ export const updateSubscriptionStatus =
               context.debug(`${logPrefix}|KEY=${_.rowKey}|Deleting entity`);
               const { e1: maybeError2, e2: uResponse2 } =
                 await deleteEntityHandler({
-                  PartitionKey: eg.String(_.partitionKey),
-                  RowKey: eg.String(_.rowKey)
+                  partitionKey: _.partitionKey,
+                  rowKey: _.rowKey
                 });
               return { maybeError: maybeError2, uResponse: uResponse2 };
             },
@@ -109,9 +105,9 @@ export const updateSubscriptionStatus =
     // we insert the new (un)subscription entry into the feed
     context.debug(`${logPrefix}|KEY=${insertEntity.rowKey}|Inserting entity`);
     const { e1: resultOrError, e2: sResponse } = await insertEntityHandler({
-      PartitionKey: eg.String(insertEntity.partitionKey),
-      RowKey: eg.String(insertEntity.rowKey),
-      version: eg.Int32(version)
+      partitionKey: insertEntity.partitionKey,
+      rowKey: insertEntity.rowKey,
+      version: { type: "Int32", value: version }
     });
     if (E.isLeft(resultOrError) && sResponse.statusCode !== 409) {
       // retry

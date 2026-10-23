@@ -69,6 +69,42 @@ describe("IConfig", () => {
     expect(invalidKeys).not.toContain("UserDataArchiveStorageConnection");
     expect(invalidKeys).not.toContain("UserDataBackupStorageConnection");
   });
+
+  it("requires Table and Queue endpoints instead of legacy connection strings", () => {
+    const result = IConfig.decode({
+      CitizenAuthStorageConnection: "UseDevelopmentStorage=true",
+      FailedUserDataProcessingStorageConnection: "UseDevelopmentStorage=true",
+      LOCKED_PROFILES_STORAGE_CONNECTION_STRING: "UseDevelopmentStorage=true",
+      PROFILE_EMAILS_STORAGE_CONNECTION_STRING: "UseDevelopmentStorage=true",
+      SubscriptionFeedStorageConnection: "UseDevelopmentStorage=true"
+    });
+    if (E.isRight(result)) {
+      assert.fail(
+        "Expected endpoint-based Table and Queue settings to be required"
+      );
+    }
+
+    const invalidKeys = result.left.flatMap(error =>
+      error.context.map(context => context.key)
+    );
+
+    expect(invalidKeys).toContain("API_STORAGE_TABLE_ENDPOINT");
+    expect(invalidKeys).toContain("SESSION_STORAGE_TABLE_ENDPOINT");
+    expect(invalidKeys).toContain(
+      "CitizenAuthQueueConnection__queueServiceUri"
+    );
+    expect(invalidKeys).not.toContain("CitizenAuthStorageConnection");
+    expect(invalidKeys).not.toContain(
+      "FailedUserDataProcessingStorageConnection"
+    );
+    expect(invalidKeys).not.toContain(
+      "LOCKED_PROFILES_STORAGE_CONNECTION_STRING"
+    );
+    expect(invalidKeys).not.toContain(
+      "PROFILE_EMAILS_STORAGE_CONNECTION_STRING"
+    );
+    expect(invalidKeys).not.toContain("SubscriptionFeedStorageConnection");
+  });
 });
 
 describe("MailerConfig", () => {

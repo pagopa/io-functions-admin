@@ -12,8 +12,17 @@ Blob Storage uses endpoint URLs and the slot's system-assigned identity in Azure
 Local runs use `AzureCliCredential`; authenticate with `az login` and use an
 account with the required data-plane RBAC roles.
 
+Table clients use the account endpoints below with the same credential strategy.
+The profile-sanitization Queue binding uses the fixed `CitizenAuthQueueConnection`
+prefix; local Functions runs use the developer credential chain, while Azure
+uses the slot's managed identity. The host retries failed Queue messages up to
+five times before moving them to the poison queue.
+
 | Variable name                     | Description                                                                                      | type   |
 | --------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
+| API_STORAGE_TABLE_ENDPOINT        | Table endpoint for subscription feed and failed-processing records                               | string |
+| SESSION_STORAGE_TABLE_ENDPOINT    | Table endpoint for locked profiles and profile emails                                            | string |
+| CitizenAuthQueueConnection__queueServiceUri | Queue endpoint for profile sanitization                                                 | string |
 | STORAGE_BLOB_ENDPOINT             | Blob endpoint for message contents                                                              | string |
 | ASSETS_STORAGE_BLOB_ENDPOINT      | Blob endpoint for service and organization logos                                                | string |
 | USER_DATA_BACKUP_STORAGE_BLOB_ENDPOINT | Blob endpoint for GDPR delete backups                                                       | string |
@@ -43,8 +52,11 @@ account with the required data-plane RBAC roles.
 | MAILUP_USERNAME                   | If using MailUp, the username                                                                    | string |
 | MAILUP_SECRET                     | If using MailUp, the secret                                                                      | string |
 | MAILHOG_HOSTNAME                  | Required on development, the host name of the MailHog SMTP server                                | string |
-| SubscriptionFeedStorageConnection | Storage connection string for subscription feed                                                  | string |
-| SUBSCRIPTIONS_FEED_TABLE          | Table name for the Subscriptions Feed in the storage                                             | string |
+| SUBSCRIPTIONS_FEED_TABLE          | Table name for the subscriptions feed                                                            | string |
+| FAILED_USER_DATA_PROCESSING_TABLE | Table name for failed user-data processing records                                               | string |
+| LOCKED_PROFILES_TABLE_NAME        | Table name for authentication locks                                                              | string |
+| PROFILE_EMAILS_TABLE_NAME         | Table name for profile email uniqueness                                                          | string |
+| SanitizeUserProfileQueueName      | Queue name for profile email sanitization                                                       | string |
 | GET_USERS_PAGE_SIZE               | Number of elements to be fetched and returned on GetUsers Api invoke (Default=100)               | number |
 
 #### Feature flags
