@@ -1,5 +1,11 @@
 ### Changelog
 
+## 4.0.3
+
+### Patch Changes
+
+- 542d19e: Migrate Blob and GDPR storage workflows to endpoint-based token credentials.
+
 ## 4.0.2
 
 ### Patch Changes
