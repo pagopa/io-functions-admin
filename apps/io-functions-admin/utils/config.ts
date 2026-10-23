@@ -21,7 +21,7 @@ import * as t from "io-ts";
 export type IConfig = t.TypeOf<typeof IConfig>;
 export const IConfig = t.intersection([
   t.interface({
-    AssetsStorageConnection: NonEmptyString,
+    ASSETS_STORAGE_BLOB_ENDPOINT: NonEmptyString,
     AZURE_APIM: NonEmptyString,
     AZURE_APIM_HOST: NonEmptyString,
 
@@ -64,18 +64,17 @@ export const IConfig = t.intersection([
     SESSION_MANAGER_INTERNAL_API_KEY: NonEmptyString,
     SESSION_MANAGER_INTERNAL_API_URL: NonEmptyString,
 
-    StorageConnection: NonEmptyString,
+    STORAGE_BLOB_ENDPOINT: NonEmptyString,
 
     SubscriptionFeedStorageConnection: NonEmptyString,
     SUBSCRIPTIONS_FEED_TABLE: NonEmptyString,
 
+    USER_DATA_ARCHIVE_STORAGE_BLOB_ENDPOINT: NonEmptyString,
     USER_DATA_BACKUP_CONTAINER_NAME: NonEmptyString,
+    USER_DATA_BACKUP_STORAGE_BLOB_ENDPOINT: NonEmptyString,
     USER_DATA_CONTAINER_NAME: NonEmptyString,
 
-    USER_DATA_DELETE_DELAY_DAYS: NonEmptyString,
-
-    UserDataArchiveStorageConnection: NonEmptyString,
-    UserDataBackupStorageConnection: NonEmptyString
+    USER_DATA_DELETE_DELAY_DAYS: NonEmptyString
   }),
   MailerConfig
 ]);

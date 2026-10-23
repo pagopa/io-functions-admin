@@ -1,4 +1,4 @@
-import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/NewMessage";
+import { NewMessage } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/NewMessage";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";

@@ -1,11 +1,12 @@
 /* eslint-disable vitest/prefer-called-with */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { BlobServiceClient } from "@azure/storage-blob";
+
 import {
   CosmosErrors,
   toCosmosErrorResponse
 } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { IProfileEmailWriter } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement";
-import { BlobService } from "azure-storage";
 import * as E from "fp-ts/lib/Either";
 import { none, some } from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
@@ -49,20 +50,20 @@ export async function* errorMessageIterator(error: any) {
 }
 
 // MessageContentBlobService
-const messageContentBlobService = {} as unknown as BlobService;
+const messageContentBlobService = {} as unknown as BlobServiceClient;
 
 // Message Model
-const mockGetContentFromBlob = vi.fn(() => TE.of(some(aMessageContent)));
+const mockGetContentFromStorage = vi.fn(() => TE.of(some(aMessageContent)));
 const mockFindMessages = vi.fn(() =>
   TE.of(asyncIteratorOf([E.right(aRetrievedMessageWithContent)]))
 );
-const mockDeleteContentFromBlob = vi.fn(() => TE.of(true));
+const mockDeleteContentFromStorage = vi.fn(() => TE.of(true));
 const mockDeleteMessage = vi.fn(() => TE.of(true));
 const messageModel = {
-  deleteContentFromBlob: mockDeleteContentFromBlob,
+  deleteContentFromStorage: mockDeleteContentFromStorage,
   deleteMessage: mockDeleteMessage,
   findMessages: mockFindMessages,
-  getContentFromBlob: mockGetContentFromBlob
+  getContentFromStorage: mockGetContentFromStorage
 } as unknown as MessageDeletableModel;
 
 const mockDeleteMessageView = vi.fn(() => TE.of(true));
@@ -127,11 +128,13 @@ const profileModel = {
 } as unknown as ProfileDeletableModel;
 
 // backup BlobService
-const mockCreateBlockBlobFromText = vi.fn((_, __, ___, cb) => cb(null, "any"));
+const mockUploadData = vi.fn().mockResolvedValue({});
 const userDataBackup = {
-  blobService: {
-    createBlockBlobFromText: mockCreateBlockBlobFromText
-  } as unknown as BlobService,
+  blobServiceClient: {
+    getContainerClient: vi.fn(() => ({
+      getBlockBlobClient: vi.fn(() => ({ uploadData: mockUploadData }))
+    }))
+  } as unknown as BlobServiceClient,
   containerName: "container",
   folder: "folder"
 } as IBlobServiceInfo;
@@ -174,7 +177,7 @@ describe(`backupAndDeleteAllUserData`, () => {
   });
 
   it("should not stop if a content is not found for a message", async () => {
-    mockGetContentFromBlob.mockImplementationOnce(() => TE.of(none));
+    mockGetContentFromStorage.mockImplementationOnce(() => TE.of(none));
     const result = await backupAndDeleteAllUserData({
       authenticationLockService,
       fiscalCode: aFiscalCode,
@@ -201,7 +204,7 @@ describe(`backupAndDeleteAllUserData`, () => {
   });
 
   it("should not stop if  there is an error while looking for a message content", async () => {
-    mockGetContentFromBlob.mockImplementationOnce(
+    mockGetContentFromStorage.mockImplementationOnce(
       () => TE.left(new Error("")) as any
     );
     const result = await backupAndDeleteAllUserData({

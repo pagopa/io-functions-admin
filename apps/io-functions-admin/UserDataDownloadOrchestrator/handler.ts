@@ -1,4 +1,4 @@
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingStatus";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { OrchestrationContext, RetryOptions, Task } from "durable-functions";
 import * as E from "fp-ts/lib/Either";

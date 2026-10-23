@@ -3,7 +3,7 @@
  */
 
 import { InvocationContext } from "@azure/functions";
-import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
+import { UserDataProcessingStatus } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingStatus";
 import {
   UserDataProcessing,
   UserDataProcessingModel

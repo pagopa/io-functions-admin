@@ -8,12 +8,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { InvocationContext } from "@azure/functions";
-import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingChoice";
-import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/UserDataProcessingStatus";
-import {
-  MESSAGE_COLLECTION_NAME,
-  MessageModel
-} from "@pagopa/io-functions-commons/dist/src/models/message";
+import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingChoice";
+import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingStatus";
+import { MESSAGE_COLLECTION_NAME } from "@pagopa/io-functions-commons/dist/src/models/message";
 import {
   MESSAGE_STATUS_COLLECTION_NAME,
   MessageStatusModel
@@ -42,7 +39,6 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
-import { createBlobService } from "azure-storage";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
@@ -57,8 +53,13 @@ import {
   createSetUserDataProcessingStatusActivityHandler,
   ActivityResult as SetStatusActivityResult
 } from "../SetUserDataProcessingStatusActivity/handler";
+import {
+  createBlobServiceClient,
+  createBlobStorageCredential
+} from "../utils/blob_storage";
 import { getConfigOrThrow } from "../utils/config";
 import { cosmosdbClient } from "../utils/cosmosdb";
+import { MessageContentReaderModel } from "../utils/extensions/models/message";
 import { ServicePreferencesDeletableModel } from "../utils/extensions/models/service_preferences";
 import { timeoutFetch } from "../utils/fetch";
 
@@ -83,7 +84,7 @@ const userDataProcessingModel = new UserDataProcessingModel(
 const setUserDataProcessingStatusActivity =
   createSetUserDataProcessingStatusActivityHandler(userDataProcessingModel);
 
-const messageModel = new MessageModel(
+const messageModel = new MessageContentReaderModel(
   database.container(MESSAGE_COLLECTION_NAME),
   config.MESSAGE_CONTAINER_NAME
 );
@@ -106,10 +107,15 @@ const servicePreferencesModel = new ServicePreferencesDeletableModel(
   database.container(SERVICE_PREFERENCES_COLLECTION_NAME),
   SERVICE_PREFERENCES_COLLECTION_NAME
 );
-const userDataBlobService = createBlobService(
-  config.UserDataArchiveStorageConnection
+const blobStorageCredential = createBlobStorageCredential(config.isProduction);
+const userDataBlobService = createBlobServiceClient(
+  config.USER_DATA_ARCHIVE_STORAGE_BLOB_ENDPOINT,
+  blobStorageCredential
 );
-const messageContentBlobService = createBlobService(config.StorageConnection);
+const messageContentBlobService = createBlobServiceClient(
+  config.STORAGE_BLOB_ENDPOINT,
+  blobStorageCredential
+);
 const userDataContainerName = config.USER_DATA_CONTAINER_NAME;
 
 const extractUserDataActivity = createExtractUserDataActivityHandler({

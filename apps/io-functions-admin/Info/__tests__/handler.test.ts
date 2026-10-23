@@ -9,7 +9,11 @@ vi.mock("../../utils/cosmosdb", () => ({
   }
 }));
 
-import { checkCosmosDbHealth, InfoHandler } from "../handler";
+import {
+  checkBlobStorageHealth,
+  checkCosmosDbHealth,
+  InfoHandler
+} from "../handler";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -63,5 +67,32 @@ describe("checkCosmosDbHealth", () => {
     }
     expect(getDatabase).toHaveBeenCalledTimes(1);
     expect(read).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("checkBlobStorageHealth", () => {
+  it("returns healthy when the shared container is readable", async () => {
+    const getProperties = vi.fn().mockResolvedValue({});
+    const getContainer = vi.fn(() => ({ getProperties }));
+
+    const result = await checkBlobStorageHealth(getContainer)();
+
+    expect(result).toEqual({ _tag: "Right", right: true });
+    expect(getContainer).toHaveBeenCalledTimes(1);
+    expect(getProperties).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns a 403 failure without retrying or falling back", async () => {
+    const getProperties = vi.fn().mockRejectedValue(new Error("403 Forbidden"));
+    const getContainer = vi.fn(() => ({ getProperties }));
+
+    const result = await checkBlobStorageHealth(getContainer)();
+
+    expect(isLeft(result)).toBe(true);
+    if (isLeft(result)) {
+      expect(result.left.join("\n")).toContain("403 Forbidden");
+    }
+    expect(getContainer).toHaveBeenCalledTimes(1);
+    expect(getProperties).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,11 +1,12 @@
 import { InvocationContext } from "@azure/functions";
 import { CosmosErrors } from "@pagopa/io-functions-commons/dist/src/utils/cosmosdb_model";
 import { enumType } from "@pagopa/ts-commons/lib/types";
-import { BlobService } from "azure-storage";
+import { toError } from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
 
+import { getBlockBlobClient, uploadBlobFromJson } from "../utils/blob_storage";
 import {
   ActivityResultFailure,
   BlobCreationFailure,
@@ -114,19 +115,23 @@ export const logFailure =
  * @returns either a blob failure or the saved object
  */
 export const saveDataToBlob = <T>(
-  { blobService, containerName, folder }: IBlobServiceInfo,
+  { blobServiceClient, containerName, folder }: IBlobServiceInfo,
   blobName: string,
   data: T
 ): TE.TaskEither<BlobCreationFailure, T> =>
   pipe(
-    TE.taskify<Error, BlobService.BlobResult>(cb =>
-      blobService.createBlockBlobFromText(
-        containerName,
-        `${folder}${folder ? "/" : ""}${blobName}`,
-        JSON.stringify(data),
-        cb
-      )
-    )(),
+    TE.tryCatch(
+      () =>
+        uploadBlobFromJson(
+          getBlockBlobClient(
+            blobServiceClient,
+            containerName,
+            `${folder}${folder ? "/" : ""}${blobName}`
+          ),
+          data
+        ),
+      toError
+    ),
     TE.mapLeft(err =>
       BlobCreationFailure.encode({
         kind: "BLOB_FAILURE",
