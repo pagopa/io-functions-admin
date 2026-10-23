@@ -4,6 +4,25 @@ locals {
   rg_internal_name                        = format("%s-rg-internal", local.project)
   common_resource_group_name_itn          = "${var.project_itn}-common-rg-01"
   itnuserdatadownload_resource_group_name = "${var.project_itn}-platform-admin-rg-01"
+
+  cosmos_db_account_name = "${local.project}-cosmos-api"
+  cosmos_db_account_id = format(
+    "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.DocumentDB/databaseAccounts/%s",
+    data.azurerm_client_config.current.subscription_id,
+    local.rg_internal_name,
+    local.cosmos_db_account_name
+  )
+  cosmos_db_name = "db"
+
+  auth_session_storage_account_name = "iopitnauthsessionst01"
+  auth_session_storage_account_id = format(
+    "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Storage/storageAccounts/%s",
+    data.azurerm_client_config.current.subscription_id,
+    "${local.project}-itn-auth-main-rg-01",
+    local.auth_session_storage_account_name
+  )
+  auth_session_storage_table_endpoint = "https://${local.auth_session_storage_account_name}.table.core.windows.net/"
+  sanitize_user_profile_queue_name    = "profiles-to-sanitize-01"
 }
 
 locals {
@@ -16,9 +35,22 @@ locals {
       COSMOSDB_KEY               = var.cosmos_db_attributes.primary_key
       COSMOSDB_CONNECTION_STRING = format("AccountEndpoint=%s;AccountKey=%s;", var.cosmos_db_attributes.endpoint, var.cosmos_db_attributes.primary_key)
 
-      StorageConnection = data.azurerm_storage_account.storage_api.primary_connection_string
+      "COSMOSDB_IDENTITY__accountEndpoint" = var.cosmos_db_attributes.endpoint
+      "COSMOSDB_IDENTITY__credential"      = "managedidentity"
 
-      AssetsStorageConnection = data.azurerm_storage_account.assets_cdn.primary_connection_string
+      StorageConnection       = data.azurerm_storage_account.storage_api.primary_connection_string
+      "STORAGE_BLOB_ENDPOINT" = data.azurerm_storage_account.storage_api.primary_blob_endpoint
+
+      AssetsStorageConnection        = data.azurerm_storage_account.assets_cdn.primary_connection_string
+      "ASSETS_STORAGE_BLOB_ENDPOINT" = data.azurerm_storage_account.assets_cdn.primary_blob_endpoint
+
+      "USER_DATA_BACKUP_STORAGE_BLOB_ENDPOINT"  = module.user_data_backups_storage_account.primary_blob_endpoint
+      "USER_DATA_ARCHIVE_STORAGE_BLOB_ENDPOINT" = data.azurerm_storage_account.itnuserdatadownload.primary_blob_endpoint
+      "API_STORAGE_TABLE_ENDPOINT"              = data.azurerm_storage_account.storage_api.primary_table_endpoint
+      "SESSION_STORAGE_TABLE_ENDPOINT"          = local.auth_session_storage_table_endpoint
+
+      "CitizenAuthQueueConnection__queueServiceUri" = data.azurerm_storage_account.auth_maintenance_storage.primary_queue_endpoint
+      "CitizenAuthQueueConnection__credential"      = "managedidentity"
 
       AZURE_APIM                = "io-p-itn-apim-01"
       AZURE_APIM_HOST           = var.apim_hostname_api_internal
@@ -66,7 +98,7 @@ locals {
 
       # UNIQUE EMAIL ENFORCEMENT
       CitizenAuthStorageConnection = data.azurerm_storage_account.auth_maintenance_storage.primary_connection_string
-      SanitizeUserProfileQueueName = "profiles-to-sanitize-01"
+      SanitizeUserProfileQueueName = local.sanitize_user_profile_queue_name
 
       # Locked Profile Storage
       LOCKED_PROFILES_STORAGE_CONNECTION_STRING = data.azurerm_key_vault_secret.common_SESSION_ST_CONNECTION_STRING.value
