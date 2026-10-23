@@ -1,5 +1,11 @@
 ### Changelog
 
+## 4.0.2
+
+### Patch Changes
+
+- 48ef2e4: Migrate CosmosDB connection to RBAC
+
 ## 4.0.1
 
 ### Patch Changes
