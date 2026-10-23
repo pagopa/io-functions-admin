@@ -107,3 +107,6 @@ __azurite_*
 !**/.yarn/releases
 !**/.yarn/sdks
 !**/.yarn/versions
+
+# Local MCP configuration
+.mcp.json

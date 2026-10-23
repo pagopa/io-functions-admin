@@ -11,9 +11,8 @@ they may be customized as needed.
 | Variable name                     | Description                                                                                      | type   |
 | --------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
 | StorageConnection                 | Storage connection string to store computed visible-service.json (retrieved by io-functions-app) | string |
-| COSMOSDB_CONNECTION_STRING        | CosmosDB connection string (needed in triggers)                                                  | string |
-| COSMOSDB_URI                      | CosmosDB connection URI                                                                          | string |
-| COSMOSDB_KEY                      | CosmosDB connection key                                                                          | string |
+| COSMOSDB_IDENTITY__accountEndpoint | CosmosDB endpoint used by the trigger (local runs use Azure CLI authentication)                   | string |
+| COSMOSDB_URI                      | CosmosDB endpoint used by the application client                                                 | string |
 | COSMOSDB_NAME                     | CosmosDB database name                                                                           | string |
 | LOGOS_URL                         | The url of the service logos storage                                                             | string |
 | AssetsStorageConnection           | The connection string used to connect to Azure Blob Storage containing the service cache         | string |

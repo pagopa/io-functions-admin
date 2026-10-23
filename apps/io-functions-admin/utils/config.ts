@@ -29,7 +29,6 @@ export const IConfig = t.intersection([
     AZURE_SUBSCRIPTION_ID: NonEmptyString,
     CitizenAuthStorageConnection: NonEmptyString,
 
-    COSMOSDB_KEY: NonEmptyString,
     COSMOSDB_NAME: NonEmptyString,
     COSMOSDB_URI: NonEmptyString,
     FAILED_USER_DATA_PROCESSING_TABLE: NonEmptyString,
