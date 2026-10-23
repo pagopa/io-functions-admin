@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - master
     paths:
       - "infra/bootstrapper/prod/**"
 
@@ -17,4 +17,4 @@ jobs:
     name: Release Bootstrapper (prod)
     secrets: inherit
     with:
-      environment: 'prod'
+      environment: "prod"
