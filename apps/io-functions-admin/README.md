@@ -55,3 +55,33 @@ This flags enable/disable some features and are expected to be boolean. To set t
 | ---------------------------- | ------------------------------------------------- | ------- |
 | FF_ENABLE_USER_DATA_DOWNLOAD | Users' GDPR data access claims are processed      | true    |
 | FF_ENABLE_USER_DATA_DELETE   | Users' GDPR right to erasure claims are processed | true    |
+
+#### GDPR archive storage reliability
+
+The Blob SDK and its compatibility client must resolve to one compatible
+`@azure/core-client` version. Duplicate versions can cause Blob requests to be
+serialized without their body or required headers and can prevent error
+responses from being handled correctly. After changing Azure SDK dependencies,
+run `yarn dedupe @azure/core-client` from the repository root and commit the
+updated `yarn.lock`; do not force older versions with package resolutions.
+
+The shared Blob pipeline also treats HTTP 403 responses to `PUT` operations as
+write failures, including block staging and block-list commits. A failed GDPR
+archive upload remains `FAILED` and does not send a download message or mark
+the request `CLOSED`. Other HTTP methods and the SDK's transient retry behavior
+are unchanged.
+
+To run the focused regression tests:
+
+```sh
+yarn workspace io-functions-admin test ExtractUserDataActivity/__tests__/blob_upload.test.ts ExtractUserDataActivity/__tests__/handler.test.ts UserDataDownloadOrchestrator/__tests__/handler.test.ts utils/__tests__/blob_storage.test.ts
+```
+
+The Blob SDK integration tests use a local HTTPS server and `openssl` to create
+and clean up a temporary certificate; they do not access Azure.
+
+Do not automatically replay completed Durable instances when reconciling
+requests affected by the earlier behavior. Verify each archive and use the
+supported new-request or recovery path to create a consistent archive and
+notification. A regenerated archive has a new password, so do not associate it
+with an older download message.

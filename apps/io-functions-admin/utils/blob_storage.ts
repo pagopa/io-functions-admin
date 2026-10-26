@@ -1,9 +1,14 @@
 import type { TokenCredential } from "@azure/core-auth";
-import type { BlobClient, BlockBlobClient } from "@azure/storage-blob";
+import type {
+  BlobClient,
+  BlockBlobClient,
+  RequestPolicyFactory,
+  StoragePipelineOptions
+} from "@azure/storage-blob";
 import type { Readable } from "stream";
 
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
-import { BlobServiceClient } from "@azure/storage-blob";
+import { BlobServiceClient, newPipeline, RestError } from "@azure/storage-blob";
 import { json } from "stream/consumers";
 
 /**
@@ -24,8 +29,52 @@ export const createBlobStorageCredential = (
  */
 export const createBlobServiceClient = (
   endpoint: string,
-  credential: TokenCredential
-): BlobServiceClient => new BlobServiceClient(endpoint, credential);
+  credential: TokenCredential,
+  pipelineOptions?: StoragePipelineOptions
+): BlobServiceClient => {
+  const pipeline = newPipeline(credential, pipelineOptions);
+  pipeline.factories.push(forbiddenBlobWritePolicyFactory);
+  return new BlobServiceClient(endpoint, pipeline);
+};
+
+const isForbiddenHttpError = (
+  error: unknown
+): error is { readonly code?: unknown; readonly statusCode: 403 } =>
+  typeof error === "object" &&
+  error !== null &&
+  "statusCode" in error &&
+  error.statusCode === 403;
+
+const forbiddenWriteError = (code?: string): RestError =>
+  new RestError("Blob Storage PUT request failed with HTTP 403", {
+    code,
+    statusCode: 403
+  });
+
+export const forbiddenBlobWritePolicyFactory: RequestPolicyFactory = {
+  create: nextPolicy => ({
+    sendRequest: async request => {
+      let response;
+      try {
+        response = await nextPolicy.sendRequest(request);
+      } catch (error) {
+        if (
+          request.method.toUpperCase() === "PUT" &&
+          isForbiddenHttpError(error)
+        ) {
+          throw forbiddenWriteError(
+            typeof error.code === "string" ? error.code : undefined
+          );
+        }
+        throw error;
+      }
+      if (request.method.toUpperCase() === "PUT" && response.status === 403) {
+        throw forbiddenWriteError(response.headers.get("x-ms-error-code"));
+      }
+      return response;
+    }
+  })
+};
 
 /**
  * Gets a client for a blob in the specified container.
