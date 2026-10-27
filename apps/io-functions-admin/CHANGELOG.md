@@ -1,5 +1,11 @@
 ### Changelog
 
+## 4.0.5
+
+### Patch Changes
+
+- 2bed28f: Increase log level to Debug and deps dedup
+
 ## 4.0.4
 
 ### Patch Changes
