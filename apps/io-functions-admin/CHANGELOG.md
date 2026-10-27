@@ -1,5 +1,11 @@
 ### Changelog
 
+## 4.0.4
+
+### Patch Changes
+
+- f19cc5f: Prevent GDPR archive uploads from reporting success after a Blob Storage write is denied.
+
 ## 4.0.3
 
 ### Patch Changes
