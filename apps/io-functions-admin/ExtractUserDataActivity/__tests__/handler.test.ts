@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { BlobServiceClient } from "@azure/storage-blob";
 
+import { RestError } from "@azure/storage-blob";
 import { MessageStatusModel } from "@pagopa/io-functions-commons/dist/src/models/message_status";
 import { MessageViewModel } from "@pagopa/io-functions-commons/dist/src/models/message_view";
 import {
@@ -45,6 +46,7 @@ import { AllUserData } from "../../utils/userData";
 import * as zipstream from "../../utils/zip";
 import {
   ActivityInput,
+  ActivityResultFailure,
   ActivityResultSuccess,
   createExtractUserDataActivityHandler
 } from "../handler";
@@ -369,6 +371,10 @@ describe("createExtractUserDataActivityHandler", () => {
 });
 
 describe("archive upload lifecycle", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("waits for the archive upload before returning success", async () => {
     const { blobServiceMock, releaseUpload, uploadStarted } =
       setupStreamMocks(true);
@@ -417,10 +423,27 @@ describe("archive upload lifecycle", () => {
     const resultPromise = handler({ fiscalCode: aFiscalCode }, contextMock);
     await uploadStarted;
 
-    failUpload(new Error("403 Forbidden"));
+    failUpload(
+      new RestError("Blob Storage PUT request failed with HTTP 403", {
+        code: "AuthorizationPermissionMismatch",
+        statusCode: 403
+      })
+    );
     const result = await resultPromise;
+    const failure = ActivityResultFailure.decode(result);
 
-    expect(result.kind).toBe("ARCHIVE_GENERATION_FAILURE");
+    expect(E.isRight(failure)).toBe(true);
+    if (E.isRight(failure)) {
+      expect(failure.right).toMatchObject({
+        kind: "ARCHIVE_GENERATION_FAILURE",
+        reason: "Blob Storage PUT request failed with HTTP 403"
+      });
+    }
     expect(aZipStream.destroyed).toBe(true);
+    expect(contextMock.error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Error saving zip bundle|ERROR=Blob Storage PUT request failed with HTTP 403"
+      )
+    );
   });
 });

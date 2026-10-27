@@ -1,6 +1,14 @@
-import type { BlobClient, BlockBlobClient } from "@azure/storage-blob";
+import type {
+  BlobClient,
+  BlockBlobClient,
+  HttpOperationResponse,
+  RequestPolicy,
+  RequestPolicyOptions,
+  WebResource
+} from "@azure/storage-blob";
 
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
+import { RestError } from "@azure/storage-blob";
 import { PassThrough, Readable } from "stream";
 import { describe, expect, it, vi } from "vitest";
 
@@ -8,11 +16,36 @@ import {
   createBlobStorageCredential,
   deleteBlobIfExists,
   downloadBlobAsJson,
+  forbiddenBlobWritePolicyFactory,
   isBlobNotFoundError,
   uploadBlobFromBuffer,
   uploadBlobFromJson,
   uploadBlobStream
 } from "../blob_storage";
+
+const createPolicyResponse = (
+  status: number,
+  serviceErrorCode?: string
+): HttpOperationResponse =>
+  ({
+    headers: {
+      get: (name: string) =>
+        name.toLowerCase() === "x-ms-error-code" ? serviceErrorCode : undefined
+    },
+    status
+  }) as unknown as HttpOperationResponse;
+
+const createPolicyRequest = (method: WebResource["method"]): WebResource =>
+  ({
+    headers: {},
+    method,
+    url: "https://storage.example/CFTEST1234/archive.zip"
+  }) as unknown as WebResource;
+
+const policyOptions: RequestPolicyOptions = {
+  log: () => undefined,
+  shouldLog: () => false
+};
 
 describe("Blob storage helpers", () => {
   it("selects an explicit developer or managed identity credential", () => {
@@ -123,4 +156,61 @@ describe("Blob storage helpers", () => {
     ).toBe(false);
     expect(isBlobNotFoundError({ statusCode: 404 })).toBe(false);
   });
+});
+
+describe("forbidden Blob write policy", () => {
+  it("turns a resolved PUT 403 response into a safe RestError", async () => {
+    const response = createPolicyResponse(
+      403,
+      "AuthorizationPermissionMismatch"
+    );
+    const sendRequest = vi.fn().mockResolvedValue(response);
+    const nextPolicy: RequestPolicy = { sendRequest };
+    const request = createPolicyRequest("PUT");
+    const policy = forbiddenBlobWritePolicyFactory.create(
+      nextPolicy,
+      policyOptions
+    );
+
+    let caughtError: unknown;
+    try {
+      await policy.sendRequest(request);
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toBeInstanceOf(RestError);
+    expect(caughtError).toMatchObject({
+      code: "AuthorizationPermissionMismatch",
+      statusCode: 403
+    });
+    if (caughtError instanceof Error) {
+      expect(caughtError.message).toContain("HTTP 403");
+      expect(caughtError.message).not.toContain(request.url);
+    }
+    expect(sendRequest).toHaveBeenCalledWith(request);
+  });
+
+  it.each([
+    { method: "PUT", status: 201 },
+    { method: "PUT", status: 500 },
+    { method: "GET", status: 403 },
+    { method: "HEAD", status: 403 }
+  ] as const)(
+    "passes through $method responses with status $status",
+    async ({ method, status }) => {
+      const response = createPolicyResponse(status);
+      const nextPolicy: RequestPolicy = {
+        sendRequest: vi.fn().mockResolvedValue(response)
+      };
+      const policy = forbiddenBlobWritePolicyFactory.create(
+        nextPolicy,
+        policyOptions
+      );
+
+      await expect(
+        policy.sendRequest(createPolicyRequest(method))
+      ).resolves.toBe(response);
+    }
+  );
 });

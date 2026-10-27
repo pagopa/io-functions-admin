@@ -14,15 +14,24 @@ import {
 } from "../../__mocks__/durable-functions";
 // eslint-disable-next-line vitest/no-mocks-import
 import { aArchiveInfo, aUserDataProcessing } from "../../__mocks__/mocks";
+import { ActivityResultFailure as ExtractUserDataActivityResultFailure } from "../../ExtractUserDataActivity/handler";
 import { ActivityResultSuccess as ExtractUserDataActivityResultSuccess } from "../../ExtractUserDataActivity/handler";
 import { ActivityResultSuccess as SendUserDataDownloadMessageActivityResultSuccess } from "../../SendUserDataDownloadMessageActivity/handler";
 import { ActivityResultSuccess as SetUserDataProcessingStatusActivityResultSuccess } from "../../SetUserDataProcessingStatusActivity/handler";
+import * as appinsightsEvents from "../../utils/appinsightsEvents";
 import {
   ActivityFailure,
   handler,
   InvalidInputFailure,
   OrchestratorSuccess
 } from "../handler";
+
+const trackUserDataDownloadEventSpy = vi
+  .spyOn(appinsightsEvents, "trackUserDataDownloadEvent")
+  .mockImplementation(() => void 0);
+const trackUserDataDownloadExceptionSpy = vi
+  .spyOn(appinsightsEvents, "trackUserDataDownloadException")
+  .mockImplementation(() => void 0);
 
 const aNonSuccess = "any non-success value";
 
@@ -155,7 +164,12 @@ describe("UserDataDownloadOrchestrator", () => {
   });
 
   it("should set as FAILED when data extraction fails", () => {
-    extractUserDataActivity.mockImplementationOnce(() => aNonSuccess);
+    extractUserDataActivity.mockImplementationOnce(() =>
+      ExtractUserDataActivityResultFailure.encode({
+        kind: "ARCHIVE_GENERATION_FAILURE",
+        reason: "Blob Storage PUT request failed with HTTP 403"
+      })
+    );
 
     const document = {
       ...aUserDataProcessing,
@@ -180,6 +194,24 @@ describe("UserDataDownloadOrchestrator", () => {
     );
     expect(extractUserDataActivity).toHaveBeenCalled();
     expect(sendUserDataDownloadMessageActivity).not.toHaveBeenCalled();
+    expect(
+      setUserDataProcessingStatusActivity.mock.calls.map(
+        ([, , input]) => input.nextStatus
+      )
+    ).toEqual([
+      UserDataProcessingStatusEnum.WIP,
+      UserDataProcessingStatusEnum.FAILED
+    ]);
+    expect(trackUserDataDownloadEventSpy).not.toHaveBeenCalled();
+    expect(trackUserDataDownloadExceptionSpy).toHaveBeenCalledWith(
+      "failed",
+      expect.any(Error),
+      expect.objectContaining({
+        userDataProcessingId: aUserDataProcessing.userDataProcessingId
+      }),
+      context,
+      false
+    );
   });
 
   it("should set as FAILED when send message fails", () => {
