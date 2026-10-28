@@ -1,4 +1,3 @@
-import { TableClient } from "@azure/data-tables";
 import { app } from "@azure/functions";
 import * as H from "@pagopa/handler-kit";
 import { azureFunction } from "@pagopa/handler-kit-azure-func";
@@ -42,7 +41,6 @@ import {
 } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { DataTableProfileEmailsRepository } from "@pagopa/io-functions-commons/dist/src/utils/unique_email_enforcement/storage";
 import { Day } from "@pagopa/ts-commons/lib/units";
-import { createTableService } from "azure-storage";
 import * as df from "durable-functions";
 import * as HtmlToText from "html-to-text";
 
@@ -167,7 +165,13 @@ import { ProfileDeletableModel } from "./utils/extensions/models/profile";
 import { ServicePreferencesDeletableModel } from "./utils/extensions/models/service_preferences";
 import { timeoutFetch } from "./utils/fetch";
 import { Client, createClient } from "./utils/sm-internal/client";
-import { deleteTableEntity, insertTableEntity } from "./utils/storage";
+import {
+  createTableClient,
+  createTableIfNotExists,
+  createTableStorageCredential,
+  deleteTableEntity,
+  insertTableEntity
+} from "./utils/storage";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -211,18 +215,24 @@ const servicePreferencesModel = new ServicesPreferencesModel(
 // ---------------------------------------------------------------------------
 // Table services
 // ---------------------------------------------------------------------------
-const failedUserDataProcessingTableService = createTableService(
-  config.FailedUserDataProcessingStorageConnection
+const tableStorageCredential = createTableStorageCredential(
+  config.isProduction
 );
-const failedUserDataProcessingTable = config.FAILED_USER_DATA_PROCESSING_TABLE;
-
-const subscriptionsFeedTableService = createTableService(
-  config.SubscriptionFeedStorageConnection
+const failedUserDataProcessingTableClient = createTableClient(
+  config.API_STORAGE_TABLE_ENDPOINT,
+  config.FAILED_USER_DATA_PROCESSING_TABLE,
+  tableStorageCredential
 );
-subscriptionsFeedTableService.createTableIfNotExists(
+const subscriptionsFeedTableClient = createTableClient(
+  config.API_STORAGE_TABLE_ENDPOINT,
   config.SUBSCRIPTIONS_FEED_TABLE,
-  () => 0
+  tableStorageCredential
 );
+const subscriptionsFeedTableReady = createTableIfNotExists(
+  subscriptionsFeedTableClient
+);
+// Avoid an unhandled startup rejection; feed activities still await the original promise.
+void subscriptionsFeedTableReady.catch(() => undefined);
 
 // ---------------------------------------------------------------------------
 // Blob services
@@ -277,16 +287,18 @@ const servicePreferencesDeletableModel = new ServicePreferencesDeletableModel(
   SERVICE_PREFERENCES_COLLECTION_NAME
 );
 const userDataBackupContainerName = config.USER_DATA_BACKUP_CONTAINER_NAME;
-const lockedProfilesTableClient = TableClient.fromConnectionString(
-  config.LOCKED_PROFILES_STORAGE_CONNECTION_STRING,
-  config.LOCKED_PROFILES_TABLE_NAME
+const lockedProfilesTableClient = createTableClient(
+  config.SESSION_STORAGE_TABLE_ENDPOINT,
+  config.LOCKED_PROFILES_TABLE_NAME,
+  tableStorageCredential
 );
 const authenticationLockService = new AuthenticationLockService(
   lockedProfilesTableClient
 );
-const profileEmailsTableClient = TableClient.fromConnectionString(
-  config.PROFILE_EMAILS_STORAGE_CONNECTION_STRING,
-  config.PROFILE_EMAILS_TABLE_NAME
+const profileEmailsTableClient = createTableClient(
+  config.SESSION_STORAGE_TABLE_ENDPOINT,
+  config.PROFILE_EMAILS_TABLE_NAME,
+  tableStorageCredential
 );
 const profileEmailsRepository = new DataTableProfileEmailsRepository(
   profileEmailsTableClient
@@ -384,20 +396,14 @@ app.http("CreateSubscription", {
 
 app.http("GetFailedUserDataProcessing", {
   authLevel: "function",
-  handler: GetFailedUserDataProcessing(
-    failedUserDataProcessingTableService,
-    failedUserDataProcessingTable
-  ),
+  handler: GetFailedUserDataProcessing(failedUserDataProcessingTableClient),
   methods: ["GET"],
   route: "adm/user-data-processing/failed/{choice}/{fiscalCode}"
 });
 
 app.http("GetFailedUserDataProcessingList", {
   authLevel: "function",
-  handler: GetFailedUserDataProcessingList(
-    failedUserDataProcessingTableService,
-    failedUserDataProcessingTable
-  ),
+  handler: GetFailedUserDataProcessingList(failedUserDataProcessingTableClient),
   methods: ["GET"],
   route: "adm/user-data-processing/failed/{choice}"
 });
@@ -561,10 +567,7 @@ df.app.activity(GetUserDataProcessingActivityName, {
 });
 
 df.app.activity(IsFailedUserDataProcessingActivityName, {
-  handler: IsFailedUserDataProcessing(
-    failedUserDataProcessingTableService,
-    failedUserDataProcessingTable
-  )
+  handler: IsFailedUserDataProcessing(failedUserDataProcessingTableClient)
 });
 
 df.app.activity(SendUserDataDeleteEmailActivityName, {
@@ -594,13 +597,14 @@ df.app.activity(SetUserSessionLockActivityName, {
 });
 
 df.app.activity(UpdateSubscriptionsFeedActivityName, {
-  handler: (rawInput, context) =>
-    updateSubscriptionFeed(
+  handler: async (rawInput, context) => {
+    await subscriptionsFeedTableReady;
+    return updateSubscriptionFeed(
       rawInput,
       context,
-      subscriptionsFeedTableService,
-      config.SUBSCRIPTIONS_FEED_TABLE
-    )
+      subscriptionsFeedTableClient
+    );
+  }
 });
 
 df.app.activity(UpdateVisibleServicesActivityName, {
@@ -658,14 +662,8 @@ app.cosmosDB("UserDataProcessingTrigger", {
   databaseName: "%COSMOSDB_NAME%",
   extraInputs: [df.input.durableClient()],
   handler: triggerHandler(
-    insertTableEntity(
-      failedUserDataProcessingTableService,
-      failedUserDataProcessingTable
-    ),
-    deleteTableEntity(
-      failedUserDataProcessingTableService,
-      failedUserDataProcessingTable
-    )
+    insertTableEntity(failedUserDataProcessingTableClient),
+    deleteTableEntity(failedUserDataProcessingTableClient)
   ),
   leaseContainerName: "change-feed-leases",
   leaseContainerPrefix: "userDataProcessing"
@@ -680,7 +678,7 @@ const createSanitizeProfileEmailsFunction = azureFunction(
 );
 
 app.storageQueue("SanitizeProfileEmail", {
-  connection: "CitizenAuthStorageConnection",
+  connection: "CitizenAuthQueueConnection",
   handler: createSanitizeProfileEmailsFunction({
     inputDecoder: ProfileToSanitize,
     profileModel: profileModel,

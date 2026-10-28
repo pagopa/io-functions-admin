@@ -1,7 +1,6 @@
+import { TableClient } from "@azure/data-tables";
 import { InvocationContext } from "@azure/functions";
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/ServiceId";
-import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { TableService } from "azure-storage";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // eslint-disable-next-line vitest/no-mocks-import
@@ -15,18 +14,14 @@ import { Input, updateSubscriptionFeed } from "../handler";
 
 const aServiceId = "aServiceId" as ServiceId;
 
-const insertEntityMock = vi.fn((_, __, f) => {
-  f(undefined, undefined, { isSuccessful: true });
-});
+const insertEntityMock = vi.fn(() => Promise.resolve({}));
 
-const deleteEntityMock = vi.fn((_, __, f) => {
-  f(undefined, { isSuccessful: true });
-});
+const deleteEntityMock = vi.fn(() => Promise.resolve({}));
 
-const tableServiceMock = {
-  deleteEntity: deleteEntityMock,
-  insertEntity: insertEntityMock
-} as unknown as TableService;
+const tableClientMock = {
+  createEntity: insertEntityMock,
+  deleteEntity: deleteEntityMock
+} as unknown as TableClient;
 
 const today = new Date();
 
@@ -48,21 +43,15 @@ describe("UpdateSubscriptionsFeedActivity - Service", () => {
     const result = await updateSubscriptionFeed(
       input,
       contextMock as unknown as InvocationContext,
-      tableServiceMock,
-      "aTable" as NonEmptyString
+      tableClientMock
     );
 
-    expect(tableServiceMock.deleteEntity).toHaveBeenCalledWith(
-      "aTable",
-      expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: "S-" + today.toISOString().substring(0, 10) + "-aServiceId-U"
-        })
-      }),
-      expect.any(Function)
+    expect(deleteEntityMock).toHaveBeenCalledWith(
+      "S-" + today.toISOString().substring(0, 10) + "-aServiceId-U",
+      expect.any(String)
     );
 
-    expect(tableServiceMock.insertEntity).not.toHaveBeenCalled();
+    expect(insertEntityMock).not.toHaveBeenCalled();
 
     expect(result).toEqual("SUCCESS");
   });
@@ -77,35 +66,31 @@ describe("UpdateSubscriptionsFeedActivity - Service", () => {
       version: 1
     };
 
-    deleteEntityMock.mockImplementationOnce((_, __, f) => {
-      f(Error("an Error"), { isSuccessful: false, statusCode: 404 });
-    });
+    deleteEntityMock.mockRejectedValueOnce(
+      Object.assign(new Error("Not found"), { statusCode: 404 })
+    );
+    insertEntityMock.mockRejectedValueOnce(
+      Object.assign(new Error("Already exists"), { statusCode: 409 })
+    );
 
     const result = await updateSubscriptionFeed(
       input,
       contextMock as unknown as InvocationContext,
-      tableServiceMock,
-      "aTable" as NonEmptyString
+      tableClientMock
     );
 
-    expect(tableServiceMock.deleteEntity).toHaveBeenCalledWith(
-      "aTable",
-      expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: "S-" + today.toISOString().substring(0, 10) + "-aServiceId-U"
-        })
-      }),
-      expect.any(Function)
+    expect(deleteEntityMock).toHaveBeenCalledWith(
+      "S-" + today.toISOString().substring(0, 10) + "-aServiceId-U",
+      expect.any(String)
     );
 
-    expect(tableServiceMock.insertEntity).toHaveBeenCalledWith(
-      "aTable",
+    expect(insertEntityMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: "S-" + today.toISOString().substring(0, 10) + "-aServiceId-S"
-        })
-      }),
-      expect.any(Function)
+        partitionKey:
+          "S-" + today.toISOString().substring(0, 10) + "-aServiceId-S",
+        rowKey: expect.any(String),
+        version: { type: "Int32", value: 1 }
+      })
     );
     expect(result).toEqual("SUCCESS");
   });
@@ -129,28 +114,20 @@ describe("UpdateSubscriptionsFeedActivity - Profile", () => {
     const result = await updateSubscriptionFeed(
       input,
       contextMock as unknown as InvocationContext,
-      tableServiceMock,
-      "aTable" as NonEmptyString
+      tableClientMock
     );
 
-    expect(tableServiceMock.deleteEntity).toHaveBeenCalledWith(
-      "aTable",
-      expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: "P-" + today.toISOString().substring(0, 10) + "-U"
-        })
-      }),
-      expect.any(Function)
+    expect(deleteEntityMock).toHaveBeenCalledWith(
+      "P-" + today.toISOString().substring(0, 10) + "-U",
+      expect.any(String)
     );
 
-    expect(tableServiceMock.insertEntity).toHaveBeenCalledWith(
-      "aTable",
+    expect(insertEntityMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: "P-" + today.toISOString().substring(0, 10) + "-S"
-        })
-      }),
-      expect.any(Function)
+        partitionKey: "P-" + today.toISOString().substring(0, 10) + "-S",
+        rowKey: expect.any(String),
+        version: { type: "Int32", value: 1 }
+      })
     );
 
     expect(result).toEqual("SUCCESS");
@@ -165,35 +142,26 @@ describe("UpdateSubscriptionsFeedActivity - Profile", () => {
       updatedAt: today.getTime(),
       version: 1
     };
-    deleteEntityMock.mockImplementationOnce((_, __, f) => {
-      f(Error("an Error"), { isSuccessful: false, statusCode: 404 });
-    });
+    deleteEntityMock.mockRejectedValueOnce(
+      Object.assign(new Error("Not found"), { statusCode: 404 })
+    );
 
     const result = await updateSubscriptionFeed(
       input,
       contextMock as unknown as InvocationContext,
-      tableServiceMock,
-      "aTable" as NonEmptyString
+      tableClientMock
     );
 
-    expect(tableServiceMock.deleteEntity).toHaveBeenCalledWith(
-      "aTable",
-      expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: "P-" + today.toISOString().substring(0, 10) + "-U"
-        })
-      }),
-      expect.any(Function)
+    expect(deleteEntityMock).toHaveBeenCalledWith(
+      "P-" + today.toISOString().substring(0, 10) + "-U",
+      expect.any(String)
     );
 
-    expect(tableServiceMock.insertEntity).toHaveBeenCalledWith(
-      "aTable",
+    expect(insertEntityMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: "P-" + today.toISOString().substring(0, 10) + "-S"
-        })
-      }),
-      expect.any(Function)
+        partitionKey: "P-" + today.toISOString().substring(0, 10) + "-S",
+        version: { type: "Int32", value: 1 }
+      })
     );
 
     expect(result).toEqual("SUCCESS");
@@ -217,54 +185,35 @@ describe("UpdateSubscriptionsFeedActivity - Profile with preferences", () => {
     const result = await updateSubscriptionFeed(
       input,
       contextMock as unknown as InvocationContext,
-      tableServiceMock,
-      "aTable" as NonEmptyString
+      tableClientMock
     );
 
-    expect(tableServiceMock.deleteEntity).toHaveBeenCalledTimes(3);
-    expect(tableServiceMock.deleteEntity).toHaveBeenCalledWith(
-      "aTable",
-      expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: "P-" + today.toISOString().substring(0, 10) + "-U"
-        })
-      }),
-      expect.any(Function)
+    expect(deleteEntityMock).toHaveBeenCalledTimes(3);
+    expect(deleteEntityMock).toHaveBeenCalledWith(
+      "P-" + today.toISOString().substring(0, 10) + "-U",
+      expect.any(String)
     );
 
-    expect(tableServiceMock.deleteEntity).toHaveBeenCalledWith(
-      "aTable",
-      expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: `S-${today.toISOString().substring(0, 10)}-${
-            aRetrievedServicePreferences.serviceId
-          }-U`
-        })
-      }),
-      expect.any(Function)
+    expect(deleteEntityMock).toHaveBeenCalledWith(
+      `S-${today.toISOString().substring(0, 10)}-${
+        aRetrievedServicePreferences.serviceId
+      }-U`,
+      expect.any(String)
     );
 
-    expect(tableServiceMock.deleteEntity).toHaveBeenCalledWith(
-      "aTable",
-      expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: `S-${today.toISOString().substring(0, 10)}-${
-            aRetrievedServicePreferences.serviceId
-          }-S`
-        })
-      }),
-      expect.any(Function)
+    expect(deleteEntityMock).toHaveBeenCalledWith(
+      `S-${today.toISOString().substring(0, 10)}-${
+        aRetrievedServicePreferences.serviceId
+      }-S`,
+      expect.any(String)
     );
 
-    expect(tableServiceMock.insertEntity).toHaveBeenCalledTimes(1);
-    expect(tableServiceMock.insertEntity).toHaveBeenCalledWith(
-      "aTable",
+    expect(insertEntityMock).toHaveBeenCalledTimes(1);
+    expect(insertEntityMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        PartitionKey: expect.objectContaining({
-          _: "P-" + today.toISOString().substring(0, 10) + "-S"
-        })
-      }),
-      expect.any(Function)
+        partitionKey: "P-" + today.toISOString().substring(0, 10) + "-S",
+        version: { type: "Int32", value: 1 }
+      })
     );
 
     expect(result).toEqual("SUCCESS");

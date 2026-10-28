@@ -1,12 +1,13 @@
+import { TableClient } from "@azure/data-tables";
 import { InvocationContext } from "@azure/functions";
 import { UserDataProcessingChoice } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingChoice";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { ServiceResponse, TableService } from "azure-storage";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
-import * as O from "fp-ts/lib/Option";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as t from "io-ts";
+
+import { getTableStorageStatusCode } from "../utils/storage";
 
 export const ActivityName = "IsFailedUserDataProcessingActivity";
 
@@ -36,15 +37,8 @@ export const ActivityResult = t.taggedUnion("kind", [
 ]);
 export type ActivityResult = t.TypeOf<typeof ActivityResult>;
 
-// Table storage result
-type TableEntry = Readonly<{
-  readonly RowKey: Readonly<{
-    readonly _: FiscalCode;
-  }>;
-}>;
-
 export const IsFailedUserDataProcessing =
-  (tableService: TableService, failedUserDataProcessingTable: NonEmptyString) =>
+  (tableClient: TableClient) =>
   (input: unknown, _context: InvocationContext): Promise<ActivityResult> =>
     pipe(
       input,
@@ -58,28 +52,17 @@ export const IsFailedUserDataProcessing =
       TE.fromEither,
       TE.chainW(i =>
         TE.tryCatch(
-          () =>
-            new Promise<O.Option<TableEntry>>((resolve, reject) =>
-              tableService.retrieveEntity(
-                failedUserDataProcessingTable,
-                i.choice,
-                i.fiscalCode,
-                // TODO: Refactor for using the new `@azure/data-tables` library
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                null,
-                (
-                  error: Error,
-                  result: TableEntry,
-                  response: ServiceResponse
-                ) =>
-                  response.isSuccessful
-                    ? resolve(O.some(result))
-                    : response.statusCode === 404
-                      ? resolve(O.none)
-                      : reject(error)
-              )
-            ),
+          async () => {
+            try {
+              await tableClient.getEntity(i.choice, i.fiscalCode);
+              return true;
+            } catch (error) {
+              if (getTableStorageStatusCode(error) === 404) {
+                return false;
+              }
+              throw error;
+            }
+          },
           _ =>
             ActivityResultFailure.encode({
               kind: "FAILURE",
@@ -87,18 +70,10 @@ export const IsFailedUserDataProcessing =
             })
         )
       ),
-      TE.chainW(
-        TE.fromOption(() =>
-          ActivityResultSuccess.encode({
-            kind: "SUCCESS",
-            value: false
-          })
-        )
-      ),
-      TE.map(_ =>
+      TE.map(value =>
         ActivityResultSuccess.encode({
           kind: "SUCCESS",
-          value: true
+          value
         })
       ),
       TE.toUnion

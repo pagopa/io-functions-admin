@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { TableClient } from "@azure/data-tables";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
 } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingChoice";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { TableService } from "azure-storage";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -36,18 +36,14 @@ const retrieveEntityFailedUserDataProcessingMock = (
     RowKey: FiscalCode;
   }[]
 ) =>
-  vi.fn((_, choice, fiscalCode, ____, cb) =>
-    cb(
-      findEntry(entries)(choice, fiscalCode)
-        ? null
-        : new Error("Internal error"),
-      findEntry(entries)(choice, fiscalCode),
-      {
-        isSuccessful: findEntry(entries)(choice, fiscalCode),
-        statusCode: findEntry(entries)(choice, fiscalCode) ? 200 : 404
-      }
-    )
-  );
+  vi.fn((choice: UserDataProcessingChoice, fiscalCode: FiscalCode) => {
+    const entry = findEntry(entries)(choice, fiscalCode);
+    return entry
+      ? Promise.resolve({ rowKey: entry.RowKey._ })
+      : Promise.reject(
+          Object.assign(new Error("Not found"), { statusCode: 404 })
+        );
+  });
 
 const internalErrorRetrieveEntityFailedUserDataProcessingMock = (
   _entries: readonly {
@@ -55,11 +51,9 @@ const internalErrorRetrieveEntityFailedUserDataProcessingMock = (
     RowKey: FiscalCode;
   }[]
 ) =>
-  vi.fn((_, _choice, _fiscalCode, ____, cb) =>
-    cb(new Error("Internal error"), null, { isSuccessful: false })
+  vi.fn(() =>
+    Promise.reject(Object.assign(new Error("Forbidden"), { statusCode: 403 }))
   );
-
-const storageTableMock = "FailedUserDataProcessing" as NonEmptyString;
 
 const fiscalCode1 = "UEEFON48A55Y758X" as FiscalCode;
 const fiscalCode2 = "VEEGON48A55Y758Z" as FiscalCode;
@@ -91,15 +85,12 @@ beforeEach(() => {
 
 describe("IsFailedUserDataProcessingHandler", () => {
   it("should fail if input is not valid", async () => {
-    const tableServiceMock = {
-      retrieveEntity:
-        retrieveEntityFailedUserDataProcessingMock(noFailedRequests)
-    } as unknown as TableService;
+    const tableClientMock = {
+      getEntity: retrieveEntityFailedUserDataProcessingMock(noFailedRequests)
+    } as unknown as TableClient;
 
-    const getFailedUserDataProcessingHandler = IsFailedUserDataProcessing(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingHandler =
+      IsFailedUserDataProcessing(tableClientMock);
 
     const result = await getFailedUserDataProcessingHandler(
       {
@@ -123,16 +114,14 @@ describe("IsFailedUserDataProcessingHandler", () => {
     }
   });
 
-  it("should fail if any error occurs", async () => {
-    const tableServiceMock = {
-      retrieveEntity:
+  it("should fail when Table Storage returns 403", async () => {
+    const tableClientMock = {
+      getEntity:
         internalErrorRetrieveEntityFailedUserDataProcessingMock(failedRequests)
-    } as unknown as TableService;
+    } as unknown as TableClient;
 
-    const getFailedUserDataProcessingHandler = IsFailedUserDataProcessing(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingHandler =
+      IsFailedUserDataProcessing(tableClientMock);
 
     const result = await getFailedUserDataProcessingHandler(
       {
@@ -156,15 +145,12 @@ describe("IsFailedUserDataProcessingHandler", () => {
   });
 
   it("should succeed with false value if no failed user data processing is present", async () => {
-    const tableServiceMock = {
-      retrieveEntity:
-        retrieveEntityFailedUserDataProcessingMock(noFailedRequests)
-    } as unknown as TableService;
+    const tableClientMock = {
+      getEntity: retrieveEntityFailedUserDataProcessingMock(noFailedRequests)
+    } as unknown as TableClient;
 
-    const getFailedUserDataProcessingHandler = IsFailedUserDataProcessing(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingHandler =
+      IsFailedUserDataProcessing(tableClientMock);
 
     const result = await getFailedUserDataProcessingHandler(
       {
@@ -185,14 +171,12 @@ describe("IsFailedUserDataProcessingHandler", () => {
   });
 
   it("should succeed with true value if failed user data processing is present", async () => {
-    const tableServiceMock = {
-      retrieveEntity: retrieveEntityFailedUserDataProcessingMock(failedRequests)
-    } as unknown as TableService;
+    const tableClientMock = {
+      getEntity: retrieveEntityFailedUserDataProcessingMock(failedRequests)
+    } as unknown as TableClient;
 
-    const getFailedUserDataProcessingHandler = IsFailedUserDataProcessing(
-      tableServiceMock,
-      storageTableMock
-    );
+    const getFailedUserDataProcessingHandler =
+      IsFailedUserDataProcessing(tableClientMock);
 
     const result = await getFailedUserDataProcessingHandler(
       {

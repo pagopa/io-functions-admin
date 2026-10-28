@@ -21,20 +21,18 @@ import * as t from "io-ts";
 export type IConfig = t.TypeOf<typeof IConfig>;
 export const IConfig = t.intersection([
   t.interface({
+    API_STORAGE_TABLE_ENDPOINT: NonEmptyString,
     ASSETS_STORAGE_BLOB_ENDPOINT: NonEmptyString,
     AZURE_APIM: NonEmptyString,
     AZURE_APIM_HOST: NonEmptyString,
 
     AZURE_APIM_RESOURCE_GROUP: NonEmptyString,
     AZURE_SUBSCRIPTION_ID: NonEmptyString,
-    CitizenAuthStorageConnection: NonEmptyString,
+    CitizenAuthQueueConnection__queueServiceUri: NonEmptyString,
 
     COSMOSDB_NAME: NonEmptyString,
     COSMOSDB_URI: NonEmptyString,
     FAILED_USER_DATA_PROCESSING_TABLE: NonEmptyString,
-
-    FailedUserDataProcessingStorageConnection: NonEmptyString,
-
     GET_USERS_PAGE_SIZE: withDefault(
       IntegerFromString.pipe(NonNegativeInteger),
       "100" as unknown as NonNegativeInteger
@@ -42,12 +40,10 @@ export const IConfig = t.intersection([
     INSTANT_DELETE_ENABLED_USERS: CommaSeparatedListOf(FiscalCode),
     isProduction: t.boolean,
 
-    LOCKED_PROFILES_STORAGE_CONNECTION_STRING: NonEmptyString,
     LOCKED_PROFILES_TABLE_NAME: NonEmptyString,
     LOGOS_URL: NonEmptyString,
     MESSAGE_CONTAINER_NAME: NonEmptyString,
 
-    PROFILE_EMAILS_STORAGE_CONNECTION_STRING: NonEmptyString,
     PROFILE_EMAILS_TABLE_NAME: NonEmptyString,
 
     PUBLIC_API_KEY: NonEmptyString,
@@ -63,10 +59,10 @@ export const IConfig = t.intersection([
 
     SESSION_MANAGER_INTERNAL_API_KEY: NonEmptyString,
     SESSION_MANAGER_INTERNAL_API_URL: NonEmptyString,
+    SESSION_STORAGE_TABLE_ENDPOINT: NonEmptyString,
 
     STORAGE_BLOB_ENDPOINT: NonEmptyString,
 
-    SubscriptionFeedStorageConnection: NonEmptyString,
     SUBSCRIPTIONS_FEED_TABLE: NonEmptyString,
 
     USER_DATA_ARCHIVE_STORAGE_BLOB_ENDPOINT: NonEmptyString,
