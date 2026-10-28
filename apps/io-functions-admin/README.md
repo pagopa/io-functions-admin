@@ -43,7 +43,9 @@ account with the required data-plane RBAC roles.
 | MAILUP_USERNAME                         | If using MailUp, the username                                                                 | string |
 | MAILUP_SECRET                           | If using MailUp, the secret                                                                   | string |
 | MAILHOG_HOSTNAME                        | Required on development, the host name of the MailHog SMTP server                             | string |
-| SubscriptionFeedStorageConnection       | Storage connection string for subscription feed                                               | string |
+| API_STORAGE_TABLE_ENDPOINT              | Table endpoint for subscription feeds and failed user-data processing                         | string |
+| SESSION_STORAGE_TABLE_ENDPOINT          | Table endpoint for locked profiles and profile emails                                         | string |
+| CitizenAuthQueueConnection__queueServiceUri | Queue endpoint for the profile-email sanitization trigger                                  | string |
 | SUBSCRIPTIONS_FEED_TABLE                | Table name for the Subscriptions Feed in the storage                                          | string |
 | GET_USERS_PAGE_SIZE                     | Number of elements to be fetched and returned on GetUsers Api invoke (Default=100)            | number |
 
