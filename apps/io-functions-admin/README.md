@@ -11,6 +11,10 @@ they may be customized as needed.
 Blob Storage uses endpoint URLs and the slot's system-assigned identity in Azure.
 Local runs use `AzureCliCredential`; authenticate with `az login` and use an
 account with the required data-plane RBAC roles.
+The profile-sanitization Queue binding uses `CitizenAuthQueueConnection` with
+the slot's system-assigned identity in Azure. For local runs, set its
+`queueServiceUri` and authenticate with `az login`; do not set a connection
+string under the exact `CitizenAuthQueueConnection` name.
 
 | Variable name                           | Description                                                                                   | type   |
 | --------------------------------------- | --------------------------------------------------------------------------------------------- | ------ |

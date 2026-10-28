@@ -29,7 +29,7 @@ const expectLeft = <L, R>(e: E.Either<L, R>, t: (l: L) => void = noop) =>
   );
 
 describe("IConfig", () => {
-  it("requires CosmosDB metadata without requiring key-based settings", () => {
+  it("requires CosmosDB metadata without requiring legacy credentials", () => {
     const result = IConfig.decode({});
     if (E.isRight(result)) {
       assert.fail("Expected the incomplete configuration to be rejected");
@@ -43,6 +43,7 @@ describe("IConfig", () => {
     expect(invalidKeys).toContain("COSMOSDB_NAME");
     expect(invalidKeys).not.toContain("COSMOSDB_KEY");
     expect(invalidKeys).not.toContain("COSMOSDB_CONNECTION_STRING");
+    expect(invalidKeys).not.toContain("CitizenAuthStorageConnection");
   });
 
   it("requires Blob endpoints and ignores legacy Blob connection strings", () => {
