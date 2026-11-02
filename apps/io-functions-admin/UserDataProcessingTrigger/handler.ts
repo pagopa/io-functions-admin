@@ -3,7 +3,6 @@ import { UserDataProcessingChoiceEnum } from "@pagopa/io-functions-commons/dist/
 import { UserDataProcessingStatusEnum } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingStatus";
 import { UserDataProcessing } from "@pagopa/io-functions-commons/dist/src/models/user_data_processing";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import { TableUtilities } from "azure-storage";
 import * as df from "durable-functions";
 import * as E from "fp-ts/lib/Either";
 import { Lazy, pipe } from "fp-ts/lib/function";
@@ -23,8 +22,6 @@ import {
 import { flags } from "../utils/featureFlags";
 import { isOrchestratorRunning } from "../utils/orchestrator";
 import { DeleteTableEntity, InsertTableEntity } from "../utils/storage";
-
-const eg = TableUtilities.entityGenerator;
 
 // configure log prefix
 const logPrefix = "UserDataProcessingHandler";
@@ -191,9 +188,9 @@ const processFailedUserDataProcessing = async (
     `${logPrefix}|KEY=${processable.fiscalCode}|Inserting a failed_user_data_processing record`
   );
   const { e1: resultOrError, e2: sResponse } = await insertEntityFn({
-    PartitionKey: eg.String(processable.choice),
-    Reason: eg.String(processable.reason ?? "UNKNOWN"),
-    RowKey: eg.String(processable.fiscalCode)
+    partitionKey: processable.choice,
+    Reason: processable.reason ?? "UNKNOWN",
+    rowKey: processable.fiscalCode
   });
   if (E.isLeft(resultOrError) && sResponse.statusCode !== 409) {
     context.error(`${logPrefix}|ERROR=${resultOrError.left.message}`);
@@ -211,8 +208,8 @@ const processClosedUserDataProcessing = async (
     `${logPrefix}|KEY=${processable.fiscalCode}|Deleting any failed_user_data_processing record`
   );
   const { e1: maybeError, e2: uResponse } = await deleteEntityFn({
-    PartitionKey: eg.String(processable.choice),
-    RowKey: eg.String(processable.fiscalCode)
+    partitionKey: processable.choice,
+    rowKey: processable.fiscalCode
   });
   if (O.isSome(maybeError) && uResponse.statusCode !== 404) {
     context.error(

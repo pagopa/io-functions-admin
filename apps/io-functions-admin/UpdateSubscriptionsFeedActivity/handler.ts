@@ -1,9 +1,9 @@
+import { TableClient } from "@azure/data-tables";
 import { InvocationContext } from "@azure/functions";
 import { ServiceId } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/ServiceId";
 import { ServicePreference } from "@pagopa/io-functions-commons/dist/src/models/service_preference";
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { TableService } from "azure-storage";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as E from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
@@ -63,8 +63,7 @@ export type Input = t.TypeOf<typeof Input>;
 export const updateSubscriptionFeed = async (
   rawInput: unknown,
   context: InvocationContext,
-  tableService: TableService,
-  subscriptionFeedTableName: NonEmptyString,
+  tableClient: TableClient,
   logPrefix = "UpdateServiceSubscriptionFeedActivity"
 ) => {
   const decodedInputOrError = Input.decode(rawInput);
@@ -145,10 +144,7 @@ export const updateSubscriptionFeed = async (
 
   const allowInsertIfDeleted = decodedInput.subscriptionKind !== "SERVICE";
 
-  const updateSubscriptionStatusHandler = updateSubscriptionStatus(
-    tableService,
-    subscriptionFeedTableName
-  );
+  const updateSubscriptionStatusHandler = updateSubscriptionStatus(tableClient);
 
   if (operation === "SUBSCRIBED") {
     // we delete the entry from the unsubscriptions and we add it to the

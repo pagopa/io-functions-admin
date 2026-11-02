@@ -1,67 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { TableClient } from "@azure/data-tables";
 import {
   UserDataProcessingChoice,
   UserDataProcessingChoiceEnum
 } from "@pagopa/io-functions-commons/dist/generated/definitions/v2/UserDataProcessingChoice";
-import { FiscalCode, NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { TableService } from "azure-storage";
+import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GetFailedUserDataProcessingHandler } from "../handler";
 
-const findEntry =
-  (
-    entries: readonly {
-      PartitionKey: UserDataProcessingChoice;
-      RowKey: FiscalCode;
-    }[]
-  ) =>
-  (choice: UserDataProcessingChoice, fiscalCode: FiscalCode) =>
-    entries.length > 0
-      ? entries
-          .filter(e => e.PartitionKey === choice && e.RowKey === fiscalCode)
-          .map(e => ({
-            RowKey: { _: e.RowKey }
-          }))[0]
-      : null;
-
-const retrieveEntityFailedUserDataProcessingMock = (
-  entries: readonly {
-    PartitionKey: UserDataProcessingChoice;
-    RowKey: FiscalCode;
-  }[]
-) =>
-  vi.fn((_, choice, fiscalCode, ____, cb) =>
-    cb(
-      findEntry(entries)(choice, fiscalCode)
-        ? null
-        : new Error("Internal error"),
-      findEntry(entries)(choice, fiscalCode),
-      {
-        isSuccessful: findEntry(entries)(choice, fiscalCode),
-        statusCode: findEntry(entries)(choice, fiscalCode) ? 200 : 404
-      }
-    )
-  );
-
-const internalErrorRetrieveEntityFailedUserDataProcessingMock = (
-  _entries: readonly {
-    PartitionKey: UserDataProcessingChoice;
-    RowKey: FiscalCode;
-  }[]
-) =>
-  vi.fn((_, _choice, _fiscalCode, ____, cb) =>
-    cb(new Error("Internal error"), null, { isSuccessful: false })
-  );
-
-const storageTableMock = "FailedUserDataProcessing" as NonEmptyString;
+type FailedRequest = Readonly<{
+  PartitionKey: UserDataProcessingChoice;
+  RowKey: FiscalCode;
+}>;
 
 const fiscalCode1 = "UEEFON48A55Y758X" as FiscalCode;
 const fiscalCode2 = "VEEGON48A55Y758Z" as FiscalCode;
 
-const noFailedRequests: typeof failedRequests = [];
-
-const failedRequests = [
+const failedRequests: readonly FailedRequest[] = [
   {
     PartitionKey: UserDataProcessingChoiceEnum.DELETE,
     RowKey: fiscalCode1
@@ -80,21 +36,33 @@ const failedRequests = [
   }
 ];
 
+const createTableClientMock = (entries: readonly FailedRequest[]) =>
+  ({
+    getEntity: vi.fn(
+      (choice: UserDataProcessingChoice, fiscalCode: FiscalCode) => {
+        const entry = entries.find(
+          item => item.PartitionKey === choice && item.RowKey === fiscalCode
+        );
+        return entry
+          ? Promise.resolve({ rowKey: entry.RowKey })
+          : Promise.reject(
+              Object.assign(new Error("Not found"), { statusCode: 404 })
+            );
+      }
+    )
+  }) as unknown as TableClient;
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe("GetFailedUserDataProcessingHandler", () => {
-  it("should return a not found error response if no failed user data processing request is present", async () => {
-    const tableServiceMock = {
-      retrieveEntity:
-        retrieveEntityFailedUserDataProcessingMock(noFailedRequests)
-    } as unknown as TableService;
+  it("should return a not found error response if no failed request is present", async () => {
+    const handler = GetFailedUserDataProcessingHandler(
+      createTableClientMock([])
+    );
 
-    const getFailedUserDataProcessingHandler =
-      GetFailedUserDataProcessingHandler(tableServiceMock, storageTableMock);
-
-    const result = await getFailedUserDataProcessingHandler(
+    const result = await handler(
       {} as any,
       UserDataProcessingChoiceEnum.DELETE,
       fiscalCode1
@@ -103,18 +71,17 @@ describe("GetFailedUserDataProcessingHandler", () => {
     expect(result.kind).toBe("IResponseErrorNotFound");
   });
 
-  it("should return an internal error response if retrieve entity fails", async () => {
-    const tableServiceMock = {
-      retrieveEntity:
-        internalErrorRetrieveEntityFailedUserDataProcessingMock(
-          noFailedRequests
+  it("should return an internal error response when Table Storage returns 403", async () => {
+    const tableClient = {
+      getEntity: vi.fn(() =>
+        Promise.reject(
+          Object.assign(new Error("Forbidden"), { statusCode: 403 })
         )
-    } as unknown as TableService;
+      )
+    } as unknown as TableClient;
+    const handler = GetFailedUserDataProcessingHandler(tableClient);
 
-    const getFailedUserDataProcessingHandler =
-      GetFailedUserDataProcessingHandler(tableServiceMock, storageTableMock);
-
-    const result = await getFailedUserDataProcessingHandler(
+    const result = await handler(
       {} as any,
       UserDataProcessingChoiceEnum.DELETE,
       fiscalCode1
@@ -123,15 +90,12 @@ describe("GetFailedUserDataProcessingHandler", () => {
     expect(result.kind).toBe("IResponseErrorInternal");
   });
 
-  it("should return a fiscalcode if a failed request is present", async () => {
-    const tableServiceMock = {
-      retrieveEntity: retrieveEntityFailedUserDataProcessingMock(failedRequests)
-    } as unknown as TableService;
+  it("should return the fiscal code when a failed request is present", async () => {
+    const handler = GetFailedUserDataProcessingHandler(
+      createTableClientMock(failedRequests)
+    );
 
-    const getFailedUserDataProcessingHandler =
-      GetFailedUserDataProcessingHandler(tableServiceMock, storageTableMock);
-
-    const result = await getFailedUserDataProcessingHandler(
+    const result = await handler(
       {} as any,
       UserDataProcessingChoiceEnum.DELETE,
       fiscalCode1
@@ -141,10 +105,6 @@ describe("GetFailedUserDataProcessingHandler", () => {
     if (result.kind === "IResponseSuccessJson") {
       expect(result.value).toEqual({
         failedDataProcessingUser: fiscalCode1
-      });
-
-      expect(result.value).not.toEqual({
-        failedDataProcessingUser: fiscalCode2
       });
     }
   });
