@@ -1,5 +1,11 @@
 ### Changelog
 
+## 4.0.6
+
+### Patch Changes
+
+- 97afc0d: Migrate to RBAC Table and Queue storage clients
+
 ## 4.0.5
 
 ### Patch Changes
