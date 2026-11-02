@@ -66,7 +66,7 @@ export const IsFailedUserDataProcessing =
           _ =>
             ActivityResultFailure.encode({
               kind: "FAILURE",
-              reason: "ERROR|tableService.retrieveEntity|Cannot retrieve entity"
+              reason: "ERROR|tableClient.getEntity|Cannot retrieve entity"
             })
         )
       ),

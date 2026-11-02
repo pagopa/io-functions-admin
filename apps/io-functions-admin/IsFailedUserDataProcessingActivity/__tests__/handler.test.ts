@@ -138,7 +138,7 @@ describe("IsFailedUserDataProcessingHandler", () => {
       expect(JSON.stringify(decodedResult.right)).toBe(
         JSON.stringify({
           kind: "FAILURE",
-          reason: "ERROR|tableService.retrieveEntity|Cannot retrieve entity"
+          reason: "ERROR|tableClient.getEntity|Cannot retrieve entity"
         })
       );
     }
