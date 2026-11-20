@@ -5,7 +5,7 @@ on:
 
 jobs:
   deploy_on_prod:
-    uses: pagopa/dx/.github/workflows/legacy_publish_sdk.yaml@main
+    uses: pagopa/dx/.github/workflows/legacy_publish_sdk.yaml@1677605cbcd6fca87fba88b2ed5224b6b0ebede8 # main
     name: Publish SDK on PROD
     secrets: inherit
     with:
